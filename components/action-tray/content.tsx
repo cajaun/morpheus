@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Animated, {
   Easing,
   EntryExitAnimationFunction,
@@ -11,15 +11,19 @@ type Props = {
   scale?: boolean;
   stepKey?: string;
   skipEntering?: boolean;
+  skipExiting?: boolean;
+  step?: number;
+  total?: number;
 };
 
 const createMorphEntering = (scale: boolean): EntryExitAnimationFunction => {
   return () => {
     "worklet";
+
     return {
       initialValues: {
         opacity: 0,
-        transform: [...(scale ? [{ scale: 0.95 }] : []), { translateY: 6 }],
+        transform: [...(scale ? [{ scale: 0.93 }] : []), { translateY: 6 }],
       },
       animations: {
         opacity: withTiming(1, {
@@ -52,6 +56,7 @@ const createMorphEntering = (scale: boolean): EntryExitAnimationFunction => {
 const createMorphExiting = (scale: boolean): EntryExitAnimationFunction => {
   return () => {
     "worklet";
+
     return {
       initialValues: {
         opacity: 1,
@@ -90,14 +95,25 @@ export const TrayContent: React.FC<Props> = ({
   scale = true,
   stepKey,
   skipEntering = false,
+  skipExiting = false,
+  step,
+  total,
 }) => {
+  useEffect(() => {
+    console.log("[TrayContent] render", {
+      step,
+      total,
+      stepKey,
+    });
+  }, [step, total, stepKey]);
+
   return (
     <Animated.View
       key={stepKey}
       entering={skipEntering ? undefined : createMorphEntering(scale)}
-      exiting={createMorphExiting(scale)}
+      exiting={skipExiting ? undefined : createMorphExiting(scale)}
     >
-      {children}
+      {React.cloneElement(children as any, { step, total })}
     </Animated.View>
   );
 };

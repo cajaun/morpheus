@@ -1,8 +1,14 @@
 import React, { createContext, useContext } from "react";
 
 export type TrayDefinition = {
-  contents: ((stepKey?: string, skipEntering?: boolean) => React.ReactNode)[];
-  footer?: () => React.ReactNode;
+  contents: ((
+    stepKey?: string,
+    skipEntering?: boolean,
+    skipExiting?: boolean,
+    step?: number,
+    total?: number
+  ) => React.ReactNode)[];
+  footer?: ((step?: number, total?: number) => React.ReactNode);
 };
 
 export type TrayContextValue = {
@@ -20,9 +26,7 @@ const TrayContext = createContext<TrayContextValue | null>(null);
 
 export const useTray = () => {
   const ctx = useContext(TrayContext);
-  if (!ctx) {
-    throw new Error("Tray components must be used within <TrayProvider>.");
-  }
+  if (!ctx) throw new Error("Must be used within TrayProvider");
   return ctx;
 };
 

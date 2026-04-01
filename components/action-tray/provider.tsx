@@ -3,38 +3,34 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 import { ActionTray } from "@/components/action-tray/action-tray";
 import { TrayContext, TrayDefinition } from "./context";
 
-export const TrayProvider: React.FC<{
-  children: React.ReactNode;
-}> = ({ children }) => {
-  const [registry, setRegistry] =
-    useState<Record<string, TrayDefinition>>({});
-
-  const [activeTrayId, setActiveTrayId] =
-    useState<string | null>(null);
-
+export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [registry, setRegistry] = useState<Record<string, TrayDefinition>>({});
+  const [activeTrayId, setActiveTrayId] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
 
-  // true only on the very first render after openTray is called
-  const [justOpened, setJustOpened] = useState(false);
+  // Ref so next/back callbacks always see the current total without being
+  // recreated every time total changes.
+  const totalRef = useRef(0);
 
-  const registerTray = useCallback(
-    (id: string, def: TrayDefinition) => {
-      setRegistry((prev) => {
-        if (prev[id] === def) return prev;
-        return { ...prev, [id]: def };
-      });
-    },
-    []
-  );
+  // Tracks whether the tray was just opened so we can suppress the entering
+  // animation on step 0 and the open spring already provides that motion.
+  const justOpenedRef = useRef(false);
+
+  const registerTray = useCallback((id: string, def: TrayDefinition) => {
+    setRegistry((prev) => ({ ...prev, [id]: def }));
+  }, []);
 
   const openTray = useCallback((id: string) => {
+    justOpenedRef.current = true;
     setIndex(0);
     setActiveTrayId(id);
-    setJustOpened(true);
   }, []);
 
   const close = useCallback(() => {
@@ -42,33 +38,44 @@ export const TrayProvider: React.FC<{
     setIndex(0);
   }, []);
 
-  // Reset justOpened after the first content render so step transitions
-  // still get their entering animation
-  useEffect(() => {
-    if (justOpened) setJustOpened(false);
-  }, [activeTrayId, index]);
-
-  const activeTray = activeTrayId
-    ? registry[activeTrayId]
-    : undefined;
-
+  const activeTray = activeTrayId ? registry[activeTrayId] : undefined;
   const total = activeTray?.contents.length ?? 0;
 
-  const next = useCallback(() => {
-    setIndex((i) => Math.min(i + 1, total - 1));
+  useEffect(() => {
+    totalRef.current = total;
   }, [total]);
+
+  const safeIndex =
+    total > 0 ? Math.max(0, Math.min(index, total - 1)) : 0;
+
+  const next = useCallback(() => {
+    setIndex((i) => Math.min(i + 1, totalRef.current - 1));
+  }, []);
 
   const back = useCallback(() => {
     setIndex((i) => Math.max(i - 1, 0));
   }, []);
 
+  console.log("[TrayProvider] renderContent", {
+    activeTrayId,
+    safeIndex,
+    total,
+  });
+
+  // skipEntering is true only on the very first step of a fresh open so the
+  // content doesn't animate in twice (once with the tray spring, once itself).
+  const isFirstRender = justOpenedRef.current && safeIndex === 0;
+
   const rawContent =
-    activeTray?.contents[index]?.(
-      `${activeTrayId}-${index}`,
-      justOpened  // ← skip the fade-in when the tray is first opening
+    activeTray?.contents[safeIndex]?.(
+      `${activeTrayId}-${safeIndex}`,
+      isFirstRender,
+      false,
+      safeIndex,
+      total
     ) ?? null;
 
-  const footer = activeTray?.footer?.() ?? null;
+  const footer = activeTray?.footer?.(safeIndex, total) ?? null;
 
   const ctxValue = useMemo(
     () => ({
@@ -76,24 +83,47 @@ export const TrayProvider: React.FC<{
       close,
       next,
       back,
-      index,
+      index: safeIndex,
       total,
       registerTray,
       registerFocusable: () => {},
     }),
-    [openTray, close, next, back, index, total, registerTray]
+    [openTray, close, next, back, safeIndex, total, registerTray]
   );
+
+  useEffect(() => {
+    console.log("[TrayProvider] state", {
+      activeTrayId,
+      index,
+      safeIndex,
+      total,
+    });
+  }, [activeTrayId, index, safeIndex, total]);
+
+  // Clear justOpenedRef after the activeTrayId commit so the flag is only
+  // consumed once by the first render of the newly opened tray.
+  useEffect(() => {
+    if (justOpenedRef.current && activeTrayId !== null) {
+      justOpenedRef.current = false;
+    }
+  }, [activeTrayId]);
 
   return (
     <TrayContext.Provider value={ctxValue}>
       {children}
 
+      {/* trayId encodes activeTrayId + safeIndex so ActionTray's step-change
+          effect fires whenever either the tray or the step changes. */}
       <ActionTray
         visible={activeTrayId !== null}
         content={rawContent}
         footer={footer}
         onClose={close}
-        trayKey={`${activeTrayId}-${index}`}
+        trayId={
+          activeTrayId
+            ? `${activeTrayId}-${safeIndex}`
+            : undefined
+        }
       />
     </TrayContext.Provider>
   );
