@@ -1,8 +1,7 @@
 import React from "react";
 import { View, Text } from "react-native";
 import OnboardingExample from "./onboarding-example";
-import HowToHelpExample from "./new-wallet";
-import PostExample from "./post-3";
+import PayFromTray from "./new-wallet";
 
 const ActionTrayExamples = () => {
   return (
@@ -10,14 +9,15 @@ const ActionTrayExamples = () => {
       style={{
           flex: 1,
           flexDirection: "row",
-    backgroundColor: "#fff",
+gap: 16,
     justifyContent: "center",
     alignItems: "center",
+
       }}
     >
       <OnboardingExample />
 
-      <HowToHelpExample />
+      <PayFromTray />
 
       {/* <PostExample/> */}
     </View>

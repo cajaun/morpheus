@@ -1,21 +1,41 @@
 import React, { useState } from "react";
-import { View, Text, TextInput } from "react-native";
+import { View, Text, Image } from "react-native";
 import { Tray } from "@/components/action-tray";
 import { useTray } from "@/components/action-tray/context";
-import DrawerButton from "../content/drawer-button";
 import { PressableScale } from "@/components/ui/utils/pressable-scale";
 import Header from "../content/header";
 import { SymbolView } from "expo-symbols";
-import { TrayTextInput } from "../text-input";
 
-const HowToHelpExample = () => {
-  const { next, back, close } = useTray();
-  const [address, setAddress] = useState("");
+const wallets = [
+  {
+    id: "1",
+    name: "valmiera",
+    address: "0x0862•••9777",
+    avatar: "https://i.pravatar.cc/100?img=1",
+  },
+  {
+    id: "2",
+    name: "Test",
+    address: "0x35c5•••1802",
+    avatar: "https://i.pravatar.cc/100?img=2",
+  },
+  {
+    id: "3",
+    name: "G",
+    address: "0x9f90•••3d79",
+    avatar: "https://i.pravatar.cc/100?img=3",
+  },
+];
+
+const PayFromTray = () => {
+  const { close, back, next } = useTray();
+  const [selectedId, setSelectedId] = useState("3");
+
   return (
     <Tray.Root>
       <Tray.Trigger>
         <PressableScale
-          style={{
+           style={{
             backgroundColor: "#F5F5FA",
             paddingHorizontal: 24,
             paddingVertical: 12,
@@ -24,137 +44,176 @@ const HowToHelpExample = () => {
             alignItems: "center",
           }}
         >
-          <Text className="text-2xl font-sfBold">New Wallet</Text>
+          <Text className="text-2xl font-sfBold">Pay From</Text>
         </PressableScale>
       </Tray.Trigger>
 
-      <Tray.Content scale>
-        <View className="gap-y-4">
-          <Header
-            step={1}
-            leftLabel="New Wallet"
-            shouldClose
-            onBack={back}
-            onClose={close}
-          />
-
+      <Tray.Content>
+        <Tray.Body>
+          {/* HEADER */}
+          <Tray.Header>
+            <Header
+              step={0}
+              leftLabel="Pay From"
+              shouldClose
+              onBack={() => back()}
+              onClose={() => close()}
+            />
+          </Tray.Header>
+          {/* DIVIDER */}
           <View
             style={{
               height: 1,
-              width: "100%",
-              backgroundColor: "#F7F7F7",
+              backgroundColor: "#F2F2F2",
             }}
           />
 
-          <DrawerButton
-            variant="card"
-            icon="plus"
-            label="Create New"
-            description="Create a fresh address with no previous history"
-            iconColor="#3590FF"
-            onPress={next}
-          />
+          <Tray.Section>
+            {wallets.map((wallet) => {
+              const isSelected = wallet.id === selectedId;
 
-          <DrawerButton
-            variant="card"
-            icon="arrow.trianglehead.clockwise.rotate.90"
-            label="Add Existing"
-            description="Add an existing wallet by importing or restoring"
-            iconColor="#3DCA46"
-            onPress={next}
-          />
+              return (
+                <PressableScale
+                  key={wallet.id}
+                  onPress={() => setSelectedId(wallet.id)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 12,
+                    }}
+                  >
+                    <Image
+                      source={{ uri: wallet.avatar }}
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 22,
+                      }}
+                    />
 
-          <DrawerButton
-            variant="card"
-            icon="binoculars.fill"
-            label="Watch"
-            description="Keep track of a wallet using an address or ENS name"
-            iconColor="#62778B"
-            onPress={next}
-          />
-        </View>
+                    <View>
+                      <Text
+                        className=" font-sfMedium"
+                        style={{
+                          fontSize: 21,
+                          lineHeight: 28,
+                          letterSpacing: 0.2,
+                        }}
+                      >
+                        {wallet.name}
+                      </Text>
+                      <Text
+                        className=" font-sfRegular text-[#94999F] "
+                        style={{
+                          fontSize: 18,
+                          lineHeight: 28,
+                          letterSpacing: 0.2,
+                     
+                        }}
+                      >
+                        {wallet.address}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {isSelected && (
+                    <View
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: "#41BBFF",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <SymbolView
+                        name="checkmark"
+                        type="palette"
+                        size={18}
+                        weight="semibold"
+                        tintColor={"#fff"}
+                      />
+                    </View>
+                  )}
+                </PressableScale>
+              );
+            })}
+          </Tray.Section>
+
+          <View style={{ paddingTop: 4, paddingBottom: 28, width: "100%" }}>
+            <PressableScale
+              style={{
+                backgroundColor: "#41BBFF",
+                height: 50,
+                borderRadius: 28,
+                alignItems: "center",
+                justifyContent: "center",
+                width: "100%",
+              }}
+              onPress={() => {
+                next();
+              }}
+            >
+              <Text
+                className=" font-sfSemibold text-white"
+                style={{
+                  fontSize: 21,
+                  lineHeight: 28,
+                  letterSpacing: 0.2,
+                }}
+              >
+                Continue
+              </Text>
+            </PressableScale>
+          </View>
+        </Tray.Body>
       </Tray.Content>
 
-      <Tray.Content scale>
-        <View className="gap-y-4">
-          <Header
-            step={1}
-            leftLabel="Watch Address"
-            shouldClose
-            onBack={back}
-            onClose={close}
-          />
+      <Tray.Content>
+        <Tray.Body>
+          <Tray.Header>
+            <Header
+              step={1}
+              leftLabel="Insufficient Tokens"
+              shouldClose
+              onBack={() => back()}
+              onClose={() => close()}
+            />
+          </Tray.Header>
 
           <View
             style={{
               height: 1,
-              width: "100%",
-              backgroundColor: "#F7F7F7",
+              backgroundColor: "#F2F2F2",
             }}
           />
 
-          <View className="">
-            <TrayTextInput
-              value={address}
-              onChangeText={setAddress}
-              placeholder="ENS or Address"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              returnKeyType="done"
-              className="font-sfRegular text-xl"
-              style={{
-                width: "100%",
-                paddingVertical: 14,
-                paddingHorizontal: 16,
-                borderRadius: 16,
-                backgroundColor: "#F7F8F8",
-                color: "#000",
-                fontSize: 18,
-                lineHeight: 26,
-                letterSpacing: 0.2,
-              }}
-            />
-          </View>
-
-          <View className="flex-1 justify-center items-center p-12">
-            <SymbolView
-              name="binoculars.fill"
-              size={65}
-              tintColor={"#E6E6E6"}
-            />
-
+          <Tray.Section>
             <Text
-              className=" mt-2 text-center text-[#E6E6E6]"
+              className="text-[#94999F] font-sfMedium "
               style={{
-                fontSize: 18,
-                lineHeight: 26,
+                fontSize: 21,
+                lineHeight: 28,
                 letterSpacing: 0.2,
               }}
             >
-              Search or paste an address to start watching a wallet
+              This wallet doesn't have the necessary tokens for a refuel. Please
+              add more of the supported native tokens or choose a different
+              wallet with enough tokens.
             </Text>
-          </View>
-
-          <PressableScale
-            onPress={() => {}}
-            style={{
-              width: "100%",
-              height: 50,
-              alignItems: "center",
-              backgroundColor: "#3EB2FE",
-              borderRadius: 50,
-              justifyContent: "center",
-              paddingHorizontal: 20,
-            }}
-          >
-            <Text className="text-white font-sfBold text-2xl">Next</Text>
-          </PressableScale>
-        </View>
+          </Tray.Section>
+        </Tray.Body>
       </Tray.Content>
     </Tray.Root>
   );
 };
 
-export default HowToHelpExample;
+export default PayFromTray;

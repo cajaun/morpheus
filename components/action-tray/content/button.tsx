@@ -72,10 +72,15 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
     ],
   }));
 
-  const handlePrimaryPress = async () => {
-    await Haptics.selectionAsync();
-    onNext();
-  };
+const handlePrimaryPress = async () => {
+  await Haptics.selectionAsync();
+
+  if (isLastStep) {
+    onFinish?.();  
+  } else {
+    onNext();     
+  }
+};
 
   const handleSecondaryPress = async () => {
     await Haptics.selectionAsync();
@@ -115,7 +120,7 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
             alignItems: "center",
           }}
         >
-          <Text className="text-black font-sfBold text-2xl">
+          <Text className="text-black font-sfSemibold " style={{     fontSize: 22, lineHeight: 28, letterSpacing: 0.2 }}>
             Cancel
           </Text>
         </PressableScale>
@@ -144,7 +149,7 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
             paddingHorizontal: 20,
           }}
         >
-          <Text className="text-white font-sfBold text-2xl">
+          <Text className="text-white font-sfSemibold  " style={{     fontSize: 22, lineHeight: 28, letterSpacing: 0.2 }}>
             Continue
           </Text>
         </PressableScale>

@@ -3,14 +3,13 @@ import { useTray } from "./context";
 
 const TrayScopeContext = React.createContext<string | null>(null);
 
-export const useTrayScope = () => {
-  return React.useContext(TrayScopeContext);
-};
+export const useTrayScope = () => React.useContext(TrayScopeContext);
 
-export const TrayRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const TrayRoot: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { registerTray } = useTray();
   const reactId = useId();
-
   const trayId = useMemo(() => `tray-${reactId}`, [reactId]);
 
   const parsed = useMemo(() => {
@@ -27,8 +26,6 @@ export const TrayRoot: React.FC<{ children: React.ReactNode }> = ({ children }) 
       const name = (child.type as any)?.displayName;
 
       if (name === "TrayContent") {
-        // Wrap each step in a factory so TrayProvider can inject runtime props
-        // (stepKey, skipEntering, step, total) without re-parsing children.
         contents.push(
           (
             stepKey?: string,
@@ -61,12 +58,6 @@ export const TrayRoot: React.FC<{ children: React.ReactNode }> = ({ children }) 
   }, [children]);
 
   useEffect(() => {
-    console.log("[TrayRoot] registerTray", {
-      trayId,
-      contentCount: parsed.contents.length,
-      hasFooter: !!parsed.footer,
-    });
-
     registerTray(trayId, {
       contents: parsed.contents,
       footer: parsed.footer,
@@ -76,6 +67,7 @@ export const TrayRoot: React.FC<{ children: React.ReactNode }> = ({ children }) 
   return (
     <TrayScopeContext.Provider value={trayId}>
       {parsed.outside}
+      {/* No ActionTray here — provider renders all instances at root level */}
     </TrayScopeContext.Provider>
   );
 };

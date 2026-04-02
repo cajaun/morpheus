@@ -46,7 +46,9 @@ export default function Header({
       >
         <View>
           {typeof leftLabel === "string" ? (
-            <Text className="text-2xl font-sfMedium">{leftLabel}</Text>
+            <Text className="font-sfMedium" style={{ fontSize: 24, lineHeight: 34, letterSpacing: 0.3 }}>
+              {leftLabel}
+            </Text>
           ) : (
             leftLabel
           )}

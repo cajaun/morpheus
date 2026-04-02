@@ -61,7 +61,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     const context = useSharedValue({ y: 0 });
 
     // ReactNodes can't be passed into worklets
-    //  useSharedValue gives the animated style a boolean 
+    //  useSharedValue gives the animated style a boolean
     // so it can safely read on the UI thread
     const hasFooter = useSharedValue(false);
 
@@ -92,7 +92,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       hasFooter.value = !!renderedFooter;
     }, [renderedFooter]);
 
-
     const doOpenSpring = useCallback(() => {
       log("doOpenSpring", {
         footer: measuredFooterHeightRef.current,
@@ -115,8 +114,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       active.value = true;
     }, []);
 
-
-
     // Also zeroes contentHeight and clears contentMeasured so the next open
     // can't inherit a stale layout reading from the wiped container.
     const resetContent = useCallback(() => {
@@ -128,8 +125,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       setRenderedTrayId(undefined);
       setLayoutEnabled(false);
     }, []);
-
-
 
     // Spring callbacks run on the UI thread. Reading a ref there would be
     // unsafe, so we bridge back via runOnJS and compare on the JS thread.
@@ -149,11 +144,9 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       [resetContent],
     );
 
-
     useEffect(() => {
       if (visible) {
-        // Bumping before the close spring finishes makes any in-flight callback
-        // stale so it won't wipe content that belongs to the new tray.
+        translateY.value = SCREEN_HEIGHT;
         closeGenerationRef.current++;
         justOpenedRef.current = true;
 
@@ -162,28 +155,37 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           footerMeasured,
           contentMeasured,
           footer: measuredFooterHeightRef.current,
+          // is old content still on-screen when new open fires?
+          hadExistingContent: renderedTrayId !== undefined,
+          existingTrayId: renderedTrayId,
         });
 
         setRenderedTrayId(trayId);
         setRenderedContent(content);
         setRenderedFooter(footer);
+
         setLayoutEnabled(false);
         setContentMeasured(false);
+        setFooterMeasured(false);
 
-        if (!footerMeasured || !contentMeasured) {
+        const needsFooter = !!footer;
+
+        if (!contentMeasured || (needsFooter && !footerMeasured)) {
           log("OPEN — waiting for measurement", {
             footerMeasured,
             contentMeasured,
+            needsFooter,
           });
           setPendingOpen(true);
         } else {
           doOpenSpring();
         }
       } else {
-        log("CLOSE START");
+        log("CLOSE START", {
+          // what content is on-screen when close fires?
+          renderedTrayId,
+        });
 
-        // Capture as a local primitive before the worklet is created so the
-        // closure holds an immutable snapshot, not a mutable ref object.
         const myGeneration = ++closeGenerationRef.current;
 
         setPendingOpen(false);
@@ -200,52 +202,67 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       }
     }, [visible]);
 
-
-
     // Footer height must be measured before opening so the tray doesn't
     // pop to the wrong size. Content measurement gates the spring the same way.
     useEffect(() => {
-      if (!pendingOpen || !footerMeasured || !contentMeasured) return;
+      const needsFooter = !!renderedFooter;
+
+      if (
+        !pendingOpen ||
+        !contentMeasured ||
+        (needsFooter && !footerMeasured)
+      ) {
+        return;
+      }
 
       log("PENDING OPEN — all measurements ready", {
         footer: measuredFooterHeightRef.current,
         content: contentHeight.value,
+        needsFooter,
       });
 
       setPendingOpen(false);
       doOpenSpring();
     }, [pendingOpen, footerMeasured, contentMeasured]);
 
-
-
     // trayId encodes both which tray and which step, so any change here
     // means the visible content needs to swap without a close/open cycle.
     useEffect(() => {
       if (!visible) return;
 
-      // Skip the first render after open 
-      // since the content was already set in the
-      // visible effect above and we don't want to double-apply it.
       if (justOpenedRef.current) {
         justOpenedRef.current = false;
         return;
       }
 
-      log("STEP CHANGE", { trayId });
+      log("TRAY CHANGE", { trayId });
 
+      // Only update content when the tray itself changes
+      // Step changes are handled INSIDE TrayContent now
       setLayoutEnabled(true);
       setRenderedContent(content);
       setRenderedFooter(footer);
       setRenderedTrayId(trayId);
     }, [trayId]);
 
+    useEffect(() => {
+      log("RENDERED CONTENT CHANGED", {
+        // null = wiped, undefined key = blank tray, key = active content
+        trayId: renderedTrayId,
+        hasContent: renderedContent !== null,
+      });
+    }, [renderedContent]);
 
     const totalHeight = useDerivedValue(() => {
       return contentHeight.value + footerHeight.value + bottom;
     });
 
     const progress = useDerivedValue(() => {
-      return 1 - translateY.value / SCREEN_HEIGHT;
+      if (totalHeight.value === 0) return 0;
+      // Clamp to totalHeight so the initial off-screen position (SCREEN_HEIGHT)
+      // doesn't produce a negative value before the tray has ever opened.
+      const travel = Math.min(translateY.value, totalHeight.value);
+      return 1 - travel / totalHeight.value;
     });
 
     const heightEasing = Easing.bezier(0.26, 1, 0.5, 1).factory();
@@ -256,22 +273,13 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     );
 
 
-    const scrollTo = useCallback((destination: number) => {
-      "worklet";
-      active.value = destination !== SCREEN_HEIGHT;
-      translateY.value = withSpring(destination, {
-        damping: 50,
-        stiffness: 400,
-        mass: 0.8,
-      });
-    }, []);
 
     const handleClose = useCallback(() => {
       onClose?.();
     }, [onClose]);
 
-    const gesture = useMemo(() => {
-      return Gesture.Pan()
+    const gesture = useRef(
+      Gesture.Pan()
         .onStart(() => {
           context.value = { y: translateY.value };
         })
@@ -288,11 +296,10 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           if (shouldClose) {
             runOnJS(handleClose)();
           } else {
-            scrollTo(0);
+            translateY.value = withSpring(0);
           }
-        });
-    }, [handleClose, scrollTo]);
-
+        }),
+    ).current;
 
     const rFooterSpacerStyle = useAnimatedStyle(() => ({
       height: hasFooter.value ? footerHeight.value : 0,
@@ -301,8 +308,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     const rDragStyle = useAnimatedStyle(() => ({
       transform: [{ translateY: translateY.value }],
     }));
-
-
 
     // Guard against stale layout events fired after resetContent nulls the tray.
     // Without the renderedTrayId check, the empty container reports a height
@@ -331,7 +336,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
 
       footerHeight.value = h;
     };
-
 
     return (
       <>

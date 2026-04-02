@@ -8,10 +8,11 @@ export type TrayDefinition = {
     step?: number,
     total?: number
   ) => React.ReactNode)[];
-  footer?: ((step?: number, total?: number) => React.ReactNode);
+  footer?: (step?: number, total?: number) => React.ReactNode;
 };
 
 export type TrayContextValue = {
+  activeTrayId: string | null; // ← added
   openTray: (id: string) => void;
   close: () => void;
   next: () => void;
