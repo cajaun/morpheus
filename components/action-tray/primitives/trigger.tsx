@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, PressableProps } from "react-native";
-import { useTray } from "./context";
-import { useTrayScope } from "./root";
+import { useTray } from "../context/context";
+import { useTrayScope } from "../context/root";
 
 type TrayTriggerProps = PressableProps & {
   children: React.ReactNode;

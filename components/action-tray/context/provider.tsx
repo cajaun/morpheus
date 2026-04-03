@@ -1,5 +1,11 @@
-import React, { useMemo, useState, useCallback, useEffect, useRef } from "react";
-import { ActionTray } from "@/components/action-tray/action-tray";
+import React, {
+  useMemo,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
+import { ActionTray } from "@/components/action-tray/core/action-tray";
 import { TrayContext, TrayDefinition } from "./context";
 
 export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -62,7 +68,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
       registerTray,
       registerFocusable: () => {},
     }),
-    [activeTrayId, openTray, close, next, back, safeIndex, total, registerTray]
+    [activeTrayId, openTray, close, next, back, safeIndex, total, registerTray],
   );
 
   return (
@@ -81,7 +87,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
         const isFirstRender = justOpenedRef.current && trayIndex === 0;
 
         const isFullScreen = def.fullScreenSteps?.[trayIndex] ?? false;
-        
+
         const rawContent = isActive
           ? (def.contents[trayIndex]?.(
               `${trayId}-${trayIndex}`,
@@ -89,15 +95,13 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
               false,
               trayIndex,
               trayTotal,
-              isFullScreen 
+              isFullScreen,
             ) ?? null)
           : null;
 
         const footer = isActive
           ? (def.footer?.(trayIndex, trayTotal) ?? null)
           : null;
-
-          
 
         return (
           <ActionTray
@@ -107,7 +111,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
             footer={footer}
             onClose={close}
             trayId={isActive ? `${trayId}-${trayIndex}` : undefined}
-             fullScreen={isFullScreen}
+            fullScreen={isFullScreen}
           />
         );
       })}

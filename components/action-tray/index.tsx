@@ -1,10 +1,10 @@
-import { TrayRoot } from "./root";
-import { TrayTrigger } from "./trigger";
+import { TrayRoot } from "./context/root";
+import { TrayTrigger } from "./primitives/trigger";
 import { TrayContent } from "./content";
-import { TrayFooter } from "./footer";
-import { TrayBody } from "./body";
-import { TrayHeader } from "./header";
-import { TraySection } from "./section";
+import { TrayFooter } from "./primitives/footer";
+import { TrayBody } from "./primitives/body";
+import { TrayHeader } from "./primitives/header";
+import { TraySection } from "./primitives/section";
 
 export const Tray = {
   Root: TrayRoot,

@@ -4,7 +4,7 @@ import { PressableScale } from "@/components/ui/utils/pressable-scale";
 import Header from "@/components/action-tray/content/header";
 import { Tray } from "@/components/action-tray";
 import { AnimatedOnboardingButton } from "@/components/action-tray/content/button";
-import { useTray } from "@/components/action-tray/context";
+import { useTray } from "@/components/action-tray/context/context";
 import { SymbolView } from "expo-symbols";
 import { ButtonsGrid } from "./button-grid";
 
@@ -286,7 +286,6 @@ const PostExample = () => {
                 <View
                   style={{
                     alignItems: "center",
-                   
                   }}
                 >
                   <Text
@@ -311,7 +310,7 @@ const PostExample = () => {
                     Max Amount: $50
                   </Text>
                 </View>
-<View></View>
+                <View></View>
                 <ButtonsGrid input={input} />
               </View>
             </Tray.Section>

@@ -4,7 +4,7 @@ import Animated, {
   EntryExitAnimationFunction,
   withTiming,
 } from "react-native-reanimated";
-import { MORPH_DURATION } from "./constants";
+import { MORPH_DURATION } from "./core/constants";
 
 type Props = {
   children: React.ReactNode;
@@ -101,13 +101,13 @@ export const TrayContent: React.FC<Props> = ({
   total,
   fullScreen,
 }) => {
-  useEffect(() => {
-    console.log("[TrayContent] render", {
-      step,
-      total,
-      stepKey,
-    });
-  }, [step, total, stepKey]);
+  // useEffect(() => {
+  //   console.log("[TrayContent] render", {
+  //     step,
+  //     total,
+  //     stepKey,
+  //   });
+  // }, [step, total, stepKey]);
 
   return (
     <Animated.View

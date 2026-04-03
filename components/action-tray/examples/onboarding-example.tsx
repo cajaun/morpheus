@@ -4,7 +4,7 @@ import { PressableScale } from "@/components/ui/utils/pressable-scale";
 import Header from "@/components/action-tray/content/header";
 import { Tray } from "@/components/action-tray";
 import { AnimatedOnboardingButton } from "@/components/action-tray/content/button";
-import { useTray } from "@/components/action-tray/context";
+import { useTray } from "@/components/action-tray/context/context";
 
 const OnboardingExample = () => {
   const { next, back, index, total, close } = useTray();
@@ -27,7 +27,7 @@ const OnboardingExample = () => {
       </Tray.Trigger>
 
       {/* STEP 1 */}
-      <Tray.Content scale>
+      <Tray.Content scale >
         <Tray.Body>
           <Tray.Header>
             <Header
@@ -236,7 +236,7 @@ const OnboardingExample = () => {
               step={3}
               leftLabel="Content Four"
               shouldClose
-                 onBack={() => back()}
+              onBack={() => back()}
               onClose={() => close()}
             />
           </Tray.Header>
@@ -264,14 +264,14 @@ const OnboardingExample = () => {
         </Tray.Body>
       </Tray.Content>
 
-      <Tray.Content scale >
+      <Tray.Content scale fullScreen>
         <Tray.Body>
           <Tray.Header>
             <Header
               step={4}
               leftLabel="Content Five"
               shouldClose
-                 onBack={() => back()}
+              onBack={() => back()}
               onClose={() => close()}
             />
           </Tray.Header>
@@ -296,7 +296,8 @@ const OnboardingExample = () => {
               This is some example test that spans over multiple lines bla bla
             </Text>
 
-             <Text
+
+ <Text
               className="text-[#94999F] font-sfMedium "
               style={{
                 fontSize: 21,
@@ -304,11 +305,81 @@ const OnboardingExample = () => {
                 letterSpacing: 0.2,
               }}
             >
-             Lorem ipsum dolor sit amet consectetur adipisicing elit. Officia, quas eum quia deserunt odit atque voluptate velit mollitia quisquam sit officiis praesentium voluptates voluptatem nemo nostrum voluptas enim assumenda ullam.
+                   This is some example test that spans over multiple lines bla bla
+              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officia,
+              quas eum quia deserunt odit atque voluptate velit mollitia
+              quisquam sit officiis praesentium voluptates voluptatem nemo
+              nostrum voluptas enim assumenda ullam.
+            </Text>
+
+            <Text
+              className="text-[#94999F] font-sfMedium "
+              style={{
+                fontSize: 21,
+                lineHeight: 28,
+                letterSpacing: 0.2,
+              }}
+            >
+              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officia,
+              quas eum quia deserunt odit atque voluptate velit mollitia
+              quisquam sit officiis praesentium voluptates voluptatem nemo
+              nostrum voluptas enim assumenda ullam.
             </Text>
           </Tray.Section>
         </Tray.Body>
       </Tray.Content>
+
+
+      <Tray.Content scale >
+        <Tray.Body>
+          <Tray.Header>
+            <Header
+              step={5}
+              leftLabel="Content Six"
+              shouldClose
+              onBack={() => back()}
+              onClose={() => close()}
+            />
+          </Tray.Header>
+
+          <View
+            style={{
+              height: 1,
+              width: "100%",
+              backgroundColor: "#F7F7F7",
+            }}
+          />
+
+          <Tray.Section>
+            <Text
+              className="text-[#94999F] font-sfMedium "
+              style={{
+                fontSize: 21,
+                lineHeight: 28,
+                letterSpacing: 0.2,
+              }}
+            >
+              This is some example test that spans over multiple lines bla bla
+            </Text>
+
+            <Text
+              className="text-[#94999F] font-sfMedium "
+              style={{
+                fontSize: 21,
+                lineHeight: 28,
+                letterSpacing: 0.2,
+              }}
+            >
+              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officia,
+              quas eum quia deserunt odit atque voluptate velit mollitia
+              quisquam sit officiis praesentium voluptates voluptatem nemo
+              nostrum voluptas enim assumenda ullam.
+            </Text>
+          </Tray.Section>
+        </Tray.Body>
+      </Tray.Content>
+
+
 
       <Tray.Footer>
         <AnimatedOnboardingButton

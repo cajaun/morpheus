@@ -6,7 +6,7 @@ import {
   Dimensions,
   Platform,
 } from "react-native";
-import { TRAY_SECTION_GAP } from "./constants";
+import { TRAY_SECTION_GAP } from "../core/constants";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
@@ -30,8 +30,8 @@ export const TraySection: React.FC<TraySectionProps> = ({
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          bounces={true} 
-          overScrollMode="always" 
+          bounces={true}
+          overScrollMode="always"
           scrollEventThrottle={16}
         >
           {children}
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     gap: TRAY_SECTION_GAP,
     paddingTop: 24,
     paddingBottom: 24,
-    flexGrow: 1, 
+    flexGrow: 1,
   },
 });
 

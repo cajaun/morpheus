@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Image } from "react-native";
 import { Tray } from "@/components/action-tray";
-import { useTray } from "@/components/action-tray/context";
+import { useTray } from "@/components/action-tray/context/context";
 import { PressableScale } from "@/components/ui/utils/pressable-scale";
 import Header from "../content/header";
 import { SymbolView } from "expo-symbols";
@@ -35,7 +35,7 @@ const PayFromTray = () => {
     <Tray.Root>
       <Tray.Trigger>
         <PressableScale
-           style={{
+          style={{
             backgroundColor: "#F5F5FA",
             paddingHorizontal: 24,
             paddingVertical: 12,
@@ -48,7 +48,7 @@ const PayFromTray = () => {
         </PressableScale>
       </Tray.Trigger>
 
-      <Tray.Content>
+      <Tray.Content scale>
         <Tray.Body>
           {/* HEADER */}
           <Tray.Header>
@@ -115,7 +115,6 @@ const PayFromTray = () => {
                           fontSize: 18,
                           // lineHeight: 28,
                           // letterSpacing: 0.2,
-                     
                         }}
                       >
                         {wallet.address}
@@ -177,7 +176,7 @@ const PayFromTray = () => {
         </Tray.Body>
       </Tray.Content>
 
-      <Tray.Content fullScreen>
+      <Tray.Content scale fullScreen>
         <Tray.Body>
           <Tray.Header>
             <Header

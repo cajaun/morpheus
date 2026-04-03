@@ -1,11 +1,11 @@
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Stack } from "expo-router";
 import "./global.css";
-import { TrayProvider } from "@/components/action-tray/provider";
+import { TrayProvider } from "@/components/action-tray/context/provider";
 import { useFonts } from "expo-font";
 
 export default function RootLayout() {
-    const [loaded] = useFonts({
+  const [loaded] = useFonts({
     "Sf-black": require("../assets/fonts/SF-Pro-Rounded-Black.otf"),
     "Sf-bold": require("../assets/fonts/SF-Pro-Rounded-Bold.otf"),
     "Sf-semibold": require("../assets/fonts/SF-Pro-Rounded-Semibold.otf"),
@@ -18,10 +18,10 @@ export default function RootLayout() {
   if (!loaded) return null;
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-        <TrayProvider>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-      </Stack>
+      <TrayProvider>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+        </Stack>
       </TrayProvider>
     </GestureHandlerRootView>
   );
