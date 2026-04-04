@@ -1,4 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useMemo } from "react";
+import { StyleSheet } from "react-native";
 import Animated from "react-native-reanimated";
 import { GestureDetector } from "react-native-gesture-handler";
 import { Backdrop } from "../primitives/backdrop";
@@ -94,6 +95,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       footerContainerStyle,
       contentPaddingStyle,
       dragStyle,
+      fullScreenSurfaceFillStyle,
     } = useActionTrayAnimatedStyles({
       translateY,
       contentHeight,
@@ -108,6 +110,17 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       [],
     );
     const shouldUseLayoutAnimation = layoutEnabled;
+    const flattenedContainerStyle = useMemo(
+      () => StyleSheet.flatten(renderedContainerStyle),
+      [renderedContainerStyle],
+    );
+    const fullScreenSurfaceStyle = useMemo(
+      () =>
+        flattenedContainerStyle?.backgroundColor
+          ? { backgroundColor: flattenedContainerStyle.backgroundColor }
+          : undefined,
+      [flattenedContainerStyle],
+    );
 
     return (
       <>
@@ -136,6 +149,19 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           progress={progress}
         />
 
+        {renderedTrayId !== undefined && (
+          <Animated.View
+            className={presentationFullScreen ? renderedClassName : undefined}
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFillObject,
+              fullScreenSurfaceStyle,
+              fullScreenSurfaceFillStyle,
+              dragStyle,
+            ]}
+          />
+        )}
+
         <GestureDetector gesture={gesture}>
           <Animated.View
             className={renderedClassName}
@@ -151,7 +177,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             <Animated.View style={styles.content}>
               <Animated.View
                 style={contentPaddingStyle}
-                // Measure only the intrinsic content; footer space is tracked separately.
+              
                 onLayout={handleContentLayout}
               >
                 {renderedContent}

@@ -1,8 +1,13 @@
-import { useAnimatedStyle } from "react-native-reanimated";
+import {
+  useAnimatedStyle,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BORDER_RADIUS,
   HORIZONTAL_MARGIN,
+  MORPH_DURATION,
   SCREEN_HEIGHT,
   TRAY_KEYBOARD_GAP,
 } from "./constants";
@@ -32,15 +37,12 @@ export const useActionTrayAnimatedStyles = ({
 
   const trayLayoutStyle = useAnimatedStyle(() => {
     const keyboardBottom =
-      keyboardHeight.value > 0
-        ? keyboardHeight.value + TRAY_KEYBOARD_GAP
-        : 0;
+      keyboardHeight.value > 0 ? keyboardHeight.value + TRAY_KEYBOARD_GAP : 0;
     const resolvedSheetHeight =
       contentHeight.value > 0
         ? Math.max(
             0,
-            contentHeight.value +
-              (hasFooter.value ? footerHeight.value : 0),
+            contentHeight.value + (hasFooter.value ? footerHeight.value : 0),
           )
         : undefined;
 
@@ -57,9 +59,7 @@ export const useActionTrayAnimatedStyles = ({
 
   const footerContainerStyle = useAnimatedStyle(() => {
     const keyboardBottom =
-      keyboardHeight.value > 0
-        ? keyboardHeight.value + TRAY_KEYBOARD_GAP
-        : 0;
+      keyboardHeight.value > 0 ? keyboardHeight.value + TRAY_KEYBOARD_GAP : 0;
 
     return {
       left: fullScreen ? 0 : HORIZONTAL_MARGIN,
@@ -80,11 +80,21 @@ export const useActionTrayAnimatedStyles = ({
     paddingHorizontal: 0,
   }));
 
+  const fullScreenSurfaceFillStyle = useAnimatedStyle(
+    () => ({
+      opacity: fullScreen
+        ? withDelay(MORPH_DURATION, withTiming(1, {}))
+        : withTiming(0, {}),
+    }),
+    [fullScreen],
+  );
+
   return {
     footerSpacerStyle,
     trayLayoutStyle,
     footerContainerStyle,
     dragStyle,
     contentPaddingStyle,
+    fullScreenSurfaceFillStyle,
   };
 };

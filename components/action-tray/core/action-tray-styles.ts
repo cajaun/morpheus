@@ -15,6 +15,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: TRAY_VERTICAL_PADDING,
     paddingTop: 6,
     paddingBottom: TRAY_VERTICAL_PADDING,
+      borderCurve: "continuous",
   },
   measureFooter: {
     position: "absolute",

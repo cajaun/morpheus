@@ -1,8 +1,27 @@
 import React from "react";
-import { Text, View, LayoutChangeEvent } from "react-native";
+import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import { PressableScale } from "@/components/ui/utils/pressable-scale";
 import * as Haptics from "expo-haptics";
+
+type TitleWeight =
+  | "thin"
+  | "light"
+  | "regular"
+  | "medium"
+  | "semibold"
+  | "bold"
+  | "black";
+
+const weightClassMap: Record<TitleWeight, string> = {
+  thin: "font-sfThin",
+  light: "font-sfLight",
+  regular: "font-sfRegular",
+  medium: "font-sfMedium",
+  semibold: "font-sfSemibold",
+  bold: "font-sfBold",
+  black: "font-sfBlack",
+};
 
 export default function Header({
   step = 0,
@@ -10,12 +29,14 @@ export default function Header({
   onBack,
   leftLabel,
   shouldClose,
+  titleWeight = "medium",
 }: {
   step: number;
   onClose: () => void;
   onBack?: () => void;
   leftLabel?: React.ReactNode | string;
   shouldClose?: boolean;
+  titleWeight?: TitleWeight;
 }) {
   const isBackMode = !!onBack && step > 0;
 
@@ -38,7 +59,7 @@ export default function Header({
       <View>
         {typeof leftLabel === "string" ? (
           <Text
-            className="font-sfMedium"
+            className={weightClassMap[titleWeight]}
             style={{ fontSize: 24, lineHeight: 34, letterSpacing: 0.3 }}
           >
             {leftLabel}

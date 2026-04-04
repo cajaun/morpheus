@@ -34,11 +34,7 @@ const InsightBars = () => {
             height,
             borderRadius: 999,
             backgroundColor:
-              index === 3
-                ? "#8B87FF"
-                : index === 2
-                  ? "#C6C2FF"
-                  : "#E4E2FF",
+              index === 3 ? "#8B87FF" : index === 2 ? "#C6C2FF" : "#E4E2FF",
           }}
         />
       ))}
@@ -60,9 +56,14 @@ const LockedPill = () => {
         paddingVertical: 8,
       }}
     >
-      <SymbolView name="lock.fill" tintColor="#9B95FF" size={14} weight="bold" />
+      <SymbolView
+        name="lock.fill"
+        tintColor="#9B95FF"
+        size={22}
+        weight="bold"
+      />
       <Text
-        className="font-sfSemibold text-[#8B87FF]"
+        className="font-sfBold text-[#8B87FF]"
         style={{
           fontSize: 18,
           lineHeight: 22,
@@ -77,7 +78,14 @@ const LockedPill = () => {
 
 const PeopleCheck = () => {
   return (
-    <View style={{ width: 76, height: 54, alignItems: "center", justifyContent: "center" }}>
+    <View
+      style={{
+        width: 76,
+        height: 54,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
       <SymbolView
         name="person.2.circle.fill"
         tintColor="#DCD8FF"
@@ -123,12 +131,12 @@ const FeatureBlock = ({
   accessory?: React.ReactNode;
 }) => {
   return (
-    <View style={{ alignItems: "center", gap: 14 }}>
+    <View style={{ alignItems: "center", gap: 16 }}>
       {icon}
 
       <View style={{ gap: 4, alignItems: "center" }}>
         <Text
-          className="font-sfSemibold text-[#111111]"
+          className="font-sfBold text-[#111111]"
           style={{
             fontSize: 23,
             lineHeight: 30,
@@ -162,55 +170,30 @@ const AboutAaveStep = () => {
 
   return (
     <Tray.Body>
-      <Tray.Header withSeparator>
+      <Tray.Header withSeparator >
         <Header
           step={0}
           leftLabel="About Aave"
           shouldClose
           onClose={close}
+          titleWeight="bold"
         />
       </Tray.Header>
 
       <Tray.Section
-        style={{
-          alignItems: "center",
-          gap: 34,
-          paddingTop: 34,
-          paddingBottom: 30,
-        }}
+        style={{ gap: 40, paddingVertical: 40, paddingHorizontal: 12 }}
       >
         <FeatureBlock
           icon={<InsightBars />}
           title="Grow your balance faster."
           description="Earn with rates 30x higher than traditional savings accounts."
-          accessory={<LockedPill />}
         />
 
-        <View style={{ gap: 4, alignItems: "center" }}>
-          <Text
-            className="font-sfSemibold text-[#111111]"
-            style={{
-              fontSize: 23,
-              lineHeight: 30,
-              letterSpacing: 0.2,
-              textAlign: "center",
-            }}
-          >
-            Your balance. Protected.
-          </Text>
-
-          <Text
-            className="font-sfMedium text-[#7D7D85]"
-            style={{
-              fontSize: 18,
-              lineHeight: 28,
-              letterSpacing: 0.15,
-              textAlign: "center",
-            }}
-          >
-            Secure your money with industry-leading balance protection.
-          </Text>
-        </View>
+        <FeatureBlock
+          icon={<LockedPill />}
+          title="  Your balance. Protected."
+          description="     Secure your money with industry-leading balance protection."
+        />
 
         <FeatureBlock
           icon={<PeopleCheck />}
