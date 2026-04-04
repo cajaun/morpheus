@@ -9,6 +9,7 @@ export type ActionTrayProps = {
   content?: React.ReactNode;
   footer?: React.ReactNode;
   trayId?: string;
+  fullScreen?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
@@ -27,6 +28,7 @@ export type RenderedTrayState = {
   content: React.ReactNode;
   footer: React.ReactNode;
   trayId?: string;
+  fullScreen?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;

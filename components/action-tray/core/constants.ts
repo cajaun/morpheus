@@ -12,5 +12,6 @@ damping: 50, stiffness: 400, mass: 0.8
 export const TRAY_HORIZONTAL_PADDING = 32;
 export const TRAY_VERTICAL_PADDING = 28;
 export const TRAY_KEYBOARD_GAP = 12;
+export const TRAY_FULLSCREEN_TOP_MARGIN = 12;
 
 export const TRAY_SECTION_GAP = 24;

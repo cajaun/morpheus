@@ -3,21 +3,26 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BORDER_RADIUS,
   HORIZONTAL_MARGIN,
+  SCREEN_HEIGHT,
   TRAY_KEYBOARD_GAP,
 } from "./constants";
 
 type Params = {
   translateY: { value: number };
+  contentHeight: { value: number };
   hasFooter: { value: boolean };
   footerHeight: { value: number };
   keyboardHeight: { value: number };
+  fullScreen: boolean;
 };
 
 export const useActionTrayAnimatedStyles = ({
   translateY,
+  contentHeight,
   hasFooter,
   footerHeight,
   keyboardHeight,
+  fullScreen,
 }: Params) => {
   const { bottom } = useSafeAreaInsets();
 
@@ -30,33 +35,42 @@ export const useActionTrayAnimatedStyles = ({
       keyboardHeight.value > 0
         ? keyboardHeight.value + TRAY_KEYBOARD_GAP
         : 0;
-    const resolvedBottom = Math.max(bottom, keyboardBottom);
+    const resolvedSheetHeight =
+      contentHeight.value > 0
+        ? Math.max(
+            0,
+            contentHeight.value +
+              (hasFooter.value ? footerHeight.value : 0),
+          )
+        : undefined;
 
     return {
-      left: HORIZONTAL_MARGIN,
-      right: HORIZONTAL_MARGIN,
+      left: fullScreen ? 0 : HORIZONTAL_MARGIN,
+      right: fullScreen ? 0 : HORIZONTAL_MARGIN,
+      bottom: fullScreen ? keyboardBottom : Math.max(bottom, keyboardBottom),
+      height: fullScreen
+        ? Math.max(0, SCREEN_HEIGHT - keyboardBottom)
+        : resolvedSheetHeight,
       borderRadius: BORDER_RADIUS,
-      bottom: resolvedBottom,
     };
-  });
+  }, [bottom, contentHeight, fullScreen]);
 
   const footerContainerStyle = useAnimatedStyle(() => {
     const keyboardBottom =
       keyboardHeight.value > 0
         ? keyboardHeight.value + TRAY_KEYBOARD_GAP
         : 0;
-    const resolvedBottom = Math.max(bottom, keyboardBottom);
 
     return {
-      left: HORIZONTAL_MARGIN,
-      right: HORIZONTAL_MARGIN,
-      bottom: resolvedBottom,
+      left: fullScreen ? 0 : HORIZONTAL_MARGIN,
+      right: fullScreen ? 0 : HORIZONTAL_MARGIN,
+      bottom: fullScreen ? keyboardBottom : Math.max(bottom, keyboardBottom),
       borderTopLeftRadius: BORDER_RADIUS,
       borderTopRightRadius: BORDER_RADIUS,
       borderBottomLeftRadius: BORDER_RADIUS,
       borderBottomRightRadius: BORDER_RADIUS,
     };
-  });
+  }, [bottom, fullScreen]);
 
   const dragStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],

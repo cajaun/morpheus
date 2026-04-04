@@ -126,7 +126,7 @@ const WatchAddressInputStep = () => {
 
 
 
-      <Tray.Section>
+      <Tray.Section style={{ gap: 20 }}>
         <View
           style={{
             borderRadius: 20,
@@ -165,19 +165,25 @@ const WatchAddressInputStep = () => {
 
         <View
           style={{
-            flex: 1,
+            minHeight: 90,
             alignItems: "center",
             justifyContent: "center",
             gap: 12,
+            paddingHorizontal: 16,
           }}
         >
-          <SymbolView
+         <View>
+           <SymbolView
             name="binoculars.fill"
             tintColor="#D6DAE0"
             size={65}
             weight="regular"
           />
 
+          
+         </View>
+
+         <View>
           <Text
             className="font-sfMedium text-center text-[#B6BAC2]"
             style={{
@@ -188,6 +194,7 @@ const WatchAddressInputStep = () => {
           >
             Search or paste an address{"\n"}to start watching a wallet
           </Text>
+         </View>
         </View>
       </Tray.Section>
 

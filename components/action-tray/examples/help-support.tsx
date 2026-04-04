@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { Image, Text, View } from "react-native";
 import { SymbolView, type SFSymbol } from "expo-symbols";
 import { Tray } from "@/components/action-tray";
 import { useTray } from "@/components/action-tray/context/context";
@@ -111,6 +111,52 @@ const HelpCard = ({
   );
 };
 
+const PRIMARY_BUTTON_COLOR = "#41BBFF";
+
+const flowAttachmentCopy: Record<HelpKind, string> = {
+  bug:
+    "If you'd like, upload any helpful screenshots or screen recordings. Do not include any private, sensitive or inappropriate imagery.",
+  feedback:
+    "If you'd like, upload any screenshots that help explain your feedback. Do not include any private, sensitive or inappropriate imagery.",
+  other:
+    "If you'd like, upload any screenshots or screen recordings that add more context. Do not include any private, sensitive or inappropriate imagery.",
+};
+
+const SupportPrimaryButton = ({
+  label,
+  onPress,
+  disabled = false,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) => {
+  return (
+    <PressableScale
+      onPress={disabled ? undefined : onPress}
+      style={{
+        backgroundColor: disabled ? "#BFE7FF" : PRIMARY_BUTTON_COLOR,
+        height: 50,
+        borderRadius: 36,
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+      }}
+    >
+      <Text
+        className="font-sfSemibold text-white"
+        style={{
+          fontSize: 21,
+          lineHeight: 28,
+          letterSpacing: 0.2,
+        }}
+      >
+        {label}
+      </Text>
+    </PressableScale>
+  );
+};
+
 const AreaRow = ({
   label,
   icon,
@@ -163,7 +209,7 @@ const AreaRow = ({
             borderRadius: 12,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "#F79A2E",
+            backgroundColor: PRIMARY_BUTTON_COLOR,
           }}
         >
           <SymbolView
@@ -177,6 +223,13 @@ const AreaRow = ({
     </PressableScale>
   );
 };
+
+const fieldStyle = {
+  borderRadius: 20,
+  backgroundColor: "#F5F5F7",
+  paddingHorizontal: 16,
+  paddingVertical: 14,
+} as const;
 
 const SupportChooserStep = ({
   onSelect,
@@ -243,7 +296,7 @@ const ChooseAreasStep = () => {
         />
       </Tray.Header>
 
-      <Tray.Section style={{ gap: 16, }}>
+      <Tray.Section style={{ gap: 16 }}>
         <View style={{ gap: 4 }}>
           {AREA_OPTIONS.map((area) => (
             <AreaRow
@@ -257,28 +310,11 @@ const ChooseAreasStep = () => {
         </View>
 
         <View>
-          <PressableScale
-            onPress={canContinue ? next : undefined}
-            style={{
-              backgroundColor: canContinue ? "#F79A2E" : "#FFDFA7",
-              height: 50,
-              borderRadius: 36,
-              alignItems: "center",
-              justifyContent: "center",
-              width: "100%",
-            }}
-          >
-            <Text
-              className="font-sfSemibold text-white"
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
-              }}
-            >
-              Continue
-            </Text>
-          </PressableScale>
+          <SupportPrimaryButton
+            label="Continue"
+            onPress={next}
+            disabled={!canContinue}
+          />
         </View>
       </Tray.Section>
     </Tray.Body>
@@ -286,7 +322,7 @@ const ChooseAreasStep = () => {
 };
 
 const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
-  const { back, close } = useTray();
+  const { back, next, close } = useTray();
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
 
@@ -328,15 +364,8 @@ const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
         />
       </Tray.Header>
 
-      <Tray.Section>
-        <View
-          style={{
-            borderRadius: 20,
-            backgroundColor: "#F5F5F7",
-            paddingHorizontal: 16,
-            paddingVertical: 14,
-          }}
-        >
+      <Tray.Section style={{ gap: 16 }}>
+        <View style={fieldStyle}>
           <Tray.TextInput
             value={subject}
             onChangeText={setSubject}
@@ -354,6 +383,7 @@ const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
             style={{
               fontFamily: "Sf-medium",
               fontSize: 21,
+              lineHeight: 28,
               letterSpacing: 0.2,
               color: "#101318",
               height: 28,
@@ -366,11 +396,8 @@ const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
 
         <View
           style={{
-            borderRadius: 20,
-            backgroundColor: "#F5F5F7",
+            ...fieldStyle,
             minHeight: 170,
-            paddingHorizontal: 16,
-            paddingVertical: 14,
           }}
         >
           <Tray.TextInput
@@ -399,32 +426,220 @@ const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
             }}
           />
         </View>
-      </Tray.Section>
 
-      <View style={{ paddingTop: 4, paddingBottom: 28, width: "100%" }}>
-        <PressableScale
-          onPress={canContinue ? close : undefined}
+        <View style={{ paddingTop: 4 }}>
+          <SupportPrimaryButton
+            label="Continue"
+            onPress={next}
+            disabled={!canContinue}
+          />
+        </View>
+      </Tray.Section>
+    </Tray.Body>
+  );
+};
+
+const AttachMediaStep = ({ flow }: { flow: HelpKind }) => {
+  const { back, next, close } = useTray();
+  const helperCopy = useMemo(() => flowAttachmentCopy[flow], [flow]);
+
+  return (
+    <Tray.Body>
+      <Tray.Header withSeparator>
+        <Header
+          step={3}
+          leftLabel="Attach Media"
+          shouldClose
+          onClose={close}
+          onBack={back}
+        />
+      </Tray.Header>
+
+      <Tray.Section style={{ gap: 20 }}>
+        <View
           style={{
-            backgroundColor: canContinue ? "#F79A2E" : "#FFDFA7",
-            height: 50,
-            borderRadius: 36,
+            minHeight: 260,
+            borderRadius: 28,
+            borderWidth: 1,
+            borderColor: "#F0F1F4",
+            backgroundColor: "#FCFCFD",
             alignItems: "center",
             justifyContent: "center",
-            width: "100%",
+            paddingHorizontal: 28,
+            paddingVertical: 32,
+            gap: 18,
+          }}
+        >
+          <View
+            style={{
+              width: 84,
+              height: 84,
+              borderRadius: 26,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#F6F7FA",
+            }}
+          >
+            <SymbolView
+              name="photo.badge.plus"
+              tintColor="#E0E3E7"
+              size={48}
+              weight="medium"
+            />
+          </View>
+
+          <Text
+            className="font-sfMedium text-[#C9CDD2]"
+            style={{
+              fontSize: 18,
+              lineHeight: 24,
+              textAlign: "center",
+            }}
+          >
+            {helperCopy}
+          </Text>
+        </View>
+
+        <View>
+          <SupportPrimaryButton label="Continue" onPress={next} />
+        </View>
+      </Tray.Section>
+    </Tray.Body>
+  );
+};
+
+const YourDetailsStep = () => {
+  const { back, close } = useTray();
+  const [name, setName] = useState("Test");
+  const [email, setEmail] = useState("valmiera.com");
+
+  return (
+    <Tray.Body>
+      <Tray.Header withSeparator>
+        <Header
+          step={4}
+          leftLabel="Your Details"
+          shouldClose
+          onClose={close}
+          onBack={back}
+        />
+      </Tray.Header>
+
+      <Tray.Section style={{ gap: 16 }}>
+        <Text
+          className="font-sfMedium text-[#B9BDC2]"
+          style={{
+            fontSize: 21,
+            lineHeight: 28,
+            letterSpacing: 0.2,
+          }}
+        >
+          Please let us know your email so we can follow up if we need to.
+        </Text>
+
+        <View style={fieldStyle}>
+          <Tray.TextInput
+            value={name}
+            autoFocus
+            onChangeText={setName}
+            autoCapitalize="words"
+            autoCorrect={false}
+            autoComplete="off"
+            clearButtonMode="while-editing"
+            smartInsertDelete={false}
+            spellCheck={false}
+            textContentType="name"
+            style={{
+              fontFamily: "Sf-medium",
+              fontSize: 21,
+              lineHeight: 28,
+              letterSpacing: 0.2,
+              color: "#101318",
+              height: 28,
+              margin: 0,
+              paddingHorizontal: 0,
+              paddingVertical: 0,
+            }}
+          />
+        </View>
+
+        <View style={fieldStyle}>
+          <Tray.TextInput
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="off"
+            keyboardType="email-address"
+            smartInsertDelete={false}
+            spellCheck={false}
+            textContentType="emailAddress"
+            style={{
+              fontFamily: "Sf-medium",
+              fontSize: 21,
+              lineHeight: 28,
+              letterSpacing: 0.2,
+              color: "#101318",
+              height: 28,
+              margin: 0,
+              paddingHorizontal: 0,
+              paddingVertical: 0,
+            }}
+          />
+        </View>
+
+        <View
+          style={{
+            ...fieldStyle,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
           <Text
-            className="font-sfSemibold text-white"
+            className="font-sfMedium text-[#101318]"
             style={{
               fontSize: 21,
               lineHeight: 28,
               letterSpacing: 0.2,
             }}
           >
-            Continue
+            Wallet
           </Text>
-        </PressableScale>
-      </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <Image
+              source={{ uri: "https://i.pravatar.cc/80?img=12" }}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 17,
+              }}
+            />
+
+            <Text
+              className="font-sfMedium text-[#101318]"
+              style={{
+                fontSize: 21,
+                lineHeight: 28,
+                letterSpacing: 0.2,
+              }}
+            >
+              valmiera
+            </Text>
+          </View>
+        </View>
+
+        <View style={{ paddingTop: 4 }}>
+          <SupportPrimaryButton label="Continue to Submit" onPress={close} />
+        </View>
+      </Tray.Section>
     </Tray.Body>
   );
 };
@@ -457,12 +672,16 @@ const HelpSupportTray = () => {
         <ChooseAreasStep />
       </Tray.Content>
 
-      <Tray.Content
-        key={`help-compose-${selectedFlow}`}
-        scale
-        className="bg-white"
-      >
+      <Tray.Content key={`help-compose-${selectedFlow}`} scale className="bg-white">
         <ComposeSupportStep flow={selectedFlow} />
+      </Tray.Content>
+
+      <Tray.Content key={`help-attach-${selectedFlow}`} scale className="bg-white">
+        <AttachMediaStep flow={selectedFlow} />
+      </Tray.Content>
+
+      <Tray.Content key={`help-details-${selectedFlow}`} scale className="bg-white">
+        <YourDetailsStep />
       </Tray.Content>
     </Tray.Root>
   );

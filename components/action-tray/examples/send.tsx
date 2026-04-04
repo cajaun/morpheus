@@ -144,6 +144,7 @@ const Send = () => {
 
       <Tray.Content
         scale
+        fullScreen 
         className="bg-black"
         style={{ paddingHorizontal: 0 }}
       >

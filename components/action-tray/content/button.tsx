@@ -21,6 +21,7 @@ const SECONDARY_WIDTH = BUTTON_WIDTH - MIN_BUTTON_WIDTH - GAP;
 type Props = {
   step: number;
   totalSteps: number;
+  total?: number;
   onNext: () => void;
   onFinish?: () => void;
   onSecondaryPress?: () => void;
@@ -32,12 +33,16 @@ type Props = {
 export const AnimatedOnboardingButton: React.FC<Props> = ({
   step,
   totalSteps,
+  total,
   onNext,
   onFinish,
   onSecondaryPress,
   showSecondary,
 }) => {
-  const isLastStep = step === totalSteps - 1;
+  const resolvedTotalSteps =
+    totalSteps > 0 ? totalSteps : (total ?? totalSteps);
+  const isLastStep =
+    resolvedTotalSteps > 0 && step >= resolvedTotalSteps - 1;
 
   // If showSecondary prop is provided, use it.
   // Otherwise fallback to previous logic.

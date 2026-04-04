@@ -3,7 +3,8 @@ import Animated, {
   SharedValue,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import { StyleSheet } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type BackdropProps = {
   onTap: () => void;
@@ -13,6 +14,8 @@ type BackdropProps = {
 
 const Backdrop: React.FC<BackdropProps> = React.memo(
   ({ isRendered, onTap, progress }) => {
+    const { bottom } = useSafeAreaInsets();
+
     const rBackdropStyle = useAnimatedStyle(() => {
       return {
         opacity: progress.value,
@@ -20,17 +23,29 @@ const Backdrop: React.FC<BackdropProps> = React.memo(
     }, [progress]);
 
     return (
-      <Animated.View
-        onTouchStart={onTap}
-        pointerEvents={isRendered ? "auto" : "none"}
-        style={[
-          {
-            ...StyleSheet.absoluteFillObject,
-            backgroundColor: "rgba(0,0,0,0.3)",
-          },
-          rBackdropStyle,
-        ]}
-      />
+      <>
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            {
+              ...StyleSheet.absoluteFillObject,
+              backgroundColor: "rgba(0,0,0,0.3)",
+            },
+            rBackdropStyle,
+          ]}
+        />
+
+        <Pressable
+          onPress={onTap}
+          pointerEvents={isRendered ? "auto" : "none"}
+          style={[
+            StyleSheet.absoluteFillObject,
+            {
+              bottom,
+            },
+          ]}
+        />
+      </>
     );
   },
 );

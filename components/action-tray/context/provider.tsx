@@ -187,6 +187,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
           : 0;
 
         const contentEl = def.contents[trayIndex]?.();
+        const isFullScreen = contentEl?.props?.fullScreen === true;
         const containerStyle = contentEl?.props?.style ?? undefined;
         const containerClassName = contentEl?.props?.className;
 
@@ -205,6 +206,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
               style: undefined,
               skipEntering: isFirstRender,
               skipExiting: false,
+              fullScreen: isFullScreen,
               step: trayIndex,
               total: trayTotal,
             })
@@ -220,6 +222,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
 
         const footer = footerEl
           ? React.cloneElement(footerEl, {
+              fullScreen: isFullScreen,
               step: trayIndex,
               total: trayTotal,
             })
@@ -233,6 +236,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
             footer={footer}
             onClose={close}
             trayId={isActive ? `${trayId}-${trayIndex}` : undefined}
+            fullScreen={isFullScreen}
             containerStyle={containerStyle}
             className={containerClassName}
             footerStyle={footerStyle}

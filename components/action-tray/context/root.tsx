@@ -68,7 +68,7 @@ export const TrayRoot: React.FC<{ children: React.ReactNode }> = ({
   return (
     <TrayScopeContext.Provider value={trayId}>
       {parsed.outside}
-      {/* No ActionTray here — provider renders all instances at root level */}
+ 
     </TrayScopeContext.Provider>
   );
 };

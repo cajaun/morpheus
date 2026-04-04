@@ -18,6 +18,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       content,
       footer,
       trayId,
+      fullScreen,
       visible,
       containerStyle,
       className,
@@ -33,6 +34,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       content,
       footer,
       trayId,
+      fullScreen,
       containerStyle,
       className,
       footerStyle,
@@ -45,6 +47,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     const {
       shared: {
         translateY,
+        contentHeight,
         footerHeight,
         context,
         hasFooter,
@@ -56,6 +59,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         renderedFooter,
         renderedContent,
         renderedTrayId,
+        renderedFullScreen,
         renderedContainerStyle,
         renderedClassName,
         renderedFooterStyle,
@@ -72,6 +76,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     } = controller;
 
     useImperativeHandle(ref, () => imperativeApi, [imperativeApi]);
+
+    const presentationFullScreen = renderedFullScreen;
 
     const gesture = useActionTrayGesture({
       translateY,
@@ -90,17 +96,18 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       dragStyle,
     } = useActionTrayAnimatedStyles({
       translateY,
+      contentHeight,
       hasFooter,
       footerHeight,
       keyboardHeight: trayKeyboardHeight,
+      fullScreen: presentationFullScreen,
     });
 
     const layoutAnimationConfig = useMemo(
       () => createTrayLayoutTransition(),
       [],
     );
-    const shouldUseLayoutAnimation =
-      layoutEnabled && !(visible && trayId !== renderedTrayId);
+    const shouldUseLayoutAnimation = layoutEnabled;
 
     return (
       <>
@@ -109,8 +116,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             style={[
               styles.measureFooter,
               {
-                left: HORIZONTAL_MARGIN,
-                right: HORIZONTAL_MARGIN,
+                left: presentationFullScreen ? 0 : HORIZONTAL_MARGIN,
+                right: presentationFullScreen ? 0 : HORIZONTAL_MARGIN,
                 paddingHorizontal: TRAY_VERTICAL_PADDING,
                 paddingTop: 6,
                 paddingBottom: TRAY_VERTICAL_PADDING,
@@ -141,12 +148,12 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             ]}
             layout={shouldUseLayoutAnimation ? layoutAnimationConfig : undefined}
           >
-            <Animated.View
-              style={styles.content}
-              // Measure the intrinsic content stack, not the animated shell.
-              onLayout={handleContentLayout}
-            >
-              <Animated.View style={contentPaddingStyle}>
+            <Animated.View style={styles.content}>
+              <Animated.View
+                style={contentPaddingStyle}
+                // Measure only the intrinsic content; footer space is tracked separately.
+                onLayout={handleContentLayout}
+              >
                 {renderedContent}
               </Animated.View>
               <Animated.View style={footerSpacerStyle} />

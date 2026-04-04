@@ -172,7 +172,7 @@ const PayFromTray = () => {
 
       <Tray.Content scale className="bg-white">
         <Tray.Body>
-          <Tray.Header>
+          <Tray.Header withSeparator>
             <Header
               step={1}
               leftLabel="Insufficient Tokens"

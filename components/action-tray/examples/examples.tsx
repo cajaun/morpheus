@@ -5,6 +5,8 @@ import PayFromTray from "./new-wallet";
 import Send from "./send";
 import WatchAddressTray from "./watch-address";
 import HelpSupportTray from "./help-support";
+import WatchingWalletsInfoTray from "./watching-wallets-info";
+import AboutAaveTray from "./about-aave";
 
 const ActionTrayExamples = () => {
   return (
@@ -24,6 +26,8 @@ const ActionTrayExamples = () => {
       <Send />
       <WatchAddressTray />
       <HelpSupportTray />
+      <WatchingWalletsInfoTray />
+      <AboutAaveTray />
     </View>
   );
 };

@@ -1,14 +1,32 @@
 import React from "react";
 import { View, StyleSheet, StyleProp, ViewStyle } from "react-native";
-import { TRAY_HORIZONTAL_PADDING } from "../core/constants";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  TRAY_HORIZONTAL_PADDING,
+  TRAY_VERTICAL_PADDING,
+} from "../core/constants";
 
 export const TrayBody: React.FC<{
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   className?: string;
-}> = ({ children, style, className }) => {
+  fullScreen?: boolean;
+}> = ({ children, style, className, fullScreen = false }) => {
+  const { top } = useSafeAreaInsets();
+
   return (
-    <View className={className} style={[styles.body, style]}>
+    <View
+      className={className}
+      style={[
+        styles.body,
+        fullScreen
+          ? {
+              paddingTop: top + TRAY_VERTICAL_PADDING,
+            }
+          : null,
+        style,
+      ]}
+    >
       {children}
     </View>
   );

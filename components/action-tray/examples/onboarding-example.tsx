@@ -69,10 +69,10 @@ const OnboardingExample = () => {
         </Tray.Body>
       </Tray.Content>
 
-      {/* STEP 2 */}
+
       <Tray.Content scale className="bg-white">
         <Tray.Body>
-          <Tray.Header>
+          <Tray.Header withSeparator>
             <Header
               step={1}
               leftLabel="Content Two"

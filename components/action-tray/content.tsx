@@ -11,6 +11,7 @@ import { log } from "./core/logger";
 type Props = {
   children: React.ReactNode;
   scale?: boolean;
+  fullScreen?: boolean;
   stepKey?: string;
   skipEntering?: boolean;
   skipExiting?: boolean;
@@ -97,6 +98,7 @@ const createMorphExiting = (scale: boolean): EntryExitAnimationFunction => {
 export const TrayContent: React.FC<Props> = ({
   children,
   scale = true,
+  fullScreen = false,
   stepKey,
   skipEntering = false,
   skipExiting = false,
@@ -112,11 +114,13 @@ export const TrayContent: React.FC<Props> = ({
       total,
       skipEntering,
       skipExiting,
+      fullScreen,
       hasClassName: className != null,
       hasStyle: style != null,
     });
   }, [
     className,
+    fullScreen,
     skipEntering,
     skipExiting,
     step,
@@ -147,7 +151,7 @@ export const TrayContent: React.FC<Props> = ({
       style={style}
       className={className}
     >
-      {React.cloneElement(children as any, { step, total })}
+      {React.cloneElement(children as any, { step, total, fullScreen })}
     </Animated.View>
   );
 };
