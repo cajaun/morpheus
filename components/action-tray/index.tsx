@@ -7,6 +7,7 @@ import { TrayHeader } from "./primitives/header";
 import { TraySection } from "./primitives/section";
 import { TraySeparator } from "./primitives/separator";
 import { TrayTextInput } from "./primitives/text-input";
+import { TrayPage } from "./primitives/page";
 
 export const Tray = {
   Root: TrayRoot,
@@ -18,4 +19,5 @@ export const Tray = {
   Separator: TraySeparator,
   Section: TraySection,
   TextInput: TrayTextInput,
+  Page: TrayPage,
 };

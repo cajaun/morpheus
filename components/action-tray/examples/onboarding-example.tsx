@@ -26,10 +26,8 @@ const OnboardingExample = () => {
         </PressableScale>
       </Tray.Trigger>
 
-      {/* STEP 1 */}
       <Tray.Content scale className="bg-white">
         <Tray.Body>
-
           <Tray.Header withSeparator>
             <Header
               step={0}
@@ -38,8 +36,6 @@ const OnboardingExample = () => {
               onClose={() => close()}
             />
           </Tray.Header>
-
-          
 
           <Tray.Section>
             <Text
@@ -69,7 +65,6 @@ const OnboardingExample = () => {
         </Tray.Body>
       </Tray.Content>
 
-
       <Tray.Content scale className="bg-white">
         <Tray.Body>
           <Tray.Header withSeparator>
@@ -82,9 +77,7 @@ const OnboardingExample = () => {
             />
           </Tray.Header>
 
-         
-
-          <Tray.Section>
+          <Tray.Section scrollable maxHeight={0.4}>
             <Text
               className=" font-sfMedium"
               style={{
@@ -94,17 +87,6 @@ const OnboardingExample = () => {
               }}
             >
               Different heading
-            </Text>
-
-            <Text
-              className="text-[#94999F] font-sfMedium "
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
-              }}
-            >
-              Lorem ipsum dolor sit amet, consectetur adipisicing elit. Cum ad
             </Text>
 
             <Text
@@ -131,6 +113,18 @@ const OnboardingExample = () => {
               This is some example test that spans over multiple lines bla bla
               bla test test test many wods. this is a new sentence and we'll see
               how that fares too.
+            </Text>
+
+            <Text
+              className="text-[#94999F] font-sfMedium "
+              style={{
+                fontSize: 21,
+                lineHeight: 28,
+                letterSpacing: 0.2,
+              }}
+            >
+              Lorem ipsum dolor sit, amet consectetur adipisicing elit.
+              Laboriosam consequatur, eaque impedit vero esse.
             </Text>
           </Tray.Section>
         </Tray.Body>
@@ -148,9 +142,7 @@ const OnboardingExample = () => {
             />
           </Tray.Header>
 
-        
-
-          <Tray.Section scrollable>
+          <Tray.Section>
             <Text
               className=" font-sfMedium"
               style={{
@@ -159,7 +151,7 @@ const OnboardingExample = () => {
                 letterSpacing: 0.2,
               }}
             >
-              Scroll heading
+              Another heading
             </Text>
 
             <Text
@@ -170,41 +162,8 @@ const OnboardingExample = () => {
                 letterSpacing: 0.2,
               }}
             >
-              Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
-              amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
-              dolor amet. Lorem ipsum dolor amet.
-            </Text>
-
-            <Text
-              className="text-[#94999F] font-sfMedium "
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
-              }}
-            >
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Illo vero
-              magni distinctio tenetur doloremque neque voluptates quidem
-              reprehenderit suscipit est enim, laboriosam maxime consequuntur
-              eaque aspernatur doloribus pariatur commodi aliquam?
-            </Text>
-
-            <Text
-              className="text-[#94999F] font-sfMedium "
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
-              }}
-            >
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Illo vero
-              magni distinctio tenetur doloremque neque voluptates quidem
-              reprehenderit suscipit est enim, laboriosam maxime consequuntur
-              eaque aspernatur doloribus pariatur commodi aliquam? Lorem ipsum
-              dolor sit amet consectetur adipisicing elit. Necessitatibus totam
-              eos porro a adipisci cumque doloremque. Amet fuga ad voluptas
-              obcaecati? Similique, iusto vitae. Laudantium architecto ducimus
-              aperiam id illum.
+              Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum dolor
+              amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
             </Text>
 
             <Text
@@ -218,144 +177,6 @@ const OnboardingExample = () => {
               This is some example test that spans over multiple lines bla bla
               bla test test test many wods. this is a new sentence and we'll see
               how that fares too.
-            </Text>
-          </Tray.Section>
-        </Tray.Body>
-      </Tray.Content>
-
-      <Tray.Content scale className="bg-white">
-        <Tray.Body>
-          <Tray.Header  withSeparator>
-            <Header
-              step={3}
-              leftLabel="Content Four"
-              shouldClose
-              onBack={() => back()}
-              onClose={() => close()}
-            />
-          </Tray.Header>
-
-     
-          <Tray.Section>
-            <Text
-              className=" font-sfMedium"
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
-              }}
-            >
-              Different heading
-            </Text>
-            <Text
-              className="text-[#94999F] font-sfMedium "
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
-              }}
-            >
-              This is some example test that spans over multiple lines bla bla
-            </Text>
-          </Tray.Section>
-        </Tray.Body>
-      </Tray.Content>
-
-      <Tray.Content scale className="bg-white">
-        <Tray.Body>
-          <Tray.Header  withSeparator>
-            <Header
-              step={4}
-              leftLabel="Content Five"
-              shouldClose
-              onBack={() => back()}
-              onClose={() => close()}
-            />
-          </Tray.Header>
-
-     
-          <Tray.Section>
-            <Text
-              className="text-[#94999F] font-sfMedium "
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
-              }}
-            >
-              This is some example test that spans over multiple lines bla bla
-            </Text>
-
-            <Text
-              className="text-[#94999F] font-sfMedium "
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
-              }}
-            >
-              This is some example test that spans over multiple lines bla bla
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officia,
-              quas eum quia deserunt odit atque voluptate velit mollitia
-              quisquam sit officiis praesentium voluptates voluptatem nemo
-              nostrum voluptas enim assumenda ullam.
-            </Text>
-
-            <Text
-              className="text-[#94999F] font-sfMedium "
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
-              }}
-            >
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officia,
-              quas eum quia deserunt odit atque voluptate velit mollitia
-              quisquam sit officiis praesentium voluptates voluptatem nemo
-              nostrum voluptas enim assumenda ullam.
-            </Text>
-          </Tray.Section>
-        </Tray.Body>
-      </Tray.Content>
-
-      <Tray.Content scale className="bg-white">
-        <Tray.Body>
-          <Tray.Header  withSeparator>
-            <Header
-              step={5}
-              leftLabel="Content Six"
-              shouldClose
-              onBack={() => back()}
-              onClose={() => close()}
-            />
-          </Tray.Header>
-
-   
-
-          <Tray.Section>
-            <Text
-              className="text-[#94999F] font-sfMedium "
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
-              }}
-            >
-              This is some example test that spans over multiple lines bla bla
-            </Text>
-
-            <Text
-              className="text-[#94999F] font-sfMedium "
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
-              }}
-            >
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officia,
-              quas eum quia deserunt odit atque voluptate velit mollitia
-              quisquam sit officiis praesentium voluptates voluptatem nemo
-              nostrum voluptas enim assumenda ullam.
             </Text>
           </Tray.Section>
         </Tray.Body>

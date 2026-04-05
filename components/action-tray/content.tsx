@@ -2,16 +2,24 @@ import React, { useEffect } from "react";
 import Animated, {
   Easing,
   EntryExitAnimationFunction,
+  type SharedValue,
   withTiming,
 } from "react-native-reanimated";
 import { MORPH_DURATION } from "./core/constants";
 import { StyleProp, ViewStyle } from "react-native";
 import { log } from "./core/logger";
+import {
+  TrayFullScreenTransition,
+  TrayPageTransitionProvider,
+  TrayTransitionDirection,
+} from "./page-transition-context";
 
 type Props = {
   children: React.ReactNode;
   scale?: boolean;
   fullScreen?: boolean;
+  fullScreenDraggable?: boolean;
+  fullScreenTransition?: TrayFullScreenTransition;
   stepKey?: string;
   skipEntering?: boolean;
   skipExiting?: boolean;
@@ -19,6 +27,10 @@ type Props = {
   total?: number;
   style?: StyleProp<ViewStyle>;
   className?: string;
+  transitionDirection?: TrayTransitionDirection;
+  fullScreenSlideEnabled?: boolean;
+  transitionDirectionShared?: SharedValue<TrayTransitionDirection>;
+  fullScreenSlideActiveShared?: SharedValue<boolean>;
 };
 
 const createMorphEntering = (scale: boolean): EntryExitAnimationFunction => {
@@ -99,6 +111,8 @@ export const TrayContent: React.FC<Props> = ({
   children,
   scale = true,
   fullScreen = false,
+  fullScreenDraggable = true,
+  fullScreenTransition = "morph",
   stepKey,
   skipEntering = false,
   skipExiting = false,
@@ -106,7 +120,14 @@ export const TrayContent: React.FC<Props> = ({
   total,
   style,
   className,
+  transitionDirection = 0,
+  fullScreenSlideEnabled = false,
+  transitionDirectionShared,
+  fullScreenSlideActiveShared,
 }) => {
+  const shouldUsePageTransitionShell =
+    fullScreen && fullScreenTransition === "slide";
+
   useEffect(() => {
     log("TrayContent props", {
       stepKey,
@@ -115,18 +136,30 @@ export const TrayContent: React.FC<Props> = ({
       skipEntering,
       skipExiting,
       fullScreen,
+      fullScreenDraggable,
+      fullScreenTransition,
+      transitionDirection,
+      fullScreenSlideEnabled,
+      hasTransitionDirectionShared: transitionDirectionShared != null,
+      hasFullScreenSlideActiveShared: fullScreenSlideActiveShared != null,
       hasClassName: className != null,
       hasStyle: style != null,
     });
   }, [
     className,
     fullScreen,
+    fullScreenDraggable,
+    fullScreenSlideEnabled,
+    fullScreenTransition,
     skipEntering,
     skipExiting,
     step,
     stepKey,
     style,
     total,
+    transitionDirection,
+    transitionDirectionShared,
+    fullScreenSlideActiveShared,
   ]);
 
   useEffect(() => {
@@ -144,15 +177,48 @@ export const TrayContent: React.FC<Props> = ({
   }, [step, stepKey]);
 
   return (
-    <Animated.View
-      key={stepKey}
-      entering={skipEntering ? undefined : createMorphEntering(scale)}
-      exiting={skipExiting ? undefined : createMorphExiting(scale)}
-      style={style}
-      className={className}
+    <TrayPageTransitionProvider
+      value={{
+        stepKey,
+        fullScreen,
+        fullScreenTransition,
+        slideCapable: shouldUsePageTransitionShell,
+        direction:
+          transitionDirectionShared ??
+          ({ value: transitionDirection } as SharedValue<TrayTransitionDirection>),
+        slideActive:
+          fullScreenSlideActiveShared ??
+          ({ value: fullScreenSlideEnabled } as SharedValue<boolean>),
+      }}
     >
-      {React.cloneElement(children as any, { step, total, fullScreen })}
-    </Animated.View>
+      <Animated.View
+        key={shouldUsePageTransitionShell ? "tray-fullscreen-shell" : stepKey}
+        entering={
+          shouldUsePageTransitionShell || skipEntering
+            ? undefined
+            : createMorphEntering(scale)
+        }
+        exiting={
+          shouldUsePageTransitionShell || skipExiting
+            ? undefined
+            : createMorphExiting(scale)
+        }
+        style={style}
+        className={className}
+      >
+        {React.cloneElement(children as any, {
+          step,
+          total,
+          fullScreen,
+          fullScreenDraggable,
+          fullScreenTransition,
+          transitionDirection,
+          fullScreenSlideEnabled,
+          transitionDirectionShared,
+          fullScreenSlideActiveShared,
+        })}
+      </Animated.View>
+    </TrayPageTransitionProvider>
   );
 };
 

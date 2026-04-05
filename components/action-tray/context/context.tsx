@@ -1,4 +1,5 @@
 import React, { createContext, useContext } from "react";
+import { TrayTransitionDirection } from "../page-transition-context";
 
 export type TrayDefinition = {
   contents: (() => React.ReactElement)[];
@@ -13,12 +14,14 @@ export type TrayContextValue = {
   back: () => void;
   index: number;
   total: number;
+  anticipateKeyboard: () => void;
   registerTray: (id: string, def: TrayDefinition) => void;
   registerFocusable: (
     trayId: string | null,
     ref: React.RefObject<any>,
   ) => () => void;
   dismissKeyboard: () => void;
+  transitionDirection: TrayTransitionDirection;
 };
 
 const TrayContext = createContext<TrayContextValue | null>(null);

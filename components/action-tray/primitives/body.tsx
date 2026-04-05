@@ -21,6 +21,7 @@ export const TrayBody: React.FC<{
         styles.body,
         fullScreen
           ? {
+             
               paddingTop: top + TRAY_VERTICAL_PADDING,
             }
           : null,

@@ -1,11 +1,22 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text } from "react-native";
 import { PressableScale } from "@/components/ui/utils/pressable-scale";
 import { Tray } from "@/components/action-tray";
 import { useTray } from "@/components/action-tray/context/context";
 import { SymbolView, type SFSymbol } from "expo-symbols";
+import Animated, {
+  interpolate,
+  type SharedValue,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type SendAction = "send" | "swap";
+const SEND_FLOW_STEPS = 2;
+const DOT_SIZE = 8;
 
 const ActionRow = ({
   icon,
@@ -93,171 +104,380 @@ const FullScreenActionHeader = ({
   );
 };
 
+const ProgressDot = ({
+  index,
+  progress,
+}: {
+  index: number;
+  progress: SharedValue<number>;
+}) => {
+  const isActive = useDerivedValue(() => {
+    const distance = Math.abs(progress.value - index);
+    return Math.max(1 - distance, 0);
+  });
+
+  const dotStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(isActive.value, [0, 1], [0.3, 1]),
+    transform: [{ scale: interpolate(isActive.value, [0, 1], [1, 1.3]) }],
+  }));
+
+  return (
+    <Animated.View
+      className="rounded-full bg-white"
+      style={[{ width: DOT_SIZE, height: DOT_SIZE }, dotStyle]}
+    />
+  );
+};
+
+const FlowProgressDots = ({ currentPage }: { currentPage: number }) => {
+  const progress = useSharedValue(currentPage);
+
+  useEffect(() => {
+    progress.value = withTiming(currentPage, { duration: 220 });
+  }, [currentPage, progress]);
+
+  const dotIndexes = useMemo(
+    () => Array.from({ length: SEND_FLOW_STEPS }, (_, i) => i),
+    [],
+  );
+
+  return (
+    <View
+      className="flex-row items-center justify-center"
+      style={{ gap: 8, paddingBottom: 14 }}
+    >
+      {dotIndexes.map((index) => (
+        <ProgressDot key={index} index={index} progress={progress} />
+      ))}
+    </View>
+  );
+};
+
+const SendFlowFooter = ({
+  step = 0,
+  fullScreen = false,
+  selectedAction,
+}: {
+  step?: number;
+  fullScreen?: boolean;
+  selectedAction: SendAction;
+}) => {
+  const { next, close } = useTray();
+
+  if (!fullScreen || selectedAction !== "send" || step === 0) {
+    return null;
+  }
+
+  const currentPage = Math.max(step - 1, 0);
+  const isLastPage = currentPage >= SEND_FLOW_STEPS - 1;
+
+  return (
+    <View
+      style={{
+        paddingHorizontal: 20,
+        paddingTop: 8,
+        paddingBottom: 8,
+        backgroundColor: "#000000",
+      }}
+    >
+      <FlowProgressDots currentPage={currentPage} />
+
+      <PressableScale
+        onPress={isLastPage ? close : next}
+        style={{
+          backgroundColor: "#2F84FF",
+          height: 54,
+          borderRadius: 28,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text
+          className="text-white font-sfSemibold"
+          style={{
+            fontSize: 21,
+            lineHeight: 28,
+            letterSpacing: 0.2,
+          }}
+        >
+          {isLastPage ? "Done" : "Continue to Amount"}
+        </Text>
+      </PressableScale>
+    </View>
+  );
+};
+
 const SendDestinationStep = ({
   fullScreen = false,
 }: {
   fullScreen?: boolean;
 }) => {
+  const { back, next } = useTray();
+
+  return (
+    <Tray.Body fullScreen={fullScreen} style={{ paddingHorizontal: 20 }}>
+      <Tray.Section className="gap-6">
+        <Tray.Page>
+          <FullScreenActionHeader title="Send" onClose={back} />
+
+          <View className="gap-6">
+            <View className="flex-row items-center bg-[#141414] rounded-2xl px-4 py-2">
+              <Text
+                className="text-[#6B6F76] flex-1 font-sfMedium"
+                style={{
+                  fontSize: 21,
+                  lineHeight: 28,
+                  letterSpacing: 0.2,
+                }}
+              >
+                To ENS or Address
+              </Text>
+
+              <PressableScale
+                className="bg-[#2B2B2B] px-4 py-1 rounded-full"
+                onPress={next}
+              >
+                <Text
+                  className="text-white font-sfMedium"
+                  style={{
+                    fontSize: 21,
+                    lineHeight: 28,
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  Paste
+                </Text>
+              </PressableScale>
+            </View>
+
+            <PressableScale className="flex-row items-center gap-3">
+              <View className="w-12 h-12 rounded-full bg-[#111111] items-center justify-center">
+                <SymbolView name="qrcode.viewfinder" tintColor="#9CA3AF" />
+              </View>
+
+              <View>
+                <Text
+                  className="text-white font-sfMedium"
+                  style={{
+                    fontSize: 21,
+                    lineHeight: 28,
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  Scan QR Code
+                </Text>
+                <Text
+                  className="text-[#6B6F76] font-sfMedium"
+                  style={{
+                    fontSize: 18,
+                  }}
+                >
+                  Tap to scan an address
+                </Text>
+              </View>
+            </PressableScale>
+
+            <View className="gap-6">
+              <Text
+                className="text-[#6B6F76] font-sfMedium"
+                style={{
+                  fontSize: 18,
+                }}
+              >
+                Your Wallets
+              </Text>
+
+              <PressableScale className="flex-row items-center gap-4">
+                <View className="w-12 h-12 rounded-full bg-red-500 items-center justify-center">
+                  <Text className="text-xl">😁</Text>
+                </View>
+
+                <View>
+                  <Text
+                    className="text-white font-sfMedium"
+                    style={{
+                      fontSize: 21,
+                      lineHeight: 28,
+                      letterSpacing: 0.2,
+                    }}
+                  >
+                    Test
+                  </Text>
+                  <Text
+                    className="text-[#6B6F76] font-sfMedium"
+                    style={{
+                      fontSize: 18,
+                    }}
+                  >
+                    No Previous Transactions
+                  </Text>
+                </View>
+              </PressableScale>
+
+              <PressableScale className="flex-row items-center gap-4">
+                <View className="w-12 h-12 rounded-full bg-[#1F2937]" />
+
+                <View>
+                  <Text
+                    className="text-white font-sfMedium"
+                    style={{
+                      fontSize: 21,
+                      lineHeight: 28,
+                      letterSpacing: 0.2,
+                    }}
+                  >
+                    valmiera
+                  </Text>
+                  <Text
+                    className="text-[#6B6F76] font-sfMedium"
+                    style={{
+                      fontSize: 18,
+                    }}
+                  >
+                    No Previous Transactions
+                  </Text>
+                </View>
+              </PressableScale>
+            </View>
+
+            <View className="gap-6">
+              <Text
+                className="text-[#6B6F76] font-sfMedium"
+                style={{
+                  fontSize: 18,
+                }}
+              >
+                Watched Wallets
+              </Text>
+
+              <PressableScale className="flex-row items-center gap-4">
+                <View className="w-12 h-12 rounded-full bg-[#134E4A] items-center justify-center">
+                  <View className="w-6 h-6 bg-yellow-400 rounded-sm" />
+                </View>
+
+                <View>
+                  <Text
+                    className="text-white font-sfMedium"
+                    style={{
+                      fontSize: 21,
+                      lineHeight: 28,
+                      letterSpacing: 0.2,
+                    }}
+                  >
+                    valmiera.eth
+                  </Text>
+                  <Text
+                    className="text-[#6B6F76] font-sfMedium"
+                    style={{
+                      fontSize: 18,
+                    }}
+                  >
+                    No Previous Transactions
+                  </Text>
+                </View>
+              </PressableScale>
+            </View>
+          </View>
+        </Tray.Page>
+      </Tray.Section>
+    </Tray.Body>
+  );
+};
+
+const SendAmountStep = ({ fullScreen = false }: { fullScreen?: boolean }) => {
   const { back } = useTray();
 
   return (
     <Tray.Body fullScreen={fullScreen} style={{ paddingHorizontal: 20 }}>
       <Tray.Section className="gap-6">
-        <FullScreenActionHeader title="Send" onClose={back} />
+        <Tray.Page>
+          <FullScreenActionHeader title="Send" onClose={back} />
+          <View style={{ gap: 24 }}>
+            <View style={{ gap: 8 }}>
+              <Text
+                className="text-[#6B6F76] font-sfMedium"
+                style={{
+                  fontSize: 18,
+                  lineHeight: 26,
+                  letterSpacing: 0.15,
+                }}
+              >
+                This page exists so you can test the fullscreen slide flow from
+                one page to the next.
+              </Text>
+            </View>
 
-        <View className="flex-row items-center bg-[#141414] rounded-2xl px-4 py-2">
-          <Text
-            className="text-[#6B6F76] flex-1 font-sfMedium"
-            style={{
-              fontSize: 21,
-              lineHeight: 28,
-              letterSpacing: 0.2,
-            }}
-          >
-            To ENS or Address
-          </Text>
-
-          <PressableScale className="bg-[#2B2B2B] px-4 py-1 rounded-full">
-            <Text
-              className="text-white font-sfMedium"
+            <View
               style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
+                borderRadius: 32,
+                backgroundColor: "#141414",
+                paddingHorizontal: 20,
+                paddingVertical: 24,
+                gap: 8,
               }}
             >
-              Paste
-            </Text>
-          </PressableScale>
-        </View>
+              <Text
+                className="text-[#6B6F76] font-sfMedium"
+                style={{
+                  fontSize: 16,
+                  lineHeight: 22,
+                  letterSpacing: 0.12,
+                }}
+              >
+                Amount
+              </Text>
 
-        <PressableScale className="flex-row items-center gap-3">
-          <View className="w-12 h-12 rounded-full bg-[#111111] items-center justify-center">
-            <SymbolView name="qrcode.viewfinder" tintColor="#9CA3AF" />
+              <Text
+                className="text-white font-sfBold"
+                style={{
+                  fontSize: 40,
+                  lineHeight: 46,
+                  letterSpacing: 0.2,
+                }}
+              >
+                0.00 ETH
+              </Text>
+
+              <Text
+                className="text-[#6B6F76] font-sfMedium"
+                style={{
+                  fontSize: 18,
+                  lineHeight: 24,
+                  letterSpacing: 0.15,
+                }}
+              >
+                Choose an amount to continue your send flow.
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              {["25%", "50%", "Max"].map((label) => (
+                <PressableScale
+                  key={label}
+                  style={{
+                    flex: 1,
+                    borderRadius: 24,
+                    backgroundColor: "#141414",
+                    paddingVertical: 14,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    className="text-white font-sfSemibold"
+                    style={{
+                      fontSize: 18,
+                      lineHeight: 24,
+                      letterSpacing: 0.15,
+                    }}
+                  >
+                    {label}
+                  </Text>
+                </PressableScale>
+              ))}
+            </View>
           </View>
-
-          <View>
-            <Text
-              className="text-white font-sfMedium"
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
-              }}
-            >
-              Scan QR Code
-            </Text>
-            <Text
-              className="text-[#6B6F76] font-sfMedium"
-              style={{
-                fontSize: 18,
-              }}
-            >
-              Tap to scan an address
-            </Text>
-          </View>
-        </PressableScale>
-
-        <View className="gap-6">
-          <Text
-            className="text-[#6B6F76] font-sfMedium"
-            style={{
-              fontSize: 18,
-            }}
-          >
-            Your Wallets
-          </Text>
-
-          <PressableScale className="flex-row items-center gap-4">
-            <View className="w-12 h-12 rounded-full bg-red-500 items-center justify-center">
-              <Text className="text-xl">😁</Text>
-            </View>
-
-            <View>
-              <Text
-                className="text-white font-sfMedium"
-                style={{
-                  fontSize: 21,
-                  lineHeight: 28,
-                  letterSpacing: 0.2,
-                }}
-              >
-                Test
-              </Text>
-              <Text
-                className="text-[#6B6F76] font-sfMedium"
-                style={{
-                  fontSize: 18,
-                }}
-              >
-                No Previous Transactions
-              </Text>
-            </View>
-          </PressableScale>
-
-          <PressableScale className="flex-row items-center gap-4">
-            <View className="w-12 h-12 rounded-full bg-[#1F2937]" />
-
-            <View>
-              <Text
-                className="text-white font-sfMedium"
-                style={{
-                  fontSize: 21,
-                  lineHeight: 28,
-                  letterSpacing: 0.2,
-                }}
-              >
-                valmiera
-              </Text>
-              <Text
-                className="text-[#6B6F76] font-sfMedium"
-                style={{
-                  fontSize: 18,
-                }}
-              >
-                No Previous Transactions
-              </Text>
-            </View>
-          </PressableScale>
-        </View>
-
-        <View className="gap-6">
-          <Text
-            className="text-[#6B6F76] font-sfMedium"
-            style={{
-              fontSize: 18,
-            }}
-          >
-            Watched Wallets
-          </Text>
-
-          <PressableScale className="flex-row items-center gap-4">
-            <View className="w-12 h-12 rounded-full bg-[#134E4A] items-center justify-center">
-              <View className="w-6 h-6 bg-yellow-400 rounded-sm" />
-            </View>
-
-            <View>
-              <Text
-                className="text-white font-sfMedium"
-                style={{
-                  fontSize: 21,
-                  lineHeight: 28,
-                  letterSpacing: 0.2,
-                }}
-              >
-                valmiera.eth
-              </Text>
-              <Text
-                className="text-[#6B6F76] font-sfMedium"
-                style={{
-                  fontSize: 18,
-                }}
-              >
-                No Previous Transactions
-              </Text>
-            </View>
-          </PressableScale>
-        </View>
+        </Tray.Page>
       </Tray.Section>
     </Tray.Body>
   );
@@ -272,56 +492,59 @@ const SwapEmptyStateStep = ({
   const [query, setQuery] = useState("");
 
   return (
-    <Tray.Body fullScreen={fullScreen} style={{ paddingHorizontal: 20 }}>
+    <Tray.Body
+      fullScreen={fullScreen}
+      style={{ flex: 1, paddingHorizontal: 20 }}
+    >
       <View style={{ gap: 24 }}>
         <FullScreenActionHeader title="Swap" onClose={back} />
 
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 14,
-            borderRadius: 28,
-            backgroundColor: "#141414",
-            paddingHorizontal: 18,
-            paddingVertical: 16,
-          }}
-        >
-          <SymbolView
-            name="magnifyingglass"
-            tintColor="#4A4A50"
-            size={25}
-            weight="semibold"
-          />
-
-          <Tray.TextInput
-            value={query}
-            onChangeText={setQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="off"
-            keyboardType="default"
-            placeholder="Search Your Tokens"
-            placeholderTextColor="#4A4A50"
-            returnKeyType="search"
-            smartInsertDelete={false}
-            spellCheck={false}
-            textContentType="none"
+        <Tray.Page>
+          <View
             style={{
-              flex: 1,
-              fontFamily: "Sf-medium",
-              fontSize: 20,
-              lineHeight: 30,
-              letterSpacing: 0.2,
-              color: "#FFFFFF",
-              margin: 0,
-              paddingHorizontal: 0,
-              paddingVertical: 0,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 14,
+              borderRadius: 28,
+              backgroundColor: "#141414",
+              paddingHorizontal: 18,
+              paddingVertical: 16,
             }}
-          />
-        </View>
+          >
+            <SymbolView
+              name="magnifyingglass"
+              tintColor="#4A4A50"
+              size={25}
+              weight="semibold"
+            />
 
-       
+            <Tray.TextInput
+              value={query}
+              onChangeText={setQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="off"
+              keyboardType="default"
+              placeholder="Search Your Tokens"
+              placeholderTextColor="#4A4A50"
+              returnKeyType="search"
+              smartInsertDelete={false}
+              spellCheck={false}
+              textContentType="none"
+              style={{
+                flex: 1,
+                fontFamily: "Sf-medium",
+                fontSize: 20,
+                lineHeight: 30,
+                letterSpacing: 0.2,
+                color: "#FFFFFF",
+                margin: 0,
+                paddingHorizontal: 0,
+                paddingVertical: 0,
+              }}
+            />
+          </View>
+        </Tray.Page>
       </View>
     </Tray.Body>
   );
@@ -330,6 +553,7 @@ const SwapEmptyStateStep = ({
 const Send = () => {
   const { next } = useTray();
   const [selectedAction, setSelectedAction] = useState<SendAction>("send");
+  const { bottom } = useSafeAreaInsets();
 
   return (
     <Tray.Root>
@@ -389,6 +613,8 @@ const Send = () => {
         key={`send-destination-${selectedAction}`}
         scale
         fullScreen
+        fullScreenDraggable={false}
+        fullScreenTransition="slide"
         className="bg-black"
         style={{ paddingHorizontal: 0 }}
       >
@@ -398,6 +624,24 @@ const Send = () => {
           <SendDestinationStep />
         )}
       </Tray.Content>
+
+      <Tray.Content
+        key={`send-amount-${selectedAction}`}
+        scale
+        fullScreen
+        fullScreenDraggable={false}
+        fullScreenTransition="slide"
+        className="bg-black"
+        style={{ paddingHorizontal: 0 }}
+      >
+        {selectedAction === "send" ? (
+          <SendAmountStep />
+        ) : (
+          <SwapEmptyStateStep />
+        )}
+      </Tray.Content>
+
+     
     </Tray.Root>
   );
 };

@@ -7,6 +7,7 @@ type TraySnapshot = {
   footer?: React.ReactNode;
   trayId?: string;
   fullScreen?: boolean;
+  fullScreenDraggable?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
@@ -18,6 +19,7 @@ const toRenderedTrayState = ({
   footer,
   trayId,
   fullScreen,
+  fullScreenDraggable,
   containerStyle,
   className,
   footerStyle,
@@ -27,6 +29,7 @@ const toRenderedTrayState = ({
   footer: footer ?? null,
   trayId,
   fullScreen,
+  fullScreenDraggable,
   containerStyle,
   className,
   footerStyle,
@@ -38,6 +41,7 @@ export const useActionTrayRenderState = ({
   footer,
   trayId,
   fullScreen,
+  fullScreenDraggable,
   containerStyle,
   className,
   footerStyle,
@@ -54,6 +58,9 @@ export const useActionTrayRenderState = ({
 
   const fullScreenRef = useRef(fullScreen);
   fullScreenRef.current = fullScreen;
+
+  const fullScreenDraggableRef = useRef(fullScreenDraggable);
+  fullScreenDraggableRef.current = fullScreenDraggable;
 
   const containerStyleRef = useRef(containerStyle);
   containerStyleRef.current = containerStyle;
@@ -73,6 +80,7 @@ export const useActionTrayRenderState = ({
       footer,
       trayId,
       fullScreen,
+      fullScreenDraggable,
       containerStyle,
       className,
       footerStyle,
@@ -87,6 +95,7 @@ export const useActionTrayRenderState = ({
         footer: footerRef.current,
         trayId: trayIdRef.current,
         fullScreen: fullScreenRef.current,
+        fullScreenDraggable: fullScreenDraggableRef.current,
         containerStyle: containerStyleRef.current,
         className: classNameRef.current,
         footerStyle: footerStyleRef.current,
@@ -110,6 +119,7 @@ export const useActionTrayRenderState = ({
         footer: footerRef.current ?? null,
         trayId: current.trayId,
         fullScreen: fullScreenRef.current,
+        fullScreenDraggable: fullScreenDraggableRef.current,
         containerStyle: containerStyleRef.current,
         className: classNameRef.current,
         footerStyle: footerStyleRef.current,
@@ -124,6 +134,7 @@ export const useActionTrayRenderState = ({
       footer: null,
       trayId: undefined,
       fullScreen: undefined,
+      fullScreenDraggable: undefined,
       containerStyle: undefined,
       className: undefined,
       footerStyle: undefined,
@@ -137,6 +148,7 @@ export const useActionTrayRenderState = ({
       renderedFooter: renderedTray.footer,
       renderedTrayId: renderedTray.trayId,
       renderedFullScreen: renderedTray.fullScreen ?? false,
+      renderedFullScreenDraggable: renderedTray.fullScreenDraggable ?? true,
       renderedContainerStyle: renderedTray.containerStyle,
       renderedClassName: renderedTray.className,
       renderedFooterStyle: renderedTray.footerStyle,

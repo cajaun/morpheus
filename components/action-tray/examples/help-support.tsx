@@ -313,7 +313,7 @@ const ChooseAreasStep = () => {
           <SupportPrimaryButton
             label="Continue"
             onPress={next}
-            disabled={!canContinue}
+ 
           />
         </View>
       </Tray.Section>
@@ -431,7 +431,7 @@ const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
           <SupportPrimaryButton
             label="Continue"
             onPress={next}
-            disabled={!canContinue}
+         
           />
         </View>
       </Tray.Section>

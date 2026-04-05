@@ -6,6 +6,8 @@ type Params = {
   translateY: { value: number };
   totalHeight: { value: number };
   context: { value: { y: number } };
+  fullScreen: boolean;
+  fullScreenDraggable: boolean;
   keyboardHeight: { value: number };
   dismissKeyboard: () => void;
   onRequestClose: () => void;
@@ -15,12 +17,17 @@ export const useActionTrayGesture = ({
   translateY,
   totalHeight,
   context,
+  fullScreen,
+  fullScreenDraggable,
   keyboardHeight,
   dismissKeyboard,
   onRequestClose,
 }: Params) => {
   return useMemo(() => {
+    const dragEnabled = !fullScreen || fullScreenDraggable;
+
     return Gesture.Pan()
+      .enabled(dragEnabled)
       .onStart(() => {
         if (keyboardHeight.value > 0) {
           runOnJS(dismissKeyboard)();
@@ -56,6 +63,8 @@ export const useActionTrayGesture = ({
       });
   }, [
     dismissKeyboard,
+    fullScreen,
+    fullScreenDraggable,
     keyboardHeight,
     onRequestClose,
     context,

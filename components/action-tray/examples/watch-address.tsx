@@ -309,125 +309,127 @@ const CreateNewWalletStep = ({
       <View style={{ gap: 42, flex: 1 }}>
         <CreateNewHeader onClose={back} />
 
-        <View style={{ gap: 14 }}>
-          <Text
-            className="font-sfSemibold text-[#1B1C1F]"
-            style={{
-              fontSize: 22,
-              lineHeight: 30,
-              letterSpacing: 0.2,
-            }}
-          >
-            Phone or Email
-          </Text>
-
-          <Text
-            className="font-sfMedium text-[#9B9EA5]"
-            style={{
-              fontSize: 18,
-              lineHeight: 28,
-              letterSpacing: 0.15,
-            }}
-          >
-            Enter your phone or email to{"\n"}continue.
-          </Text>
-        </View>
-
-        <View style={{ gap: 18 }}>
-          <View
-            style={{
-              borderBottomWidth: 1,
-              borderBottomColor: "#E7E9EE",
-              paddingBottom: 10,
-            }}
-          >
-            <Tray.TextInput
-              value={contact}
-              onChangeText={setContact}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoFocus
-              autoComplete="off"
-              keyboardType="email-address"
-              placeholder="Phone or Email"
-              placeholderTextColor="#CCD1D7"
-              returnKeyType="done"
-              smartInsertDelete={false}
-              spellCheck={false}
-              textContentType="emailAddress"
-              style={{
-                fontFamily: "Sf-medium",
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.2,
-                color: "#101318",
-                margin: 0,
-                paddingHorizontal: 0,
-                paddingVertical: 0,
-              }}
-            />
-          </View>
-
-          <Text
-            className="font-sfMedium text-[#B6BAC2]"
-            style={{
-              fontSize: 16,
-              lineHeight: 24,
-              letterSpacing: 0.15,
-            }}
-          >
-            Your wallet will be backed up to Family's dedicated{"\n"}self-custody
-            account.
-          </Text>
-        </View>
-
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          <View style={{ flex: 1, height: 1, backgroundColor: "#E8E9ED" }} />
-
-          <Text
-            className="font-sfMedium text-[#A5A7AD]"
-            style={{
-              fontSize: 18,
-              lineHeight: 24,
-              letterSpacing: 0.15,
-            }}
-          >
-            or create manually
-          </Text>
-
-          <View style={{ flex: 1, height: 1, backgroundColor: "#E8E9ED" }} />
-        </View>
-
-        <View style={{ paddingBottom: 28, marginTop: "auto" }}>
-          <PressableScale
-            onPress={canContinue ? close : undefined}
-            style={{
-              backgroundColor: canContinue ? "#41BBFF" : "#BFE7FF",
-              height: 50,
-              borderRadius: 36,
-              alignItems: "center",
-              justifyContent: "center",
-              width: "100%",
-            }}
-          >
+    
+          <View style={{ gap: 14 }}>
             <Text
-              className="font-sfSemibold text-white"
+              className="font-sfSemibold text-[#1B1C1F]"
               style={{
-                fontSize: 21,
-                lineHeight: 28,
+                fontSize: 22,
+                lineHeight: 30,
                 letterSpacing: 0.2,
               }}
             >
-              Continue
+              Phone or Email
             </Text>
-          </PressableScale>
-        </View>
+
+            <Text
+              className="font-sfMedium text-[#9B9EA5]"
+              style={{
+                fontSize: 18,
+                lineHeight: 28,
+                letterSpacing: 0.15,
+              }}
+            >
+              Enter your phone or email to{"\n"}continue.
+            </Text>
+          </View>
+
+          <View style={{ gap: 18 }}>
+            <View
+              style={{
+                borderBottomWidth: 1,
+                borderBottomColor: "#E7E9EE",
+                paddingBottom: 10,
+              }}
+            >
+              <Tray.TextInput
+                value={contact}
+                onChangeText={setContact}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoFocus
+                autoComplete="off"
+                keyboardType="email-address"
+                placeholder="Phone or Email"
+                placeholderTextColor="#CCD1D7"
+                returnKeyType="done"
+                smartInsertDelete={false}
+                spellCheck={false}
+                textContentType="emailAddress"
+                style={{
+                  fontFamily: "Sf-medium",
+                  fontSize: 21,
+                  lineHeight: 28,
+                  letterSpacing: 0.2,
+                  color: "#101318",
+                  margin: 0,
+                  paddingHorizontal: 0,
+                  paddingVertical: 0,
+                }}
+              />
+            </View>
+
+            <Text
+              className="font-sfMedium text-[#B6BAC2]"
+              style={{
+                fontSize: 16,
+                lineHeight: 24,
+                letterSpacing: 0.15,
+              }}
+            >
+              Your wallet will be backed up to Family's dedicated{"\n"}self-custody
+              account.
+            </Text>
+          </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            <View style={{ flex: 1, height: 1, backgroundColor: "#E8E9ED" }} />
+
+            <Text
+              className="font-sfMedium text-[#A5A7AD]"
+              style={{
+                fontSize: 18,
+                lineHeight: 24,
+                letterSpacing: 0.15,
+              }}
+            >
+              or create manually
+            </Text>
+
+            <View style={{ flex: 1, height: 1, backgroundColor: "#E8E9ED" }} />
+          </View>
+
+          <View style={{ paddingBottom: 28, marginTop: "auto" }}>
+            <PressableScale
+              onPress={canContinue ? close : undefined}
+              style={{
+                backgroundColor: canContinue ? "#41BBFF" : "#BFE7FF",
+                height: 50,
+                borderRadius: 36,
+                alignItems: "center",
+                justifyContent: "center",
+                width: "100%",
+              }}
+            >
+              <Text
+                className="font-sfSemibold text-white"
+                style={{
+                  fontSize: 21,
+                  lineHeight: 28,
+                  letterSpacing: 0.2,
+                }}
+              >
+                Continue
+              </Text>
+            </PressableScale>
+          </View>
+  
       </View>
     </Tray.Body>
   );
@@ -461,6 +463,7 @@ const WatchAddressTray = () => {
         key={`watch-address-next-${selectedAction}`}
         scale
         fullScreen={selectedAction === "create"}
+        // fullScreenTransition="slide"
         className="bg-white"
       >
         {selectedAction === "create" ? (

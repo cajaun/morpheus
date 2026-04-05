@@ -7,6 +7,7 @@ import WatchAddressTray from "./watch-address";
 import HelpSupportTray from "./help-support";
 import WatchingWalletsInfoTray from "./watching-wallets-info";
 import AboutAaveTray from "./about-aave";
+import IdentityRateBoostTray from "./identity-rate-boost";
 
 const ActionTrayExamples = () => {
   return (
@@ -28,6 +29,7 @@ const ActionTrayExamples = () => {
       <HelpSupportTray />
       <WatchingWalletsInfoTray />
       <AboutAaveTray />
+      <IdentityRateBoostTray />
     </View>
   );
 };

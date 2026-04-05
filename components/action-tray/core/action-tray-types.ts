@@ -10,6 +10,7 @@ export type ActionTrayProps = {
   footer?: React.ReactNode;
   trayId?: string;
   fullScreen?: boolean;
+  fullScreenDraggable?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
@@ -29,6 +30,7 @@ export type RenderedTrayState = {
   footer: React.ReactNode;
   trayId?: string;
   fullScreen?: boolean;
+  fullScreenDraggable?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;

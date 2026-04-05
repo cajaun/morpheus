@@ -1,18 +1,24 @@
 import React, {
+  useCallback,
   forwardRef,
   useEffect,
   useImperativeHandle,
   useRef,
 } from "react";
-import { TextInput, TextInputProps } from "react-native";
+import {
+  NativeSyntheticEvent,
+  TextInput,
+  TextInputFocusEventData,
+  TextInputProps,
+} from "react-native";
 import { useTray } from "../context/context";
 import { useTrayScope } from "../context/root";
 
 export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
-  (props, forwardedRef) => {
+  ({ autoFocus = false, ...props }, forwardedRef) => {
     const ref = useRef<TextInput>(null);
     const trayId = useTrayScope();
-    const { registerFocusable } = useTray();
+    const { registerFocusable, anticipateKeyboard } = useTray();
 
     useImperativeHandle(forwardedRef, () => ref.current as TextInput);
 
@@ -20,7 +26,31 @@ export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
       return registerFocusable(trayId, ref);
     }, [registerFocusable, trayId]);
 
-    return <TextInput ref={ref} {...props} />;
+    useEffect(() => {
+      if (!autoFocus) {
+        return;
+      }
+
+      anticipateKeyboard();
+      ref.current?.focus();
+    }, [anticipateKeyboard, autoFocus, trayId]);
+
+    const handleFocus = useCallback(
+      (event: NativeSyntheticEvent<TextInputFocusEventData>) => {
+        anticipateKeyboard();
+        props.onFocus?.(event);
+      },
+      [anticipateKeyboard, props],
+    );
+
+    return (
+      <TextInput
+        ref={ref}
+        autoFocus={false}
+        {...props}
+        onFocus={handleFocus}
+      />
+    );
   },
 );
 

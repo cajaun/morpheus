@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   Dimensions,
   EmitterSubscription,
@@ -14,7 +14,12 @@ import {
 } from "react-native-reanimated";
 import { log } from "./logger";
 
-const DEFAULT_KEYBOARD_DURATION = 0;
+const DEFAULT_KEYBOARD_DURATION = 220;
+const ANTICIPATE_DURATION = 120;
+const KEYBOARD_CLOSE_DURATION = 140;
+const ESTIMATED_KEYBOARD_HEIGHT_RATIO = 0.355;
+const MIN_ESTIMATED_KEYBOARD_HEIGHT = 300;
+const MAX_ESTIMATED_KEYBOARD_HEIGHT = 352;
 
 const KEYBOARD_EASING: Record<string, EasingFunction> = {
   easeIn: Easing.in(Easing.ease),
@@ -44,27 +49,73 @@ const getKeyboardOverlap = (event: KeyboardEvent) => {
 
 export const useActionTrayKeyboard = () => {
   const keyboardHeight = useSharedValue(0);
+  const lastKnownKeyboardHeightRef = useRef(0);
+
+  const estimateKeyboardHeight = useCallback(() => {
+    const windowHeight = Dimensions.get("window").height;
+    return Math.round(
+      Math.min(
+        MAX_ESTIMATED_KEYBOARD_HEIGHT,
+        Math.max(
+          MIN_ESTIMATED_KEYBOARD_HEIGHT,
+          windowHeight * ESTIMATED_KEYBOARD_HEIGHT_RATIO,
+        ),
+      ),
+    );
+  }, []);
 
   const animateKeyboardHeight = useCallback(
     (nextHeight: number, event?: KeyboardEvent) => {
-      const duration =
+      const baseDuration =
         Platform.OS === "ios"
           ? Math.max(0, event?.duration ?? DEFAULT_KEYBOARD_DURATION)
           : DEFAULT_KEYBOARD_DURATION;
+      const isClosing = nextHeight < keyboardHeight.value;
+      const duration = isClosing
+        ? Math.min(baseDuration, KEYBOARD_CLOSE_DURATION)
+        : baseDuration;
+      const easing = isClosing
+        ? Easing.linear
+        : resolveKeyboardEasing(event?.easing);
 
       log("KEYBOARD FRAME", {
         nextHeight,
         duration,
+        isClosing,
         easing: event?.easing,
       });
 
+      if (nextHeight > 0) {
+        lastKnownKeyboardHeightRef.current = nextHeight;
+      }
+
       keyboardHeight.value = withTiming(nextHeight, {
         duration,
-        easing: resolveKeyboardEasing(event?.easing),
+        easing,
       });
     },
     [keyboardHeight],
   );
+
+  const anticipateKeyboard = useCallback(() => {
+    if (Platform.OS !== "ios") {
+      return;
+    }
+
+    if (keyboardHeight.value > 0) {
+      return;
+    }
+
+    const anticipatedHeight =
+      lastKnownKeyboardHeightRef.current > 0
+        ? lastKnownKeyboardHeightRef.current
+        : estimateKeyboardHeight();
+
+    keyboardHeight.value = withTiming(anticipatedHeight, {
+      duration: ANTICIPATE_DURATION,
+      easing: Easing.out(Easing.ease),
+    });
+  }, [estimateKeyboardHeight, keyboardHeight]);
 
   const dismissKeyboard = useCallback(() => {
     Keyboard.dismiss();
@@ -78,6 +129,11 @@ export const useActionTrayKeyboard = () => {
     const subscriptions: EmitterSubscription[] = [];
 
     if (Platform.OS === "ios") {
+      subscriptions.push(
+        Keyboard.addListener("keyboardWillShow", (event) => {
+          animateKeyboardHeight(getKeyboardOverlap(event), event);
+        }),
+      );
       subscriptions.push(
         Keyboard.addListener("keyboardWillChangeFrame", (event) => {
           animateKeyboardHeight(getKeyboardOverlap(event), event);
@@ -108,6 +164,7 @@ export const useActionTrayKeyboard = () => {
 
   return {
     keyboardHeight,
+    anticipateKeyboard,
     dismissKeyboard,
   };
 };

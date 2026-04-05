@@ -78,6 +78,7 @@ export const useActionTrayAnimatedStyles = ({
 
   const contentPaddingStyle = useAnimatedStyle(() => ({
     paddingHorizontal: 0,
+    paddingBottom: 0,
   }));
 
   const fullScreenSurfaceFillStyle = useAnimatedStyle(
