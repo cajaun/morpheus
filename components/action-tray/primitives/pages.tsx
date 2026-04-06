@@ -1,8 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
+import {
+  LayoutChangeEvent,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from "react-native";
 import Animated, {
-  EntryExitAnimationFunction,
   runOnJS,
+  useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
@@ -12,99 +18,19 @@ import { TrayPagesProvider } from "../pages-context";
 
 type TrayPagesDirection = -1 | 0 | 1;
 
+type TransitionState = {
+  key: number;
+  fromIndex: number;
+  toIndex: number;
+  direction: TrayPagesDirection;
+};
+
 const PAGE_SPRING_CONFIG = {
   stiffness: 1000,
   damping: 500,
   mass: 3,
   overshootClamping: true,
 } as const;
-
-const createPageEntering = (
-  direction: { value: TrayPagesDirection },
-  slideActive: { value: boolean },
-  onComplete?: () => void,
-): EntryExitAnimationFunction => {
-  return () => {
-    "worklet";
-
-    if (!slideActive.value) {
-      return {
-        initialValues: {
-          opacity: 1,
-          transform: [{ translateX: 0 }],
-        },
-        animations: {
-          opacity: withTiming(1, { duration: 0 }),
-          transform: [{ translateX: withTiming(0, { duration: 0 }) }],
-        },
-      };
-    }
-
-    const resolvedDirection = direction.value === -1 ? -1 : 1;
-
-    return {
-      initialValues: {
-        transform: [
-          {
-            translateX:
-              resolvedDirection === 1 ? SCREEN_WIDTH : -SCREEN_WIDTH,
-          },
-        ],
-      },
-      animations: {
-        transform: [
-          {
-            translateX: withSpring(0, PAGE_SPRING_CONFIG, (finished) => {
-              if (finished && onComplete) {
-                runOnJS(onComplete)();
-              }
-            }),
-          },
-        ],
-      },
-    };
-  };
-};
-
-const createPageExiting = (
-  direction: { value: TrayPagesDirection },
-  slideActive: { value: boolean },
-): EntryExitAnimationFunction => {
-  return () => {
-    "worklet";
-
-    if (!slideActive.value) {
-      return {
-        initialValues: {
-          opacity: 1,
-          transform: [{ translateX: 0 }],
-        },
-        animations: {
-          opacity: withTiming(1, { duration: 0 }),
-          transform: [{ translateX: withTiming(0, { duration: 0 }) }],
-        },
-      };
-    }
-
-    const resolvedDirection = direction.value === -1 ? -1 : 1;
-
-    return {
-      initialValues: {
-        transform: [{ translateX: 0 }],
-      },
-      animations: {
-        transform: [
-          {
-            translateX: withSpring(
-              resolvedDirection === 1 ? -SCREEN_WIDTH : SCREEN_WIDTH,
-              PAGE_SPRING_CONFIG,
-            ),
-          },
-        ],
-      },
-    };
-  };
-};
 
 const TrayPagesHeaderSlot: React.FC<{
   children: React.ReactNode;
@@ -129,6 +55,9 @@ const clampPageIndex = (index: number, totalPages: number) => {
 
   return Math.max(0, Math.min(index, totalPages - 1));
 };
+
+const clonePage = (page: React.ReactElement, key: string) =>
+  React.cloneElement(page, { key });
 
 type TrayPagesProps = {
   children: React.ReactNode;
@@ -176,50 +105,90 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   const totalPages = parsed.pages.length;
   const resolvedInitialPage = clampPageIndex(initialPage, totalPages);
   const [pageIndex, setPageIndex] = useState(resolvedInitialPage);
-  const [hasMounted, setHasMounted] = useState(false);
-  const [pageTransitionActive, setPageTransitionActive] = useState(false);
-  const [pendingPageIndex, setPendingPageIndex] = useState<number | null>(null);
+  const [transition, setTransition] = useState<TransitionState | null>(null);
+  const [viewportWidthState, setViewportWidthState] = useState(SCREEN_WIDTH);
   const pageIndexRef = useRef(resolvedInitialPage);
+  const transitionKeyRef = useRef(0);
+  const viewportWidthRef = useRef(SCREEN_WIDTH);
+  const rowTranslateX = useSharedValue(0);
   const progress = useSharedValue(resolvedInitialPage);
-  const direction = useSharedValue<TrayPagesDirection>(0);
-  const slideActiveShared = useSharedValue(false);
+  const pageWidth = Math.max(viewportWidthState, SCREEN_WIDTH);
 
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
+  const rowStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: rowTranslateX.value }],
+  }));
 
   useEffect(() => {
     const nextIndex = clampPageIndex(pageIndexRef.current, totalPages);
     pageIndexRef.current = nextIndex;
     setPageIndex(nextIndex);
-    setPendingPageIndex(null);
-    setPageTransitionActive(false);
+    setTransition(null);
     progress.value = nextIndex;
-    direction.value = 0;
-    slideActiveShared.value = false;
-  }, [direction, progress, slideActiveShared, totalPages]);
+    rowTranslateX.value = 0;
+  }, [progress, rowTranslateX, totalPages]);
+
+  const finishTransition = useCallback(
+    (transitionKey: number) => {
+      setTransition((current) => {
+        if (!current || current.key !== transitionKey) {
+          return current;
+        }
+
+        return null;
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
-    pageIndexRef.current = pageIndex;
-    progress.value = withTiming(pageIndex, { duration: 220 });
-  }, [pageIndex, progress]);
+    if (transition === null) {
+      rowTranslateX.value = 0;
+    }
+  }, [rowTranslateX, transition]);
 
   useEffect(() => {
-    if (pendingPageIndex == null || !pageTransitionActive) {
+    if (!transition) {
       return;
     }
 
-    setPageIndex(pendingPageIndex);
-    setPendingPageIndex(null);
-  }, [pageTransitionActive, pendingPageIndex]);
+    const width = Math.max(viewportWidthRef.current || SCREEN_WIDTH, SCREEN_WIDTH);
+    const targetTranslateX = transition.direction === 1 ? -width : 0;
 
-  const finishPageTransition = useCallback(() => {
-    slideActiveShared.value = false;
-    setPageTransitionActive(false);
-  }, [slideActiveShared]);
+    rowTranslateX.value = withSpring(
+      targetTranslateX,
+      PAGE_SPRING_CONFIG,
+      (finished) => {
+        if (finished) {
+          runOnJS(finishTransition)(transition.key);
+        }
+      },
+    );
+  }, [finishTransition, rowTranslateX, transition]);
+
+  const handleViewportLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const nextWidth = event.nativeEvent.layout.width || SCREEN_WIDTH;
+
+      if (Math.abs(nextWidth - viewportWidthRef.current) < 0.5) {
+        return;
+      }
+
+      viewportWidthRef.current = nextWidth;
+      setViewportWidthState(nextWidth);
+
+      if (!transition) {
+        rowTranslateX.value = 0;
+      }
+    },
+    [rowTranslateX, transition],
+  );
 
   const setPage = useCallback(
     (nextIndex: number) => {
+      if (transition !== null) {
+        return;
+      }
+
       const currentIndex = pageIndexRef.current;
       const resolvedIndex = clampPageIndex(nextIndex, totalPages);
 
@@ -227,12 +196,27 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
         return;
       }
 
-      direction.value = resolvedIndex > currentIndex ? 1 : -1;
-      slideActiveShared.value = true;
-      setPageTransitionActive(true);
-      setPendingPageIndex(resolvedIndex);
+      const direction: TrayPagesDirection =
+        resolvedIndex > currentIndex ? 1 : -1;
+      const width = Math.max(
+        viewportWidthRef.current || SCREEN_WIDTH,
+        SCREEN_WIDTH,
+      );
+      const nextTransitionKey = transitionKeyRef.current + 1;
+
+      transitionKeyRef.current = nextTransitionKey;
+      rowTranslateX.value = direction === 1 ? 0 : -width;
+      pageIndexRef.current = resolvedIndex;
+      setPageIndex(resolvedIndex);
+      setTransition({
+        key: nextTransitionKey,
+        fromIndex: currentIndex,
+        toIndex: resolvedIndex,
+        direction,
+      });
+      progress.value = withTiming(resolvedIndex, { duration: 220 });
     },
-    [direction, slideActiveShared, totalPages],
+    [progress, rowTranslateX, totalPages, transition],
   );
 
   const nextPage = useCallback(() => {
@@ -244,8 +228,42 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   }, [setPage]);
 
   const activePage = parsed.pages[pageIndex] ?? null;
-  const activePageKey =
-    activePage?.key != null ? String(activePage.key) : `tray-page-${pageIndex}`;
+  const transitionPages = useMemo(() => {
+    if (!transition) {
+      return null;
+    }
+
+    const fromPage = parsed.pages[transition.fromIndex] ?? null;
+    const toPage = parsed.pages[transition.toIndex] ?? null;
+
+    if (!fromPage || !toPage) {
+      return null;
+    }
+
+    if (transition.direction === 1) {
+      return {
+        left: clonePage(
+          fromPage,
+          `tray-page-from-${transition.key}-${transition.fromIndex}`,
+        ),
+        right: clonePage(
+          toPage,
+          `tray-page-to-${transition.key}-${transition.toIndex}`,
+        ),
+      };
+    }
+
+    return {
+      left: clonePage(
+        toPage,
+        `tray-page-to-${transition.key}-${transition.toIndex}`,
+      ),
+      right: clonePage(
+        fromPage,
+        `tray-page-from-${transition.key}-${transition.fromIndex}`,
+      ),
+    };
+  }, [parsed.pages, transition]);
 
   return (
     <TrayPagesProvider
@@ -263,29 +281,29 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
       <View className={className} style={[styles.root, style]}>
         {parsed.header}
 
-        <View style={styles.viewport}>
-          {activePage ? (
+        <View style={styles.viewport} onLayout={handleViewportLayout}>
+          {transition && transitionPages ? (
             <Animated.View
-              key={activePageKey}
               collapsable={false}
-              entering={
-                hasMounted && pageTransitionActive
-                  ? createPageEntering(
-                      direction,
-                      slideActiveShared,
-                      finishPageTransition,
-                    )
-                  : undefined
-              }
-              exiting={
-                hasMounted && pageTransitionActive
-                  ? createPageExiting(direction, slideActiveShared)
-                  : undefined
-              }
-              style={styles.pageSlot}
+              pointerEvents="none"
+              style={[
+                styles.row,
+                rowStyle,
+                { width: pageWidth * 2 },
+              ]}
             >
-              {activePage}
+              <View style={[styles.pageCell, { width: pageWidth }]}>
+                {transitionPages.left}
+              </View>
+
+              <View style={[styles.pageCell, { width: pageWidth }]}>
+                {transitionPages.right}
+              </View>
             </Animated.View>
+          ) : activePage ? (
+            <View key={`tray-page-static-${pageIndex}`} style={styles.pageSlot}>
+              {activePage}
+            </View>
           ) : null}
         </View>
 
@@ -309,8 +327,21 @@ const styles = StyleSheet.create({
   viewport: {
     flex: 1,
     overflow: "hidden",
+    position: "relative",
   },
   pageSlot: {
     flex: 1,
+    width: "100%",
+  },
+  row: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    flexDirection: "row",
+  },
+  pageCell: {
+    flexShrink: 0,
+    height: "100%",
   },
 });
