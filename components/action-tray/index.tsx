@@ -8,6 +8,8 @@ import { TraySection } from "./primitives/section";
 import { TraySeparator } from "./primitives/separator";
 import { TrayTextInput } from "./primitives/text-input";
 import { TrayPage } from "./primitives/page";
+import { TrayPages } from "./primitives/pages";
+export { useTrayPages } from "./pages-context";
 
 export const Tray = {
   Root: TrayRoot,
@@ -20,4 +22,5 @@ export const Tray = {
   Section: TraySection,
   TextInput: TrayTextInput,
   Page: TrayPage,
+  Pages: TrayPages,
 };

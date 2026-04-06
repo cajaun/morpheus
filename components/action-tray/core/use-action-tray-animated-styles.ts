@@ -19,6 +19,7 @@ type Params = {
   footerHeight: { value: number };
   keyboardHeight: { value: number };
   fullScreen: boolean;
+  visible: boolean;
 };
 
 export const useActionTrayAnimatedStyles = ({
@@ -28,6 +29,7 @@ export const useActionTrayAnimatedStyles = ({
   footerHeight,
   keyboardHeight,
   fullScreen,
+  visible,
 }: Params) => {
   const { bottom } = useSafeAreaInsets();
 
@@ -83,11 +85,12 @@ export const useActionTrayAnimatedStyles = ({
 
   const fullScreenSurfaceFillStyle = useAnimatedStyle(
     () => ({
-      opacity: fullScreen
-        ? withDelay(MORPH_DURATION, withTiming(1, {}))
-        : withTiming(0, {}),
+      opacity:
+        fullScreen && visible
+          ? withDelay(MORPH_DURATION, withTiming(1, { duration: 0 }))
+          : withTiming(0, { duration: 0 }),
     }),
-    [fullScreen],
+    [fullScreen, visible],
   );
 
   return {

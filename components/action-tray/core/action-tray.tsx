@@ -108,6 +108,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       footerHeight,
       keyboardHeight: trayKeyboardHeight,
       fullScreen: presentationFullScreen,
+      visible,
     });
 
     const layoutAnimationConfig = useMemo(

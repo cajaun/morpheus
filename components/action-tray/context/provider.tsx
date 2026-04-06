@@ -6,12 +6,10 @@ import React, {
   useRef,
 } from "react";
 import { TextInput } from "react-native";
-import { useSharedValue } from "react-native-reanimated";
 import { ActionTray } from "@/components/action-tray/core/action-tray";
 import { useActionTrayKeyboard } from "@/components/action-tray/core/use-action-tray-keyboard";
 import { log } from "@/components/action-tray/core/logger";
 import { TrayContext, TrayDefinition } from "./context";
-import { TrayTransitionDirection } from "../page-transition-context";
 
 export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -28,18 +26,6 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
     {},
   );
   const justOpenedRef = useRef(false);
-  const transitionDirectionRef = useRef<TrayTransitionDirection>(0);
-  const transitionDirectionShared = useSharedValue<TrayTransitionDirection>(0);
-  const fullScreenSlideActiveShared = useSharedValue(false);
-  const previousActiveStepRef = useRef<{
-    trayId: string | null;
-    index: number;
-    isFullScreen: boolean;
-  }>({
-    trayId: null,
-    index: 0,
-    isFullScreen: false,
-  });
 
   const registerTray = useCallback((id: string, def: TrayDefinition) => {
     setRegistry((prev) => ({ ...prev, [id]: def }));
@@ -95,33 +81,17 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
     (id: string) => {
       dismissFocusedInputs(activeTrayId);
       justOpenedRef.current = true;
-      transitionDirectionRef.current = 0;
-      transitionDirectionShared.value = 0;
-      fullScreenSlideActiveShared.value = false;
       setIndex(0);
       setActiveTrayId(id);
     },
-    [
-      activeTrayId,
-      dismissFocusedInputs,
-      fullScreenSlideActiveShared,
-      transitionDirectionShared,
-    ],
+    [activeTrayId, dismissFocusedInputs],
   );
 
   const close = useCallback(() => {
     dismissFocusedInputs(activeTrayId);
-    transitionDirectionRef.current = 0;
-    transitionDirectionShared.value = 0;
-    fullScreenSlideActiveShared.value = false;
     setActiveTrayId(null);
     setIndex(0);
-  }, [
-    activeTrayId,
-    dismissFocusedInputs,
-    fullScreenSlideActiveShared,
-    transitionDirectionShared,
-  ]);
+  }, [activeTrayId, dismissFocusedInputs]);
 
   const activeTray = activeTrayId ? registry[activeTrayId] : undefined;
   const total = activeTray?.contents.length ?? 0;
@@ -131,58 +101,41 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [total]);
 
   const safeIndex = total > 0 ? Math.max(0, Math.min(index, total - 1)) : 0;
-
-  const isFullScreenSlideStep = useCallback(
-    (stepIndex: number) => {
-      if (!activeTray) {
-        return false;
-      }
-
-      const element = activeTray.contents[stepIndex]?.();
-      if (!element) {
-        return false;
-      }
-
-      return (
-        element.props?.fullScreen === true &&
-        (element.props?.fullScreenTransition ?? "morph") === "slide"
-      );
-    },
-    [activeTray],
-  );
+  const activeContentProps = activeTray?.contents[safeIndex]?.()?.props;
+  const activeFullScreen = activeContentProps?.fullScreen === true;
+  const activeFullScreenCloseBehavior =
+    activeContentProps?.fullScreenCloseBehavior ?? "dismiss";
 
   const next = useCallback(() => {
     dismissFocusedInputs(activeTrayId);
-    const nextIndex = Math.min(safeIndex + 1, totalRef.current - 1);
-    transitionDirectionRef.current = 1;
-    transitionDirectionShared.value = 1;
-    fullScreenSlideActiveShared.value =
-      isFullScreenSlideStep(safeIndex) && isFullScreenSlideStep(nextIndex);
-    setIndex(nextIndex);
-  }, [
-    activeTrayId,
-    dismissFocusedInputs,
-    fullScreenSlideActiveShared,
-    isFullScreenSlideStep,
-    safeIndex,
-    transitionDirectionShared,
-  ]);
+    setIndex((current) => Math.min(current + 1, totalRef.current - 1));
+  }, [activeTrayId, dismissFocusedInputs]);
 
   const back = useCallback(() => {
     dismissFocusedInputs(activeTrayId);
-    const nextIndex = Math.max(safeIndex - 1, 0);
-    transitionDirectionRef.current = -1;
-    transitionDirectionShared.value = -1;
-    fullScreenSlideActiveShared.value =
-      isFullScreenSlideStep(safeIndex) && isFullScreenSlideStep(nextIndex);
-    setIndex(nextIndex);
+    setIndex((current) => Math.max(current - 1, 0));
+  }, [activeTrayId, dismissFocusedInputs]);
+
+  const requestClose = useCallback(() => {
+    dismissFocusedInputs(activeTrayId);
+
+    if (
+      activeFullScreen &&
+      activeFullScreenCloseBehavior === "returnToShell" &&
+      safeIndex > 0
+    ) {
+      setIndex((current) => Math.max(current - 1, 0));
+      return;
+    }
+
+    setActiveTrayId(null);
+    setIndex(0);
   }, [
+    activeFullScreen,
+    activeFullScreenCloseBehavior,
     activeTrayId,
     dismissFocusedInputs,
-    fullScreenSlideActiveShared,
-    isFullScreenSlideStep,
     safeIndex,
-    transitionDirectionShared,
   ]);
 
   useEffect(() => {
@@ -191,37 +144,12 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [activeTrayId]);
 
-  useEffect(() => {
-    const nextActiveStep = {
-      trayId: activeTrayId,
-      index: safeIndex,
-      isFullScreen: activeTray?.contents[safeIndex]?.()?.props?.fullScreen === true,
-    };
-    const previousActiveStep = previousActiveStepRef.current;
-
-    const didChange =
-      previousActiveStep.trayId !== nextActiveStep.trayId ||
-      previousActiveStep.index !== nextActiveStep.index;
-
-    if (didChange) {
-      log("PROVIDER STEP CHANGE", {
-        from: previousActiveStep,
-        to: nextActiveStep,
-        total,
-        sameTray: previousActiveStep.trayId === nextActiveStep.trayId,
-        previousFullScreen: previousActiveStep.isFullScreen,
-        nextFullScreen: nextActiveStep.isFullScreen,
-      });
-    }
-
-    previousActiveStepRef.current = nextActiveStep;
-  }, [activeTrayId, safeIndex, total]);
-
   const ctxValue = useMemo(
     () => ({
       activeTrayId,
       openTray,
       close,
+      requestClose,
       next,
       back,
       index: safeIndex,
@@ -230,12 +158,12 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
       registerTray,
       registerFocusable,
       dismissKeyboard: () => dismissFocusedInputs(activeTrayId),
-      transitionDirection: transitionDirectionRef.current,
     }),
     [
       activeTrayId,
       back,
       close,
+      requestClose,
       dismissFocusedInputs,
       next,
       openTray,
@@ -265,8 +193,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
 
       {children}
 
-      {/* Render one ActionTray per registered tray — all at root level so
-          position: absolute resolves against the screen, not a child container. */}
+
       {Object.entries(registry).map(([trayId, def]) => {
         const isActive = activeTrayId === trayId;
         const trayTotal = def.contents.length;
@@ -278,8 +205,6 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
         const isFullScreen = contentEl?.props?.fullScreen === true;
         const isFullScreenDraggable =
           contentEl?.props?.fullScreenDraggable !== false;
-        const fullScreenTransition =
-          contentEl?.props?.fullScreenTransition ?? "morph";
         const containerStyle = contentEl?.props?.style ?? undefined;
         const containerClassName = contentEl?.props?.className;
 
@@ -288,31 +213,17 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
         const footerClassName = footerEl?.props?.className;
 
         const isFirstRender = justOpenedRef.current && trayIndex === 0;
-        const previousStepMeta = previousActiveStepRef.current;
-        const fullScreenSlideEnabled =
-          isActive &&
-          isFullScreen &&
-          fullScreenTransition === "slide" &&
-          previousStepMeta.trayId === trayId &&
-          previousStepMeta.isFullScreen === true &&
-          !isFirstRender;
 
         const rawContent = isActive
           ? React.cloneElement(contentEl, {
               stepKey: `${trayId}-${trayIndex}`,
-              // The shell owns container visuals now. Reapplying them on the
-              // animated inner wrapper creates a second independently-sized box.
+
               className: undefined,
               style: undefined,
               skipEntering: isFirstRender,
               skipExiting: false,
               fullScreen: isFullScreen,
               fullScreenDraggable: isFullScreenDraggable,
-              fullScreenTransition,
-              transitionDirection: transitionDirectionRef.current,
-              fullScreenSlideEnabled,
-              transitionDirectionShared,
-              fullScreenSlideActiveShared,
               step: trayIndex,
               total: trayTotal,
             })
@@ -323,8 +234,6 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
             trayId,
             trayIndex,
             isFirstRender,
-            fullScreenSlideEnabled,
-            transitionDirection: transitionDirectionRef.current,
           });
         }
 
@@ -342,7 +251,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
             visible={isActive}
             content={rawContent}
             footer={footer}
-            onClose={close}
+            onClose={requestClose}
             trayId={isActive ? `${trayId}-${trayIndex}` : undefined}
             fullScreen={isFullScreen}
             fullScreenDraggable={isFullScreenDraggable}
