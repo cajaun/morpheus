@@ -1,8 +1,8 @@
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Stack } from "expo-router";
-import "./global.css";
-import { TrayProvider } from "@/components/action-tray/context/provider";
 import { useFonts } from "expo-font";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { TrayProvider } from "@/features/action-tray";
+import "./global.css";
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -15,7 +15,10 @@ export default function RootLayout() {
     "Sf-thin": require("../assets/fonts/SF-Pro-Rounded-Thin.otf"),
   });
 
-  if (!loaded) return null;
+  if (!loaded) {
+    return null;
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <TrayProvider>
