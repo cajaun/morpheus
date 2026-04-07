@@ -8,6 +8,7 @@ export type ActionTrayProps = {
   style?: StyleProp<ViewStyle>;
   onClose: () => void;
   onCloseComplete?: () => void;
+  rootTrayId?: string;
   content?: React.ReactNode;
   footer?: React.ReactNode;
   trayId?: string;

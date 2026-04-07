@@ -6,14 +6,15 @@ import React, {
   useState,
 } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
-import type { SharedValue } from "react-native-reanimated";
 import { ActionTray } from "../core/action-tray";
 import { TrayStepContent } from "../tray-step-content";
 import {
   resolveTrayStepOptions,
   TrayScopeProvider,
   TrayStepOptionsProvider,
-  type TrayRegistration,
+  useTrayHostActions,
+  useTrayHostSelector,
+  useTrayRuntimeStore,
 } from "./tray-context";
 
 const clampIndex = (index: number, total: number) => {
@@ -70,25 +71,13 @@ const resolveNextActiveSlotIndex = (
   return hiddenSlotIndex >= 0 ? hiddenSlotIndex : 0;
 };
 
-type Props = {
-  registry: Record<string, TrayRegistration>;
-  activeTrayId: string | null;
-  activeIndex: number;
-  keyboardHeight: SharedValue<number>;
-  requestCloseActiveTray: () => void;
-  dismissKeyboardForTray: (trayId?: string | null) => void;
-  justOpenedRef: React.MutableRefObject<boolean>;
-};
-
-export const TrayPresenter: React.FC<Props> = ({
-  registry,
-  activeTrayId,
-  activeIndex,
-  keyboardHeight,
-  requestCloseActiveTray,
-  dismissKeyboardForTray,
-  justOpenedRef,
-}) => {
+export const TrayPresenter: React.FC = () => {
+  const registry = useTrayHostSelector((state) => state.registry);
+  const activeTrayId = useTrayHostSelector((state) => state.activeTrayId);
+  const activeIndex = useTrayHostSelector((state) => state.activeIndex);
+  const keyboardHeight = useTrayHostSelector((state) => state.keyboardHeight);
+  const { dismissKeyboardForTray, requestCloseActiveTray } = useTrayHostActions();
+  const { justOpenedRef } = useTrayRuntimeStore();
   const nextAssignmentIdRef = useRef(0);
   const activeSlotIndexRef = useRef<number | null>(null);
   const previousActiveRootTrayIdRef = useRef<string | null>(null);
@@ -241,6 +230,10 @@ export const TrayPresenter: React.FC<Props> = ({
     });
 
     previousActiveRootTrayIdRef.current = nextRootTrayId;
+
+    if (nextRootTrayId !== null) {
+      justOpenedRef.current = false;
+    }
   }, [activeHost]);
 
   return (
@@ -253,6 +246,7 @@ export const TrayPresenter: React.FC<Props> = ({
             key={`tray-host-slot-${index}`}
             visible={slot.visible}
             interactive={slot.interactive}
+            rootTrayId={payload?.rootTrayId}
             content={payload?.content}
             footer={payload?.footer}
             onClose={slot.interactive ? requestCloseActiveTray : () => {}}

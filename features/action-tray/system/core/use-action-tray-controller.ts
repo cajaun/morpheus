@@ -19,6 +19,7 @@ type Params = {
   content?: React.ReactNode;
   footer?: React.ReactNode;
   onCloseComplete?: () => void;
+  rootTrayId?: string;
   trayId?: string;
   fullScreen?: boolean;
   fullScreenDraggable?: boolean;
@@ -37,6 +38,7 @@ export const useActionTrayController = ({
   content,
   footer,
   onCloseComplete,
+  rootTrayId,
   trayId,
   fullScreen,
   fullScreenDraggable,
@@ -105,6 +107,7 @@ export const useActionTrayController = ({
 
   const openCloseLifecycle = useActionTrayOpenCloseLifecycle({
     visible,
+    rootTrayId,
     trayId,
     footer,
     onCloseComplete,

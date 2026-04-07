@@ -12,7 +12,6 @@ import {
   TextInputProps,
 } from "react-native";
 import {
-  useTrayFlow,
   useTrayHostActions,
   useTrayScope,
 } from "../runtime/tray-context";
@@ -21,8 +20,7 @@ export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
   ({ autoFocus = false, ...props }, forwardedRef) => {
     const ref = useRef<TextInput>(null);
     const trayId = useTrayScope();
-    const { anticipateKeyboard } = useTrayFlow();
-    const { registerFocusable } = useTrayHostActions();
+    const { anticipateKeyboard, registerFocusable } = useTrayHostActions();
 
     useImperativeHandle(forwardedRef, () => ref.current as TextInput);
 

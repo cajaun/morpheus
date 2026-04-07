@@ -4,6 +4,7 @@ import {
   useTrayHostActions,
   useTrayScope,
 } from "../runtime/tray-context";
+import { markTrayTriggerPressed } from "../telemetry/tray-open-timing";
 
 type TrayTriggerProps = PressableProps & {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ export const TrayTrigger: React.FC<TrayTriggerProps> = ({
     <Pressable
       {...rest}
       onPress={(event) => {
+        markTrayTriggerPressed(trayId);
         onPress?.(event);
         openTray(trayId);
       }}

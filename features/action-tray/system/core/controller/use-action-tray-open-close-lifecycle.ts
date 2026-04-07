@@ -5,9 +5,15 @@ import {
   TRAY_SPRING_CONFIG,
 } from "../constants";
 import { log } from "../logger";
+import {
+  markTrayOpenFinished,
+  markTrayOpenStarted,
+  markTrayReadyToOpen,
+} from "../../telemetry/tray-open-timing";
 
 type Params = {
   visible: boolean;
+  rootTrayId?: string;
   trayId?: string;
   footer?: ReactNode;
   onCloseComplete?: () => void;
@@ -49,6 +55,7 @@ type Params = {
 
 export const useActionTrayOpenCloseLifecycle = ({
   visible,
+  rootTrayId,
   trayId,
   footer,
   onCloseComplete,
@@ -101,6 +108,7 @@ export const useActionTrayOpenCloseLifecycle = ({
       TRAY_SPRING_CONFIG,
       (finished) => {
         if (finished) {
+          runOnJS(markTrayOpenFinished)(rootTrayId ?? trayId ?? "unknown", trayId);
           runOnJS(log)("OPEN SPRING FINISHED");
           runOnJS(enableLayout)();
         }
@@ -123,6 +131,7 @@ export const useActionTrayOpenCloseLifecycle = ({
         existingTrayId: renderedTrayId,
       });
 
+      markTrayOpenStarted(rootTrayId ?? trayId ?? "unknown", trayId);
       showLatestSnapshot();
       beginOpenMeasurement(!!footer);
       log("OPEN — waiting for measurement");
@@ -180,6 +189,7 @@ export const useActionTrayOpenCloseLifecycle = ({
       needsFooter: !!renderedFooter,
     });
 
+    markTrayReadyToOpen(rootTrayId ?? trayId ?? "unknown", trayId);
     completePendingOpen();
     doOpenSpring();
   }, [
@@ -188,7 +198,9 @@ export const useActionTrayOpenCloseLifecycle = ({
     measurements.state.isReadyToOpen,
     measuredFooterHeight,
     renderedFooter,
+    rootTrayId,
     shared.contentHeight,
+    trayId,
   ]);
 
   return {

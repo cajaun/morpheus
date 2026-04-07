@@ -1,4 +1,9 @@
-import React, { createContext, useContext } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useSyncExternalStore,
+} from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 
@@ -82,19 +87,30 @@ export type TrayHostActionsValue = {
   ) => () => void;
 };
 
-const TrayHostStateContext = createContext<TrayHostStateValue | null>(null);
-const TrayHostActionsContext = createContext<TrayHostActionsValue | null>(null);
+export type TrayRuntimeStore = {
+  getState: () => TrayHostStateValue;
+  subscribe: (listener: () => void) => () => void;
+  actions: TrayHostActionsValue;
+  justOpenedRef: React.MutableRefObject<boolean>;
+  setDependencies: (params: {
+    keyboardHeight: SharedValue<number>;
+    anticipateKeyboard: () => void;
+    dismissFocusedInputs: (trayId?: string | null) => void;
+    registerFocusable: TrayHostActionsValue["registerFocusable"];
+  }) => void;
+};
+
+const TrayStoreContext = createContext<TrayRuntimeStore | null>(null);
 const TrayScopeContext = createContext<string | null>(null);
 const TrayStepOptionsContext =
   createContext<ResolvedTrayStepOptions>(DEFAULT_TRAY_STEP_OPTIONS);
 
-export const TrayHostStateProvider = TrayHostStateContext.Provider;
-export const TrayHostActionsProvider = TrayHostActionsContext.Provider;
+export const TrayStoreProvider = TrayStoreContext.Provider;
 export const TrayScopeProvider = TrayScopeContext.Provider;
 export const TrayStepOptionsProvider = TrayStepOptionsContext.Provider;
 
-export const useTrayHostState = () => {
-  const ctx = useContext(TrayHostStateContext);
+export const useTrayRuntimeStore = () => {
+  const ctx = useContext(TrayStoreContext);
 
   if (!ctx) {
     throw new Error("Must be used within TrayProvider");
@@ -103,14 +119,26 @@ export const useTrayHostState = () => {
   return ctx;
 };
 
+export const useTrayHostSelector = <T,>(
+  selector: (state: TrayHostStateValue) => T,
+) => {
+  const store = useTrayRuntimeStore();
+  const getSnapshot = useCallback(
+    () => selector(store.getState()),
+    [selector, store],
+  );
+
+  return useSyncExternalStore(
+    store.subscribe,
+    getSnapshot,
+    getSnapshot,
+  );
+};
+
+export const useTrayHostState = () => useTrayHostSelector((state) => state);
+
 export const useTrayHostActions = () => {
-  const ctx = useContext(TrayHostActionsContext);
-
-  if (!ctx) {
-    throw new Error("Must be used within TrayProvider");
-  }
-
-  return ctx;
+  return useTrayRuntimeStore().actions;
 };
 
 export const useTrayHost = () => {
@@ -137,7 +165,11 @@ const clampIndex = (index: number, total: number) => {
 
 export const useTrayFlow = () => {
   const trayId = useTrayScope();
-  const { registry, activeTrayId, activeIndex } = useTrayHostState();
+  const registration = useTrayHostSelector((state) =>
+    trayId ? state.registry[trayId] : undefined,
+  );
+  const activeTrayId = useTrayHostSelector((state) => state.activeTrayId);
+  const activeIndex = useTrayHostSelector((state) => state.activeIndex);
   const {
     openTray,
     closeActiveTray,
@@ -152,7 +184,6 @@ export const useTrayFlow = () => {
     throw new Error("Must be used within Tray.Root scope");
   }
 
-  const registration = registry[trayId];
   const total = registration?.steps.length ?? 0;
   const isActive = activeTrayId === trayId;
   const index = isActive ? clampIndex(activeIndex, total) : 0;

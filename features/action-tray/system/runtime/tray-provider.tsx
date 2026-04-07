@@ -1,9 +1,6 @@
 import React from "react";
 import { useActionTrayKeyboard } from "../core/input/use-action-tray-keyboard";
-import {
-  TrayHostActionsProvider,
-  TrayHostStateProvider,
-} from "./tray-context";
+import { TrayStoreProvider } from "./tray-context";
 import { TrayPresenter } from "./tray-presenter";
 import { useTrayFocusManager } from "./use-tray-focus-manager";
 import { useTrayRuntime } from "./use-tray-runtime";
@@ -23,20 +20,10 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
   });
 
   return (
-    <TrayHostActionsProvider value={runtime.actions}>
-      <TrayHostStateProvider value={runtime.state}>
-        {children}
+    <TrayStoreProvider value={runtime}>
+      {children}
 
-        <TrayPresenter
-          registry={runtime.state.registry}
-          activeTrayId={runtime.state.activeTrayId}
-          activeIndex={runtime.state.activeIndex}
-          keyboardHeight={runtime.state.keyboardHeight}
-          requestCloseActiveTray={runtime.actions.requestCloseActiveTray}
-          dismissKeyboardForTray={runtime.actions.dismissKeyboardForTray}
-          justOpenedRef={runtime.justOpenedRef}
-        />
-      </TrayHostStateProvider>
-    </TrayHostActionsProvider>
+      <TrayPresenter />
+    </TrayStoreProvider>
   );
 };
