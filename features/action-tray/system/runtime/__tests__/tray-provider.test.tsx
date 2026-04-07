@@ -18,18 +18,18 @@ import {
 } from "@/features/action-tray";
 
 jest.mock("../../core/action-tray", () => {
-  return {
-    ActionTray: ({ visible, content, footer }: any) => {
-      if (!visible) {
-        return null;
-      }
+  const ReactNative = require("react-native");
 
-      return content ?? footer ?? null;
-    },
+  return {
+    ActionTray: ({ visible, content, footer }: any) => (
+      <ReactNative.View testID="action-tray-host">
+        {visible ? content ?? footer ?? null : null}
+      </ReactNative.View>
+    ),
   };
 });
 
-jest.mock("../../core/use-action-tray-keyboard", () => {
+jest.mock("../../core/input/use-action-tray-keyboard", () => {
   const createSharedValue = (initialValue: number) => ({
     value: initialValue,
     get() {
@@ -69,6 +69,13 @@ const FlowSpy = () => {
   latestFlow = useTrayFlow();
   return null;
 };
+
+const getRenderedTrayHosts = () =>
+  activeRenderer!.root.findAll(
+    (node) =>
+      typeof node.type === "string" &&
+      node.props.testID === "action-tray-host",
+  );
 
 const step = (key: string, options?: TrayStepDefinition["options"]): TrayStepDefinition => ({
   key,
@@ -241,5 +248,38 @@ describe("TrayProvider runtime", () => {
 
     expect(latestHost!.activeIndex).toBe(1);
     expect(latestHost!.registry[latestFlow!.trayId]?.steps).toHaveLength(2);
+  });
+
+  it("keeps the mounted tray host pool bounded during tray switches", () => {
+    act(() => {
+      activeRenderer = TestRenderer.create(
+        <TrayProvider>
+          <HostSpy />
+          <Tray.Root id="alpha" steps={[step("one")]}>
+            <></>
+          </Tray.Root>
+          <Tray.Root id="beta" steps={[step("one")]}>
+            <></>
+          </Tray.Root>
+          <Tray.Root id="gamma" steps={[step("one")]}>
+            <></>
+          </Tray.Root>
+        </TrayProvider>,
+      );
+    });
+
+    expect(getRenderedTrayHosts()).toHaveLength(2);
+
+    act(() => {
+      latestHost!.openTray("alpha");
+    });
+
+    expect(getRenderedTrayHosts().length).toBeLessThanOrEqual(2);
+
+    act(() => {
+      latestHost!.openTray("beta");
+    });
+
+    expect(getRenderedTrayHosts()).toHaveLength(2);
   });
 });

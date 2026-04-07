@@ -40,7 +40,7 @@ const FirstStep = () => {
 
       <Tray.Section>
         <Text className="font-sfMedium" style={trayDemoText.bodyLarge}>
-          This is a test
+          This is a test 
         </Text>
 
         <Text

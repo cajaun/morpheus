@@ -10,7 +10,7 @@ import {
   MORPH_DURATION,
   SCREEN_HEIGHT,
   TRAY_KEYBOARD_GAP,
-} from "./constants";
+} from "../constants";
 
 type Params = {
   translateY: { value: number };

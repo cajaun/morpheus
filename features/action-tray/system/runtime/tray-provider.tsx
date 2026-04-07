@@ -1,5 +1,5 @@
 import React from "react";
-import { useActionTrayKeyboard } from "../core/use-action-tray-keyboard";
+import { useActionTrayKeyboard } from "../core/input/use-action-tray-keyboard";
 import {
   TrayHostActionsProvider,
   TrayHostStateProvider,

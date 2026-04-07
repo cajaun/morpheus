@@ -1,6 +1,9 @@
 import React from "react";
 import { Pressable, PressableProps } from "react-native";
-import { useTrayFlow } from "../runtime/tray-context";
+import {
+  useTrayHostActions,
+  useTrayScope,
+} from "../runtime/tray-context";
 
 type TrayTriggerProps = PressableProps & {
   children: React.ReactNode;
@@ -11,14 +14,19 @@ export const TrayTrigger: React.FC<TrayTriggerProps> = ({
   onPress,
   ...rest
 }) => {
-  const { open } = useTrayFlow();
+  const trayId = useTrayScope();
+  const { openTray } = useTrayHostActions();
+
+  if (!trayId) {
+    throw new Error("Tray.Trigger must be used within Tray.Root");
+  }
 
   return (
     <Pressable
       {...rest}
       onPress={(event) => {
         onPress?.(event);
-        open();
+        openTray(trayId);
       }}
     >
       {children}

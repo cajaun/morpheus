@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { LayoutChangeEvent } from "react-native";
 import { useSharedValue, type SharedValue } from "react-native-reanimated";
-import { log } from "./logger";
+import { log } from "../logger";
 
 type Params = {
   contentHeight: SharedValue<number>;

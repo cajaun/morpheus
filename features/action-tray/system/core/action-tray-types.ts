@@ -4,8 +4,10 @@ import type { SharedValue } from "react-native-reanimated";
 
 export type ActionTrayProps = {
   visible: boolean;
+  interactive?: boolean;
   style?: StyleProp<ViewStyle>;
   onClose: () => void;
+  onCloseComplete?: () => void;
   content?: React.ReactNode;
   footer?: React.ReactNode;
   trayId?: string;

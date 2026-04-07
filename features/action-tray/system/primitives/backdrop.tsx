@@ -9,11 +9,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 type BackdropProps = {
   onTap: () => void;
   isRendered: boolean;
+  interactive?: boolean;
   progress: SharedValue<number>;
 };
 
 const Backdrop: React.FC<BackdropProps> = React.memo(
-  ({ isRendered, onTap, progress }) => {
+  ({ isRendered, interactive = true, onTap, progress }) => {
     const { bottom } = useSafeAreaInsets();
 
     const rBackdropStyle = useAnimatedStyle(() => {
@@ -37,7 +38,7 @@ const Backdrop: React.FC<BackdropProps> = React.memo(
 
         <Pressable
           onPress={onTap}
-          pointerEvents={isRendered ? "auto" : "none"}
+          pointerEvents={interactive && isRendered ? "auto" : "none"}
           style={[
             StyleSheet.absoluteFillObject,
             {

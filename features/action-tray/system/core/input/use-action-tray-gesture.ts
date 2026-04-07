@@ -6,6 +6,7 @@ type Params = {
   translateY: { value: number };
   totalHeight: { value: number };
   context: { value: { y: number } };
+  interactive: boolean;
   fullScreen: boolean;
   fullScreenDraggable: boolean;
   keyboardHeight: { value: number };
@@ -17,6 +18,7 @@ export const useActionTrayGesture = ({
   translateY,
   totalHeight,
   context,
+  interactive,
   fullScreen,
   fullScreenDraggable,
   keyboardHeight,
@@ -27,7 +29,7 @@ export const useActionTrayGesture = ({
     const dragEnabled = !fullScreen || fullScreenDraggable;
 
     return Gesture.Pan()
-      .enabled(dragEnabled)
+      .enabled(interactive && dragEnabled)
       .onStart(() => {
         if (keyboardHeight.value > 0) {
           runOnJS(dismissKeyboard)();
@@ -65,6 +67,7 @@ export const useActionTrayGesture = ({
     dismissKeyboard,
     fullScreen,
     fullScreenDraggable,
+    interactive,
     keyboardHeight,
     onRequestClose,
     context,

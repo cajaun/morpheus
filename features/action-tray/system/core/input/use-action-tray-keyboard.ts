@@ -12,7 +12,7 @@ import {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { log } from "./logger";
+import { log } from "../logger";
 
 const DEFAULT_KEYBOARD_DURATION = 220;
 const ANTICIPATE_DURATION = 120;

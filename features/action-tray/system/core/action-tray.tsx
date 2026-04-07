@@ -3,11 +3,11 @@ import { StyleSheet } from "react-native";
 import Animated from "react-native-reanimated";
 import { GestureDetector } from "react-native-gesture-handler";
 import { Backdrop } from "../primitives/backdrop";
+import { createTrayLayoutTransition } from "./animation/action-tray-layout";
+import { styles } from "./animation/action-tray-styles";
+import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animated-styles";
+import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayController } from "./use-action-tray-controller";
-import { useActionTrayGesture } from "./use-action-tray-gesture";
-import { useActionTrayAnimatedStyles } from "./use-action-tray-animated-styles";
-import { createTrayLayoutTransition } from "./action-tray-layout";
-import { styles } from "./action-tray-styles";
 import { HORIZONTAL_MARGIN, TRAY_VERTICAL_PADDING } from "./constants";
 import { ActionTrayProps, ActionTrayRef } from "./action-tray-types";
 
@@ -16,12 +16,14 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     {
       style,
       onClose,
+      onCloseComplete,
       content,
       footer,
       trayId,
       fullScreen,
       fullScreenDraggable,
       visible,
+      interactive = true,
       containerStyle,
       className,
       footerClassName,
@@ -33,8 +35,10 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
   ) => {
     const controller = useActionTrayController({
       visible,
+      interactive,
       content,
       footer,
+      onCloseComplete,
       trayId,
       fullScreen,
       fullScreenDraggable,
@@ -87,6 +91,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       translateY,
       totalHeight,
       context,
+      interactive,
       fullScreen: presentationFullScreen,
       fullScreenDraggable: renderedFullScreenDraggable,
       keyboardHeight: trayKeyboardHeight,
@@ -152,6 +157,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         <Backdrop
           onTap={handleRequestClose}
           isRendered={renderedTrayId !== undefined}
+          interactive={interactive}
           progress={progress}
         />
 
@@ -183,7 +189,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             <Animated.View style={styles.content}>
               <Animated.View
                 style={contentPaddingStyle}
-              
                 onLayout={handleContentLayout}
               >
                 {renderedContent}
@@ -203,7 +208,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             renderedFooterStyle,
             { opacity: renderedFooter ? 1 : 0 },
           ]}
-          pointerEvents={renderedFooter ? "auto" : "none"}
+          pointerEvents={renderedFooter && interactive ? "auto" : "none"}
         >
           {renderedFooter ?? null}
         </Animated.View>

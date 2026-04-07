@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from "react";
 import { StyleProp, ViewStyle } from "react-native";
-import { RenderedTrayState } from "./action-tray-types";
+import { RenderedTrayState } from "../action-tray-types";
 
 type TraySnapshot = {
   content?: React.ReactNode;
