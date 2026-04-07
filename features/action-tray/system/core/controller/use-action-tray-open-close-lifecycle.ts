@@ -1,5 +1,17 @@
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
-import { runOnJS, withSpring, type SharedValue } from "react-native-reanimated";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  runOnJS,
+  runOnUI,
+  withSpring,
+  type SharedValue,
+} from "react-native-reanimated";
 import {
   SCREEN_HEIGHT,
   TRAY_SPRING_CONFIG,
@@ -49,6 +61,7 @@ type Params = {
     active: SharedValue<boolean>;
     animationTravel: SharedValue<number>;
     closeGeneration: SharedValue<number>;
+    surfaceOpacity: SharedValue<number>;
   };
   resolveClosedTranslateY: (nextFooterHeight?: number) => number;
 };
@@ -65,6 +78,7 @@ export const useActionTrayOpenCloseLifecycle = ({
   resolveClosedTranslateY,
 }: Params) => {
   const justOpenedRef = useRef(false);
+  const [isSurfaceReady, setIsSurfaceReady] = useState(true);
   const {
     showLatestSnapshot,
     clear,
@@ -83,6 +97,8 @@ export const useActionTrayOpenCloseLifecycle = ({
     log("CLOSE SPRING FINISHED — resetting tray state");
     shared.translateY.value = SCREEN_HEIGHT;
     shared.animationTravel.value = SCREEN_HEIGHT;
+    shared.surfaceOpacity.value = 1;
+    setIsSurfaceReady(true);
     clear();
     reset();
     onCloseComplete?.();
@@ -100,29 +116,46 @@ export const useActionTrayOpenCloseLifecycle = ({
 
     const openTravel = resolveClosedTranslateY(nextFooterHeight);
 
-    shared.animationTravel.value = openTravel;
-    shared.translateY.value = openTravel;
+    runOnUI(
+      (
+        nextOpenTravel: number,
+        nextFooterHeightValue: number,
+      ) => {
+        "worklet";
 
-    shared.translateY.value = withSpring(
-      0,
-      TRAY_SPRING_CONFIG,
-      (finished) => {
-        if (finished) {
-          runOnJS(markTrayOpenFinished)(rootTrayId ?? trayId ?? "unknown", trayId);
-          runOnJS(log)("OPEN SPRING FINISHED");
-          runOnJS(enableLayout)();
-        }
-      },
-    );
+        shared.footerHeight.value = nextFooterHeightValue;
+        shared.animationTravel.value = nextOpenTravel;
+        shared.translateY.value = nextOpenTravel;
+        shared.surfaceOpacity.value = 1;
+        shared.active.value = true;
 
-    shared.active.value = true;
+        shared.translateY.value = withSpring(
+          0,
+          TRAY_SPRING_CONFIG,
+          (finished) => {
+            if (finished) {
+              runOnJS(markTrayOpenFinished)(
+                rootTrayId ?? trayId ?? "unknown",
+                trayId,
+              );
+              runOnJS(log)("OPEN SPRING FINISHED");
+              runOnJS(enableLayout)();
+            }
+          },
+        );
+      }
+    )(openTravel, nextFooterHeight);
+
+    setIsSurfaceReady(true);
   }, [enableLayout, measuredFooterHeight, resolveClosedTranslateY, shared]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (visible) {
       shared.translateY.value = SCREEN_HEIGHT;
+      shared.surfaceOpacity.value = 0;
       shared.closeGeneration.value += 1;
       justOpenedRef.current = true;
+      setIsSurfaceReady(false);
 
       log("OPEN START", {
         trayId,
@@ -136,6 +169,7 @@ export const useActionTrayOpenCloseLifecycle = ({
       beginOpenMeasurement(!!footer);
       log("OPEN — waiting for measurement");
     } else {
+      setIsSurfaceReady(true);
       const closeTravel = Math.max(
         resolveClosedTranslateY(),
         shared.translateY.value,
@@ -206,6 +240,9 @@ export const useActionTrayOpenCloseLifecycle = ({
   return {
     refs: {
       justOpenedRef,
+    },
+    state: {
+      isSurfaceReady,
     },
   };
 };

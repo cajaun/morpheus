@@ -85,7 +85,7 @@ export const useActionTrayMeasurements = ({
     setLayoutEnabled(false);
   }, [contentHeight, footerHeight, measuredContentHeight, measuredFooterHeight]);
 
-    const handleContentLayout = useCallback(
+  const handleContentLayout = useCallback(
     (e: LayoutChangeEvent) => {
       const height = e.nativeEvent.layout.height;
       const resolvedHeight = resolveContentHeight

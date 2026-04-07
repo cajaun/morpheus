@@ -120,6 +120,7 @@ export const useActionTrayController = ({
       active: presentation.shared.active,
       animationTravel: presentation.shared.animationTravel,
       closeGeneration: presentation.shared.closeGeneration,
+      surfaceOpacity: presentation.shared.surfaceOpacity,
     },
     resolveClosedTranslateY: presentation.helpers.resolveClosedTranslateY,
   });
@@ -169,6 +170,7 @@ export const useActionTrayController = ({
       active: presentation.shared.active,
       context: presentation.shared.context,
       hasFooter: presentation.shared.hasFooter,
+      surfaceOpacity: presentation.shared.surfaceOpacity,
       totalHeight: presentation.shared.totalHeight,
       progress: presentation.shared.progress,
     },
@@ -177,6 +179,7 @@ export const useActionTrayController = ({
       footerMeasured: measurements.state.footerMeasured,
       contentMeasured: measurements.state.contentMeasured,
       pendingOpen: measurements.state.pendingOpen,
+      isSurfaceReady: openCloseLifecycle.state.isSurfaceReady,
       renderedFooter: renderState.state.renderedFooter,
       renderedContent: renderState.state.renderedContent,
       renderedTrayId: renderState.state.renderedTrayId,

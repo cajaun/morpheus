@@ -16,6 +16,7 @@ type Params = {
   translateY: { value: number };
   contentHeight: { value: number };
   hasFooter: { value: boolean };
+  surfaceOpacity: { value: number };
   footerHeight: { value: number };
   keyboardHeight: { value: number };
   fullScreen: boolean;
@@ -26,6 +27,7 @@ export const useActionTrayAnimatedStyles = ({
   translateY,
   contentHeight,
   hasFooter,
+  surfaceOpacity,
   footerHeight,
   keyboardHeight,
   fullScreen,
@@ -78,6 +80,14 @@ export const useActionTrayAnimatedStyles = ({
     transform: [{ translateY: translateY.value }],
   }));
 
+  const surfaceVisibilityStyle = useAnimatedStyle(() => ({
+    opacity: surfaceOpacity.value,
+  }));
+
+  const footerVisibilityStyle = useAnimatedStyle(() => ({
+    opacity: hasFooter.value ? surfaceOpacity.value : 0,
+  }));
+
   const contentPaddingStyle = useAnimatedStyle(() => ({
     paddingHorizontal: 0,
     paddingBottom: 0,
@@ -99,6 +109,8 @@ export const useActionTrayAnimatedStyles = ({
     footerContainerStyle,
     dragStyle,
     contentPaddingStyle,
+    surfaceVisibilityStyle,
+    footerVisibilityStyle,
     fullScreenSurfaceFillStyle,
   };
 };

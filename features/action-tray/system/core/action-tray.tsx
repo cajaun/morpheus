@@ -60,11 +60,13 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         footerHeight,
         context,
         hasFooter,
+        surfaceOpacity,
         totalHeight,
         progress,
       },
       state: {
         layoutEnabled,
+        isSurfaceReady,
         renderedFooter,
         renderedContent,
         renderedTrayId,
@@ -93,7 +95,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       translateY,
       totalHeight,
       context,
-      interactive,
+      interactive: interactive && isSurfaceReady,
       fullScreen: presentationFullScreen,
       fullScreenDraggable: renderedFullScreenDraggable,
       keyboardHeight: trayKeyboardHeight,
@@ -107,11 +109,14 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       footerContainerStyle,
       contentPaddingStyle,
       dragStyle,
+      surfaceVisibilityStyle,
+      footerVisibilityStyle,
       fullScreenSurfaceFillStyle,
     } = useActionTrayAnimatedStyles({
       translateY,
       contentHeight,
       hasFooter,
+      surfaceOpacity,
       footerHeight,
       keyboardHeight: trayKeyboardHeight,
       fullScreen: presentationFullScreen,
@@ -183,6 +188,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
               styles.container,
               trayLayoutStyle,
               renderedContainerStyle,
+              surfaceVisibilityStyle,
               dragStyle,
               style,
             ]}
@@ -208,9 +214,11 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             footerContainerStyle,
             dragStyle,
             renderedFooterStyle,
-            { opacity: renderedFooter ? 1 : 0 },
+            footerVisibilityStyle,
           ]}
-          pointerEvents={renderedFooter && interactive ? "auto" : "none"}
+          pointerEvents={
+            renderedFooter && interactive && isSurfaceReady ? "auto" : "none"
+          }
         >
           {renderedFooter ?? null}
         </Animated.View>

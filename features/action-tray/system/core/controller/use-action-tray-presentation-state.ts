@@ -34,6 +34,7 @@ export const useActionTrayPresentationState = ({
   const hasFooter = useSharedValue(false);
   const closeGeneration = useSharedValue(0);
   const animationTravel = useSharedValue(SCREEN_HEIGHT);
+  const surfaceOpacity = useSharedValue(1);
 
   useEffect(() => {
     hasFooter.value = !!renderedFooter;
@@ -132,6 +133,7 @@ export const useActionTrayPresentationState = ({
       hasFooter,
       closeGeneration,
       animationTravel,
+      surfaceOpacity,
       totalHeight,
       progress,
     },
