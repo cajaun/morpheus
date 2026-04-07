@@ -35,7 +35,7 @@ export const PrimaryButton: React.FC<Props> = ({
       }}
     >
       <Text
-        className="font-sfSemibold text-white"
+        className="font-sf-semibold text-white"
         style={trayDemoText.button}
       >
         {label}

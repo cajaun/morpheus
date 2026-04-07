@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { TrayProvider } from "@/features/action-tray";
-import "./global.css";
+import "../global.css";
 
 export default function RootLayout() {
   const [loaded] = useFonts({

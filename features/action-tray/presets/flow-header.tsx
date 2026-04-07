@@ -15,13 +15,13 @@ type TitleWeight =
   | "black";
 
 const weightClassMap: Record<TitleWeight, string> = {
-  thin: "font-sfThin",
-  light: "font-sfLight",
-  regular: "font-sfRegular",
-  medium: "font-sfMedium",
-  semibold: "font-sfSemibold",
-  bold: "font-sfBold",
-  black: "font-sfBlack",
+  thin: "font-sf-thin",
+  light: "font-sf-light",
+  regular: "font-sf-regular",
+  medium: "font-sf-medium",
+  semibold: "font-sf-semibold",
+  bold: "font-sf-bold",
+  black: "font-sf-black",
 };
 
 type Props = {

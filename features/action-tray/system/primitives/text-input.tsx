@@ -5,12 +5,7 @@ import React, {
   useImperativeHandle,
   useRef,
 } from "react";
-import {
-  NativeSyntheticEvent,
-  TextInput,
-  TextInputFocusEventData,
-  TextInputProps,
-} from "react-native";
+import { TextInput, TextInputProps } from "react-native";
 import {
   useTrayHostActions,
   useTrayScope,
@@ -41,8 +36,8 @@ export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
       ref.current?.focus();
     }, [anticipateKeyboard, autoFocus]);
 
-    const handleFocus = useCallback(
-      (event: NativeSyntheticEvent<TextInputFocusEventData>) => {
+    const handleFocus = useCallback<NonNullable<TextInputProps["onFocus"]>>(
+      (event) => {
         anticipateKeyboard();
         props.onFocus?.(event);
       },

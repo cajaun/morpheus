@@ -117,7 +117,7 @@ export const WatchAddressInputStep = () => {
           />
 
           <Text
-            className="font-sfMedium text-center text-[#B6BAC2]"
+            className="font-sf-medium text-center text-[#B6BAC2]"
             style={{
               fontSize: 20,
               lineHeight: 28,
@@ -152,7 +152,7 @@ export const CreateNewWalletStep = () => {
 
         <View style={{ gap: 14 }}>
           <Text
-            className="font-sfSemibold text-[#1B1C1F]"
+            className="font-sf-semibold text-[#1B1C1F]"
             style={{
               fontSize: 22,
               lineHeight: 30,
@@ -163,7 +163,7 @@ export const CreateNewWalletStep = () => {
           </Text>
 
           <Text
-            className="font-sfMedium text-[#9B9EA5]"
+            className="font-sf-medium text-[#9B9EA5]"
             style={{
               fontSize: 18,
               lineHeight: 28,
@@ -201,7 +201,7 @@ export const CreateNewWalletStep = () => {
           </View>
 
           <Text
-            className="font-sfMedium text-[#B6BAC2]"
+            className="font-sf-medium text-[#B6BAC2]"
             style={{
               fontSize: 16,
               lineHeight: 24,
@@ -223,7 +223,7 @@ export const CreateNewWalletStep = () => {
           <View style={{ flex: 1, height: 1, backgroundColor: "#E8E9ED" }} />
 
           <Text
-            className="font-sfMedium text-[#A5A7AD]"
+            className="font-sf-medium text-[#A5A7AD]"
             style={{
               fontSize: 18,
               lineHeight: 24,

@@ -67,7 +67,7 @@ const WatchingWalletsInfoStep = () => {
 
             <View style={{ gap: 2 }}>
               <Text
-                className="font-sfSemibold text-white"
+                className="font-sf-semibold text-white"
                 style={{
                   fontSize: 28,
                   lineHeight: 34,
@@ -78,7 +78,7 @@ const WatchingWalletsInfoStep = () => {
               </Text>
 
               <Text
-                className="font-sfMedium text-[#E7EDF3]"
+                className="font-sf-medium text-[#E7EDF3]"
                 style={{
                   fontSize: 18,
                   lineHeight: 24,
@@ -98,7 +98,7 @@ const WatchingWalletsInfoStep = () => {
             }}
           >
             <Text
-              className="font-sfMedium text-[#9CA0A7]"
+              className="font-sf-medium text-[#9CA0A7]"
               style={{
                 fontSize: 21,
                 lineHeight: 28,

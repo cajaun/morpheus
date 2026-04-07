@@ -45,13 +45,13 @@ export const WalletActionRow = ({
 
       <View style={{ flex: 1 }}>
         <Text
-          className="font-sfSemibold text-[#282828]"
+          className="font-sf-semibold text-[#282828]"
           style={trayDemoText.bodyLarge}
         >
           {label}
         </Text>
 
-        <Text className="font-sfMedium text-[#9FA4AA]" style={trayDemoText.body}>
+        <Text className="font-sf-medium text-[#9FA4AA]" style={trayDemoText.body}>
           {description}
         </Text>
       </View>

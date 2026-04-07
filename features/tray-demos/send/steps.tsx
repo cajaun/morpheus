@@ -60,7 +60,7 @@ const SendDestinationPage = () => {
         <View className="gap-6">
           <View className="flex-row items-center bg-[#141414] rounded-2xl px-4 py-2">
             <Text
-              className="text-[#6B6F76] flex-1 font-sfMedium"
+              className="text-[#6B6F76] flex-1 font-sf-medium"
               style={trayDemoText.bodyLarge}
             >
               To ENS or Address
@@ -71,7 +71,7 @@ const SendDestinationPage = () => {
               onPress={nextPage}
             >
               <Text
-                className="text-white font-sfMedium"
+                className="text-white font-sf-medium"
                 style={trayDemoText.bodyLarge}
               >
                 Paste
@@ -86,19 +86,19 @@ const SendDestinationPage = () => {
 
             <View>
               <Text
-                className="text-white font-sfMedium"
+                className="text-white font-sf-medium"
                 style={trayDemoText.bodyLarge}
               >
                 Scan QR Code
               </Text>
-              <Text className="text-[#6B6F76] font-sfMedium" style={trayDemoText.body}>
+              <Text className="text-[#6B6F76] font-sf-medium" style={trayDemoText.body}>
                 Tap to scan an address
               </Text>
             </View>
           </PressableScale>
 
           <View className="gap-6">
-            <Text className="text-[#6B6F76] font-sfMedium" style={trayDemoText.body}>
+            <Text className="text-[#6B6F76] font-sf-medium" style={trayDemoText.body}>
               Your Wallets
             </Text>
 
@@ -109,12 +109,12 @@ const SendDestinationPage = () => {
 
               <View>
                 <Text
-                  className="text-white font-sfMedium"
+                  className="text-white font-sf-medium"
                   style={trayDemoText.bodyLarge}
                 >
                   Test
                 </Text>
-                <Text className="text-[#6B6F76] font-sfMedium" style={trayDemoText.body}>
+                <Text className="text-[#6B6F76] font-sf-medium" style={trayDemoText.body}>
                   No Previous Transactions
                 </Text>
               </View>
@@ -125,12 +125,12 @@ const SendDestinationPage = () => {
 
               <View>
                 <Text
-                  className="text-white font-sfMedium"
+                  className="text-white font-sf-medium"
                   style={trayDemoText.bodyLarge}
                 >
                   valmiera
                 </Text>
-                <Text className="text-[#6B6F76] font-sfMedium" style={trayDemoText.body}>
+                <Text className="text-[#6B6F76] font-sf-medium" style={trayDemoText.body}>
                   No Previous Transactions
                 </Text>
               </View>
@@ -138,7 +138,7 @@ const SendDestinationPage = () => {
           </View>
 
           <View className="gap-6">
-            <Text className="text-[#6B6F76] font-sfMedium" style={trayDemoText.body}>
+            <Text className="text-[#6B6F76] font-sf-medium" style={trayDemoText.body}>
               Watched Wallets
             </Text>
 
@@ -149,12 +149,12 @@ const SendDestinationPage = () => {
 
               <View>
                 <Text
-                  className="text-white font-sfMedium"
+                  className="text-white font-sf-medium"
                   style={trayDemoText.bodyLarge}
                 >
                   valmiera.eth
                 </Text>
-                <Text className="text-[#6B6F76] font-sfMedium" style={trayDemoText.body}>
+                <Text className="text-[#6B6F76] font-sf-medium" style={trayDemoText.body}>
                   No Previous Transactions
                 </Text>
               </View>
@@ -173,7 +173,7 @@ const SendAmountPage = () => {
         <View style={{ gap: 24 }}>
           <View style={{ gap: 8 }}>
             <Text
-              className="text-[#6B6F76] font-sfMedium"
+              className="text-[#6B6F76] font-sf-medium"
               style={{
                 fontSize: 18,
                 lineHeight: 26,
@@ -195,7 +195,7 @@ const SendAmountPage = () => {
             }}
           >
             <Text
-              className="text-[#6B6F76] font-sfMedium"
+              className="text-[#6B6F76] font-sf-medium"
               style={{
                 fontSize: 16,
                 lineHeight: 22,
@@ -206,7 +206,7 @@ const SendAmountPage = () => {
             </Text>
 
             <Text
-              className="text-white font-sfBold"
+              className="text-white font-sf-bold"
               style={{
                 fontSize: 40,
                 lineHeight: 46,
@@ -216,7 +216,7 @@ const SendAmountPage = () => {
               0.00 ETH
             </Text>
 
-            <Text className="text-[#6B6F76] font-sfMedium" style={trayDemoText.body}>
+            <Text className="text-[#6B6F76] font-sf-medium" style={trayDemoText.body}>
               Choose an amount to continue your send flow.
             </Text>
           </View>
@@ -235,7 +235,7 @@ const SendAmountPage = () => {
                 }}
               >
                 <Text
-                  className="text-white font-sfSemibold"
+                  className="text-white font-sf-semibold"
                   style={{
                     fontSize: 18,
                     lineHeight: 24,
@@ -257,12 +257,12 @@ const SendReviewPage = () => {
   return (
     <Tray.Body style={{ paddingHorizontal: 20 }}>
       <Tray.Section className="gap-6">
-        <Text className="font-sfMedium text-white" style={trayDemoText.bodyLarge}>
+        <Text className="font-sf-medium text-white" style={trayDemoText.bodyLarge}>
           Review your transfer
         </Text>
 
         <Text
-          className="text-[#94999F] font-sfMedium"
+          className="text-[#94999F] font-sf-medium"
           style={trayDemoText.bodyLarge}
         >
           Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
@@ -270,7 +270,7 @@ const SendReviewPage = () => {
         </Text>
 
         <Text
-          className="text-[#94999F] font-sfMedium"
+          className="text-[#94999F] font-sf-medium"
           style={trayDemoText.bodyLarge}
         >
           Lorem ipsum, dolor sit amet consectetur adipisicing elit. Temporibus,

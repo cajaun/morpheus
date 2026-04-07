@@ -242,7 +242,7 @@ export const AttachMediaStep = ({ flow }: { flow: HelpKind }) => {
           </View>
 
           <Text
-            className="font-sfMedium text-[#C9CDD2]"
+            className="font-sf-medium text-[#C9CDD2]"
             style={{
               fontSize: 18,
               lineHeight: 24,
@@ -280,7 +280,7 @@ export const YourDetailsStep = () => {
 
       <Tray.Section style={{ gap: 16 }}>
         <Text
-          className="font-sfMedium text-[#B9BDC2]"
+          className="font-sf-medium text-[#B9BDC2]"
           style={trayDemoText.bodyLarge}
         >
           Please let us know your email so we can follow up if we need to.
@@ -325,7 +325,7 @@ export const YourDetailsStep = () => {
           }}
         >
           <Text
-            className="font-sfMedium text-[#101318]"
+            className="font-sf-medium text-[#101318]"
             style={trayDemoText.bodyLarge}
           >
             Wallet
@@ -348,7 +348,7 @@ export const YourDetailsStep = () => {
             />
 
             <Text
-              className="font-sfMedium text-[#101318]"
+              className="font-sf-medium text-[#101318]"
               style={trayDemoText.bodyLarge}
             >
               valmiera

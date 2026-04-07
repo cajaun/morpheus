@@ -85,11 +85,11 @@ const WalletSelectionStep = ({
                 />
 
                 <View>
-                  <Text className="font-sfMedium" style={trayDemoText.bodyLarge}>
+                  <Text className="font-sf-medium" style={trayDemoText.bodyLarge}>
                     {wallet.name}
                   </Text>
                   <Text
-                    className="font-sfRegular text-[#94999F]"
+                    className="font-sf-regular text-[#94999F]"
                     style={trayDemoText.body}
                   >
                     {wallet.address}
@@ -146,7 +146,7 @@ const InsufficientTokensStep = () => {
 
       <Tray.Section>
         <Text
-          className="text-[#94999F] font-sfMedium"
+          className="text-[#94999F] font-sf-medium"
           style={trayDemoText.bodyLarge}
         >
           This wallet doesn't have the necessary tokens for a refuel. Please add
