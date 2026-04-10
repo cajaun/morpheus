@@ -14,6 +14,7 @@ import { ActionTrayProps, ActionTrayRef } from "./action-tray-types";
 const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
   (
     {
+      assignmentId = 0,
       style,
       onClose,
       onCloseComplete,
@@ -35,6 +36,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     ref,
   ) => {
     const controller = useActionTrayController({
+      assignmentId,
       visible,
       interactive,
       content,

@@ -230,7 +230,7 @@ const IdentityRateBoostStep = () => {
             }}
           >
             <Text
-              className="font-sf-semibold text-white"
+              className="font-sf-black text-white"
               style={{
                 fontSize: 21,
                 lineHeight: 28,

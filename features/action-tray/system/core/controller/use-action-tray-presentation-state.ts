@@ -74,7 +74,10 @@ export const useActionTrayPresentationState = ({
   }, [bottom, keyboardHeight, presentationFullScreen]);
 
   const resolveClosedTranslateY = useCallback(
-    (nextFooterHeight = footerHeight.value) => {
+    (
+      nextFooterHeight = footerHeight.value,
+      nextContentHeight = contentHeight.value,
+    ) => {
       if (presentationFullScreen) {
         return SCREEN_HEIGHT;
       }
@@ -85,7 +88,7 @@ export const useActionTrayPresentationState = ({
           : 0;
       const trayBottomInset = Math.max(bottom, keyboardInset);
 
-      return contentHeight.value + nextFooterHeight + trayBottomInset;
+      return nextContentHeight + nextFooterHeight + trayBottomInset;
     },
     [bottom, contentHeight, footerHeight, keyboardHeight, presentationFullScreen],
   );

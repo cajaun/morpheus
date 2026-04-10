@@ -140,6 +140,24 @@ export const TrayPresenter: React.FC = () => {
     };
   }, [activeIndex, activeTrayId, justOpenedRef, registry]);
 
+  const orderedHostSlots = useMemo(
+    () =>
+      hostSlots
+        .map((slot, index) => ({
+          index,
+          slot,
+          priority: slot.interactive ? 2 : slot.visible ? 1 : 0,
+        }))
+        .sort((left, right) => {
+          if (left.priority !== right.priority) {
+            return left.priority - right.priority;
+          }
+
+          return left.index - right.index;
+        }),
+    [hostSlots],
+  );
+
   const handleSlotCloseComplete = useCallback(
     (slotIndex: number, assignmentId: number) => {
       setHostSlots((current) => {
@@ -238,12 +256,13 @@ export const TrayPresenter: React.FC = () => {
 
   return (
     <>
-      {hostSlots.map((slot, index) => {
+      {orderedHostSlots.map(({ slot, index }) => {
         const payload = slot.payload;
 
         return (
           <ActionTray
             key={`tray-host-slot-${index}`}
+            assignmentId={slot.assignmentId}
             visible={slot.visible}
             interactive={slot.interactive}
             rootTrayId={payload?.rootTrayId}

@@ -3,6 +3,7 @@ import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 
 export type ActionTrayProps = {
+  assignmentId?: number;
   visible: boolean;
   interactive?: boolean;
   style?: StyleProp<ViewStyle>;

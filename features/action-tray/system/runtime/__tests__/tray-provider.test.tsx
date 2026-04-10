@@ -21,8 +21,13 @@ jest.mock("../../core/action-tray", () => {
   const ReactNative = require("react-native");
 
   return {
-    ActionTray: ({ visible, content, footer }: any) => (
-      <ReactNative.View testID="action-tray-host">
+    ActionTray: ({ visible, content, footer, rootTrayId, interactive }: any) => (
+      <ReactNative.View
+        testID="action-tray-host"
+        rootTrayId={rootTrayId}
+        visible={visible}
+        interactive={interactive}
+      >
         {visible ? content ?? footer ?? null : null}
       </ReactNative.View>
     ),
@@ -281,5 +286,35 @@ describe("TrayProvider runtime", () => {
     });
 
     expect(getRenderedTrayHosts()).toHaveLength(2);
+  });
+
+  it("renders the active tray host above an outgoing host during tray replacement", () => {
+    act(() => {
+      activeRenderer = TestRenderer.create(
+        <TrayProvider>
+          <HostSpy />
+          <Tray.Root id="alpha" steps={[step("one")]}>
+            <></>
+          </Tray.Root>
+          <Tray.Root id="beta" steps={[step("one")]}>
+            <></>
+          </Tray.Root>
+        </TrayProvider>,
+      );
+    });
+
+    act(() => {
+      latestHost!.openTray("alpha");
+    });
+
+    act(() => {
+      latestHost!.openTray("beta");
+    });
+
+    const renderedHosts = getRenderedTrayHosts();
+
+    expect(renderedHosts).toHaveLength(2);
+    expect(renderedHosts.at(-1)?.props.rootTrayId).toBe("beta");
+    expect(renderedHosts.at(-1)?.props.interactive).toBe(true);
   });
 });

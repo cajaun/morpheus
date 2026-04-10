@@ -6,6 +6,7 @@ import IdentityRateBoostTray from "./identity-rate-boost";
 import OnboardingExample from "./onboarding";
 import PayFromTray from "./pay-from";
 import Send from "./send";
+import WalletGroupTray from "./wallet-group";
 import WatchAddressTray from "./watch-address";
 import WatchingWalletsInfoTray from "./watching-wallets-info";
 
@@ -29,6 +30,7 @@ const ActionTrayExamples = () => {
       <WatchingWalletsInfoTray />
       <AboutAaveTray />
       <IdentityRateBoostTray />
+      <WalletGroupTray />
     </View>
   );
 };

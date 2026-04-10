@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  type MutableRefObject,
   useRef,
   useState,
   type ReactNode,
@@ -41,7 +42,12 @@ type Params = {
   };
   measurements: {
     shared: {
+      resolvedContentHeight: SharedValue<number>;
       measuredFooterHeight: SharedValue<number>;
+    };
+    refs: {
+      latestResolvedContentHeightRef: MutableRefObject<number>;
+      latestMeasuredFooterHeightRef: MutableRefObject<number>;
     };
     state: {
       isReadyToOpen: boolean;
@@ -63,7 +69,10 @@ type Params = {
     closeGeneration: SharedValue<number>;
     surfaceOpacity: SharedValue<number>;
   };
-  resolveClosedTranslateY: (nextFooterHeight?: number) => number;
+  resolveClosedTranslateY: (
+    nextFooterHeight?: number,
+    nextContentHeight?: number,
+  ) => number;
 };
 
 export const useActionTrayOpenCloseLifecycle = ({
@@ -91,7 +100,9 @@ export const useActionTrayOpenCloseLifecycle = ({
     reset,
   } = measurements.actions;
   const { renderedTrayId, renderedFooter } = renderState.state;
-  const { measuredFooterHeight } = measurements.shared;
+  const { measuredFooterHeight, resolvedContentHeight } = measurements.shared;
+  const { latestMeasuredFooterHeightRef, latestResolvedContentHeightRef } =
+    measurements.refs;
 
   const handleCloseSpringFinished = useCallback(() => {
     log("CLOSE SPRING FINISHED — resetting tray state");
@@ -105,16 +116,29 @@ export const useActionTrayOpenCloseLifecycle = ({
   }, [clear, onCloseComplete, reset, shared]);
 
   const doOpenSpring = useCallback(() => {
-    const nextFooterHeight = measuredFooterHeight.value;
+    const nextFooterHeight =
+      latestMeasuredFooterHeightRef.current > 0
+        ? latestMeasuredFooterHeightRef.current
+        : measuredFooterHeight.value;
+    const nextContentHeight =
+      latestResolvedContentHeightRef.current > 0
+        ? latestResolvedContentHeightRef.current
+        : resolvedContentHeight.value > 0
+          ? resolvedContentHeight.value
+        : shared.contentHeight.value;
 
     log("doOpenSpring", {
       footer: nextFooterHeight,
-      content: shared.contentHeight.value,
+      content: nextContentHeight,
     });
 
+    shared.contentHeight.value = nextContentHeight;
     shared.footerHeight.value = nextFooterHeight;
 
-    const openTravel = resolveClosedTranslateY(nextFooterHeight);
+    const openTravel = resolveClosedTranslateY(
+      nextFooterHeight,
+      nextContentHeight,
+    );
 
     runOnUI(
       (
@@ -147,7 +171,15 @@ export const useActionTrayOpenCloseLifecycle = ({
     )(openTravel, nextFooterHeight);
 
     setIsSurfaceReady(true);
-  }, [enableLayout, measuredFooterHeight, resolveClosedTranslateY, shared]);
+  }, [
+    enableLayout,
+    latestMeasuredFooterHeightRef,
+    latestResolvedContentHeightRef,
+    measuredFooterHeight,
+    resolveClosedTranslateY,
+    resolvedContentHeight,
+    shared,
+  ]);
 
   useLayoutEffect(() => {
     if (visible) {
@@ -218,8 +250,16 @@ export const useActionTrayOpenCloseLifecycle = ({
     }
 
     log("PENDING OPEN — all measurements ready", {
-      footer: measuredFooterHeight.value,
-      content: shared.contentHeight.value,
+      footer:
+        latestMeasuredFooterHeightRef.current > 0
+          ? latestMeasuredFooterHeightRef.current
+          : measuredFooterHeight.value,
+      content:
+        latestResolvedContentHeightRef.current > 0
+          ? latestResolvedContentHeightRef.current
+          : resolvedContentHeight.value > 0
+            ? resolvedContentHeight.value
+          : shared.contentHeight.value,
       needsFooter: !!renderedFooter,
     });
 
@@ -229,8 +269,11 @@ export const useActionTrayOpenCloseLifecycle = ({
   }, [
     completePendingOpen,
     doOpenSpring,
+    latestMeasuredFooterHeightRef,
+    latestResolvedContentHeightRef,
     measurements.state.isReadyToOpen,
     measuredFooterHeight,
+    resolvedContentHeight,
     renderedFooter,
     rootTrayId,
     shared.contentHeight,

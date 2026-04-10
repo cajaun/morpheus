@@ -1,19 +1,13 @@
 import React from "react";
-import { Dimensions, Text, View } from "react-native";
-import * as Haptics from "expo-haptics";
+import { Text, Dimensions, View } from "react-native";
 import Animated, {
-  Easing,
   interpolate,
   useAnimatedStyle,
   useDerivedValue,
   withSpring,
-  withTiming,
 } from "react-native-reanimated";
-import { PressableScale } from "@/shared/ui/pressable-scale";
-import {
-  trayDemoColors,
-  trayDemoText,
-} from "@/shared/theme/tokens";
+import { PressableScale } from "@/components/ui/utils/pressable-scale";
+import * as Haptics from "expo-haptics";
 
 const { width: windowWidth } = Dimensions.get("window");
 
@@ -27,63 +21,59 @@ const SECONDARY_WIDTH = BUTTON_WIDTH - MIN_BUTTON_WIDTH - GAP;
 type Props = {
   step: number;
   totalSteps: number;
-  total?: number;
   onNext: () => void;
   onFinish?: () => void;
   onSecondaryPress?: () => void;
+
+  /** NEW */
   showSecondary?: boolean;
 };
 
-export const AnimatedFlowButton: React.FC<Props> = ({
+export const AnimatedOnboardingButton: React.FC<Props> = ({
   step,
   totalSteps,
-  total,
   onNext,
   onFinish,
   onSecondaryPress,
   showSecondary,
 }) => {
-  const resolvedTotalSteps =
-    totalSteps > 0 ? totalSteps : (total ?? totalSteps);
-  const isLastStep =
-    resolvedTotalSteps > 0 && step >= resolvedTotalSteps - 1;
+  const isLastStep = step === totalSteps - 1;
+
+  // If showSecondary prop is provided, use it.
+  // Otherwise fallback to previous logic.
   const shouldShowSecondary =
-    showSecondary !== undefined ? showSecondary : step > 0 && !isLastStep;
+    showSecondary !== undefined
+      ? showSecondary
+      : step > 0 && !isLastStep;
 
-const progress = useDerivedValue(() =>
-  withTiming(shouldShowSecondary ? 1 : 0, {
-    duration: 200,
-    easing: Easing.bezier(0.23, 1, 0.32, 1), 
-  }),
-);
+  const progress = useDerivedValue(() =>
+    withSpring(shouldShowSecondary ? 1 : 0, {
+      stiffness: 1600,
+      damping: 80,
+    }),
+  );
 
-const primaryStyle = useAnimatedStyle(() => ({
-  width: Math.round(
-    interpolate(
+  const rPrimaryStyle = useAnimatedStyle(() => {
+    const width = interpolate(
       progress.value,
       [0, 1],
       [BUTTON_WIDTH, MIN_BUTTON_WIDTH],
-    ),
-  ),
-}));
+    );
 
-const secondaryStyle = useAnimatedStyle(() => ({
-  opacity: interpolate(progress.value, [0, 0.6, 1], [0, 0, 1]),
-  transform: [
-    {
-      scale: interpolate(progress.value, [0, 1], [0.97, 1]),
-    },
-  ],
-}));
+    return { width };
+  });
+
+  const rSecondaryStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [
+      {
+        scale: interpolate(progress.value, [0, 1], [0.96, 1]),
+      },
+    ],
+  }));
 
   const handlePrimaryPress = async () => {
     await Haptics.selectionAsync();
-
-    if (isLastStep) {
-      onFinish?.();
-      return;
-    }
-
     onNext();
   };
 
@@ -100,8 +90,8 @@ const secondaryStyle = useAnimatedStyle(() => ({
         justifyContent: "center",
       }}
     >
+      {/* Secondary */}
       <Animated.View
-        pointerEvents={shouldShowSecondary ? "auto" : "none"}
         style={[
           {
             position: "absolute",
@@ -110,8 +100,9 @@ const secondaryStyle = useAnimatedStyle(() => ({
             height: BUTTON_HEIGHT,
             justifyContent: "center",
           },
-          secondaryStyle,
+          rSecondaryStyle,
         ]}
+        pointerEvents={shouldShowSecondary ? "auto" : "none"}
       >
         <PressableScale
           onPress={handleSecondaryPress}
@@ -124,15 +115,16 @@ const secondaryStyle = useAnimatedStyle(() => ({
             alignItems: "center",
           }}
         >
-          <Text className="text-black font-sf-Bold" style={trayDemoText.button}>
+          <Text className="text-black font-sfBold text-2xl">
             Cancel
           </Text>
         </PressableScale>
       </Animated.View>
 
+      {/* Primary */}
       <Animated.View
         style={[
-          primaryStyle,
+          rPrimaryStyle,
           {
             position: "absolute",
             right: 0,
@@ -146,13 +138,13 @@ const secondaryStyle = useAnimatedStyle(() => ({
             width: "100%",
             height: BUTTON_HEIGHT,
             alignItems: "center",
-            backgroundColor: trayDemoColors.primaryAction,
+            backgroundColor: "#41BBFF",
             borderRadius: 50,
             justifyContent: "center",
             paddingHorizontal: 20,
           }}
         >
-          <Text className="text-white font-sf-Bold" style={trayDemoText.button}>
+          <Text className="text-white font-sfBold text-2xl">
             Continue
           </Text>
         </PressableScale>

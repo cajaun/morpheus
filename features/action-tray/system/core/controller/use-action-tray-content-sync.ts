@@ -1,4 +1,4 @@
-import { useEffect, type MutableRefObject, type ReactNode } from "react";
+import { RefObject, useEffect, type ReactNode } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import { log } from "../logger";
@@ -14,7 +14,7 @@ type Params = {
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
   footerClassName?: string;
-  justOpenedRef: MutableRefObject<boolean>;
+  justOpenedRef: RefObject<boolean>;
   measurements: {
     state: {
       layoutEnabled: boolean;

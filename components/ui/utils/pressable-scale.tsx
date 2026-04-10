@@ -1,23 +1,23 @@
-import React from "react";
-import type { StyleProp, ViewStyle } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import React from 'react';
+import type { StyleProp, ViewStyle } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-} from "react-native-reanimated";
+} from 'react-native-reanimated';
+
 
 export type PressableScaleProps = {
-  children: React.ReactNode;
-  onPress?: () => void;
-  style?: StyleProp<ViewStyle>;
-  className?: string;
+  children: React.ReactNode; 
+  onPress?: () => void; 
+  style?: StyleProp<ViewStyle>; 
+  className?: string; 
   layout?: React.ComponentProps<typeof Animated.View>["layout"];
 };
 
-const ANIMATION_DURATION = 250;
 
 const PressableScale: React.FC<PressableScaleProps> = ({
   children,
@@ -27,6 +27,7 @@ const PressableScale: React.FC<PressableScaleProps> = ({
   layout,
 }) => {
   const active = useSharedValue(false);
+  const ANIMATION_DURATION = 250;
 
   const gesture = Gesture.Tap()
     .maxDuration(4000)
@@ -44,7 +45,7 @@ const PressableScale: React.FC<PressableScaleProps> = ({
       active.value = false;
     });
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  const rAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
       {
         scale: withTiming(active.value ? 0.95 : 1, {
@@ -58,9 +59,9 @@ const PressableScale: React.FC<PressableScaleProps> = ({
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View
+        style={[style, rAnimatedStyle]}
         className={className}
         layout={layout}
-        style={[style, animatedStyle]}
       >
         {children}
       </Animated.View>

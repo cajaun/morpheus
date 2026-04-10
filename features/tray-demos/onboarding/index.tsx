@@ -71,7 +71,7 @@ const SecondStep = () => {
         />
       </Tray.Header>
 
-      <Tray.Section scrollable maxHeight={0.4}>
+      <Tray.Section >
         <Text className="font-sf-medium" style={trayDemoText.bodyLarge}>
           Different heading
         </Text>

@@ -1,5 +1,6 @@
 import React, {
   createContext,
+  RefObject,
   useCallback,
   useContext,
   useSyncExternalStore,
@@ -91,7 +92,7 @@ export type TrayRuntimeStore = {
   getState: () => TrayHostStateValue;
   subscribe: (listener: () => void) => () => void;
   actions: TrayHostActionsValue;
-  justOpenedRef: React.MutableRefObject<boolean>;
+  justOpenedRef: RefObject<boolean>;
   setDependencies: (params: {
     keyboardHeight: SharedValue<number>;
     anticipateKeyboard: () => void;

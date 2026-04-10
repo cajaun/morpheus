@@ -1,11 +1,14 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
 } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import { type SharedValue } from "react-native-reanimated";
 import { log } from "./logger";
+import { SCREEN_HEIGHT } from "./constants";
 import { useActionTrayContentSync } from "./controller/use-action-tray-content-sync";
 import { useActionTrayHeightCache } from "./controller/use-action-tray-height-cache";
 import { useActionTrayMeasurements } from "./controller/use-action-tray-measurements";
@@ -14,6 +17,7 @@ import { useActionTrayPresentationState } from "./controller/use-action-tray-pre
 import { useActionTrayRenderState } from "./controller/use-action-tray-render-state";
 
 type Params = {
+  assignmentId?: number;
   visible: boolean;
   interactive?: boolean;
   content?: React.ReactNode;
@@ -33,6 +37,7 @@ type Params = {
 };
 
 export const useActionTrayController = ({
+  assignmentId = 0,
   visible,
   interactive = true,
   content,
@@ -50,6 +55,7 @@ export const useActionTrayController = ({
   dismissKeyboard,
   onClose,
 }: Params) => {
+  const lastResetAssignmentIdRef = useRef(0);
   const renderState = useActionTrayRenderState({
     content,
     footer,
@@ -103,6 +109,39 @@ export const useActionTrayController = ({
     presentation.helpers.resolveRenderedContentHeight,
     presentation.shared.contentHeight,
     visible,
+  ]);
+
+  useLayoutEffect(() => {
+    if (assignmentId <= 0) {
+      return;
+    }
+
+    if (lastResetAssignmentIdRef.current === assignmentId) {
+      return;
+    }
+
+    lastResetAssignmentIdRef.current = assignmentId;
+
+    log("SLOT ASSIGNMENT RESET", {
+      assignmentId,
+    });
+
+    presentation.shared.closeGeneration.value += 1;
+    presentation.shared.translateY.value = SCREEN_HEIGHT;
+    presentation.shared.animationTravel.value = SCREEN_HEIGHT;
+    presentation.shared.surfaceOpacity.value = 0;
+    presentation.shared.active.value = false;
+    renderState.actions.clear();
+    measurements.actions.reset();
+  }, [
+    assignmentId,
+    presentation.shared.active,
+    presentation.shared.animationTravel,
+    presentation.shared.closeGeneration,
+    presentation.shared.surfaceOpacity,
+    presentation.shared.translateY,
+    measurements.actions.reset,
+    renderState.actions.clear,
   ]);
 
   const openCloseLifecycle = useActionTrayOpenCloseLifecycle({

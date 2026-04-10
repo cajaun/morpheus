@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutChangeEvent } from "react-native";
 import { useSharedValue, type SharedValue } from "react-native-reanimated";
 import { log } from "../logger";
@@ -30,7 +30,11 @@ export const useActionTrayMeasurements = ({
   const [contentMeasured, setContentMeasured] = useState(false);
   const [pendingOpen, setPendingOpen] = useState(false);
 
+  const latestMeasuredContentHeightRef = useRef(0);
+  const latestResolvedContentHeightRef = useRef(0);
+  const latestMeasuredFooterHeightRef = useRef(0);
   const measuredContentHeight = useSharedValue(0);
+  const resolvedContentHeight = useSharedValue(0);
   const measuredFooterHeight = useSharedValue(0);
 
   useEffect(() => {
@@ -38,22 +42,32 @@ export const useActionTrayMeasurements = ({
       return;
     }
 
+    latestMeasuredFooterHeightRef.current = 0;
     measuredFooterHeight.value = 0;
     footerHeight.value = 0;
   }, [footerHeight, measuredFooterHeight, renderedFooter]);
 
   const beginOpenMeasurement = useCallback(
     (hasFooter: boolean) => {
+      latestMeasuredContentHeightRef.current = 0;
+      latestResolvedContentHeightRef.current = 0;
       contentHeight.value = 0;
       measuredContentHeight.value = 0;
-      footerHeight.value = hasFooter ? measuredFooterHeight.value : 0;
+      resolvedContentHeight.value = 0;
+      footerHeight.value = hasFooter ? latestMeasuredFooterHeightRef.current : 0;
 
       setLayoutEnabled(false);
       setContentMeasured(false);
       setFooterMeasured(!hasFooter);
       setPendingOpen(true);
     },
-    [contentHeight, footerHeight, measuredContentHeight, measuredFooterHeight],
+    [
+      contentHeight,
+      footerHeight,
+      measuredContentHeight,
+      measuredFooterHeight,
+      resolvedContentHeight,
+    ],
   );
 
   const enableLayout = useCallback(() => {
@@ -74,16 +88,26 @@ export const useActionTrayMeasurements = ({
   }, []);
 
   const reset = useCallback(() => {
+    latestMeasuredContentHeightRef.current = 0;
+    latestResolvedContentHeightRef.current = 0;
+    latestMeasuredFooterHeightRef.current = 0;
     contentHeight.value = 0;
     footerHeight.value = 0;
     measuredContentHeight.value = 0;
+    resolvedContentHeight.value = 0;
     measuredFooterHeight.value = 0;
 
     setContentMeasured(false);
     setFooterMeasured(false);
     setPendingOpen(false);
     setLayoutEnabled(false);
-  }, [contentHeight, footerHeight, measuredContentHeight, measuredFooterHeight]);
+  }, [
+    contentHeight,
+    footerHeight,
+    measuredContentHeight,
+    measuredFooterHeight,
+    resolvedContentHeight,
+  ]);
 
   const handleContentLayout = useCallback(
     (e: LayoutChangeEvent) => {
@@ -92,7 +116,10 @@ export const useActionTrayMeasurements = ({
         ? resolveContentHeight(height)
         : height;
 
+      latestMeasuredContentHeightRef.current = height;
+      latestResolvedContentHeightRef.current = resolvedHeight;
       measuredContentHeight.value = height;
+      resolvedContentHeight.value = resolvedHeight;
       contentHeight.value = resolvedHeight;
       onContentHeightResolved?.(resolvedHeight, height, renderedTrayId);
 
@@ -112,6 +139,7 @@ export const useActionTrayMeasurements = ({
       measuredContentHeight,
       onContentHeightResolved,
       renderedTrayId,
+      resolvedContentHeight,
       resolveContentHeight,
     ],
   );
@@ -126,10 +154,11 @@ export const useActionTrayMeasurements = ({
 
       log("VISIBLE FOOTER onLayout", {
         height,
-        measuredRef: measuredFooterHeight.value,
-        delta: height - measuredFooterHeight.value,
+        measuredRef: latestMeasuredFooterHeightRef.current,
+        delta: height - latestMeasuredFooterHeightRef.current,
       });
 
+      latestMeasuredFooterHeightRef.current = height;
       measuredFooterHeight.value = height;
       footerHeight.value = height;
     },
@@ -142,6 +171,7 @@ export const useActionTrayMeasurements = ({
 
       log("OFFSCREEN FOOTER onLayout", { height });
 
+      latestMeasuredFooterHeightRef.current = height;
       measuredFooterHeight.value = height;
       footerHeight.value = height;
       setFooterMeasured(true);
@@ -152,7 +182,13 @@ export const useActionTrayMeasurements = ({
   return {
     shared: {
       measuredContentHeight,
+      resolvedContentHeight,
       measuredFooterHeight,
+    },
+    refs: {
+      latestMeasuredContentHeightRef,
+      latestResolvedContentHeightRef,
+      latestMeasuredFooterHeightRef,
     },
     state: {
       layoutEnabled,
