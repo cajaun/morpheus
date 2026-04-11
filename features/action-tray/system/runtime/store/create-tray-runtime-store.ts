@@ -8,6 +8,7 @@ import {
 } from "../tray-context";
 import { markTrayOpenRequested } from "../../telemetry/tray-open-timing";
 
+// the runtime store owns the only source of truth for tray identity and step index
 const clampIndex = (index: number, total: number) => {
   if (total <= 0) {
     return 0;
@@ -61,6 +62,7 @@ export const createTrayRuntimeStore = (
   };
 
   const resolveClampedState = (current: TrayHostStateValue) => {
+    // registration can change under the active tray so the index must be clamped after every write
     if (!current.activeTrayId) {
       if (current.activeIndex === 0) {
         return current;
@@ -95,6 +97,7 @@ export const createTrayRuntimeStore = (
   };
 
   const getActiveStepOptions = () => {
+    // close semantics live on the active step so we resolve options on demand
     if (!state.activeTrayId) {
       return resolveTrayStepOptions();
     }
@@ -113,6 +116,7 @@ export const createTrayRuntimeStore = (
           return current;
         }
 
+        // step arrays can grow or shrink without changing tray identity
         return resolveClampedState({
           ...current,
           registry: {
@@ -140,6 +144,7 @@ export const createTrayRuntimeStore = (
       });
     },
     openTray: (id: string) => {
+      // blur the old tray first so keyboard state does not leak across tray switches
       dependencies.dismissFocusedInputs(state.activeTrayId);
       justOpenedRef.current = true;
       markTrayOpenRequested(id);
@@ -177,6 +182,7 @@ export const createTrayRuntimeStore = (
         activeStepOptions.fullScreenCloseBehavior === "returnToShell" &&
         safeIndex > 0
       ) {
+        // fullscreen task steps back out to the shell when the flow asks for that behavior
         setState((current) => ({
           ...current,
           activeIndex: Math.max(current.activeIndex - 1, 0),
@@ -259,6 +265,7 @@ export const createTrayRuntimeStore = (
         return;
       }
 
+      // dependencies are mutable so the store survives provider rerenders without resubscribe churn
       setState({
         ...state,
         keyboardHeight: nextDependencies.keyboardHeight,

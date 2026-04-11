@@ -9,7 +9,12 @@ import { TrayTextInput } from "./system/primitives/text-input";
 import { TrayTrigger } from "./system/primitives/trigger";
 import { TrayRoot } from "./system/runtime/tray-root";
 
+// centralize exports here so screens depend on one tray surface area
 export { TrayProvider } from "./system/runtime/tray-provider";
+export type {
+  TrayTriggerHaptics,
+  TrayTriggerProps,
+} from "./system/primitives/trigger";
 export {
   useTrayFlow,
   useTrayHost,
@@ -19,6 +24,7 @@ export {
 } from "./system/runtime/tray-context";
 export { useTrayPages } from "./system/pages-context";
 
+// the namespace mirrors the mental model used by tray authors
 export const Tray = {
   Root: TrayRoot,
   Trigger: TrayTrigger,

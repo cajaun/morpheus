@@ -22,6 +22,7 @@ export default function DrawerButton({
   iconColor?: string;
   variant?: "row" | "card";
 }) {
+  // keep feedback inside the preset so every consumer gets the same affordance
   const handlePress = () => {
     Haptic.impactAsync(Haptic.ImpactFeedbackStyle.Light);
     onPress();
@@ -43,7 +44,7 @@ export default function DrawerButton({
         backgroundColor: isCard ? "#F9FAFA" : "transparent",
       }}
     >
-      {/* Icon + Text Container */}
+      {/* this row owns alignment so variant changes do not change content structure */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
         {icon && (
           <View
@@ -59,7 +60,7 @@ export default function DrawerButton({
           </View>
         )}
 
-        {/* Text Stack */}
+        {/* shrink here so long copy wraps before it pushes the icon slot */}
         <View style={{ flexShrink: 1 }}>
           <Text
             className="text-xl font-sfMedium"

@@ -516,7 +516,7 @@ const WalletGroupTray = () => {
 
   return (
     <Tray.Root steps={steps} footer={footer}>
-      <Tray.Trigger>
+      <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Wallet Group" />
       </Tray.Trigger>
     </Tray.Root>

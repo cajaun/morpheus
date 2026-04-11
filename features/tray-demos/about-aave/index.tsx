@@ -205,7 +205,7 @@ const AboutAaveTray = () => {
 
   return (
     <Tray.Root steps={steps}>
-      <Tray.Trigger>
+      <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="About Aave" />
       </Tray.Trigger>
     </Tray.Root>

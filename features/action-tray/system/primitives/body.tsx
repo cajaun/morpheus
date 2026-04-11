@@ -7,6 +7,7 @@ import {
 } from "../core/constants";
 import { useTrayStepOptions } from "../runtime/tray-context";
 
+// body owns horizontal padding so steps share one visual grid
 export const TrayBody: React.FC<{
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;

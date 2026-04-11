@@ -17,16 +17,27 @@ import {
   type TrayStepDefinition,
 } from "@/features/action-tray";
 
+// tests isolate runtime behavior by replacing the animated shell with a dumb host
 jest.mock("../../core/action-tray", () => {
   const ReactNative = require("react-native");
 
   return {
-    ActionTray: ({ visible, content, footer, rootTrayId, interactive }: any) => (
+    ActionTray: ({
+      visible,
+      content,
+      footer,
+      rootTrayId,
+      interactive,
+      covered,
+      onCloseComplete,
+    }: any) => (
       <ReactNative.View
         testID="action-tray-host"
         rootTrayId={rootTrayId}
         visible={visible}
         interactive={interactive}
+        covered={covered}
+        onCloseComplete={onCloseComplete}
       >
         {visible ? content ?? footer ?? null : null}
       </ReactNative.View>
@@ -65,6 +76,7 @@ let latestHost: ReturnType<typeof useTrayHost> | null = null;
 let latestFlow: ReturnType<typeof useTrayFlow> | null = null;
 let activeRenderer: TestRenderer.ReactTestRenderer | null = null;
 
+// test spies surface hook state without coupling assertions to rendered text
 const HostSpy = () => {
   latestHost = useTrayHost();
   return null;
@@ -288,7 +300,7 @@ describe("TrayProvider runtime", () => {
     expect(getRenderedTrayHosts()).toHaveLength(2);
   });
 
-  it("renders the active tray host above an outgoing host during tray replacement", () => {
+  it("waits for the outgoing tray host to finish closing before opening the replacement tray", () => {
     act(() => {
       activeRenderer = TestRenderer.create(
         <TrayProvider>
@@ -314,7 +326,15 @@ describe("TrayProvider runtime", () => {
     const renderedHosts = getRenderedTrayHosts();
 
     expect(renderedHosts).toHaveLength(2);
-    expect(renderedHosts.at(-1)?.props.rootTrayId).toBe("beta");
-    expect(renderedHosts.at(-1)?.props.interactive).toBe(true);
+    expect(renderedHosts.find((host) => host.props.rootTrayId === "alpha")?.props.visible).toBe(false);
+    expect(renderedHosts.find((host) => host.props.rootTrayId === "beta")).toBeUndefined();
+
+    act(() => {
+      renderedHosts.find((host) => host.props.rootTrayId === "alpha")?.props.onCloseComplete();
+    });
+
+    const reopenedHosts = getRenderedTrayHosts();
+    expect(reopenedHosts.find((host) => host.props.rootTrayId === "beta")?.props.visible).toBe(true);
+    expect(reopenedHosts.find((host) => host.props.rootTrayId === "beta")?.props.interactive).toBe(true);
   });
 });

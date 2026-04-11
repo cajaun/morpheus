@@ -11,6 +11,8 @@ import { useActionTrayController } from "./use-action-tray-controller";
 import { HORIZONTAL_MARGIN, TRAY_VERTICAL_PADDING } from "./constants";
 import { ActionTrayProps, ActionTrayRef } from "./action-tray-types";
 
+// this component renders one host slot
+// the presenter decides which tray payload this slot carries
 const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
   (
     {
@@ -35,6 +37,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     },
     ref,
   ) => {
+    // keep orchestration in one hook so the view tree stays declarative
     const controller = useActionTrayController({
       assignmentId,
       visible,
@@ -93,6 +96,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
 
     const presentationFullScreen = renderedFullScreen;
 
+    // drag should not start before layout and keyboard state settle
     const gesture = useActionTrayGesture({
       translateY,
       totalHeight,
@@ -145,6 +149,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     return (
       <>
         {measureFooter && (
+          
           <Animated.View
             style={[
               styles.measureFooter,
@@ -171,6 +176,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         />
 
         {renderedTrayId !== undefined && (
+       
           <Animated.View
             className={presentationFullScreen ? renderedClassName : undefined}
             pointerEvents="none"
@@ -203,11 +209,13 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
               >
                 {renderedContent}
               </Animated.View>
+              {/* reserve space for the detached footer without coupling body layout to footer rendering */}
               <Animated.View style={footerSpacerStyle} />
             </Animated.View>
           </Animated.View>
         </GestureDetector>
 
+        {/* keep the footer mounted during transitions but block taps until the shell is usable */}
         <Animated.View
           className={renderedFooterClassName}
           onLayout={handleVisibleFooterLayout}

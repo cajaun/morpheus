@@ -24,6 +24,7 @@ import {
   markTrayReadyToOpen,
 } from "../../telemetry/tray-open-timing";
 
+// lifecycle owns the tray state machine around measurement springing and teardown
 type Params = {
   visible: boolean;
   rootTrayId?: string;
@@ -106,6 +107,7 @@ export const useActionTrayOpenCloseLifecycle = ({
 
   const handleCloseSpringFinished = useCallback(() => {
     log("CLOSE SPRING FINISHED — resetting tray state");
+    // reset every animated value so a recycled host starts from the same baseline
     shared.translateY.value = SCREEN_HEIGHT;
     shared.animationTravel.value = SCREEN_HEIGHT;
     shared.surfaceOpacity.value = 1;
@@ -116,6 +118,7 @@ export const useActionTrayOpenCloseLifecycle = ({
   }, [clear, onCloseComplete, reset, shared]);
 
   const doOpenSpring = useCallback(() => {
+    // refs beat react state here because layout callbacks can land between renders
     const nextFooterHeight =
       latestMeasuredFooterHeightRef.current > 0
         ? latestMeasuredFooterHeightRef.current
@@ -140,6 +143,7 @@ export const useActionTrayOpenCloseLifecycle = ({
       nextContentHeight,
     );
 
+    // the ui thread spring owns the visible open transition from travel to zero
     runOnUI(
       (
         nextOpenTravel: number,
@@ -183,6 +187,7 @@ export const useActionTrayOpenCloseLifecycle = ({
 
   useLayoutEffect(() => {
     if (visible) {
+      // hide the shell until we know the geometry that defines the spring travel
       shared.translateY.value = SCREEN_HEIGHT;
       shared.surfaceOpacity.value = 0;
       shared.closeGeneration.value += 1;
@@ -202,6 +207,7 @@ export const useActionTrayOpenCloseLifecycle = ({
       log("OPEN — waiting for measurement");
     } else {
       setIsSurfaceReady(true);
+      // close travel must never be shorter than the current drag offset
       const closeTravel = Math.max(
         resolveClosedTranslateY(),
         shared.translateY.value,
@@ -217,6 +223,7 @@ export const useActionTrayOpenCloseLifecycle = ({
       const myGeneration = shared.closeGeneration.value + 1;
       shared.closeGeneration.value = myGeneration;
 
+      // generation ids stop an old close callback from clearing a newer open
       prepareForClose();
       shared.active.value = false;
 
@@ -240,7 +247,7 @@ export const useActionTrayOpenCloseLifecycle = ({
         },
       );
     }
-    // Visibility changes are the only lifecycle boundary for open/close.
+    // visibility is the boundary for open and close work
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
@@ -249,6 +256,7 @@ export const useActionTrayOpenCloseLifecycle = ({
       return;
     }
 
+    // open once the shell has enough information to avoid snapping after paint
     log("PENDING OPEN — all measurements ready", {
       footer:
         latestMeasuredFooterHeightRef.current > 0

@@ -34,6 +34,7 @@ type Props = {
   showSecondary?: boolean;
 };
 
+// this footer keeps one stable footprint while the secondary action appears
 export const AnimatedFlowButton: React.FC<Props> = ({
   step,
   totalSteps,
@@ -50,31 +51,31 @@ export const AnimatedFlowButton: React.FC<Props> = ({
   const shouldShowSecondary =
     showSecondary !== undefined ? showSecondary : step > 0 && !isLastStep;
 
-const progress = useDerivedValue(() =>
-  withTiming(shouldShowSecondary ? 1 : 0, {
-    duration: 200,
-    easing: Easing.bezier(0.23, 1, 0.32, 1), 
-  }),
-);
+  const progress = useDerivedValue(() =>
+    withTiming(shouldShowSecondary ? 1 : 0, {
+      duration: 200,
+      easing: Easing.bezier(0.23, 1, 0.32, 1),
+    }),
+  );
 
-const primaryStyle = useAnimatedStyle(() => ({
-  width: Math.round(
-    interpolate(
-      progress.value,
-      [0, 1],
-      [BUTTON_WIDTH, MIN_BUTTON_WIDTH],
+  const primaryStyle = useAnimatedStyle(() => ({
+    width: Math.round(
+      interpolate(
+        progress.value,
+        [0, 1],
+        [BUTTON_WIDTH, MIN_BUTTON_WIDTH],
+      ),
     ),
-  ),
-}));
+  }));
 
-const secondaryStyle = useAnimatedStyle(() => ({
-  opacity: interpolate(progress.value, [0, 0.6, 1], [0, 0, 1]),
-  transform: [
-    {
-      scale: interpolate(progress.value, [0, 1], [0.97, 1]),
-    },
-  ],
-}));
+  const secondaryStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 0.6, 1], [0, 0, 1]),
+    transform: [
+      {
+        scale: interpolate(progress.value, [0, 1], [0.97, 1]),
+      },
+    ],
+  }));
 
   const handlePrimaryPress = async () => {
     await Haptics.selectionAsync();

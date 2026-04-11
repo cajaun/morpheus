@@ -6,6 +6,7 @@ import {
   type TrayStepDefinition,
 } from "./tray-context";
 
+// root turns local step definitions into a runtime registration entry
 type TrayRootProps = {
   id?: string;
   children: React.ReactNode;
@@ -20,6 +21,7 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
   footer,
 }) => {
   const reactId = useId();
+  // explicit ids support deterministic tests and cross component references
   const trayId = useMemo(() => id ?? `tray-${reactId}`, [id, reactId]);
   const { registerTray, unregisterTray } = useTrayHostActions();
   const registration = useMemo<TrayRegistration>(
@@ -31,11 +33,13 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
   );
 
   useEffect(() => {
+    // registration tracks react lifetime so the store never sees phantom trays
     registerTray(trayId, registration);
   }, [registration, registerTray, trayId]);
 
   useEffect(
     () => () => {
+      // unmount should clear the registry entry even if the tray was active
       unregisterTray(trayId);
     },
     [trayId, unregisterTray],

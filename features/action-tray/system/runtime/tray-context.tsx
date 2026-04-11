@@ -8,6 +8,7 @@ import React, {
 import type { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 
+// store scope and step options are separate concerns so they get separate contexts
 export type TrayFullScreenCloseBehavior = "dismiss" | "returnToShell";
 export type TrayFullScreenTransition = "morph" | "slide";
 
@@ -61,6 +62,7 @@ export const DEFAULT_TRAY_STEP_OPTIONS: ResolvedTrayStepOptions = {
 export const resolveTrayStepOptions = (
   options?: TrayStepOptions,
 ): ResolvedTrayStepOptions => ({
+  // downstream code should never branch on missing option fields
   ...DEFAULT_TRAY_STEP_OPTIONS,
   ...options,
 });
@@ -124,6 +126,7 @@ export const useTrayHostSelector = <T,>(
   selector: (state: TrayHostStateValue) => T,
 ) => {
   const store = useTrayRuntimeStore();
+  // selectors avoid rerendering every tray consumer on unrelated store changes
   const getSnapshot = useCallback(
     () => selector(store.getState()),
     [selector, store],
@@ -146,6 +149,7 @@ export const useTrayHost = () => {
   const state = useTrayHostState();
   const actions = useTrayHostActions();
 
+  // this merged hook is mostly for tests tooling and low level integrations
   return {
     ...state,
     ...actions,
@@ -166,6 +170,7 @@ const clampIndex = (index: number, total: number) => {
 
 export const useTrayFlow = () => {
   const trayId = useTrayScope();
+  // flow state is scoped to the nearest root so nested trays do not collide
   const registration = useTrayHostSelector((state) =>
     trayId ? state.registry[trayId] : undefined,
   );
@@ -187,6 +192,7 @@ export const useTrayFlow = () => {
 
   const total = registration?.steps.length ?? 0;
   const isActive = activeTrayId === trayId;
+  // inactive trays read as step zero to keep chrome logic deterministic before open
   const index = isActive ? clampIndex(activeIndex, total) : 0;
 
   return {

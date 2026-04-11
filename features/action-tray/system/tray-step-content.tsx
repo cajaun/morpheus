@@ -7,6 +7,7 @@ import Animated, {
 import { MORPH_DURATION } from "./core/constants";
 import { log } from "./core/logger";
 
+// content transitions live here so every step swap shares the same motion language
 type Props = {
   children: React.ReactNode;
   scale?: boolean;
@@ -19,6 +20,7 @@ const createMorphEntering = (scale: boolean): EntryExitAnimationFunction => {
   return () => {
     "worklet";
 
+    // entering motion stays subtle because the tray shell may already be morphing
     return {
       initialValues: {
         opacity: 0,
@@ -56,6 +58,7 @@ const createMorphExiting = (scale: boolean): EntryExitAnimationFunction => {
   return () => {
     "worklet";
 
+    // exit mirrors enter so content swaps read as one continuous handoff
     return {
       initialValues: {
         opacity: 1,
@@ -107,6 +110,7 @@ export const TrayStepContent: React.FC<Props> = ({
   return (
     <Animated.View
       key={stepKey}
+      // first render can skip enter because shell open already provides the arrival cue
       entering={skipEntering ? undefined : createMorphEntering(scale)}
       exiting={skipExiting ? undefined : createMorphExiting(scale)}
     >

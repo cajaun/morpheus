@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Gesture } from "react-native-gesture-handler";
 import { runOnJS, withSpring } from "react-native-reanimated";
 
+// drag logic stays small because dismissal feel depends on predictable thresholds
 type Params = {
   translateY: { value: number };
   totalHeight: { value: number };

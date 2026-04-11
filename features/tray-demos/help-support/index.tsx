@@ -45,7 +45,7 @@ const HelpSupportTray = () => {
 
   return (
     <Tray.Root steps={steps}>
-      <Tray.Trigger>
+      <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Help" />
       </Tray.Trigger>
     </Tray.Root>

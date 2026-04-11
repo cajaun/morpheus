@@ -6,17 +6,14 @@ export const SCREEN_HEIGHT = Dimensions.get("window").height;
 export const SCREEN_WIDTH = Dimensions.get("window").width;
 export const MORPH_DURATION = 270;
 
+// tuned to settle fast without reading as a modal snap
 export const TRAY_SPRING_CONFIG = {
-damping: 50, stiffness: 400, mass: 0.8 
+  stiffness: 700,
+  damping: 62,
+  mass: 0.78,
+  restSpeedThreshold: 0.15,
+  restDisplacementThreshold: 0.15,
 } as const;
-
-// export const TRAY_SPRING_CONFIG = {
-//   stiffness: 600,
-//   damping: 60,
-//   mass: 0.9,
-//   restSpeedThreshold: 0.01,
-//   restDisplacementThreshold: 0.01,
-// } as const;
 
 export const TRAY_HORIZONTAL_PADDING = 32;
 export const TRAY_VERTICAL_PADDING = 28;

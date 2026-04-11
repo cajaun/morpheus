@@ -5,6 +5,7 @@ import { TrayPresenter } from "./tray-presenter";
 import { useTrayFocusManager } from "./use-tray-focus-manager";
 import { useTrayRuntime } from "./use-tray-runtime";
 
+// provider is the integration boundary between ambient app state and tray runtime
 export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {

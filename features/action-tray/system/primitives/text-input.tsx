@@ -11,6 +11,7 @@ import {
   useTrayScope,
 } from "../runtime/tray-context";
 
+// wrap textinput so focus behavior participates in tray keyboard policy
 export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
   ({ autoFocus = false, ...props }, forwardedRef) => {
     const ref = useRef<TextInput>(null);
@@ -24,6 +25,7 @@ export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
         return;
       }
 
+      // registration lets tray level close logic blur the active field before dismissal
       return registerFocusable(trayId, ref);
     }, [registerFocusable, trayId]);
 
@@ -32,12 +34,14 @@ export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
         return;
       }
 
+      // lead the keyboard because native focus arrives before tray layout can react
       anticipateKeyboard();
       ref.current?.focus();
     }, [anticipateKeyboard, autoFocus]);
 
     const handleFocus = useCallback<NonNullable<TextInputProps["onFocus"]>>(
       (event) => {
+        // manual focus should follow the same pre keyboard path as autofocus
         anticipateKeyboard();
         props.onFocus?.(event);
       },

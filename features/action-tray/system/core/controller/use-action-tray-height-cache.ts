@@ -6,6 +6,7 @@ type Params = {
   contentHeight: SharedValue<number>;
 };
 
+// cache heights so tray swaps preserve geometry between related presentations
 export const useActionTrayHeightCache = ({
   fullScreen,
   contentHeight,
@@ -18,6 +19,7 @@ export const useActionTrayHeightCache = ({
         return;
       }
 
+      // cache the resolved height because fullscreen may transform the raw measurement
       contentHeightCacheRef.current[trayId] = resolvedHeight;
     },
     [],
@@ -31,6 +33,7 @@ export const useActionTrayHeightCache = ({
 
       const cachedHeight = contentHeightCacheRef.current[trayId];
 
+      // fullscreen derives height from viewport constraints not prior sheet measurements
       if (!fullScreen && cachedHeight != null) {
         contentHeight.value = cachedHeight;
         return;

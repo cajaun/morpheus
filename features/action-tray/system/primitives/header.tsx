@@ -3,6 +3,7 @@ import { View, StyleSheet, StyleProp, ViewStyle } from "react-native";
 import { TraySeparator } from "./separator";
 import { TRAY_SECTION_GAP } from "../core/constants";
 
+// header spacing is centralized so step chrome lines up across demos
 export const TrayHeader: React.FC<{
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;

@@ -17,6 +17,8 @@ import {
   useTrayRuntimeStore,
 } from "./tray-context";
 
+// the presenter maps store state onto a bounded pool of host slots
+// that pool lets one tray close while the next waits to take its place
 const clampIndex = (index: number, total: number) => {
   if (total <= 0) {
     return 0;
@@ -56,6 +58,7 @@ const resolveNextActiveSlotIndex = (
   slots: [TrayHostSlot, TrayHostSlot],
   previousActiveSlotIndex: number | null,
 ) => {
+  // flip slots when one is already active to preserve overlap
   if (previousActiveSlotIndex !== null) {
     return previousActiveSlotIndex === 0 ? 1 : 0;
   }
@@ -80,7 +83,8 @@ export const TrayPresenter: React.FC = () => {
   const { justOpenedRef } = useTrayRuntimeStore();
   const nextAssignmentIdRef = useRef(0);
   const activeSlotIndexRef = useRef<number | null>(null);
-  const previousActiveRootTrayIdRef = useRef<string | null>(null);
+  // pendingHost serializes tray replacement across overlapping close animations
+  const pendingPresentedHostRef = useRef<PresentedTray | null>(null);
   const [hostSlots, setHostSlots] = useState<[TrayHostSlot, TrayHostSlot]>([
     createIdleSlot(),
     createIdleSlot(),
@@ -106,6 +110,7 @@ export const TrayPresenter: React.FC = () => {
     }
 
     const stepOptions = resolveTrayStepOptions(step.options);
+    // suppress the first step enter because the shell open animation already covers it
     const isFirstRender = justOpenedRef.current && trayIndex === 0;
 
     return {
@@ -139,6 +144,7 @@ export const TrayPresenter: React.FC = () => {
       footerClassName: stepOptions.footerClassName,
     };
   }, [activeIndex, activeTrayId, justOpenedRef, registry]);
+  const nextRootTrayId = activeHost?.rootTrayId ?? null;
 
   const orderedHostSlots = useMemo(
     () =>
@@ -149,6 +155,7 @@ export const TrayPresenter: React.FC = () => {
           priority: slot.interactive ? 2 : slot.visible ? 1 : 0,
         }))
         .sort((left, right) => {
+          // render the active slot last so it wins hit testing and stacking
           if (left.priority !== right.priority) {
             return left.priority - right.priority;
           }
@@ -173,27 +180,74 @@ export const TrayPresenter: React.FC = () => {
         }
 
         const next = [...current] as [TrayHostSlot, TrayHostSlot];
+        const pendingHost = pendingPresentedHostRef.current;
+
+        if (pendingHost) {
+          // recycle the same slot after close completes to avoid mounting a third host
+          nextAssignmentIdRef.current += 1;
+          next[slotIndex] = {
+            assignmentId: nextAssignmentIdRef.current,
+            payload: pendingHost,
+            visible: true,
+            interactive: true,
+          };
+          activeSlotIndexRef.current = slotIndex;
+          pendingPresentedHostRef.current = null;
+          justOpenedRef.current = false;
+          return next;
+        }
+
         next[slotIndex] = createIdleSlot();
         return next;
       });
     },
-    [],
+    [justOpenedRef],
   );
 
   useLayoutEffect(() => {
-    const previousRootTrayId = previousActiveRootTrayIdRef.current;
-    const nextRootTrayId = activeHost?.rootTrayId ?? null;
-
     setHostSlots((current) => {
       const next = [...current] as [TrayHostSlot, TrayHostSlot];
-      const previousActiveSlotIndex = activeSlotIndexRef.current;
+      const currentActiveSlotIndex = activeSlotIndexRef.current;
+      const currentActiveSlot =
+        currentActiveSlotIndex !== null ? next[currentActiveSlotIndex] : null;
+      const currentRootTrayId = currentActiveSlot?.payload?.rootTrayId ?? null;
+      const closingSlotIndex = next.findIndex(
+        (slot, index) =>
+          index !== currentActiveSlotIndex && slot.payload !== null && !slot.visible,
+      );
+      const nextRootTrayId = activeHost?.rootTrayId ?? null;
 
-      if (previousRootTrayId === nextRootTrayId) {
-        if (!activeHost) {
+      if (!activeHost) {
+        // no active host means we only need to drive the current slot to closed
+        pendingPresentedHostRef.current = null;
+
+        if (
+          currentActiveSlotIndex === null ||
+          currentActiveSlot?.payload === null
+        ) {
           return current;
         }
 
-        const targetSlotIndex = previousActiveSlotIndex ?? 0;
+        const closingActiveSlot = currentActiveSlot!;
+        next[currentActiveSlotIndex] = {
+          assignmentId: closingActiveSlot.assignmentId,
+          payload: closingActiveSlot.payload,
+          visible: false,
+          interactive: false,
+        };
+        activeSlotIndexRef.current = null;
+        return next;
+      }
+
+      if (pendingPresentedHostRef.current !== null) {
+        // coalesce rapid replacements so stale pending trays never flash on screen
+        pendingPresentedHostRef.current = activeHost;
+        return current;
+      }
+
+      if (currentRootTrayId === nextRootTrayId) {
+        // step changes within one tray should update in place and preserve the host
+        const targetSlotIndex = currentActiveSlotIndex ?? 0;
         const targetSlot = next[targetSlotIndex];
 
         next[targetSlotIndex] = {
@@ -215,25 +269,30 @@ export const TrayPresenter: React.FC = () => {
       }
 
       if (
-        previousActiveSlotIndex !== null &&
-        next[previousActiveSlotIndex].payload
+        currentActiveSlotIndex !== null &&
+        currentActiveSlot?.payload !== null
       ) {
-        next[previousActiveSlotIndex] = {
-          ...next[previousActiveSlotIndex],
+        // cross tray replacement must wait so content never swaps mid close animation
+        const closingActiveSlot = currentActiveSlot!;
+        pendingPresentedHostRef.current = activeHost;
+        next[currentActiveSlotIndex] = {
+          assignmentId: closingActiveSlot.assignmentId,
+          payload: closingActiveSlot.payload,
           visible: false,
           interactive: false,
         };
-      }
-
-      if (!activeHost) {
         activeSlotIndexRef.current = null;
         return next;
       }
 
-      const nextActiveSlotIndex = resolveNextActiveSlotIndex(
-        next,
-        previousActiveSlotIndex,
-      );
+      if (closingSlotIndex >= 0) {
+        // if another slot is still winding down we keep the next tray queued
+        pendingPresentedHostRef.current = activeHost;
+        return current;
+      }
+
+      // two slots are enough for overlap and keep host count bounded
+      const nextActiveSlotIndex = resolveNextActiveSlotIndex(next, null);
 
       nextAssignmentIdRef.current += 1;
       next[nextActiveSlotIndex] = {
@@ -247,12 +306,10 @@ export const TrayPresenter: React.FC = () => {
       return next;
     });
 
-    previousActiveRootTrayIdRef.current = nextRootTrayId;
-
     if (nextRootTrayId !== null) {
       justOpenedRef.current = false;
     }
-  }, [activeHost]);
+  }, [activeHost, justOpenedRef]);
 
   return (
     <>
@@ -261,7 +318,7 @@ export const TrayPresenter: React.FC = () => {
 
         return (
           <ActionTray
-            key={`tray-host-slot-${index}`}
+            key={`tray-host-slot-${index}-${slot.assignmentId}`}
             assignmentId={slot.assignmentId}
             visible={slot.visible}
             interactive={slot.interactive}

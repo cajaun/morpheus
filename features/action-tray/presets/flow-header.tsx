@@ -41,6 +41,7 @@ export default function FlowHeader({
   shouldClose,
   titleWeight = "medium",
 }: Props) {
+  // the leading control changes role but the shell api stays the same
   const isBackMode = !!onBack && step > 0;
 
   const handlePress = async () => {

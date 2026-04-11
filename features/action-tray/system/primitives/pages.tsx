@@ -19,6 +19,7 @@ import { SCREEN_WIDTH } from "../core/constants";
 import { TrayPagesProvider } from "../pages-context";
 import { TrayPage } from "./page";
 
+// pages are for intra step motion when the tray shell itself should stay unchanged
 const PAGE_SPRING_CONFIG = {
   stiffness: 1000,
   damping: 500,
@@ -72,6 +73,7 @@ const TrayPagesScene: React.FC<{
 }> = ({ children, index, pageIndex, pageWidth, progress }) => {
   const offscreenOffset = pageWidth + 4;
 
+  // keep neighboring pages mounted so horizontal motion can interpolate cleanly
   const animatedStyle = useAnimatedStyle(
     () => ({
       transform: [
@@ -105,6 +107,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   style,
   className,
 }) => {
+  // treat header footer and page children as named slots instead of position based args
   const parsed = useMemo(() => {
     const pages: React.ReactElement[] = [];
     let header: React.ReactNode = null;
@@ -137,6 +140,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   const pageWidth = viewportWidthState > 0 ? viewportWidthState : SCREEN_WIDTH;
 
   useEffect(() => {
+    // clamp after child changes so removing a page never leaves an invalid index
     setPageIndex((currentIndex) => {
       const nextIndex = clampPageIndex(currentIndex, totalPages);
 
@@ -150,6 +154,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
 
   const handleViewportLayout = useCallback(
     (event: LayoutChangeEvent) => {
+      // viewport width tracks the rendered tray width not the global screen width
       const nextWidth = PixelRatio.roundToNearestPixel(
         event.nativeEvent.layout.width || SCREEN_WIDTH,
       );
@@ -172,6 +177,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
       }
 
       setPageIndex(resolvedIndex);
+      // one spring feeds scene transforms and any page aware chrome
       progress.value = withSpring(
         resolvedIndex,
         PAGE_SPRING_CONFIG,

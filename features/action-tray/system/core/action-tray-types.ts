@@ -2,6 +2,7 @@ import React from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 
+// these types describe the shell after the presenter resolves a step
 export type ActionTrayProps = {
   assignmentId?: number;
   visible: boolean;

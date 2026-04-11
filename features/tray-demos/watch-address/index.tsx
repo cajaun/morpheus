@@ -36,7 +36,7 @@ const WatchAddressTray = () => {
 
   return (
     <Tray.Root steps={steps}>
-      <Tray.Trigger>
+      <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Watch Address" />
       </Tray.Trigger>
     </Tray.Root>

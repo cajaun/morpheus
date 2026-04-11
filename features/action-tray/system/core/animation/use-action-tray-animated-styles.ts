@@ -23,6 +23,7 @@ type Params = {
   visible: boolean;
 };
 
+// split styles by concern so body footer and fill can move together without sharing layout logic
 export const useActionTrayAnimatedStyles = ({
   translateY,
   contentHeight,
@@ -35,11 +36,13 @@ export const useActionTrayAnimatedStyles = ({
 }: Params) => {
   const { bottom } = useSafeAreaInsets();
 
+  // body content reserves footer height so detached footers never cover content
   const footerSpacerStyle = useAnimatedStyle(() => ({
     height: hasFooter.value ? footerHeight.value : 0,
   }));
 
   const trayLayoutStyle = useAnimatedStyle(() => {
+    // keyboard overlap wins because it is the active obstruction not just chrome
     const keyboardBottom =
       keyboardHeight.value > 0 ? keyboardHeight.value + TRAY_KEYBOARD_GAP : 0;
     const resolvedSheetHeight =
@@ -62,6 +65,7 @@ export const useActionTrayAnimatedStyles = ({
   }, [bottom, contentHeight, fullScreen]);
 
   const footerContainerStyle = useAnimatedStyle(() => {
+    // footer mirrors tray bounds but stays detached so actions can remain pinned
     const keyboardBottom =
       keyboardHeight.value > 0 ? keyboardHeight.value + TRAY_KEYBOARD_GAP : 0;
 
@@ -76,6 +80,7 @@ export const useActionTrayAnimatedStyles = ({
     };
   }, [bottom, fullScreen]);
 
+  // every visible surface reads the same drag translation to avoid shearing
   const dragStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }));
@@ -93,6 +98,7 @@ export const useActionTrayAnimatedStyles = ({
     paddingBottom: 0,
   }));
 
+  // delay the fullscreen fill until the shell morph has committed its bounds
   const fullScreenSurfaceFillStyle = useAnimatedStyle(
     () => ({
       opacity:

@@ -192,7 +192,7 @@ const PayFromTray = () => {
 
   return (
     <Tray.Root steps={steps}>
-      <Tray.Trigger>
+      <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Pay From" />
       </Tray.Trigger>
     </Tray.Root>

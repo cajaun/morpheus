@@ -11,6 +11,7 @@ import {
   TRAY_KEYBOARD_GAP,
 } from "../constants";
 
+// presentation state owns the shared values read across gesture layout and lifecycle code
 type Params = {
   visible: boolean;
   renderedFooter?: ReactNode;

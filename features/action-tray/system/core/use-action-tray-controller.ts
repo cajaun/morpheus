@@ -16,6 +16,8 @@ import { useActionTrayOpenCloseLifecycle } from "./controller/use-action-tray-op
 import { useActionTrayPresentationState } from "./controller/use-action-tray-presentation-state";
 import { useActionTrayRenderState } from "./controller/use-action-tray-render-state";
 
+// this hook is the boundary between tray policy and tray rendering
+// it composes measurement lifecycle rendering and presentation state
 type Params = {
   assignmentId?: number;
   visible: boolean;
@@ -56,6 +58,7 @@ export const useActionTrayController = ({
   onClose,
 }: Params) => {
   const lastResetAssignmentIdRef = useRef(0);
+  // rendered state is a snapshot so the shell can animate while props keep changing
   const renderState = useActionTrayRenderState({
     content,
     footer,
@@ -70,6 +73,7 @@ export const useActionTrayController = ({
 
   const presentationFullScreen = renderState.state.renderedFullScreen;
 
+  // presentation owns the shared values read by gestures animations and layout
   const presentation = useActionTrayPresentationState({
     visible,
     renderedFooter: renderState.state.renderedFooter,
@@ -82,6 +86,7 @@ export const useActionTrayController = ({
     contentHeight: presentation.shared.contentHeight,
   });
 
+  // measurements gate the first open spring until geometry is known
   const measurements = useActionTrayMeasurements({
     contentHeight: presentation.shared.contentHeight,
     footerHeight: presentation.shared.footerHeight,
@@ -126,6 +131,7 @@ export const useActionTrayController = ({
       assignmentId,
     });
 
+    // host slots are recycled so stale shared values must be cleared on reassignment
     presentation.shared.closeGeneration.value += 1;
     presentation.shared.translateY.value = SCREEN_HEIGHT;
     presentation.shared.animationTravel.value = SCREEN_HEIGHT;
@@ -144,6 +150,7 @@ export const useActionTrayController = ({
     renderState.actions.clear,
   ]);
 
+  // lifecycle decides when to open close and reset the shell
   const openCloseLifecycle = useActionTrayOpenCloseLifecycle({
     visible,
     rootTrayId,
@@ -164,6 +171,7 @@ export const useActionTrayController = ({
     resolveClosedTranslateY: presentation.helpers.resolveClosedTranslateY,
   });
 
+  // content sync updates the committed snapshot without losing transition continuity
   useActionTrayContentSync({
     visible,
     interactive,
@@ -196,6 +204,7 @@ export const useActionTrayController = ({
       close: () => {
         handleRequestClose();
       },
+      // worklets need a shared flag instead of react state to answer this cheaply
       isActive: () => !!presentation.shared.active.value,
     }),
     [handleRequestClose, presentation.shared.active],

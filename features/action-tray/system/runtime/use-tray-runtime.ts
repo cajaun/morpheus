@@ -3,6 +3,7 @@ import type { SharedValue } from "react-native-reanimated";
 import type { TrayHostActionsValue, TrayRuntimeStore } from "./tray-context";
 import { createTrayRuntimeStore } from "./store/create-tray-runtime-store";
 
+// the store instance must outlive provider rerenders or subscriptions break
 type Params = {
   keyboardHeight: SharedValue<number>;
   anticipateKeyboard: () => void;
@@ -19,6 +20,7 @@ export const useTrayRuntime = ({
   const runtimeRef = useRef<TrayRuntimeStore | null>(null);
 
   if (!runtimeRef.current) {
+    // create once because downstream hooks hold references to this store object
     runtimeRef.current = createTrayRuntimeStore({
       keyboardHeight,
       anticipateKeyboard,
@@ -28,6 +30,7 @@ export const useTrayRuntime = ({
   }
 
   useEffect(() => {
+    // swap dependencies in place so the store keeps identity but gains fresh handlers
     runtimeRef.current?.setDependencies({
       keyboardHeight,
       anticipateKeyboard,

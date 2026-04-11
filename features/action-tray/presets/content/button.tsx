@@ -24,11 +24,10 @@ type Props = {
   onNext: () => void;
   onFinish?: () => void;
   onSecondaryPress?: () => void;
-
-  /** NEW */
   showSecondary?: boolean;
 };
 
+// this preset preserves footer width so step changes do not reflow the tray
 export const AnimatedOnboardingButton: React.FC<Props> = ({
   step,
   totalSteps,
@@ -39,8 +38,7 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
 }) => {
   const isLastStep = step === totalSteps - 1;
 
-  // If showSecondary prop is provided, use it.
-  // Otherwise fallback to previous logic.
+  // callers can override the default onboarding rule without forking the preset
   const shouldShowSecondary =
     showSecondary !== undefined
       ? showSecondary
@@ -90,7 +88,7 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
         justifyContent: "center",
       }}
     >
-      {/* Secondary */}
+      {/* the secondary slot stays in layout so the primary width transition stays smooth */}
       <Animated.View
         style={[
           {
@@ -121,7 +119,7 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
         </PressableScale>
       </Animated.View>
 
-      {/* Primary */}
+      {/* the primary action expands into the released space instead of remounting */}
       <Animated.View
         style={[
           rPrimaryStyle,

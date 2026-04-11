@@ -26,6 +26,7 @@ export default function OnboardingHeader({
   shouldClose,
 }: Props) {
   const showBack = step > 0;
+  // one progress signal keeps header motion coordinated instead of ad hoc
   const progress = useSharedValue(showBack ? 1 : 0);
 
   useEffect(() => {

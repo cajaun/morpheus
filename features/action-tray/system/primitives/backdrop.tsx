@@ -6,6 +6,7 @@ import Animated, {
 import { Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+// backdrop input blocking is separate from backdrop opacity on purpose
 type BackdropProps = {
   onTap: () => void;
   isRendered: boolean;

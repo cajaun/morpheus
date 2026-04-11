@@ -172,7 +172,7 @@ const OnboardingExample = () => {
 
   return (
     <Tray.Root steps={steps} footer={footer}>
-      <Tray.Trigger>
+      <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Onboarding" />
       </Tray.Trigger>
     </Tray.Root>

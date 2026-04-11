@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import { RenderedTrayState } from "../action-tray-types";
 
+// render state holds the committed payload while newer props continue to stream in
 type TraySnapshot = {
   content?: React.ReactNode;
   footer?: React.ReactNode;

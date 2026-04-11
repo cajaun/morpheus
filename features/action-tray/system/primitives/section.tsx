@@ -15,10 +15,8 @@ const SCREEN_HEIGHT = Dimensions.get("window").height;
 type TraySectionProps = {
   children: React.ReactNode;
   scrollable?: boolean;
-
-  /** Flexible height controls */
-  maxHeight?: number | `${number}%`; // 400 | 0.75 | "75%"
-  maxHeightRatio?: number; // cleaner API: 0 → 1
+  maxHeight?: number | `${number}%`;
+  maxHeightRatio?: number;
 
   style?: StyleProp<ViewStyle>;
   className?: string;
@@ -26,25 +24,23 @@ type TraySectionProps = {
   contentClassName?: string;
 };
 
-/**
- * Resolves maxHeight into pixel value
- */
+// section height accepts several authoring styles but collapses to one layout unit
 const resolveHeight = (
   maxHeight?: number | `${number}%`,
   maxHeightRatio?: number,
 ) => {
-  // Priority 1: ratio (clean API)
+  // explicit ratios win because they capture tray intent across device sizes
   if (typeof maxHeightRatio === "number") {
     return SCREEN_HEIGHT * maxHeightRatio;
   }
 
-  // Priority 2: maxHeight
+  // fallback input supports ratios pixels and percent strings for convenience
   if (maxHeight !== undefined) {
     if (typeof maxHeight === "number") {
-      // <= 1 → treat as ratio
+      // values at or below one are interpreted as normalized screen ratios
       if (maxHeight <= 1) return SCREEN_HEIGHT * maxHeight;
 
-      // otherwise px
+      // larger numbers are treated as explicit pixel caps
       return maxHeight;
     }
 
@@ -54,10 +50,11 @@ const resolveHeight = (
     }
   }
 
-  // Default
+  // default stops short of fullscreen so headers and footers still breathe
   return SCREEN_HEIGHT * 0.70;
 };
 
+// one primitive covers static and scrollable sections to keep step markup uniform
 export const TraySection: React.FC<TraySectionProps> = ({
   children,
   scrollable = false,

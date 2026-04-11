@@ -29,7 +29,7 @@ const Send = () => {
 
   return (
     <Tray.Root steps={steps}>
-      <Tray.Trigger>
+      <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Send" />
       </Tray.Trigger>
     </Tray.Root>

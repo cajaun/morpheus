@@ -3,6 +3,7 @@ import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import { log } from "../logger";
 
+// this hook decides when new props should update the committed shell snapshot
 type Params = {
   visible: boolean;
   interactive: boolean;
@@ -92,7 +93,7 @@ export const useActionTrayContentSync = ({
     restoreContentHeight(trayId, measuredContentHeight.value);
     setLayoutAnimationEnabled(true);
     showLatestSnapshot();
-    // Tray identity changes coordinate the content swap and layout mode together.
+    // shell level swaps key off tray identity not every prop change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trayId, visible]);
 

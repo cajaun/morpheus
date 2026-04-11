@@ -24,6 +24,7 @@ export default function DrawerButton({
   iconColor = "white",
   variant = "row",
 }: Props) {
+  // feedback lives here so row and card variants feel identical on press
   const handlePress = () => {
     Haptic.impactAsync(Haptic.ImpactFeedbackStyle.Light);
     onPress();

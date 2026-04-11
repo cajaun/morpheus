@@ -137,7 +137,7 @@ const WatchingWalletsInfoTray = () => {
 
   return (
     <Tray.Root steps={steps}>
-      <Tray.Trigger>
+      <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Watching Wallets" />
       </Tray.Trigger>
     </Tray.Root>

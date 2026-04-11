@@ -14,6 +14,7 @@ import {
 } from "react-native-reanimated";
 import { log } from "../logger";
 
+// keyboard state lives in shared values so layout can react without react round trips
 const DEFAULT_KEYBOARD_DURATION = 220;
 const ANTICIPATE_DURATION = 120;
 const KEYBOARD_CLOSE_DURATION = 140;
@@ -111,6 +112,7 @@ export const useActionTrayKeyboard = () => {
         ? lastKnownKeyboardHeightRef.current
         : estimateKeyboardHeight();
 
+    // ios keyboard events arrive late enough to flash without this estimate
     keyboardHeight.value = withTiming(anticipatedHeight, {
       duration: ANTICIPATE_DURATION,
       easing: Easing.out(Easing.ease),

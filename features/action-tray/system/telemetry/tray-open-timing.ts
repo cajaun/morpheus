@@ -9,6 +9,7 @@ type TrayOpenTrace = {
   openFinishedAt?: number;
 };
 
+// telemetry stays local because this is a debug aid not a product analytics channel
 type TrayOpenTimingSummary = {
   attemptId: number;
   rootTrayId: string;
@@ -26,6 +27,7 @@ const MAX_RECORDED_SUMMARIES = 25;
 let nextAttemptId = 1;
 const tracesByTrayId = new Map<string, TrayOpenTrace>();
 
+// high resolution time gives more useful comparisons between animation stages
 const now = () => globalThis.performance?.now?.() ?? Date.now();
 
 const writeSummary = (summary: TrayOpenTimingSummary) => {
@@ -36,6 +38,7 @@ const writeSummary = (summary: TrayOpenTimingSummary) => {
 
   const nextSummaries = [...existing, summary].slice(-MAX_RECORDED_SUMMARIES);
 
+  // bound retained samples so repeated manual testing does not grow global state
   (
     globalThis as typeof globalThis & {
       __ACTION_TRAY_OPEN_TIMINGS__?: TrayOpenTimingSummary[];
@@ -49,6 +52,7 @@ const createTrace = (rootTrayId: string): TrayOpenTrace => ({
 });
 
 const getOrCreateTrace = (rootTrayId: string) => {
+  // later lifecycle marks should attach to the same attempt when possible
   const existing = tracesByTrayId.get(rootTrayId);
 
   if (existing) {
@@ -64,6 +68,7 @@ const formatDuration = (value?: number) =>
   value == null ? "n/a" : `${value.toFixed(1)}ms`;
 
 const logSummary = (summary: TrayOpenTimingSummary) => {
+  // console logging is the lowest friction place to inspect timing while iterating
   console.log(
     [
       "[ActionTrayPerf]",
@@ -85,6 +90,7 @@ const logSummary = (summary: TrayOpenTimingSummary) => {
 };
 
 export const markTrayTriggerPressed = (rootTrayId: string) => {
+  // trigger press is the cleanest origin point for a new attempt
   const trace = createTrace(rootTrayId);
   trace.triggerPressedAt = now();
   tracesByTrayId.set(rootTrayId, trace);
@@ -152,6 +158,7 @@ export const markTrayOpenFinished = (
           : undefined,
   };
 
+  // only the finished stage can compute the full span breakdown
   writeSummary(summary);
   logSummary(summary);
   tracesByTrayId.delete(rootTrayId);

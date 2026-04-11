@@ -3,6 +3,7 @@ import { LayoutChangeEvent } from "react-native";
 import { useSharedValue, type SharedValue } from "react-native-reanimated";
 import { log } from "../logger";
 
+// measurement owns the geometry contract that open animation depends on
 type Params = {
   contentHeight: SharedValue<number>;
   footerHeight: SharedValue<number>;
@@ -30,6 +31,7 @@ export const useActionTrayMeasurements = ({
   const [contentMeasured, setContentMeasured] = useState(false);
   const [pendingOpen, setPendingOpen] = useState(false);
 
+  // refs provide synchronous reads across layout callbacks and spring setup
   const latestMeasuredContentHeightRef = useRef(0);
   const latestResolvedContentHeightRef = useRef(0);
   const latestMeasuredFooterHeightRef = useRef(0);
@@ -42,6 +44,7 @@ export const useActionTrayMeasurements = ({
       return;
     }
 
+    // clear footer state when a step drops its footer so the old spacer disappears
     latestMeasuredFooterHeightRef.current = 0;
     measuredFooterHeight.value = 0;
     footerHeight.value = 0;
@@ -49,6 +52,7 @@ export const useActionTrayMeasurements = ({
 
   const beginOpenMeasurement = useCallback(
     (hasFooter: boolean) => {
+      // zeroing measurements avoids animating from stale geometry left by a prior step
       latestMeasuredContentHeightRef.current = 0;
       latestResolvedContentHeightRef.current = 0;
       contentHeight.value = 0;
@@ -116,6 +120,7 @@ export const useActionTrayMeasurements = ({
         ? resolveContentHeight(height)
         : height;
 
+      // measured height is raw content size while resolved height respects tray policy
       latestMeasuredContentHeightRef.current = height;
       latestResolvedContentHeightRef.current = resolvedHeight;
       measuredContentHeight.value = height;
@@ -150,6 +155,7 @@ export const useActionTrayMeasurements = ({
         return;
       }
 
+      // visible footer measurement handles late footer changes after the first open
       const height = e.nativeEvent.layout.height;
 
       log("VISIBLE FOOTER onLayout", {
@@ -167,6 +173,7 @@ export const useActionTrayMeasurements = ({
 
   const handleMeasureFooterLayout = useCallback(
     (e: LayoutChangeEvent) => {
+      // offscreen measurement prevents the first open from guessing footer travel
       const height = e.nativeEvent.layout.height;
 
       log("OFFSCREEN FOOTER onLayout", { height });

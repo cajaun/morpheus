@@ -25,7 +25,7 @@ export default function Header({
 }) {
   const showBack = step > 0;
 
-  // Proper shared value animation
+  // one progress value keeps the back slot and title movement phase aligned
   const progress = useSharedValue(showBack ? 1 : 0);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function Header({
     });
   }, [showBack]);
 
-  // Back button animation
+  // back motion is small because the tray shell is already animating
   const rBackStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
     transform: [
@@ -45,7 +45,7 @@ export default function Header({
     ],
   }));
 
-  // Title slight shift for polish (optional)
+  // the title shifts to preserve optical centering when the back slot appears
   const rTitleStyle = useAnimatedStyle(() => ({
     transform: [
       {
@@ -73,7 +73,7 @@ export default function Header({
           alignItems: "center",
         }}
       >
-        {/* LEFT SLOT (Back Button Space Reserved Always) */}
+        {/* reserve the left slot even when empty so title centering stays stable */}
         <View style={{ width: 44, alignItems: "flex-start" }}>
           <Animated.View style={rBackStyle}>
             {showBack && (
@@ -93,7 +93,7 @@ export default function Header({
           </Animated.View>
         </View>
 
-        {/* CENTER TITLE */}
+        {/* title centering should not depend on which side controls are visible */}
         <Animated.View
           style={[
             {
@@ -112,7 +112,7 @@ export default function Header({
           )}
         </Animated.View>
 
-        {/* RIGHT SLOT (Close Button Space Reserved Always) */}
+        {/* reserve the close slot too so the header width math never changes */}
         <View style={{ width: 44, alignItems: "flex-end" }}>
           {shouldClose && (
             <PressableScale

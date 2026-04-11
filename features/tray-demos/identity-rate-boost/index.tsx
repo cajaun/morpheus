@@ -263,7 +263,7 @@ const IdentityRateBoostTray = () => {
 
   return (
     <Tray.Root steps={steps}>
-      <Tray.Trigger>
+      <Tray.Trigger haptics="impact-soft">
         <ExampleTrigger label="Identity Boost" />
       </Tray.Trigger>
     </Tray.Root>
