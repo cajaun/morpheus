@@ -4,6 +4,10 @@ React Native Morpheus is an Expo app that explores one UI problem: how to presen
 
 The app has no backend service in this repository. No REST client, GraphQL client, auth client, database client, or server code exists in the current tree. The network usage in the demo set is limited to placeholder avatar image URLs inside sample screens.
 
+## Demo
+
+https://github.com/user-attachments/assets/734017af-3113-4806-a7d8-346c387e92b1
+
 ## Purpose
 
 The codebase acts as both a demo app and a local component system.
