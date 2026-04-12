@@ -17,6 +17,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { SCREEN_WIDTH } from "../core/constants";
 import { TrayPagesProvider } from "../pages-context";
+import { useTrayHost, useTrayStepOptions } from "../runtime/tray-context";
 import { TrayPage } from "./page";
 
 // pages are for intra step motion when the tray shell itself should stay unchanged
@@ -37,8 +38,32 @@ TrayPagesHeaderSlot.displayName = "TrayPagesHeader";
 
 const TrayPagesFooterSlot: React.FC<{
   children: React.ReactNode;
-}> = ({ children }) => {
-  return <>{children}</>;
+  style?: StyleProp<ViewStyle>;
+  className?: string;
+}> = ({ children, style, className }) => {
+  const { keyboardHeight } = useTrayHost();
+  const { fullScreen } = useTrayStepOptions();
+  const flattenedStyle = StyleSheet.flatten(style);
+  const hasBackgroundColor = flattenedStyle?.backgroundColor != null;
+  const keyboardAwareStyle = useAnimatedStyle(
+    () => ({
+      transform: [{ translateY: fullScreen ? -keyboardHeight.value : 0 }],
+    }),
+    [fullScreen, keyboardHeight],
+  );
+
+  return (
+    <Animated.View
+      className={className}
+      style={[
+        !hasBackgroundColor && styles.footerTransparentBackground,
+        style,
+        keyboardAwareStyle,
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
 };
 
 TrayPagesFooterSlot.displayName = "TrayPagesFooter";
@@ -120,7 +145,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
       }
 
       if (isElementOfType(child, TrayPagesFooterSlot)) {
-        footer = child.props.children;
+        footer = child;
         return;
       }
 
@@ -245,6 +270,9 @@ export const TrayPages = Object.assign(TrayPagesRoot, {
 const styles = StyleSheet.create({
   root: {
     height: "100%",
+  },
+  footerTransparentBackground: {
+    backgroundColor: "transparent",
   },
   viewport: {
     flex: 1,

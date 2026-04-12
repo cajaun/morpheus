@@ -4,7 +4,7 @@ export const HORIZONTAL_MARGIN = 12;
 export const BORDER_RADIUS = 40;
 export const SCREEN_HEIGHT = Dimensions.get("window").height;
 export const SCREEN_WIDTH = Dimensions.get("window").width;
-export const MORPH_DURATION = 270;
+export const MORPH_DURATION = 350;
 
 // tuned to settle fast without reading as a modal snap
 export const TRAY_SPRING_CONFIG = {

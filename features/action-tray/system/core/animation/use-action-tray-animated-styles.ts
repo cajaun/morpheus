@@ -1,6 +1,5 @@
 import {
   useAnimatedStyle,
-  withDelay,
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -42,9 +41,13 @@ export const useActionTrayAnimatedStyles = ({
   }));
 
   const trayLayoutStyle = useAnimatedStyle(() => {
-    // keyboard overlap wins because it is the active obstruction not just chrome
+    // sheets move with the keyboard but fullscreen shells stay pinned to the viewport
     const keyboardBottom =
-      keyboardHeight.value > 0 ? keyboardHeight.value + TRAY_KEYBOARD_GAP : 0;
+      keyboardHeight.value > 0
+        ? fullScreen
+          ? keyboardHeight.value
+          : keyboardHeight.value + TRAY_KEYBOARD_GAP
+        : 0;
     const resolvedSheetHeight =
       contentHeight.value > 0
         ? Math.max(
@@ -56,9 +59,9 @@ export const useActionTrayAnimatedStyles = ({
     return {
       left: fullScreen ? 0 : HORIZONTAL_MARGIN,
       right: fullScreen ? 0 : HORIZONTAL_MARGIN,
-      bottom: fullScreen ? keyboardBottom : Math.max(bottom, keyboardBottom),
+      bottom: fullScreen ? 0 : Math.max(bottom, keyboardBottom),
       height: fullScreen
-        ? Math.max(0, SCREEN_HEIGHT - keyboardBottom)
+        ? SCREEN_HEIGHT
         : resolvedSheetHeight,
       borderRadius: BORDER_RADIUS,
     };
@@ -67,11 +70,16 @@ export const useActionTrayAnimatedStyles = ({
   const footerContainerStyle = useAnimatedStyle(() => {
     // footer mirrors tray bounds but stays detached so actions can remain pinned
     const keyboardBottom =
-      keyboardHeight.value > 0 ? keyboardHeight.value + TRAY_KEYBOARD_GAP : 0;
+      keyboardHeight.value > 0
+        ? fullScreen
+          ? keyboardHeight.value
+          : keyboardHeight.value + TRAY_KEYBOARD_GAP
+        : 0;
 
     return {
       left: fullScreen ? 0 : HORIZONTAL_MARGIN,
       right: fullScreen ? 0 : HORIZONTAL_MARGIN,
+      // fullscreen footers should clear the keyboard without moving the shell
       bottom: fullScreen ? keyboardBottom : Math.max(bottom, keyboardBottom),
       borderTopLeftRadius: BORDER_RADIUS,
       borderTopRightRadius: BORDER_RADIUS,
@@ -98,12 +106,12 @@ export const useActionTrayAnimatedStyles = ({
     paddingBottom: 0,
   }));
 
-  // delay the fullscreen fill until the shell morph has committed its bounds
+  // fullscreen fill should arrive with the morph or keyboard transitions expose the old sheet shell
   const fullScreenSurfaceFillStyle = useAnimatedStyle(
     () => ({
       opacity:
         fullScreen && visible
-          ? withDelay(MORPH_DURATION, withTiming(1, { duration: 0 }))
+          ? withTiming(1, { duration: MORPH_DURATION })
           : withTiming(0, { duration: 0 }),
     }),
     [fullScreen, visible],

@@ -28,6 +28,9 @@ const WatchAddressTray = () => {
         options: {
           className: "bg-white",
           fullScreen: selectedAction === "create",
+          fullScreenDraggable: selectedAction !== "create",
+          fullScreenCloseBehavior:
+            selectedAction === "create" ? "returnToShell" : "dismiss",
         },
       },
     ],
