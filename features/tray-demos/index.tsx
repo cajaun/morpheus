@@ -1,6 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 import AboutAaveTray from "./about-aave";
+import CreatingWalletsInfoTray from "./creating-wallets-info";
 import HelpSupportTray from "./help-support";
 import IdentityRateBoostTray from "./identity-rate-boost";
 import OnboardingExample from "./onboarding";
@@ -28,6 +29,7 @@ const ActionTrayExamples = () => {
       <WatchAddressTray />
       <HelpSupportTray />
       <WatchingWalletsInfoTray />
+      <CreatingWalletsInfoTray />
       <AboutAaveTray />
       <IdentityRateBoostTray />
       <WalletGroupTray />

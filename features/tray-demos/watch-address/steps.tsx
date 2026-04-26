@@ -92,7 +92,7 @@ export const WatchAddressInputStep = () => {
             onChangeText={setAddress}
             autoCapitalize="none"
             autoCorrect={false}
-            autoFocus
+            autoFocus={false}
             autoComplete="off"
             clearButtonMode="while-editing"
             keyboardType="ascii-capable"
@@ -186,8 +186,6 @@ export const CreateNewWalletStep = () => {
           <View style={{ paddingTop: 28 }}>
             <View
               style={{
-         
-             
                 paddingBottom: 12,
               }}
             >
@@ -195,7 +193,7 @@ export const CreateNewWalletStep = () => {
                 value={walletName}
                 onChangeText={setWalletName}
                 autoCapitalize="words"
-                autoFocus
+                autoFocus={false}
                 autoCorrect={false}
                 autoComplete="off"
                 placeholder="My New Wallet"
@@ -250,7 +248,7 @@ export const CreateNewWalletStep = () => {
             </Text>
           </View>
 
-          <View style={{ paddingTop: 58}}>
+          <View style={{ paddingTop: 58 }}>
             <CreateWalletColorGrid
               selectedColor={selectedColor}
               onSelect={setSelectedColor}

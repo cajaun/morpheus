@@ -391,6 +391,7 @@ The demo launcher renders these trays:
 - `Watch Address`
 - `Help Support`
 - `Watching Wallets Info`
+- `Creating Wallets Info`
 - `About Aave`
 - `Identity Rate Boost`
 - `Wallet Group`
