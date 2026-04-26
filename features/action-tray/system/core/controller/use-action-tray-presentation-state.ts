@@ -47,9 +47,10 @@ export const useActionTrayPresentationState = ({
         return measuredHeight;
       }
 
+      // fullscreen should dock to the keyboard instead of preserving sheet gap
       const keyboardInset =
         keyboardHeight.value > 0
-          ? keyboardHeight.value + TRAY_KEYBOARD_GAP
+          ? keyboardHeight.value
           : 0;
 
       return Math.max(

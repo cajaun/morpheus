@@ -32,10 +32,11 @@ export const PrimaryButton: React.FC<Props> = ({
         alignItems: "center",
         justifyContent: "center",
         width: "100%",
+        borderCurve: "continuous"
       }}
     >
       <Text
-        className="font-sf-semibold text-white"
+        className="font-sf-bold text-white"
         style={trayDemoText.button}
       >
         {label}

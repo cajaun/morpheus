@@ -8,7 +8,7 @@ import React, {
 import { StyleProp, ViewStyle } from "react-native";
 import { type SharedValue } from "react-native-reanimated";
 import { log } from "./logger";
-import { SCREEN_HEIGHT } from "./constants";
+import { SCREEN_HEIGHT, TRAY_KEYBOARD_GAP } from "./constants";
 import { useActionTrayContentSync } from "./controller/use-action-tray-content-sync";
 import { useActionTrayHeightCache } from "./controller/use-action-tray-height-cache";
 import { useActionTrayMeasurements } from "./controller/use-action-tray-measurements";
@@ -72,6 +72,7 @@ export const useActionTrayController = ({
   });
 
   const presentationFullScreen = renderState.state.renderedFullScreen;
+  const isEnteringFullScreen = !!fullScreen && !presentationFullScreen;
 
   // presentation owns the shared values read by gestures animations and layout
   const presentation = useActionTrayPresentationState({
@@ -80,6 +81,65 @@ export const useActionTrayController = ({
     presentationFullScreen,
     keyboardHeight,
   });
+
+  const resolveMeasuredContentHeight = useCallback(
+    (measuredHeight: number) => {
+      const keyboardInset =
+        keyboardHeight.value > 0
+          ? keyboardHeight.value + TRAY_KEYBOARD_GAP
+          : 0;
+
+      if (!isEnteringFullScreen) {
+        const resolvedHeight =
+          presentation.helpers.resolveRenderedContentHeight(measuredHeight);
+
+        log("RESOLVE CONTENT HEIGHT", {
+          trayId,
+          measuredHeight,
+          resolvedHeight,
+          visible,
+          incomingFullScreen: !!fullScreen,
+          renderedFullScreen: presentationFullScreen,
+          isEnteringFullScreen,
+          footerHeight: presentation.shared.footerHeight.value,
+          keyboardInset,
+          mode: "rendered-presentation",
+        });
+
+        return resolvedHeight;
+      }
+
+      const resolvedHeight = Math.max(
+        0,
+        SCREEN_HEIGHT - presentation.shared.footerHeight.value - keyboardInset,
+      );
+
+      log("RESOLVE CONTENT HEIGHT", {
+        trayId,
+        measuredHeight,
+        resolvedHeight,
+        visible,
+        incomingFullScreen: !!fullScreen,
+        renderedFullScreen: presentationFullScreen,
+        isEnteringFullScreen,
+        footerHeight: presentation.shared.footerHeight.value,
+        keyboardInset,
+        mode: "entering-fullscreen",
+      });
+
+      return resolvedHeight;
+    },
+    [
+      isEnteringFullScreen,
+      keyboardHeight,
+      fullScreen,
+      presentation.helpers.resolveRenderedContentHeight,
+      presentationFullScreen,
+      presentation.shared.footerHeight,
+      trayId,
+      visible,
+    ],
+  );
 
   const heightCache = useActionTrayHeightCache({
     fullScreen,
@@ -92,7 +152,7 @@ export const useActionTrayController = ({
     footerHeight: presentation.shared.footerHeight,
     renderedTrayId: renderState.state.renderedTrayId,
     renderedFooter: renderState.state.renderedFooter,
-    resolveContentHeight: presentation.helpers.resolveRenderedContentHeight,
+    resolveContentHeight: resolveMeasuredContentHeight,
     onContentHeightResolved: heightCache.actions.handleContentHeightResolved,
   });
 
@@ -106,13 +166,43 @@ export const useActionTrayController = ({
     }
 
     presentation.shared.contentHeight.value =
-      presentation.helpers.resolveRenderedContentHeight(
-        measurements.shared.measuredContentHeight.value,
-      );
+      resolveMeasuredContentHeight(measurements.shared.measuredContentHeight.value);
   }, [
     measurements.shared.measuredContentHeight,
-    presentation.helpers.resolveRenderedContentHeight,
+    resolveMeasuredContentHeight,
     presentation.shared.contentHeight,
+    visible,
+  ]);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    log("FULLSCREEN TRANSITION STATE", {
+      trayId,
+      visible,
+      incomingFullScreen: !!fullScreen,
+      renderedFullScreen: presentationFullScreen,
+      isEnteringFullScreen,
+      renderedTrayId: renderState.state.renderedTrayId,
+      measuredContentHeight: measurements.shared.measuredContentHeight.value,
+      resolvedContentHeight: measurements.shared.resolvedContentHeight.value,
+      contentHeight: presentation.shared.contentHeight.value,
+      footerHeight: presentation.shared.footerHeight.value,
+      layoutEnabled: measurements.state.layoutEnabled,
+    });
+  }, [
+    fullScreen,
+    isEnteringFullScreen,
+    measurements.shared.measuredContentHeight,
+    measurements.shared.resolvedContentHeight,
+    measurements.state.layoutEnabled,
+    presentation.shared.contentHeight,
+    presentation.shared.footerHeight,
+    presentationFullScreen,
+    renderState.state.renderedTrayId,
+    trayId,
     visible,
   ]);
 
@@ -188,6 +278,7 @@ export const useActionTrayController = ({
     renderState,
     contentHeight: presentation.shared.contentHeight,
     footerHeight: presentation.shared.footerHeight,
+    resolveIncomingContentHeight: resolveMeasuredContentHeight,
     restoreContentHeight: heightCache.actions.restoreContentHeight,
   });
 

@@ -119,6 +119,8 @@ export const useActionTrayMeasurements = ({
       const resolvedHeight = resolveContentHeight
         ? resolveContentHeight(height)
         : height;
+      const previousMeasuredHeight = latestMeasuredContentHeightRef.current;
+      const previousResolvedHeight = latestResolvedContentHeightRef.current;
 
       // measured height is raw content size while resolved height respects tray policy
       latestMeasuredContentHeightRef.current = height;
@@ -136,6 +138,10 @@ export const useActionTrayMeasurements = ({
         height,
         resolvedHeight,
         trayId: renderedTrayId,
+        previousMeasuredHeight,
+        previousResolvedHeight,
+        currentContentHeight: contentHeight.value,
+        currentFooterHeight: footerHeight.value,
       });
     },
     [
