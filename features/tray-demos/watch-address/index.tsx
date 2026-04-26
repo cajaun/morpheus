@@ -27,6 +27,7 @@ const WatchAddressTray = () => {
           ),
         options: {
           className: "bg-white",
+          keyboardAware: true,
           fullScreen: selectedAction === "create",
           fullScreenDraggable: selectedAction !== "create",
           fullScreenCloseBehavior:

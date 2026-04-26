@@ -27,7 +27,7 @@ const HelpSupportTray = () => {
       {
         key: `help-compose-${selectedFlow}`,
         content: <ComposeSupportStep flow={selectedFlow} />,
-        options: { className: "bg-white" },
+        options: { className: "bg-white", keyboardAware: true },
       },
       {
         key: `help-attach-${selectedFlow}`,
@@ -37,7 +37,7 @@ const HelpSupportTray = () => {
       {
         key: `help-details-${selectedFlow}`,
         content: <YourDetailsStep />,
-        options: { className: "bg-white" },
+        options: { className: "bg-white", keyboardAware: true },
       },
     ],
     [selectedFlow],

@@ -14,6 +14,7 @@ export type TrayFullScreenTransition = "morph" | "slide";
 
 export type TrayStepOptions = {
   scale?: boolean;
+  keyboardAware?: boolean;
   fullScreen?: boolean;
   fullScreenDraggable?: boolean;
   fullScreenCloseBehavior?: TrayFullScreenCloseBehavior;
@@ -37,6 +38,7 @@ export type TrayRegistration = {
 
 export type ResolvedTrayStepOptions = {
   scale: boolean;
+  keyboardAware: boolean;
   fullScreen: boolean;
   fullScreenDraggable: boolean;
   fullScreenCloseBehavior: TrayFullScreenCloseBehavior;
@@ -49,6 +51,7 @@ export type ResolvedTrayStepOptions = {
 
 export const DEFAULT_TRAY_STEP_OPTIONS: ResolvedTrayStepOptions = {
   scale: true,
+  keyboardAware: false,
   fullScreen: false,
   fullScreenDraggable: true,
   fullScreenCloseBehavior: "dismiss",
@@ -98,7 +101,7 @@ export type TrayRuntimeStore = {
   setDependencies: (params: {
     keyboardHeight: SharedValue<number>;
     anticipateKeyboard: () => void;
-    dismissFocusedInputs: (trayId?: string | null) => void;
+    dismissFocusedInputs: (trayId?: string | null) => void | Promise<void>;
     registerFocusable: TrayHostActionsValue["registerFocusable"];
   }) => void;
 };

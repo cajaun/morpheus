@@ -30,6 +30,7 @@ type Params = {
     };
     shared: {
       measuredContentHeight: SharedValue<number>;
+      measuredFooterHeight: SharedValue<number>;
     };
   };
   renderState: {
@@ -74,7 +75,7 @@ export const useActionTrayContentSync = ({
 }: Params) => {
   const { layoutEnabled } = measurements.state;
   const { setLayoutAnimationEnabled } = measurements.actions;
-  const { measuredContentHeight } = measurements.shared;
+  const { measuredContentHeight, measuredFooterHeight } = measurements.shared;
   const { renderedTrayId, renderedContent, renderedFooter, renderedFullScreen } =
     renderState.state;
   const { showLatestSnapshot, syncRenderedNodes } = renderState.actions;
@@ -96,6 +97,7 @@ export const useActionTrayContentSync = ({
       incomingFullScreen: !!fullScreen,
       renderedFullScreen,
       measuredContentHeight: measuredContentHeight.value,
+      measuredFooterHeight: measuredFooterHeight.value,
       contentHeight: contentHeight.value,
       footerHeight: footerHeight.value,
       layoutEnabled,
@@ -119,12 +121,30 @@ export const useActionTrayContentSync = ({
     } else {
       restoreContentHeight(trayId, measuredContentHeight.value);
     }
-
+    footerHeight.value = measuredFooterHeight.value;
     setLayoutAnimationEnabled(true);
     showLatestSnapshot();
     // shell level swaps key off tray identity not every prop change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEnteringFullScreen, resolveIncomingContentHeight, trayId, visible]);
+  }, [
+    isEnteringFullScreen,
+    measuredContentHeight,
+    measuredFooterHeight,
+    resolveIncomingContentHeight,
+    restoreContentHeight,
+    setLayoutAnimationEnabled,
+    showLatestSnapshot,
+    trayId,
+    visible,
+    footerHeight,
+    fullScreen,
+    interactive,
+    justOpenedRef,
+    layoutEnabled,
+    renderedFullScreen,
+    renderedTrayId,
+    contentHeight,
+  ]);
 
   useLayoutEffect(() => {
     if (!visible) {

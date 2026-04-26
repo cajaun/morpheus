@@ -8,7 +8,6 @@ import {
   HORIZONTAL_MARGIN,
   MORPH_DURATION,
   SCREEN_HEIGHT,
-  TRAY_KEYBOARD_GAP,
 } from "../constants";
 
 type Params = {
@@ -41,13 +40,6 @@ export const useActionTrayAnimatedStyles = ({
   }));
 
   const trayLayoutStyle = useAnimatedStyle(() => {
-    // sheets move with the keyboard but fullscreen shells stay pinned to the viewport
-    const keyboardBottom =
-      keyboardHeight.value > 0
-        ? fullScreen
-          ? keyboardHeight.value
-          : keyboardHeight.value + TRAY_KEYBOARD_GAP
-        : 0;
     const resolvedSheetHeight =
       contentHeight.value > 0
         ? Math.max(
@@ -59,7 +51,7 @@ export const useActionTrayAnimatedStyles = ({
     return {
       left: fullScreen ? 0 : HORIZONTAL_MARGIN,
       right: fullScreen ? 0 : HORIZONTAL_MARGIN,
-      bottom: fullScreen ? 0 : Math.max(bottom, keyboardBottom),
+      bottom: fullScreen ? 0 : bottom,
       height: fullScreen
         ? SCREEN_HEIGHT
         : resolvedSheetHeight,
@@ -68,19 +60,15 @@ export const useActionTrayAnimatedStyles = ({
   }, [bottom, contentHeight, fullScreen]);
 
   const footerContainerStyle = useAnimatedStyle(() => {
-    // footer mirrors tray bounds but stays detached so actions can remain pinned
-    const keyboardBottom =
-      keyboardHeight.value > 0
-        ? fullScreen
-          ? keyboardHeight.value
-          : keyboardHeight.value + TRAY_KEYBOARD_GAP
-        : 0;
-
     return {
       left: fullScreen ? 0 : HORIZONTAL_MARGIN,
       right: fullScreen ? 0 : HORIZONTAL_MARGIN,
       // fullscreen footers should clear the keyboard without moving the shell
-      bottom: fullScreen ? keyboardBottom : Math.max(bottom, keyboardBottom),
+      bottom: fullScreen
+        ? keyboardHeight.value > 0
+          ? keyboardHeight.value
+          : 0
+        : bottom,
       borderTopLeftRadius: BORDER_RADIUS,
       borderTopRightRadius: BORDER_RADIUS,
       borderBottomLeftRadius: BORDER_RADIUS,
@@ -89,9 +77,15 @@ export const useActionTrayAnimatedStyles = ({
   }, [bottom, fullScreen]);
 
   // every visible surface reads the same drag translation to avoid shearing
-  const dragStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
+  const dragStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          translateY: translateY.value,
+        },
+      ],
+    };
+  });
 
   const surfaceVisibilityStyle = useAnimatedStyle(() => ({
     opacity: surfaceOpacity.value,

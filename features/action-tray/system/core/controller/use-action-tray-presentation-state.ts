@@ -66,13 +66,7 @@ export const useActionTrayPresentationState = ({
       return SCREEN_HEIGHT;
     }
 
-    const keyboardInset =
-      keyboardHeight.value > 0
-        ? keyboardHeight.value + TRAY_KEYBOARD_GAP
-        : 0;
-    const trayBottomInset = Math.max(bottom, keyboardInset);
-
-    return contentHeight.value + footerHeight.value + trayBottomInset;
+    return contentHeight.value + footerHeight.value + bottom;
   }, [bottom, keyboardHeight, presentationFullScreen]);
 
   const resolveClosedTranslateY = useCallback(
@@ -84,13 +78,7 @@ export const useActionTrayPresentationState = ({
         return SCREEN_HEIGHT;
       }
 
-      const keyboardInset =
-        keyboardHeight.value > 0
-          ? keyboardHeight.value + TRAY_KEYBOARD_GAP
-          : 0;
-      const trayBottomInset = Math.max(bottom, keyboardInset);
-
-      return nextContentHeight + nextFooterHeight + trayBottomInset;
+      return nextContentHeight + nextFooterHeight + bottom;
     },
     [bottom, contentHeight, footerHeight, keyboardHeight, presentationFullScreen],
   );

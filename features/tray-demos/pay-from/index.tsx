@@ -31,18 +31,7 @@ const wallets = [
     address: "0x9f90•••3d79",
     avatar: "https://i.pravatar.cc/100?img=3",
   },
-  {
-    id: "4",
-    name: "Nova",
-    address: "0x7ac1•••4f22",
-    avatar: "https://i.pravatar.cc/100?img=4",
-  },
-  {
-    id: "5",
-    name: "Orion",
-    address: "0x12de•••88ab",
-    avatar: "https://i.pravatar.cc/100?img=5",
-  },
+ 
 ];
 
 const WalletSelectionStep = ({

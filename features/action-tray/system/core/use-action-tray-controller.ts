@@ -9,6 +9,7 @@ import { StyleProp, ViewStyle } from "react-native";
 import { type SharedValue } from "react-native-reanimated";
 import { log } from "./logger";
 import { SCREEN_HEIGHT, TRAY_KEYBOARD_GAP } from "./constants";
+import { KeyboardTransitionMode } from "./action-tray-types";
 import { useActionTrayContentSync } from "./controller/use-action-tray-content-sync";
 import { useActionTrayHeightCache } from "./controller/use-action-tray-height-cache";
 import { useActionTrayMeasurements } from "./controller/use-action-tray-measurements";
@@ -22,6 +23,7 @@ type Params = {
   assignmentId?: number;
   visible: boolean;
   interactive?: boolean;
+  keyboardTransitionMode?: KeyboardTransitionMode;
   content?: React.ReactNode;
   footer?: React.ReactNode;
   onCloseComplete?: () => void;
@@ -42,6 +44,7 @@ export const useActionTrayController = ({
   assignmentId = 0,
   visible,
   interactive = true,
+  keyboardTransitionMode = "idle",
   content,
   footer,
   onCloseComplete,

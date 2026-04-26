@@ -1,7 +1,9 @@
 import { useCallback, useRef } from "react";
 
 // focus management is tray scoped so one close action only affects its own inputs
-export const useTrayFocusManager = (dismissKeyboard: () => void) => {
+export const useTrayFocusManager = (
+  dismissKeyboard: () => void | Promise<void>,
+) => {
   const focusableRegistryRef = useRef<Record<string, Set<React.RefObject<any>>>>(
     {},
   );
@@ -45,7 +47,7 @@ export const useTrayFocusManager = (dismissKeyboard: () => void) => {
         });
       }
 
-      dismissKeyboard();
+      return dismissKeyboard();
     },
     [dismissKeyboard],
   );

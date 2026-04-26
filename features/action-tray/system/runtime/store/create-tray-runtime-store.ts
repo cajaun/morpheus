@@ -20,7 +20,7 @@ const clampIndex = (index: number, total: number) => {
 type Dependencies = {
   keyboardHeight: SharedValue<number>;
   anticipateKeyboard: () => void;
-  dismissFocusedInputs: (trayId?: string | null) => void;
+  dismissFocusedInputs: (trayId?: string | null) => void | Promise<void>;
   registerFocusable: TrayHostActionsValue["registerFocusable"];
 };
 
@@ -145,9 +145,9 @@ export const createTrayRuntimeStore = (
     },
     openTray: (id: string) => {
       // blur the old tray first so keyboard state does not leak across tray switches
-      dependencies.dismissFocusedInputs(state.activeTrayId);
       justOpenedRef.current = true;
       markTrayOpenRequested(id);
+      void dependencies.dismissFocusedInputs(state.activeTrayId);
 
       setState((current) => ({
         ...current,
@@ -156,7 +156,7 @@ export const createTrayRuntimeStore = (
       }));
     },
     closeActiveTray: () => {
-      dependencies.dismissFocusedInputs(state.activeTrayId);
+      void dependencies.dismissFocusedInputs(state.activeTrayId);
 
       setState((current) => {
         if (current.activeTrayId === null && current.activeIndex === 0) {
@@ -171,8 +171,6 @@ export const createTrayRuntimeStore = (
       });
     },
     requestCloseActiveTray: () => {
-      dependencies.dismissFocusedInputs(state.activeTrayId);
-
       const activeStepOptions = getActiveStepOptions();
       const activeTray = state.activeTrayId ? state.registry[state.activeTrayId] : undefined;
       const safeIndex = clampIndex(state.activeIndex, activeTray?.steps.length ?? 0);
@@ -190,6 +188,8 @@ export const createTrayRuntimeStore = (
         return;
       }
 
+      void dependencies.dismissFocusedInputs(state.activeTrayId);
+
       setState((current) => {
         if (current.activeTrayId === null && current.activeIndex === 0) {
           return current;
@@ -203,15 +203,11 @@ export const createTrayRuntimeStore = (
       });
     },
     nextStep: () => {
-      dependencies.dismissFocusedInputs(state.activeTrayId);
+      const activeTray = state.activeTrayId ? state.registry[state.activeTrayId] : undefined;
+      const total = activeTray?.steps.length ?? 0;
+      const nextIndex = total <= 0 ? 0 : Math.min(state.activeIndex + 1, total - 1);
 
       setState((current) => {
-        const activeTray = current.activeTrayId
-          ? current.registry[current.activeTrayId]
-          : undefined;
-        const total = activeTray?.steps.length ?? 0;
-        const nextIndex = total <= 0 ? 0 : Math.min(current.activeIndex + 1, total - 1);
-
         if (nextIndex === current.activeIndex) {
           return current;
         }
@@ -223,11 +219,9 @@ export const createTrayRuntimeStore = (
       });
     },
     previousStep: () => {
-      dependencies.dismissFocusedInputs(state.activeTrayId);
+      const nextIndex = Math.max(state.activeIndex - 1, 0);
 
       setState((current) => {
-        const nextIndex = Math.max(current.activeIndex - 1, 0);
-
         if (nextIndex === current.activeIndex) {
           return current;
         }
@@ -242,7 +236,7 @@ export const createTrayRuntimeStore = (
       dependencies.anticipateKeyboard();
     },
     dismissKeyboardForTray: (trayId?: string | null) => {
-      dependencies.dismissFocusedInputs(trayId);
+      void dependencies.dismissFocusedInputs(trayId);
     },
     registerFocusable: (trayId, ref) => dependencies.registerFocusable(trayId, ref),
   };

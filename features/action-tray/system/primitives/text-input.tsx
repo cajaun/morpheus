@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
 } from "react";
 import { TextInput, TextInputProps } from "react-native";
@@ -29,12 +30,11 @@ export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
       return registerFocusable(trayId, ref);
     }, [registerFocusable, trayId]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
       if (!autoFocus) {
         return;
       }
 
-      // lead the keyboard because native focus arrives before tray layout can react
       anticipateKeyboard();
       ref.current?.focus();
     }, [anticipateKeyboard, autoFocus]);

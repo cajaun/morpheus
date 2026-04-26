@@ -17,6 +17,6 @@ export const TRAY_SPRING_CONFIG = {
 
 export const TRAY_HORIZONTAL_PADDING = 32;
 export const TRAY_VERTICAL_PADDING = 28;
-export const TRAY_KEYBOARD_GAP = 12;
+export const TRAY_KEYBOARD_GAP = 0;
 
 export const TRAY_SECTION_GAP = 24;

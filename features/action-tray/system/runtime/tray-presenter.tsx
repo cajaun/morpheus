@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { ActionTray } from "../core/action-tray";
+import type { KeyboardTransitionMode } from "../core/action-tray-types";
 import { TrayStepContent } from "../tray-step-content";
 import {
   resolveTrayStepOptions,
@@ -30,6 +31,7 @@ const clampIndex = (index: number, total: number) => {
 type PresentedTray = {
   rootTrayId: string;
   trayId: string;
+  keyboardTransitionMode: KeyboardTransitionMode;
   content: React.ReactNode;
   footer: React.ReactNode;
   fullScreen: boolean;
@@ -83,6 +85,7 @@ export const TrayPresenter: React.FC = () => {
   const { justOpenedRef } = useTrayRuntimeStore();
   const nextAssignmentIdRef = useRef(0);
   const activeSlotIndexRef = useRef<number | null>(null);
+  const previousKeyboardAwareRef = useRef(false);
   // pendingHost serializes tray replacement across overlapping close animations
   const pendingPresentedHostRef = useRef<PresentedTray | null>(null);
   const [hostSlots, setHostSlots] = useState<[TrayHostSlot, TrayHostSlot]>([
@@ -112,10 +115,17 @@ export const TrayPresenter: React.FC = () => {
     const stepOptions = resolveTrayStepOptions(step.options);
     // suppress the first step enter because the shell open animation already covers it
     const isFirstRender = justOpenedRef.current && trayIndex === 0;
+    const keyboardTransitionMode: KeyboardTransitionMode =
+      stepOptions.keyboardAware && !previousKeyboardAwareRef.current
+        ? "entering"
+        : !stepOptions.keyboardAware && previousKeyboardAwareRef.current
+          ? "exiting"
+          : "idle";
 
     return {
       rootTrayId: activeTrayId,
       trayId: `${activeTrayId}-${step.key}`,
+      keyboardTransitionMode,
       content: (
         <TrayScopeProvider value={activeTrayId}>
           <TrayStepOptionsProvider value={stepOptions}>
@@ -215,7 +225,7 @@ export const TrayPresenter: React.FC = () => {
         (slot, index) =>
           index !== currentActiveSlotIndex && slot.payload !== null && !slot.visible,
       );
-      const nextRootTrayId = activeHost?.rootTrayId ?? null;
+      const resolvedNextRootTrayId = activeHost?.rootTrayId ?? null;
 
       if (!activeHost) {
         // no active host means we only need to drive the current slot to closed
@@ -245,7 +255,7 @@ export const TrayPresenter: React.FC = () => {
         return current;
       }
 
-      if (currentRootTrayId === nextRootTrayId) {
+      if (currentRootTrayId === resolvedNextRootTrayId) {
         // step changes within one tray should update in place and preserve the host
         const targetSlotIndex = currentActiveSlotIndex ?? 0;
         const targetSlot = next[targetSlotIndex];
@@ -309,7 +319,30 @@ export const TrayPresenter: React.FC = () => {
     if (nextRootTrayId !== null) {
       justOpenedRef.current = false;
     }
-  }, [activeHost, justOpenedRef]);
+  }, [activeHost, justOpenedRef, nextRootTrayId]);
+
+  useLayoutEffect(() => {
+    previousKeyboardAwareRef.current =
+      activeHost?.keyboardTransitionMode === "entering"
+        ? true
+        : activeHost?.keyboardTransitionMode === "exiting"
+          ? false
+          : activeHost != null
+            ? previousKeyboardAwareRef.current
+            : false;
+
+    if (!activeHost) {
+      previousKeyboardAwareRef.current = false;
+      return;
+    }
+
+    const trayId = activeHost.rootTrayId;
+    const registration = registry[trayId];
+    const safeIndex = clampIndex(activeIndex, registration?.steps.length ?? 0);
+    const step = registration?.steps[safeIndex];
+    const stepOptions = resolveTrayStepOptions(step?.options);
+    previousKeyboardAwareRef.current = stepOptions.keyboardAware;
+  }, [activeHost, activeIndex, registry]);
 
   return (
     <>
@@ -322,6 +355,7 @@ export const TrayPresenter: React.FC = () => {
             assignmentId={slot.assignmentId}
             visible={slot.visible}
             interactive={slot.interactive}
+            keyboardTransitionMode={payload?.keyboardTransitionMode}
             rootTrayId={payload?.rootTrayId}
             content={payload?.content}
             footer={payload?.footer}

@@ -2,14 +2,22 @@ import React, { forwardRef, useImperativeHandle, useMemo } from "react";
 import { StyleSheet } from "react-native";
 import Animated from "react-native-reanimated";
 import { GestureDetector } from "react-native-gesture-handler";
+import { KeyboardStickyView } from "react-native-keyboard-controller";
 import { Backdrop } from "../primitives/backdrop";
 import { createTrayLayoutTransition } from "./animation/action-tray-layout";
 import { styles } from "./animation/action-tray-styles";
 import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animated-styles";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayController } from "./use-action-tray-controller";
-import { HORIZONTAL_MARGIN, TRAY_VERTICAL_PADDING } from "./constants";
-import { ActionTrayProps, ActionTrayRef } from "./action-tray-types";
+import {
+  HORIZONTAL_MARGIN,
+  TRAY_KEYBOARD_GAP,
+  TRAY_VERTICAL_PADDING,
+} from "./constants";
+import {
+  ActionTrayProps,
+  ActionTrayRef,
+} from "./action-tray-types";
 
 // this component renders one host slot
 // the presenter decides which tray payload this slot carries
@@ -28,6 +36,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       fullScreenDraggable,
       visible,
       interactive = true,
+      keyboardTransitionMode = "idle",
       containerStyle,
       className,
       footerClassName,
@@ -42,6 +51,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       assignmentId,
       visible,
       interactive,
+      keyboardTransitionMode,
       content,
       footer,
       onCloseComplete,
@@ -145,6 +155,58 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           : undefined,
       [flattenedContainerStyle],
     );
+    const keyboardStickyOffset = useMemo(
+      () => ({
+        closed: 0,
+        opened: -TRAY_KEYBOARD_GAP,
+      }),
+      [],
+    );
+    const traySurface = (
+      <>
+        <GestureDetector gesture={gesture}>
+          <Animated.View
+            className={renderedClassName}
+            style={[
+              styles.container,
+              trayLayoutStyle,
+              renderedContainerStyle,
+              surfaceVisibilityStyle,
+              dragStyle,
+              style,
+            ]}
+            layout={shouldUseLayoutAnimation ? layoutAnimationConfig : undefined}
+          >
+            <Animated.View style={styles.content}>
+              <Animated.View
+                style={contentPaddingStyle}
+                onLayout={handleContentLayout}
+              >
+                {renderedContent}
+              </Animated.View>
+              {/* reserve space for the detached footer without coupling body layout to footer rendering */}
+              <Animated.View style={footerSpacerStyle} />
+            </Animated.View>
+          </Animated.View>
+        </GestureDetector>
+        <Animated.View
+          className={renderedFooterClassName}
+          onLayout={handleVisibleFooterLayout}
+          style={[
+            styles.footer,
+            footerContainerStyle,
+            dragStyle,
+            renderedFooterStyle,
+            footerVisibilityStyle,
+          ]}
+          pointerEvents={
+            renderedFooter && interactive && isSurfaceReady ? "auto" : "none"
+          }
+        >
+          {renderedFooter ?? null}
+        </Animated.View>
+      </>
+    );
 
     return (
       <>
@@ -176,7 +238,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         />
 
         {renderedTrayId !== undefined && (
-       
           <Animated.View
             className={presentationFullScreen ? renderedClassName : undefined}
             pointerEvents="none"
@@ -189,49 +250,16 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           />
         )}
 
-        <GestureDetector gesture={gesture}>
-          <Animated.View
-            className={renderedClassName}
-            style={[
-              styles.container,
-              trayLayoutStyle,
-              renderedContainerStyle,
-              surfaceVisibilityStyle,
-              dragStyle,
-              style,
-            ]}
-            layout={shouldUseLayoutAnimation ? layoutAnimationConfig : undefined}
+        {renderedTrayId !== undefined && (
+          <KeyboardStickyView
+            enabled={!presentationFullScreen}
+            offset={keyboardStickyOffset}
+            pointerEvents="box-none"
+            style={StyleSheet.absoluteFillObject}
           >
-            <Animated.View style={styles.content}>
-              <Animated.View
-                style={contentPaddingStyle}
-                onLayout={handleContentLayout}
-              >
-                {renderedContent}
-              </Animated.View>
-              {/* reserve space for the detached footer without coupling body layout to footer rendering */}
-              <Animated.View style={footerSpacerStyle} />
-            </Animated.View>
-          </Animated.View>
-        </GestureDetector>
-
-        {/* keep the footer mounted during transitions but block taps until the shell is usable */}
-        <Animated.View
-          className={renderedFooterClassName}
-          onLayout={handleVisibleFooterLayout}
-          style={[
-            styles.footer,
-            footerContainerStyle,
-            dragStyle,
-            renderedFooterStyle,
-            footerVisibilityStyle,
-          ]}
-          pointerEvents={
-            renderedFooter && interactive && isSurfaceReady ? "auto" : "none"
-          }
-        >
-          {renderedFooter ?? null}
-        </Animated.View>
+            {traySurface}
+          </KeyboardStickyView>
+        )}
       </>
     );
   },

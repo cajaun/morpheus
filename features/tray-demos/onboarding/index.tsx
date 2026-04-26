@@ -39,12 +39,12 @@ const FirstStep = () => {
       </Tray.Header>
 
       <Tray.Section>
-        <Text className="font-sf-medium" style={trayDemoText.bodyLarge}>
+        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
           This is a test 
         </Text>
 
         <Text
-          className="text-[#94999F] font-sf-medium"
+          className="text-black font-sf-medium"
           style={trayDemoText.bodyLarge}
         >
           This is some example test that spans over multiple lines bla bla bla
@@ -72,12 +72,12 @@ const SecondStep = () => {
       </Tray.Header>
 
       <Tray.Section >
-        <Text className="font-sf-medium" style={trayDemoText.bodyLarge}>
+        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
           Different heading
         </Text>
 
         <Text
-          className="text-[#94999F] font-sf-medium"
+          className="text-black font-sf-medium"
           style={trayDemoText.bodyLarge}
         >
           Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
@@ -86,7 +86,7 @@ const SecondStep = () => {
         </Text>
 
         <Text
-          className="text-[#94999F] font-sf-medium"
+          className="text-black font-sf-medium"
           style={trayDemoText.bodyLarge}
         >
           This is some example test that spans over multiple lines bla bla bla
@@ -94,13 +94,7 @@ const SecondStep = () => {
           that fares too.
         </Text>
 
-        <Text
-          className="text-[#94999F] font-sf-medium"
-          style={trayDemoText.bodyLarge}
-        >
-          Lorem ipsum dolor sit, amet consectetur adipisicing elit. Laboriosam
-          consequatur, eaque impedit vero esse.
-        </Text>
+
       </Tray.Section>
     </Tray.Body>
   );
@@ -122,12 +116,12 @@ const ThirdStep = () => {
       </Tray.Header>
 
       <Tray.Section>
-        <Text className="font-sf-medium" style={trayDemoText.bodyLarge}>
+        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
           Another heading
         </Text>
 
         <Text
-          className="text-[#94999F] font-sf-medium"
+          className="text-black font-sf-medium"
           style={trayDemoText.bodyLarge}
         >
           Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum dolor
@@ -135,7 +129,7 @@ const ThirdStep = () => {
         </Text>
 
         <Text
-          className="text-[#94999F] font-sf-medium"
+          className="text-black font-sf-medium"
           style={trayDemoText.bodyLarge}
         >
           This is some example test that spans over multiple lines bla bla bla

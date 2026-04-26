@@ -7,7 +7,7 @@ import { createTrayRuntimeStore } from "./store/create-tray-runtime-store";
 type Params = {
   keyboardHeight: SharedValue<number>;
   anticipateKeyboard: () => void;
-  dismissFocusedInputs: (trayId?: string | null) => void;
+  dismissFocusedInputs: (trayId?: string | null) => void | Promise<void>;
   registerFocusable: TrayHostActionsValue["registerFocusable"];
 };
 
