@@ -222,7 +222,7 @@ const IdentityRateBoostStep = () => {
             onPress={close}
             style={{
               backgroundColor: CTA,
-              height: 52,
+              height: 50,
               borderRadius: 36,
               alignItems: "center",
               justifyContent: "center",
@@ -230,7 +230,7 @@ const IdentityRateBoostStep = () => {
             }}
           >
             <Text
-              className="font-sf-black text-white"
+              className="font-sf-bold text-white"
               style={{
                 fontSize: 21,
                 lineHeight: 28,

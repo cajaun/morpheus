@@ -1,4 +1,9 @@
-import { RefObject, useEffect, type ReactNode } from "react";
+import {
+  RefObject,
+  useEffect,
+  useLayoutEffect,
+  type ReactNode,
+} from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import { log } from "../logger";
@@ -41,6 +46,7 @@ type Params = {
   };
   contentHeight: SharedValue<number>;
   footerHeight: SharedValue<number>;
+  resolveIncomingContentHeight: (measuredContentHeight: number) => number;
   restoreContentHeight: (
     trayId: string | undefined,
     measuredContentHeight: number,
@@ -63,6 +69,7 @@ export const useActionTrayContentSync = ({
   renderState,
   contentHeight,
   footerHeight,
+  resolveIncomingContentHeight,
   restoreContentHeight,
 }: Params) => {
   const { layoutEnabled } = measurements.state;
@@ -71,8 +78,9 @@ export const useActionTrayContentSync = ({
   const { renderedTrayId, renderedContent, renderedFooter, renderedFullScreen } =
     renderState.state;
   const { showLatestSnapshot, syncRenderedNodes } = renderState.actions;
+  const isEnteringFullScreen = !!fullScreen && !renderedFullScreen;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!visible) {
       return;
     }
@@ -85,19 +93,40 @@ export const useActionTrayContentSync = ({
     log("TRAY CHANGE", {
       trayId,
       renderedTrayId,
+      incomingFullScreen: !!fullScreen,
+      renderedFullScreen,
+      measuredContentHeight: measuredContentHeight.value,
       contentHeight: contentHeight.value,
       footerHeight: footerHeight.value,
       layoutEnabled,
+      isEnteringFullScreen,
     });
 
-    restoreContentHeight(trayId, measuredContentHeight.value);
+    if (isEnteringFullScreen) {
+      const incomingHeight = resolveIncomingContentHeight(
+        measuredContentHeight.value,
+      );
+
+      log("APPLY INCOMING FULLSCREEN HEIGHT", {
+        trayId,
+        renderedTrayId,
+        measuredContentHeight: measuredContentHeight.value,
+        incomingHeight,
+        previousContentHeight: contentHeight.value,
+      });
+
+      contentHeight.value = incomingHeight;
+    } else {
+      restoreContentHeight(trayId, measuredContentHeight.value);
+    }
+
     setLayoutAnimationEnabled(true);
     showLatestSnapshot();
     // shell level swaps key off tray identity not every prop change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trayId, visible]);
+  }, [isEnteringFullScreen, resolveIncomingContentHeight, trayId, visible]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!visible) {
       return;
     }
@@ -125,7 +154,8 @@ export const useActionTrayContentSync = ({
       trayId,
       hasContent: content != null,
       hasFooter: footer != null,
-      fullScreen,
+      incomingFullScreen: fullScreen,
+      renderedFullScreen,
       hasContainerStyle: containerStyle != null,
       hasFooterStyle: footerStyle != null,
       className,

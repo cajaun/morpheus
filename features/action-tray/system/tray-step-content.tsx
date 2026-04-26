@@ -17,10 +17,8 @@ type Props = {
 };
 
 const createMorphEntering = (scale: boolean): EntryExitAnimationFunction => {
-  return () => {
+ return () => {
     "worklet";
-
-    // entering motion stays subtle because the tray shell may already be morphing
     return {
       initialValues: {
         opacity: 0,
@@ -57,8 +55,6 @@ const createMorphEntering = (scale: boolean): EntryExitAnimationFunction => {
 const createMorphExiting = (scale: boolean): EntryExitAnimationFunction => {
   return () => {
     "worklet";
-
-    // exit mirrors enter so content swaps read as one continuous handoff
     return {
       initialValues: {
         opacity: 1,
