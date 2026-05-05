@@ -37,6 +37,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       fullScreen,
       fullScreenSafeAreaTop,
       fullScreenDraggable,
+      dismissible = true,
       visible,
       interactive = true,
       keyboardTransitionMode = "idle",
@@ -243,9 +244,9 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         )}
 
         <Backdrop
-          onTap={handleRequestClose}
+          onTap={dismissible ? handleRequestClose : () => {}}
           isRendered={renderedTrayId !== undefined}
-          interactive={interactive}
+          interactive={interactive && dismissible}
           progress={progress}
         />
 

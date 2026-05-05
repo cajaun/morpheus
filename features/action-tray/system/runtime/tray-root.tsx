@@ -12,6 +12,7 @@ type TrayRootProps = {
   children: React.ReactNode;
   steps: TrayStepDefinition[];
   footer?: React.ReactNode;
+  dismissible?: boolean;
 };
 
 export const TrayRoot: React.FC<TrayRootProps> = ({
@@ -19,6 +20,7 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
   children,
   steps,
   footer,
+  dismissible,
 }) => {
   const reactId = useId();
   // explicit ids support deterministic tests and cross component references
@@ -28,8 +30,9 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
     () => ({
       steps,
       footer,
+      dismissible,
     }),
-    [footer, steps],
+    [dismissible, footer, steps],
   );
 
   useEffect(() => {

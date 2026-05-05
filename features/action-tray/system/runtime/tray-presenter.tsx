@@ -1,5 +1,6 @@
 import React, {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -15,7 +16,8 @@ import {
   TrayStepOptionsProvider,
   useTrayHostActions,
   useTrayHostSelector,
-  useTrayRuntimeStore,
+  type TrayRegistration,
+  type TrayStackEntry,
 } from "./tray-context";
 
 // the presenter maps store state onto a bounded pool of host slots
@@ -38,10 +40,14 @@ type PresentedTray = {
   fullScreen: boolean;
   fullScreenSafeAreaTop: boolean;
   fullScreenDraggable: boolean;
+  dismissible: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
   footerClassName?: string;
+  stackIndex: number;
+  visible: boolean;
+  interactive: boolean;
 };
 
 type TrayHostSlot = {
@@ -62,7 +68,6 @@ const resolveNextActiveSlotIndex = (
   slots: [TrayHostSlot, TrayHostSlot],
   previousActiveSlotIndex: number | null,
 ) => {
-  // flip slots when one is already active to preserve overlap
   if (previousActiveSlotIndex !== null) {
     return previousActiveSlotIndex === 0 ? 1 : 0;
   }
@@ -78,99 +83,141 @@ const resolveNextActiveSlotIndex = (
   return hiddenSlotIndex >= 0 ? hiddenSlotIndex : 0;
 };
 
-export const TrayPresenter: React.FC = () => {
-  const registry = useTrayHostSelector((state) => state.registry);
-  const activeTrayId = useTrayHostSelector((state) => state.activeTrayId);
-  const activeIndex = useTrayHostSelector((state) => state.activeIndex);
-  const keyboardHeight = useTrayHostSelector((state) => state.keyboardHeight);
-  const { dismissKeyboardForTray, requestCloseActiveTray } = useTrayHostActions();
-  const { justOpenedRef } = useTrayRuntimeStore();
+const createPresentedTray = ({
+  entry,
+  registration,
+  stackIndex,
+  stackLength,
+}: {
+  entry: TrayStackEntry;
+  registration: TrayRegistration;
+  stackIndex: number;
+  stackLength: number;
+}): PresentedTray | null => {
+  const trayTotal = registration.steps.length;
+  const trayIndex = clampIndex(entry.index, trayTotal);
+  const step = registration.steps[trayIndex];
+
+  if (!step) {
+    return null;
+  }
+
+  const stepOptions = resolveTrayStepOptions(step.options);
+  const isFirstRender = trayIndex === 0;
+  const keyboardTransitionMode: KeyboardTransitionMode =
+    stepOptions.keyboardAware ? "entering" : "idle";
+
+  return {
+    rootTrayId: entry.trayId,
+    trayId: `${entry.trayId}-${step.key}`,
+    keyboardTransitionMode,
+    header: step.header ? (
+      <TrayScopeProvider value={entry.trayId}>
+        <TrayStepOptionsProvider value={stepOptions}>
+          <TrayStepContent
+            stepKey={`${entry.trayId}-${step.key}-header`}
+            scale={false}
+            skipEntering={isFirstRender}
+          >
+            {step.header}
+          </TrayStepContent>
+        </TrayStepOptionsProvider>
+      </TrayScopeProvider>
+    ) : null,
+    content: (
+      <TrayScopeProvider value={entry.trayId}>
+        <TrayStepOptionsProvider value={stepOptions}>
+          <TrayStepContent
+            stepKey={`${entry.trayId}-${step.key}`}
+            scale={stepOptions.scale}
+            skipEntering={isFirstRender}
+          >
+            {step.content}
+          </TrayStepContent>
+        </TrayStepOptionsProvider>
+      </TrayScopeProvider>
+    ),
+    footer: registration.footer ? (
+      <TrayScopeProvider value={entry.trayId}>
+        <TrayStepOptionsProvider value={stepOptions}>
+          {registration.footer}
+        </TrayStepOptionsProvider>
+      </TrayScopeProvider>
+    ) : null,
+    fullScreen: stepOptions.fullScreen,
+    fullScreenSafeAreaTop: stepOptions.fullScreenSafeAreaTop,
+    fullScreenDraggable: stepOptions.fullScreenDraggable,
+    dismissible: registration.dismissible ?? true,
+    containerStyle: stepOptions.style,
+    className: stepOptions.className,
+    footerStyle: stepOptions.footerStyle,
+    footerClassName: stepOptions.footerClassName,
+    stackIndex,
+    visible: true,
+    interactive: stackIndex === stackLength - 1,
+  };
+};
+
+const PresentedActionTray = ({
+  payload,
+  assignmentId,
+  keyboardHeight,
+  onRequestClose,
+  onCloseComplete,
+  dismissKeyboardForTray,
+}: {
+  payload: PresentedTray;
+  assignmentId: number;
+  keyboardHeight: PresentedTray extends never ? never : any;
+  onRequestClose: () => void;
+  onCloseComplete: () => void;
+  dismissKeyboardForTray: (trayId?: string | null) => void;
+}) => {
+  return (
+    <ActionTray
+      assignmentId={assignmentId}
+      visible={payload.visible}
+      interactive={payload.interactive}
+      keyboardTransitionMode={payload.keyboardTransitionMode}
+      rootTrayId={payload.rootTrayId}
+      content={payload.content}
+      header={payload.header}
+      footer={payload.footer}
+      onClose={payload.interactive ? onRequestClose : () => {}}
+      onCloseComplete={onCloseComplete}
+      trayId={payload.trayId}
+      fullScreen={payload.fullScreen}
+      fullScreenSafeAreaTop={payload.fullScreenSafeAreaTop}
+      fullScreenDraggable={payload.fullScreenDraggable}
+      dismissible={payload.dismissible}
+      containerStyle={payload.containerStyle}
+      className={payload.className}
+      footerStyle={payload.footerStyle}
+      footerClassName={payload.footerClassName}
+      keyboardHeight={keyboardHeight}
+      dismissKeyboard={() => dismissKeyboardForTray(payload.rootTrayId)}
+    />
+  );
+};
+
+const RootTraySlots = ({
+  activeHost,
+  keyboardHeight,
+  requestCloseActiveTray,
+  dismissKeyboardForTray,
+}: {
+  activeHost: PresentedTray | null;
+  keyboardHeight: PresentedTray extends never ? never : any;
+  requestCloseActiveTray: () => void;
+  dismissKeyboardForTray: (trayId?: string | null) => void;
+}) => {
   const nextAssignmentIdRef = useRef(0);
   const activeSlotIndexRef = useRef<number | null>(null);
-  const previousKeyboardAwareRef = useRef(false);
-  // pendingHost serializes tray replacement across overlapping close animations
   const pendingPresentedHostRef = useRef<PresentedTray | null>(null);
   const [hostSlots, setHostSlots] = useState<[TrayHostSlot, TrayHostSlot]>([
     createIdleSlot(),
     createIdleSlot(),
   ]);
-
-  const activeHost = useMemo<PresentedTray | null>(() => {
-    if (!activeTrayId) {
-      return null;
-    }
-
-    const registration = registry[activeTrayId];
-
-    if (!registration) {
-      return null;
-    }
-
-    const trayTotal = registration.steps.length;
-    const trayIndex = clampIndex(activeIndex, trayTotal);
-    const step = registration.steps[trayIndex];
-
-    if (!step) {
-      return null;
-    }
-
-    const stepOptions = resolveTrayStepOptions(step.options);
-    // suppress the first step enter because the shell open animation already covers it
-    const isFirstRender = justOpenedRef.current && trayIndex === 0;
-    const keyboardTransitionMode: KeyboardTransitionMode =
-      stepOptions.keyboardAware && !previousKeyboardAwareRef.current
-        ? "entering"
-        : !stepOptions.keyboardAware && previousKeyboardAwareRef.current
-          ? "exiting"
-          : "idle";
-
-    return {
-      rootTrayId: activeTrayId,
-      trayId: `${activeTrayId}-${step.key}`,
-      keyboardTransitionMode,
-      header: step.header ? (
-        <TrayScopeProvider value={activeTrayId}>
-          <TrayStepOptionsProvider value={stepOptions}>
-            <TrayStepContent
-              stepKey={`${activeTrayId}-${step.key}-header`}
-              scale={false}
-              skipEntering={isFirstRender}
-            >
-              {step.header}
-            </TrayStepContent>
-          </TrayStepOptionsProvider>
-        </TrayScopeProvider>
-      ) : null,
-      content: (
-        <TrayScopeProvider value={activeTrayId}>
-          <TrayStepOptionsProvider value={stepOptions}>
-            <TrayStepContent
-              stepKey={`${activeTrayId}-${step.key}`}
-              scale={stepOptions.scale}
-              skipEntering={isFirstRender}
-            >
-              {step.content}
-            </TrayStepContent>
-          </TrayStepOptionsProvider>
-        </TrayScopeProvider>
-      ),
-      footer: registration.footer ? (
-        <TrayScopeProvider value={activeTrayId}>
-          <TrayStepOptionsProvider value={stepOptions}>
-            {registration.footer}
-          </TrayStepOptionsProvider>
-        </TrayScopeProvider>
-      ) : null,
-      fullScreen: stepOptions.fullScreen,
-      fullScreenSafeAreaTop: stepOptions.fullScreenSafeAreaTop,
-      fullScreenDraggable: stepOptions.fullScreenDraggable,
-      containerStyle: stepOptions.style,
-      className: stepOptions.className,
-      footerStyle: stepOptions.footerStyle,
-      footerClassName: stepOptions.footerClassName,
-    };
-  }, [activeIndex, activeTrayId, justOpenedRef, registry]);
-  const nextRootTrayId = activeHost?.rootTrayId ?? null;
 
   const orderedHostSlots = useMemo(
     () =>
@@ -181,7 +228,6 @@ export const TrayPresenter: React.FC = () => {
           priority: slot.interactive ? 2 : slot.visible ? 1 : 0,
         }))
         .sort((left, right) => {
-          // render the active slot last so it wins hit testing and stacking
           if (left.priority !== right.priority) {
             return left.priority - right.priority;
           }
@@ -209,17 +255,15 @@ export const TrayPresenter: React.FC = () => {
         const pendingHost = pendingPresentedHostRef.current;
 
         if (pendingHost) {
-          // recycle the same slot after close completes to avoid mounting a third host
           nextAssignmentIdRef.current += 1;
           next[slotIndex] = {
             assignmentId: nextAssignmentIdRef.current,
             payload: pendingHost,
             visible: true,
-            interactive: true,
+            interactive: pendingHost.interactive,
           };
           activeSlotIndexRef.current = slotIndex;
           pendingPresentedHostRef.current = null;
-          justOpenedRef.current = false;
           return next;
         }
 
@@ -227,7 +271,7 @@ export const TrayPresenter: React.FC = () => {
         return next;
       });
     },
-    [justOpenedRef],
+    [],
   );
 
   useLayoutEffect(() => {
@@ -239,22 +283,25 @@ export const TrayPresenter: React.FC = () => {
       const currentRootTrayId = currentActiveSlot?.payload?.rootTrayId ?? null;
       const closingSlotIndex = next.findIndex(
         (slot, index) =>
-          index !== currentActiveSlotIndex && slot.payload !== null && !slot.visible,
+          index !== currentActiveSlotIndex &&
+          slot.payload !== null &&
+          !slot.visible,
       );
-      const resolvedNextRootTrayId = activeHost?.rootTrayId ?? null;
+      const nextRootTrayId = activeHost?.rootTrayId ?? null;
 
       if (!activeHost) {
-        // no active host means we only need to drive the current slot to closed
         pendingPresentedHostRef.current = null;
 
         if (
           currentActiveSlotIndex === null ||
-          currentActiveSlot?.payload === null
+          currentActiveSlot === null ||
+          currentActiveSlot.payload === null
         ) {
           return current;
         }
 
-        const closingActiveSlot = currentActiveSlot!;
+        const closingActiveSlot = currentActiveSlot;
+
         next[currentActiveSlotIndex] = {
           assignmentId: closingActiveSlot.assignmentId,
           payload: closingActiveSlot.payload,
@@ -266,13 +313,11 @@ export const TrayPresenter: React.FC = () => {
       }
 
       if (pendingPresentedHostRef.current !== null) {
-        // coalesce rapid replacements so stale pending trays never flash on screen
         pendingPresentedHostRef.current = activeHost;
         return current;
       }
 
-      if (currentRootTrayId === resolvedNextRootTrayId) {
-        // step changes within one tray should update in place and preserve the host
+      if (currentRootTrayId === nextRootTrayId) {
         const targetSlotIndex = currentActiveSlotIndex ?? 0;
         const targetSlot = next[targetSlotIndex];
 
@@ -282,7 +327,7 @@ export const TrayPresenter: React.FC = () => {
             nextAssignmentIdRef.current + 1,
           payload: activeHost,
           visible: true,
-          interactive: true,
+          interactive: activeHost.interactive,
         };
 
         if (targetSlot.assignmentId === 0) {
@@ -296,10 +341,11 @@ export const TrayPresenter: React.FC = () => {
 
       if (
         currentActiveSlotIndex !== null &&
-        currentActiveSlot?.payload !== null
+        currentActiveSlot !== null &&
+        currentActiveSlot.payload !== null
       ) {
-        // cross tray replacement must wait so content never swaps mid close animation
-        const closingActiveSlot = currentActiveSlot!;
+        const closingActiveSlot = currentActiveSlot;
+
         pendingPresentedHostRef.current = activeHost;
         next[currentActiveSlotIndex] = {
           assignmentId: closingActiveSlot.assignmentId,
@@ -312,12 +358,10 @@ export const TrayPresenter: React.FC = () => {
       }
 
       if (closingSlotIndex >= 0) {
-        // if another slot is still winding down we keep the next tray queued
         pendingPresentedHostRef.current = activeHost;
         return current;
       }
 
-      // two slots are enough for overlap and keep host count bounded
       const nextActiveSlotIndex = resolveNextActiveSlotIndex(next, null);
 
       nextAssignmentIdRef.current += 1;
@@ -325,76 +369,160 @@ export const TrayPresenter: React.FC = () => {
         assignmentId: nextAssignmentIdRef.current,
         payload: activeHost,
         visible: true,
-        interactive: true,
+        interactive: activeHost.interactive,
       };
       activeSlotIndexRef.current = nextActiveSlotIndex;
 
       return next;
     });
-
-    if (nextRootTrayId !== null) {
-      justOpenedRef.current = false;
-    }
-  }, [activeHost, justOpenedRef, nextRootTrayId]);
-
-  useLayoutEffect(() => {
-    previousKeyboardAwareRef.current =
-      activeHost?.keyboardTransitionMode === "entering"
-        ? true
-        : activeHost?.keyboardTransitionMode === "exiting"
-          ? false
-          : activeHost != null
-            ? previousKeyboardAwareRef.current
-            : false;
-
-    if (!activeHost) {
-      previousKeyboardAwareRef.current = false;
-      return;
-    }
-
-    const trayId = activeHost.rootTrayId;
-    const registration = registry[trayId];
-    const safeIndex = clampIndex(activeIndex, registration?.steps.length ?? 0);
-    const step = registration?.steps[safeIndex];
-    const stepOptions = resolveTrayStepOptions(step?.options);
-    previousKeyboardAwareRef.current = stepOptions.keyboardAware;
-  }, [activeHost, activeIndex, registry]);
+  }, [activeHost]);
 
   return (
     <>
       {orderedHostSlots.map(({ slot, index }) => {
         const payload = slot.payload;
 
+        if (!payload) {
+          return null;
+        }
+
         return (
-          <ActionTray
-            key={`tray-host-slot-${index}-${slot.assignmentId}`}
+          <PresentedActionTray
+            key={`tray-root-host-slot-${index}-${slot.assignmentId}`}
+            payload={{
+              ...payload,
+              visible: slot.visible,
+              interactive: slot.interactive,
+            }}
             assignmentId={slot.assignmentId}
-            visible={slot.visible}
-            interactive={slot.interactive}
-            keyboardTransitionMode={payload?.keyboardTransitionMode}
-            rootTrayId={payload?.rootTrayId}
-            content={payload?.content}
-            header={payload?.header}
-            footer={payload?.footer}
-            onClose={slot.interactive ? requestCloseActiveTray : () => {}}
+            keyboardHeight={keyboardHeight}
+            onRequestClose={requestCloseActiveTray}
             onCloseComplete={() =>
               handleSlotCloseComplete(index, slot.assignmentId)
             }
-            trayId={payload?.trayId}
-            fullScreen={payload?.fullScreen}
-            fullScreenSafeAreaTop={payload?.fullScreenSafeAreaTop}
-            fullScreenDraggable={payload?.fullScreenDraggable}
-            containerStyle={payload?.containerStyle}
-            className={payload?.className}
-            footerStyle={payload?.footerStyle}
-            footerClassName={payload?.footerClassName}
-            keyboardHeight={keyboardHeight}
-            dismissKeyboard={() =>
-              dismissKeyboardForTray(payload?.rootTrayId ?? null)
-            }
+            dismissKeyboardForTray={dismissKeyboardForTray}
           />
         );
       })}
+    </>
+  );
+};
+
+const NestedTrayStack = ({
+  hosts,
+  keyboardHeight,
+  requestCloseActiveTray,
+  dismissKeyboardForTray,
+}: {
+  hosts: PresentedTray[];
+  keyboardHeight: PresentedTray extends never ? never : any;
+  requestCloseActiveTray: () => void;
+  dismissKeyboardForTray: (trayId?: string | null) => void;
+}) => {
+  const [renderedHosts, setRenderedHosts] = useState<PresentedTray[]>([]);
+
+  useEffect(() => {
+    setRenderedHosts((current) => {
+      const nextByRootTrayId = new Map(
+        hosts.map((host) => [host.rootTrayId, host]),
+      );
+      const retainedClosingHosts = current
+        .filter((host) => !nextByRootTrayId.has(host.rootTrayId))
+        .map((host) => ({
+          ...host,
+          visible: false,
+          interactive: false,
+        }));
+
+      return [...retainedClosingHosts, ...hosts].sort(
+        (left, right) => left.stackIndex - right.stackIndex,
+      );
+    });
+  }, [hosts]);
+
+  const handleCloseComplete = useCallback((rootTrayId: string) => {
+    setRenderedHosts((current) =>
+      current.filter((host) => host.visible || host.rootTrayId !== rootTrayId),
+    );
+  }, []);
+
+  return (
+    <>
+      {renderedHosts.map((payload) => (
+        <PresentedActionTray
+          key={`tray-nested-host-${payload.rootTrayId}`}
+          payload={payload}
+          assignmentId={payload.stackIndex + 1}
+          keyboardHeight={keyboardHeight}
+          onRequestClose={requestCloseActiveTray}
+          onCloseComplete={() => handleCloseComplete(payload.rootTrayId)}
+          dismissKeyboardForTray={dismissKeyboardForTray}
+        />
+      ))}
+    </>
+  );
+};
+
+export const TrayPresenter: React.FC = () => {
+  const registry = useTrayHostSelector((state) => state.registry);
+  const stack = useTrayHostSelector((state) => state.stack);
+  const keyboardHeight = useTrayHostSelector((state) => state.keyboardHeight);
+  const { dismissKeyboardForTray, requestCloseActiveTray } = useTrayHostActions();
+
+  const rootHost = useMemo<PresentedTray | null>(() => {
+    const entry = stack[0];
+
+    if (!entry) {
+      return null;
+    }
+
+    const registration = registry[entry.trayId];
+
+    if (!registration) {
+      return null;
+    }
+
+    return createPresentedTray({
+      entry,
+      registration,
+      stackIndex: 0,
+      stackLength: stack.length,
+    });
+  }, [registry, stack]);
+
+  const nestedHosts = useMemo<PresentedTray[]>(() => {
+    return stack.slice(1).flatMap((entry, index) => {
+      const registration = registry[entry.trayId];
+
+      if (!registration) {
+        return [];
+      }
+
+      const host = createPresentedTray({
+        entry,
+        registration,
+        stackIndex: index + 1,
+        stackLength: stack.length,
+      });
+
+      return host ? [host] : [];
+    });
+  }, [registry, stack]);
+
+  return (
+    <>
+      <RootTraySlots
+        activeHost={rootHost}
+        keyboardHeight={keyboardHeight}
+        requestCloseActiveTray={requestCloseActiveTray}
+        dismissKeyboardForTray={dismissKeyboardForTray}
+      />
+      <NestedTrayStack
+        hosts={nestedHosts}
+        keyboardHeight={keyboardHeight}
+        requestCloseActiveTray={requestCloseActiveTray}
+        dismissKeyboardForTray={dismissKeyboardForTray}
+      />
     </>
   );
 };

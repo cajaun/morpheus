@@ -14,6 +14,31 @@ const ACCENT = "#3EB1FF";
 const HERO_TEXT = "#D9F0FF";
 const BODY_TEXT = "#989CA4";
 
+export type CreatingWalletsInfoCopy = {
+  title: string;
+  subtitle: string;
+  intro: string;
+  firstSectionTitle: string;
+  firstSectionBody: string;
+  secondSectionTitle: string;
+  secondSectionBody: string;
+  buttonLabel: string;
+};
+
+const DEFAULT_CREATING_WALLETS_INFO_COPY: CreatingWalletsInfoCopy = {
+  title: "Creating Wallets",
+  subtitle: "Learn about creating wallets",
+  intro:
+    "Creating a new wallet in Family equips you with the ability to securely store, transact, and manage your Ethereum assets. Whether you're just beginning your crypto journey or looking to expand your existing digital portfolio, Family offers a straightforward approach to wallet creation.",
+  firstSectionTitle: "Creating your first wallet",
+  firstSectionBody:
+    "When you create your first wallet in Family, you're not just generating a single address. Instead, you're creating what we call a 'Wallet Group' Each Wallet Group comes with a unique Secret Recovery Phrase that can be used to generate a multitude of individual wallets. This way, you get to manage multiple wallets with a single recovery phrase, enhancing both security and convenience. Remember to safely store this phrase, as it's your key to wallet recovery and is irreplaceable if lost.",
+  secondSectionTitle: "Adding wallets to a Wallet Group",
+  secondSectionBody:
+    "If you're already in possession of a Wallet Group, you can effortlessly add more wallets to it. Doing so consolidates your asset management experience, as you can control different wallet addresses under a single Secret Recovery Phrase. It's a user-friendly method to have a variety of wallets for diverse uses while maintaining simple, top-tier security. By grouping your wallets, you can simplify your journey in the world of ethereum.",
+  buttonLabel: "Got It",
+};
+
 const WalletArtwork = () => {
   return (
     <View style={{ position: "absolute", top: 16, left: 18 }}>
@@ -27,7 +52,11 @@ const WalletArtwork = () => {
   );
 };
 
-const CreatingWalletsInfoStep = () => {
+export const CreatingWalletsInfoStep = ({
+  copy = DEFAULT_CREATING_WALLETS_INFO_COPY,
+}: {
+  copy?: CreatingWalletsInfoCopy;
+}) => {
   const { close } = useTrayFlow();
 
   return (
@@ -86,7 +115,7 @@ const CreatingWalletsInfoStep = () => {
                   letterSpacing: 0.25,
                 }}
               >
-                Creating Wallets
+                {copy.title}
               </Text>
 
               <Text
@@ -98,7 +127,7 @@ const CreatingWalletsInfoStep = () => {
                   color: HERO_TEXT,
                 }}
               >
-                Learn about creating wallets
+                {copy.subtitle}
               </Text>
             </View>
           </View>
@@ -123,11 +152,7 @@ const CreatingWalletsInfoStep = () => {
                 color: BODY_TEXT,
               }}
             >
-              Creating a new wallet in Family equips you with the ability to
-              securely store, transact, and manage your Ethereum assets. Whether
-              you're just beginning your crypto journey or looking to expand
-              your existing digital portfolio, Family offers a straightforward
-              approach to wallet creation.
+              {copy.intro}
             </Text>
 
             <View style={{ gap: 10 }}>
@@ -139,7 +164,7 @@ const CreatingWalletsInfoStep = () => {
                   letterSpacing: 0.2,
                 }}
               >
-                Creating your first wallet
+                {copy.firstSectionTitle}
               </Text>
 
               <Text
@@ -151,14 +176,7 @@ const CreatingWalletsInfoStep = () => {
                   color: BODY_TEXT,
                 }}
               >
-                When you create your first wallet in Family, you're not just
-                generating a single address. Instead, you're creating what we
-                call a 'Wallet Group' Each Wallet Group comes with a unique
-                Secret Recovery Phrase that can be used to generate a multitude
-                of individual wallets. This way, you get to manage multiple
-                wallets with a single recovery phrase, enhancing both security
-                and convenience. Remember to safely store this phrase, as it's
-                your key to wallet recovery and is irreplaceable if lost.
+                {copy.firstSectionBody}
               </Text>
             </View>
 
@@ -171,7 +189,7 @@ const CreatingWalletsInfoStep = () => {
                   letterSpacing: 0.2,
                 }}
               >
-                Adding wallets to a Wallet Group
+                {copy.secondSectionTitle}
               </Text>
 
               <Text
@@ -183,21 +201,14 @@ const CreatingWalletsInfoStep = () => {
                   color: BODY_TEXT,
                 }}
               >
-                If you're already in possession of a Wallet Group, you can
-                effortlessly add more wallets to it. Doing so consolidates your
-                asset management experience, as you can control different wallet
-                addresses under a single Secret Recovery Phrase. It's a
-                user-friendly method to have a variety of wallets for diverse
-                uses while maintaining simple, top-tier security. By grouping
-                your wallets, you can simplify your journey in the world of
-                ethereum.
+                {copy.secondSectionBody}
               </Text>
             </View>
           </Tray.Section>
 
           <View style={{ paddingHorizontal: 28, paddingBottom: 24 }}>
             <PrimaryButton
-              label="Got It"
+              label={copy.buttonLabel}
               onPress={close}
               backgroundColor={ACCENT}
             />
@@ -208,15 +219,19 @@ const CreatingWalletsInfoStep = () => {
   );
 };
 
+export const createCreatingWalletsInfoSteps = (
+  copy?: CreatingWalletsInfoCopy,
+): TrayStepDefinition[] => [
+  {
+    key: "creating-wallets-info",
+    content: <CreatingWalletsInfoStep copy={copy} />,
+    options: { className: "bg-white" },
+  },
+];
+
 const CreatingWalletsInfoTray = () => {
   const steps = useMemo<TrayStepDefinition[]>(
-    () => [
-      {
-        key: "creating-wallets-info",
-        content: <CreatingWalletsInfoStep />,
-        options: { className: "bg-white" },
-      },
-    ],
+    () => createCreatingWalletsInfoSteps(),
     [],
   );
 

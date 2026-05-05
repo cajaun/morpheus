@@ -449,7 +449,7 @@ const WalletGroupFooter = () => {
   };
 
   return (
-    <Tray.Footer style={{ width: "100%" }}>
+    <Tray.Footer style={{ width: "100%", backgroundColor: "red" }}>
       <PressableScale
         onPress={handlePress}
         style={{

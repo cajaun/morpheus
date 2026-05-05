@@ -30,8 +30,19 @@ const createInitialState = (
   registry: {},
   activeTrayId: null,
   activeIndex: 0,
+  stack: [],
   keyboardHeight,
 });
+
+const withActiveFromStack = (state: TrayHostStateValue): TrayHostStateValue => {
+  const activeEntry = state.stack[state.stack.length - 1];
+
+  return {
+    ...state,
+    activeTrayId: activeEntry?.trayId ?? null,
+    activeIndex: activeEntry?.index ?? 0,
+  };
+};
 
 export const createTrayRuntimeStore = (
   initialDependencies: Dependencies,
@@ -63,37 +74,29 @@ export const createTrayRuntimeStore = (
 
   const resolveClampedState = (current: TrayHostStateValue) => {
     // registration can change under the active tray so the index must be clamped after every write
-    if (!current.activeTrayId) {
-      if (current.activeIndex === 0) {
-        return current;
-      }
-
-      return {
-        ...current,
-        activeIndex: 0,
-      };
+    if (current.stack.length === 0) {
+      return withActiveFromStack(current);
     }
 
-    const activeTray = current.registry[current.activeTrayId];
+    const nextStack = current.stack
+      .filter((entry) => current.registry[entry.trayId])
+      .map((entry) => {
+        const tray = current.registry[entry.trayId];
 
-    if (!activeTray) {
-      return {
-        ...current,
-        activeTrayId: null,
-        activeIndex: 0,
-      };
-    }
+        return {
+          ...entry,
+          index: clampIndex(entry.index, tray?.steps.length ?? 0),
+        };
+      });
 
-    const safeIndex = clampIndex(current.activeIndex, activeTray.steps.length);
-
-    if (safeIndex === current.activeIndex) {
+    if (nextStack === current.stack) {
       return current;
     }
 
-    return {
+    return withActiveFromStack({
       ...current,
-      activeIndex: safeIndex,
-    };
+      stack: nextStack,
+    });
   };
 
   const getActiveStepOptions = () => {
@@ -143,8 +146,6 @@ export const createTrayRuntimeStore = (
         return resolveClampedState({
           ...current,
           registry: nextRegistry,
-          activeTrayId: current.activeTrayId === id ? null : current.activeTrayId,
-          activeIndex: current.activeTrayId === id ? 0 : current.activeIndex,
         });
       });
     },
@@ -174,31 +175,47 @@ export const createTrayRuntimeStore = (
       markTrayOpenRequested(id);
       void dependencies.dismissFocusedInputs(state.activeTrayId);
 
-      setState((current) => ({
+      setState((current) => withActiveFromStack({
         ...current,
-        activeTrayId: id,
-        activeIndex: 0,
+        stack: [{ trayId: id, index: 0 }],
+      }));
+    },
+    openNestedTray: (id: string, parentTrayId?: string | null) => {
+      justOpenedRef.current = true;
+      markTrayOpenRequested(id);
+      void dependencies.dismissFocusedInputs(state.activeTrayId);
+
+      setState((current) => withActiveFromStack({
+        ...current,
+        stack: [
+          ...current.stack,
+          {
+            trayId: id,
+            index: 0,
+            parentTrayId: parentTrayId ?? current.activeTrayId,
+          },
+        ],
       }));
     },
     closeActiveTray: () => {
       void dependencies.dismissFocusedInputs(state.activeTrayId);
 
       setState((current) => {
-        if (current.activeTrayId === null && current.activeIndex === 0) {
+        if (current.stack.length === 0) {
           return current;
         }
 
-        return {
+        return withActiveFromStack({
           ...current,
-          activeTrayId: null,
-          activeIndex: 0,
-        };
+          stack: current.stack.slice(0, -1),
+        });
       });
     },
     requestCloseActiveTray: () => {
       const activeStepOptions = getActiveStepOptions();
-      const activeTray = state.activeTrayId ? state.registry[state.activeTrayId] : undefined;
-      const safeIndex = clampIndex(state.activeIndex, activeTray?.steps.length ?? 0);
+      const activeEntry = state.stack[state.stack.length - 1];
+      const activeTray = activeEntry ? state.registry[activeEntry.trayId] : undefined;
+      const safeIndex = clampIndex(activeEntry?.index ?? 0, activeTray?.steps.length ?? 0);
 
       if (
         activeStepOptions.fullScreen &&
@@ -206,55 +223,78 @@ export const createTrayRuntimeStore = (
         safeIndex > 0
       ) {
         // fullscreen task steps back out to the shell when the flow asks for that behavior
-        setState((current) => ({
-          ...current,
-          activeIndex: Math.max(current.activeIndex - 1, 0),
-        }));
+        setState((current) => {
+          const nextStack = current.stack.map((entry, index) =>
+            index === current.stack.length - 1
+              ? { ...entry, index: Math.max(entry.index - 1, 0) }
+              : entry,
+          );
+
+          return withActiveFromStack({
+            ...current,
+            stack: nextStack,
+          });
+        });
         return;
       }
 
       void dependencies.dismissFocusedInputs(state.activeTrayId);
 
       setState((current) => {
-        if (current.activeTrayId === null && current.activeIndex === 0) {
+        if (current.stack.length === 0) {
           return current;
         }
 
-        return {
+        return withActiveFromStack({
           ...current,
-          activeTrayId: null,
-          activeIndex: 0,
-        };
+          stack: current.stack.slice(0, -1),
+        });
       });
     },
     nextStep: () => {
-      const activeTray = state.activeTrayId ? state.registry[state.activeTrayId] : undefined;
+      const activeEntry = state.stack[state.stack.length - 1];
+      const activeTray = activeEntry ? state.registry[activeEntry.trayId] : undefined;
       const total = activeTray?.steps.length ?? 0;
-      const nextIndex = total <= 0 ? 0 : Math.min(state.activeIndex + 1, total - 1);
+      const nextIndex = total <= 0 ? 0 : Math.min((activeEntry?.index ?? 0) + 1, total - 1);
 
       setState((current) => {
-        if (nextIndex === current.activeIndex) {
+        const activeStackIndex = current.stack.length - 1;
+        const currentEntry = current.stack[activeStackIndex];
+
+        if (!currentEntry || nextIndex === currentEntry.index) {
           return current;
         }
 
-        return {
+        const nextStack = current.stack.map((entry, index) =>
+          index === activeStackIndex ? { ...entry, index: nextIndex } : entry,
+        );
+
+        return withActiveFromStack({
           ...current,
-          activeIndex: nextIndex,
-        };
+          stack: nextStack,
+        });
       });
     },
     previousStep: () => {
-      const nextIndex = Math.max(state.activeIndex - 1, 0);
+      const activeEntry = state.stack[state.stack.length - 1];
+      const nextIndex = Math.max((activeEntry?.index ?? 0) - 1, 0);
 
       setState((current) => {
-        if (nextIndex === current.activeIndex) {
+        const activeStackIndex = current.stack.length - 1;
+        const currentEntry = current.stack[activeStackIndex];
+
+        if (!currentEntry || nextIndex === currentEntry.index) {
           return current;
         }
 
-        return {
+        const nextStack = current.stack.map((entry, index) =>
+          index === activeStackIndex ? { ...entry, index: nextIndex } : entry,
+        );
+
+        return withActiveFromStack({
           ...current,
-          activeIndex: nextIndex,
-        };
+          stack: nextStack,
+        });
       });
     },
     anticipateKeyboard: () => {

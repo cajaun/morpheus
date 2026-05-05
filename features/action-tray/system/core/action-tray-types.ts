@@ -21,6 +21,7 @@ export type ActionTrayProps = {
   fullScreen?: boolean;
   fullScreenSafeAreaTop?: boolean;
   fullScreenDraggable?: boolean;
+  dismissible?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;

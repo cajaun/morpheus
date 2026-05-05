@@ -36,7 +36,14 @@ export type TrayStepDefinition = {
 export type TrayRegistration = {
   steps: TrayStepDefinition[];
   footer?: React.ReactNode;
+  dismissible?: boolean;
   pages?: TrayPagesRegistration;
+};
+
+export type TrayStackEntry = {
+  trayId: string;
+  index: number;
+  parentTrayId?: string | null;
 };
 
 export type TrayPagesRegistration = {
@@ -91,6 +98,7 @@ export type TrayHostStateValue = {
   registry: Record<string, TrayRegistration>;
   activeTrayId: string | null;
   activeIndex: number;
+  stack: TrayStackEntry[];
   keyboardHeight: SharedValue<number>;
 };
 
@@ -99,6 +107,7 @@ export type TrayHostActionsValue = {
   unregisterTray: (id: string) => void;
   registerTrayPages: (id: string, pages: TrayPagesRegistration | null) => void;
   openTray: (id: string) => void;
+  openNestedTray: (id: string, parentTrayId?: string | null) => void;
   closeActiveTray: () => void;
   requestCloseActiveTray: () => void;
   nextStep: () => void;
@@ -196,7 +205,9 @@ export const useTrayFlow = () => {
     trayId ? state.registry[trayId] : undefined,
   );
   const activeTrayId = useTrayHostSelector((state) => state.activeTrayId);
-  const activeIndex = useTrayHostSelector((state) => state.activeIndex);
+  const stackEntry = useTrayHostSelector((state) =>
+    trayId ? state.stack.find((entry) => entry.trayId === trayId) : undefined,
+  );
   const {
     openTray,
     closeActiveTray,
@@ -213,14 +224,14 @@ export const useTrayFlow = () => {
 
   const total = registration?.steps.length ?? 0;
   const isActive = activeTrayId === trayId;
-  const activeStep = registration?.steps[clampIndex(activeIndex, total)];
+  const index = stackEntry ? clampIndex(stackEntry.index, total) : 0;
+  const activeStep = registration?.steps[index];
   const pageControls =
     activeStep &&
     registration?.pages?.stepKey === activeStep.key &&
     !registration.pages.hasFooter
       ? registration.pages
       : null;
-  const index = isActive ? clampIndex(activeIndex, total) : 0;
   const canGoNext = pageControls ? pageControls.canGoNext : index < total - 1;
   const canGoBack = pageControls ? pageControls.canGoBack : index > 0;
 

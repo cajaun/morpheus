@@ -12,30 +12,39 @@ import {
   useTrayPages,
   type TrayStepDefinition,
 } from "@/features/action-tray";
-import { AnimatedFlowButton } from "@/features/action-tray/presets/animated-flow-button";
+import { BUTTON_HEIGHT } from "@/features/action-tray/presets/animated-flow-button";
 import FlowHeader from "@/features/action-tray/presets/flow-header";
-import { trayDemoText } from "@/shared/theme/tokens";
+import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { SymbolView } from "expo-symbols";
+import { createCreatingWalletsInfoSteps } from "../creating-wallets-info";
 
 const FULLSCREEN_STEP_INDEX = 2;
 
 const OnboardingFooter = () => {
-  const { next, back, index, total, close } = useTrayFlow();
-  const isFullscreenStep = index === FULLSCREEN_STEP_INDEX;
+  const { next, index, total, close } = useTrayFlow();
+  const handlePrimaryPress = index >= total - 1 ? close : next;
 
   return (
     <Tray.Footer style={{ width: "100%" }}>
-      <AnimatedFlowButton
-        step={index}
-        totalSteps={total}
-        onNext={next}
-        onSecondaryPress={back}
-        onFinish={close}
-        showSecondary={!isFullscreenStep && index > 0}
-      />
+      <PressableScale
+        onPress={handlePrimaryPress}
+        style={{
+          width: "100%",
+          height: BUTTON_HEIGHT,
+          alignItems: "center",
+          backgroundColor: trayDemoColors.primaryAction,
+          borderRadius: 50,
+          justifyContent: "center",
+          paddingHorizontal: 20,
+        }}
+      >
+        <Text className="text-white font-sf-bold" style={trayDemoText.button}>
+          Continue
+        </Text>
+      </PressableScale>
     </Tray.Footer>
   );
 };
@@ -55,6 +64,24 @@ const OnboardingHeader = ({ title }: { title: string }) => {
     </Tray.Header>
   );
 };
+
+const CREATING_WALLETS_INFO_STEPS = createCreatingWalletsInfoSteps({
+  title: "Onboarding Wallets",
+  subtitle: "Tiny nonsense for the fullscreen flow",
+  intro:
+    "This onboarding helper is reusing the Creating Wallets tray, but the words are intentionally dummy test copy. The tray pops up from the fullscreen step, says a few onboarding-ish things, and then politely gets out of the way.",
+  firstSectionTitle: "Why this appears here",
+  firstSectionBody:
+    "Imagine the user is midway through onboarding and taps the question mark because the vibes are confusing. Blah blah wallet setup, onboarding rails, safe little explanations, banana protocol, tap continue when the clouds align.",
+  secondSectionTitle: "What happens next",
+  secondSectionBody:
+    "Nothing too serious. The parent onboarding tray should stay exactly where it was, the nested tray should animate like a normal tray, and this gibberish should prove the reusable copy path works without replacing the original demo.",
+  buttonLabel: "Cool",
+});
+
+const sharedStepOptions = {
+  className: "bg-white",
+} as const;
 
 const OnboardingPageProgressItem = ({
   index,
@@ -159,7 +186,8 @@ export const OnboardingPageHeader = () => {
 
         <OnboardingPageProgress totalPages={totalPages} progress={progress} />
 
-        <PressableScale
+        <Tray.Nested
+          steps={CREATING_WALLETS_INFO_STEPS}
           style={{
             width: 32,
             height: 32,
@@ -174,7 +202,7 @@ export const OnboardingPageHeader = () => {
             size={32}
             tintColor="#2A2A2C"
           />
-        </PressableScale>
+        </Tray.Nested>
       </View>
 
       <View>
@@ -391,18 +419,17 @@ const OnboardingExample = () => {
         key: "content-one",
         content: <FirstStep />,
         header: <OnboardingHeader title="Content One" />,
-        options: { className: "bg-white" },
+        options: sharedStepOptions,
       },
       {
         key: "content-two",
         content: <SecondStep />,
         header: <OnboardingHeader title="Content Two" />,
-        options: { className: "bg-white" },
+        options: sharedStepOptions,
       },
       {
         key: "content-three",
         content: <ThirdStep />,
-
         options: {
           className: "bg-white",
           fullScreen: true,
@@ -415,7 +442,7 @@ const OnboardingExample = () => {
         key: "content-four",
         header: <OnboardingHeader title="Content Four" />,
         content: <FourthStep />,
-        options: { className: "bg-white" },
+        options: sharedStepOptions,
       },
     ],
     [],
@@ -423,7 +450,7 @@ const OnboardingExample = () => {
   const footer = useMemo(() => <OnboardingFooter />, []);
 
   return (
-    <Tray.Root steps={steps} footer={footer}>
+    <Tray.Root steps={steps} footer={footer} dismissible={false}>
       <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Onboarding" />
       </Tray.Trigger>
