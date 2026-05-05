@@ -1,8 +1,9 @@
-import React, { useMemo } from "react";
+import React, { use, useMemo } from "react";
 import { Text } from "react-native";
 import {
   Tray,
   useTrayFlow,
+  useTrayPages,
   type TrayStepDefinition,
 } from "@/features/action-tray";
 import { AnimatedFlowButton } from "@/features/action-tray/presets/animated-flow-button";
@@ -12,6 +13,7 @@ import { ExampleTrigger } from "../shared/example-trigger";
 
 const OnboardingFooter = () => {
   const { next, back, index, total, close } = useTrayFlow();
+  
 
   return (
     <Tray.Footer style={{ width: "100%" }}>
@@ -113,7 +115,7 @@ const ThirdStep = () => {
     
 
       <Tray.Page className="flex-1">
-        <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
+        <Tray.Body style={{ paddingHorizontal: 40, flex: 1, gap:24 }}>
           <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
             Content Three A
           </Text>
@@ -131,6 +133,13 @@ const ThirdStep = () => {
             Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laborum
             hic ut excepturi, aut eum obcaecati repudiandae! Aliquam expedita,
             minima.
+          </Text>
+
+          <Text
+            className="text-black font-sf-regular"
+            style={trayDemoText.bodyLarge}
+          >
+            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Atque, esse blanditiis. Est ipsum temporibus quis esse dolores similique amet doloribus adipisci modi ullam rerum itaque tempore perferendis id unde aperiam libero facilis, repellendus tempora velit. Dolores iste ipsam molestiae harum?
           </Text>
         </Tray.Body>
       </Tray.Page>

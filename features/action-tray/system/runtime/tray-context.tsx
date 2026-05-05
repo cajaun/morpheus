@@ -36,6 +36,19 @@ export type TrayStepDefinition = {
 export type TrayRegistration = {
   steps: TrayStepDefinition[];
   footer?: React.ReactNode;
+  pages?: TrayPagesRegistration;
+};
+
+export type TrayPagesRegistration = {
+  stepKey: string;
+  pageIndex: number;
+  totalPages: number;
+  hasFooter: boolean;
+  canGoNext: boolean;
+  canGoBack: boolean;
+  nextPage: () => void;
+  backPage: () => void;
+  setPage: (index: number) => void;
 };
 
 export type ResolvedTrayStepOptions = {
@@ -84,6 +97,7 @@ export type TrayHostStateValue = {
 export type TrayHostActionsValue = {
   registerTray: (id: string, registration: TrayRegistration) => void;
   unregisterTray: (id: string) => void;
+  registerTrayPages: (id: string, pages: TrayPagesRegistration | null) => void;
   openTray: (id: string) => void;
   closeActiveTray: () => void;
   requestCloseActiveTray: () => void;
@@ -199,16 +213,24 @@ export const useTrayFlow = () => {
 
   const total = registration?.steps.length ?? 0;
   const isActive = activeTrayId === trayId;
-  // inactive trays read as step zero to keep chrome logic deterministic before open
+  const activeStep = registration?.steps[clampIndex(activeIndex, total)];
+  const pageControls =
+    activeStep &&
+    registration?.pages?.stepKey === activeStep.key &&
+    !registration.pages.hasFooter
+      ? registration.pages
+      : null;
   const index = isActive ? clampIndex(activeIndex, total) : 0;
+  const canGoNext = pageControls ? pageControls.canGoNext : index < total - 1;
+  const canGoBack = pageControls ? pageControls.canGoBack : index > 0;
 
   return {
     trayId,
     isActive,
     index,
     total,
-    canGoNext: index < total - 1,
-    canGoBack: index > 0,
+    canGoNext,
+    canGoBack,
     open: () => openTray(trayId),
     close: () => {
       if (isActive) {
@@ -222,11 +244,21 @@ export const useTrayFlow = () => {
     },
     next: () => {
       if (isActive) {
+        if (pageControls?.canGoNext) {
+          pageControls.nextPage();
+          return;
+        }
+
         nextStep();
       }
     },
     back: () => {
       if (isActive) {
+        if (pageControls?.canGoBack) {
+          pageControls.backPage();
+          return;
+        }
+
         previousStep();
       }
     },

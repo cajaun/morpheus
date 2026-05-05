@@ -116,12 +116,17 @@ export const createTrayRuntimeStore = (
           return current;
         }
 
+        const existingPages = current.registry[id]?.pages;
+
         // step arrays can grow or shrink without changing tray identity
         return resolveClampedState({
           ...current,
           registry: {
             ...current.registry,
-            [id]: registration,
+            [id]: {
+              ...registration,
+              pages: existingPages,
+            },
           },
         });
       });
@@ -141,6 +146,26 @@ export const createTrayRuntimeStore = (
           activeTrayId: current.activeTrayId === id ? null : current.activeTrayId,
           activeIndex: current.activeTrayId === id ? 0 : current.activeIndex,
         });
+      });
+    },
+    registerTrayPages: (id, pages) => {
+      setState((current) => {
+        const registration = current.registry[id];
+
+        if (!registration || registration.pages === pages) {
+          return current;
+        }
+
+        return {
+          ...current,
+          registry: {
+            ...current.registry,
+            [id]: {
+              ...registration,
+              pages: pages ?? undefined,
+            },
+          },
+        };
       });
     },
     openTray: (id: string) => {

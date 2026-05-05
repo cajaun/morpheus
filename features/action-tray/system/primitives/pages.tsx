@@ -17,7 +17,12 @@ import Animated, {
 } from "react-native-reanimated";
 import { SCREEN_WIDTH } from "../core/constants";
 import { TrayPagesProvider } from "../pages-context";
-import { useTrayHost, useTrayStepOptions } from "../runtime/tray-context";
+import {
+  useTrayHost,
+  useTrayHostSelector,
+  useTrayScope,
+  useTrayStepOptions,
+} from "../runtime/tray-context";
 import { TrayPage } from "./page";
 
 // pages are for intra step motion when the tray shell itself should stay unchanged
@@ -158,6 +163,17 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   }, [children]);
 
   const totalPages = parsed.pages.length;
+  const trayId = useTrayScope();
+  const activeTrayId = useTrayHostSelector((state) => state.activeTrayId);
+  const activeIndex = useTrayHostSelector((state) => state.activeIndex);
+  const activeStepKey = useTrayHostSelector((state) => {
+    if (!trayId || state.activeTrayId !== trayId) {
+      return null;
+    }
+
+    return state.registry[trayId]?.steps[state.activeIndex]?.key ?? null;
+  });
+  const { registerTrayPages } = useTrayHost();
   const resolvedInitialPage = clampPageIndex(initialPage, totalPages);
   const [pageIndex, setPageIndex] = useState(resolvedInitialPage);
   const [viewportWidthState, setViewportWidthState] = useState(SCREEN_WIDTH);
@@ -223,6 +239,40 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   const backPage = useCallback(() => {
     setPage(pageIndex - 1);
   }, [pageIndex, setPage]);
+
+  useEffect(() => {
+    if (!trayId || activeTrayId !== trayId || !activeStepKey) {
+      return;
+    }
+
+    registerTrayPages(trayId, {
+      stepKey: activeStepKey,
+      pageIndex,
+      totalPages,
+      hasFooter: parsed.footer != null,
+      canGoNext: pageIndex < totalPages - 1,
+      canGoBack: pageIndex > 0,
+      nextPage,
+      backPage,
+      setPage,
+    });
+
+    return () => {
+      registerTrayPages(trayId, null);
+    };
+  }, [
+    activeIndex,
+    activeStepKey,
+    activeTrayId,
+    backPage,
+    nextPage,
+    pageIndex,
+    parsed.footer,
+    registerTrayPages,
+    setPage,
+    totalPages,
+    trayId,
+  ]);
 
   return (
     <TrayPagesProvider
