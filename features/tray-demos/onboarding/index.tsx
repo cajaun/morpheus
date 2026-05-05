@@ -450,7 +450,7 @@ const OnboardingExample = () => {
   const footer = useMemo(() => <OnboardingFooter />, []);
 
   return (
-    <Tray.Root steps={steps} footer={footer} dismissible={false}>
+    <Tray.Root steps={steps} footer={footer} >
       <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Onboarding" />
       </Tray.Trigger>

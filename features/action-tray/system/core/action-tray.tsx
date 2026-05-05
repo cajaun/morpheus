@@ -119,7 +119,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       translateY,
       totalHeight,
       context,
-      interactive: interactive && isSurfaceReady,
+      interactive: interactive && isSurfaceReady && dismissible,
       fullScreen: presentationFullScreen,
       fullScreenDraggable: renderedFullScreenDraggable,
       keyboardHeight: trayKeyboardHeight,
