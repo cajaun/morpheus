@@ -15,6 +15,7 @@ export type ActionTrayProps = {
   onCloseComplete?: () => void;
   rootTrayId?: string;
   content?: React.ReactNode;
+  header?: React.ReactNode;
   footer?: React.ReactNode;
   trayId?: string;
   fullScreen?: boolean;
@@ -34,6 +35,7 @@ export type ActionTrayRef = {
 };
 
 export type RenderedTrayState = {
+  header: React.ReactNode;
   content: React.ReactNode;
   footer: React.ReactNode;
   trayId?: string;

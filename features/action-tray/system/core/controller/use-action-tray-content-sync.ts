@@ -15,6 +15,7 @@ type Params = {
   trayId?: string;
   fullScreen?: boolean;
   content?: ReactNode;
+  header?: ReactNode;
   footer?: ReactNode;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
@@ -37,6 +38,7 @@ type Params = {
     state: {
       renderedTrayId?: string;
       renderedContent: ReactNode;
+      renderedHeader: ReactNode;
       renderedFooter: ReactNode;
       renderedFullScreen: boolean;
     };
@@ -60,6 +62,7 @@ export const useActionTrayContentSync = ({
   trayId,
   fullScreen,
   content,
+  header,
   footer,
   containerStyle,
   className,
@@ -76,7 +79,13 @@ export const useActionTrayContentSync = ({
   const { layoutEnabled } = measurements.state;
   const { setLayoutAnimationEnabled } = measurements.actions;
   const { measuredContentHeight, measuredFooterHeight } = measurements.shared;
-  const { renderedTrayId, renderedContent, renderedFooter, renderedFullScreen } =
+  const {
+    renderedTrayId,
+    renderedContent,
+    renderedHeader,
+    renderedFooter,
+    renderedFullScreen,
+  } =
     renderState.state;
   const { showLatestSnapshot, syncRenderedNodes } = renderState.actions;
   const isEnteringFullScreen = !!fullScreen && !renderedFullScreen;
@@ -156,6 +165,7 @@ export const useActionTrayContentSync = ({
     className,
     containerStyle,
     content,
+    header,
     footer,
     footerClassName,
     footerStyle,
@@ -174,6 +184,7 @@ export const useActionTrayContentSync = ({
       trayId,
       hasContent: content != null,
       hasFooter: footer != null,
+      hasHeader: header != null,
       incomingFullScreen: fullScreen,
       renderedFullScreen,
       hasContainerStyle: containerStyle != null,
@@ -186,6 +197,7 @@ export const useActionTrayContentSync = ({
     className,
     containerStyle,
     content,
+    header,
     footer,
     footerClassName,
     footerStyle,
@@ -200,11 +212,13 @@ export const useActionTrayContentSync = ({
       trayId: renderedTrayId,
       hasContent: renderedContent !== null,
       hasFooter: renderedFooter !== null,
+      hasHeader: renderedHeader !== null,
       fullScreen: renderedFullScreen,
     });
   }, [
     renderedContent,
     renderedFooter,
+    renderedHeader,
     renderedFullScreen,
     renderedTrayId,
   ]);

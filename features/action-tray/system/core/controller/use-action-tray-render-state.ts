@@ -4,6 +4,7 @@ import { RenderedTrayState } from "../action-tray-types";
 
 // render state holds the committed payload while newer props continue to stream in
 type TraySnapshot = {
+  header?: React.ReactNode;
   content?: React.ReactNode;
   footer?: React.ReactNode;
   trayId?: string;
@@ -16,6 +17,7 @@ type TraySnapshot = {
 };
 
 const toRenderedTrayState = ({
+  header,
   content,
   footer,
   trayId,
@@ -26,6 +28,7 @@ const toRenderedTrayState = ({
   footerStyle,
   footerClassName,
 }: TraySnapshot): RenderedTrayState => ({
+  header: header ?? null,
   content: content ?? null,
   footer: footer ?? null,
   trayId,
@@ -38,6 +41,7 @@ const toRenderedTrayState = ({
 });
 
 export const useActionTrayRenderState = ({
+  header,
   content,
   footer,
   trayId,
@@ -48,6 +52,9 @@ export const useActionTrayRenderState = ({
   footerStyle,
   footerClassName,
 }: TraySnapshot) => {
+  const headerRef = useRef(header);
+  headerRef.current = header;
+
   const contentRef = useRef(content);
   contentRef.current = content;
 
@@ -78,6 +85,7 @@ export const useActionTrayRenderState = ({
   const [renderedTray, setRenderedTray] = useState<RenderedTrayState>(
     toRenderedTrayState({
       content,
+      header,
       footer,
       trayId,
       fullScreen,
@@ -93,6 +101,7 @@ export const useActionTrayRenderState = ({
     setRenderedTray(
       toRenderedTrayState({
         content: contentRef.current,
+        header: headerRef.current,
         footer: footerRef.current,
         trayId: trayIdRef.current,
         fullScreen: fullScreenRef.current,
@@ -117,6 +126,7 @@ export const useActionTrayRenderState = ({
 
       return {
         content: contentRef.current ?? null,
+        header: headerRef.current ?? null,
         footer: footerRef.current ?? null,
         trayId: current.trayId,
         fullScreen: fullScreenRef.current,
@@ -132,6 +142,7 @@ export const useActionTrayRenderState = ({
   const clear = useCallback(() => {
     setRenderedTray({
       content: null,
+      header: null,
       footer: null,
       trayId: undefined,
       fullScreen: undefined,
@@ -146,6 +157,7 @@ export const useActionTrayRenderState = ({
   return {
     state: {
       renderedContent: renderedTray.content,
+      renderedHeader: renderedTray.header,
       renderedFooter: renderedTray.footer,
       renderedTrayId: renderedTray.trayId,
       renderedFullScreen: renderedTray.fullScreen ?? false,

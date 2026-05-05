@@ -27,6 +27,7 @@ export type TrayStepOptions = {
 
 export type TrayStepDefinition = {
   key: string;
+  header?: React.ReactNode;
   content: React.ReactNode;
   options?: TrayStepOptions;
 };

@@ -24,6 +24,7 @@ type Params = {
   visible: boolean;
   interactive?: boolean;
   keyboardTransitionMode?: KeyboardTransitionMode;
+  header?: React.ReactNode;
   content?: React.ReactNode;
   footer?: React.ReactNode;
   onCloseComplete?: () => void;
@@ -45,6 +46,7 @@ export const useActionTrayController = ({
   visible,
   interactive = true,
   keyboardTransitionMode = "idle",
+  header,
   content,
   footer,
   onCloseComplete,
@@ -64,6 +66,7 @@ export const useActionTrayController = ({
   // rendered state is a snapshot so the shell can animate while props keep changing
   const renderState = useActionTrayRenderState({
     content,
+    header,
     footer,
     trayId,
     fullScreen,
@@ -271,6 +274,7 @@ export const useActionTrayController = ({
     trayId,
     fullScreen,
     content,
+    header,
     footer,
     containerStyle,
     className,
@@ -323,6 +327,7 @@ export const useActionTrayController = ({
       pendingOpen: measurements.state.pendingOpen,
       isSurfaceReady: openCloseLifecycle.state.isSurfaceReady,
       renderedFooter: renderState.state.renderedFooter,
+      renderedHeader: renderState.state.renderedHeader,
       renderedContent: renderState.state.renderedContent,
       renderedTrayId: renderState.state.renderedTrayId,
       renderedFullScreen: renderState.state.renderedFullScreen,

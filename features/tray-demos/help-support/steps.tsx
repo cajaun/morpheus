@@ -2,8 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Image, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import { Tray, useTrayFlow } from "@/features/action-tray";
-import FlowHeader from "@/features/action-tray/presets/flow-header";
-import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
+import { trayDemoText } from "@/shared/theme/tokens";
 import { FieldShell } from "../shared/field-shell";
 import { PrimaryButton } from "../shared/primary-button";
 import { trayTextInputStyle } from "../shared/input-styles";
@@ -16,19 +15,10 @@ export const SupportChooserStep = ({
 }: {
   onSelect: (nextFlow: HelpKind) => void;
 }) => {
-  const { close, next, index } = useTrayFlow();
+  const { next } = useTrayFlow();
 
   return (
     <Tray.Body>
-      <Tray.Header withSeparator>
-        <FlowHeader
-          step={index}
-          leftLabel="How can we help?"
-          shouldClose
-          onClose={close}
-        />
-      </Tray.Header>
-
       <Tray.Section style={{ gap: 12 }}>
         {HELP_OPTIONS.map((option) => (
           <HelpCard
@@ -49,7 +39,7 @@ export const SupportChooserStep = ({
 };
 
 export const ChooseAreasStep = () => {
-  const { back, next, close, index } = useTrayFlow();
+  const { next } = useTrayFlow();
   const [selectedAreas, setSelectedAreas] = useState<string[]>(() =>
     AREA_OPTIONS.map((area) => area.key),
   );
@@ -64,16 +54,6 @@ export const ChooseAreasStep = () => {
 
   return (
     <Tray.Body>
-      <Tray.Header withSeparator>
-        <FlowHeader
-          step={index}
-          leftLabel="Choose Areas"
-          shouldClose
-          onClose={close}
-          onBack={back}
-        />
-      </Tray.Header>
-
       <Tray.Section style={{ gap: 16 }}>
         <View style={{ gap: 4 }}>
           {AREA_OPTIONS.map((area) => (
@@ -100,7 +80,7 @@ export const ChooseAreasStep = () => {
 };
 
 export const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
-  const { back, next, close, index } = useTrayFlow();
+  const { next } = useTrayFlow();
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
 
@@ -132,16 +112,6 @@ export const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
 
   return (
     <Tray.Body>
-      <Tray.Header withSeparator>
-        <FlowHeader
-          step={index}
-          leftLabel={flowCopy.title}
-          shouldClose
-          onClose={close}
-          onBack={back}
-        />
-      </Tray.Header>
-
       <Tray.Section style={{ gap: 16 }}>
         <FieldShell>
           <Tray.TextInput
@@ -193,21 +163,11 @@ export const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
 };
 
 export const AttachMediaStep = ({ flow }: { flow: HelpKind }) => {
-  const { back, next, close, index } = useTrayFlow();
+  const { next } = useTrayFlow();
   const helperCopy = flowAttachmentCopy[flow];
 
   return (
     <Tray.Body>
-      <Tray.Header withSeparator>
-        <FlowHeader
-          step={index}
-          leftLabel="Attach Media"
-          shouldClose
-          onClose={close}
-          onBack={back}
-        />
-      </Tray.Header>
-
       <Tray.Section style={{ gap: 20 }}>
         <View
           style={{
@@ -262,22 +222,12 @@ export const AttachMediaStep = ({ flow }: { flow: HelpKind }) => {
 };
 
 export const YourDetailsStep = () => {
-  const { back, close, index } = useTrayFlow();
+  const { close } = useTrayFlow();
   const [name, setName] = useState("Test");
   const [email, setEmail] = useState("valmiera.com");
 
   return (
     <Tray.Body>
-      <Tray.Header withSeparator>
-        <FlowHeader
-          step={index}
-          leftLabel="Your Details"
-          shouldClose
-          onClose={close}
-          onBack={back}
-        />
-      </Tray.Header>
-
       <Tray.Section style={{ gap: 16 }}>
         <Text
           className="font-sf-medium text-[#B9BDC2]"

@@ -5,12 +5,13 @@ import { GestureDetector } from "react-native-gesture-handler";
 import { KeyboardStickyView } from "react-native-keyboard-controller";
 import { Backdrop } from "../primitives/backdrop";
 import { createTrayLayoutTransition } from "./animation/action-tray-layout";
-import { styles } from "./animation/action-tray-styles";
+import { styles as trayStyles } from "./animation/action-tray-styles";
 import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animated-styles";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayController } from "./use-action-tray-controller";
 import {
   HORIZONTAL_MARGIN,
+  TRAY_HORIZONTAL_PADDING,
   TRAY_KEYBOARD_GAP,
   TRAY_VERTICAL_PADDING,
 } from "./constants";
@@ -30,6 +31,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       onCloseComplete,
       rootTrayId,
       content,
+      header,
       footer,
       trayId,
       fullScreen,
@@ -53,6 +55,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       interactive,
       keyboardTransitionMode,
       content,
+      header,
       footer,
       onCloseComplete,
       rootTrayId,
@@ -82,6 +85,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       state: {
         layoutEnabled,
         isSurfaceReady,
+        renderedHeader,
         renderedFooter,
         renderedContent,
         renderedTrayId,
@@ -168,7 +172,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           <Animated.View
             className={renderedClassName}
             style={[
-              styles.container,
+              trayStyles.container,
               trayLayoutStyle,
               renderedContainerStyle,
               surfaceVisibilityStyle,
@@ -177,11 +181,16 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             ]}
             layout={shouldUseLayoutAnimation ? layoutAnimationConfig : undefined}
           >
-            <Animated.View style={styles.content}>
+            <Animated.View style={trayStyles.content}>
               <Animated.View
                 style={contentPaddingStyle}
                 onLayout={handleContentLayout}
               >
+                {renderedHeader ? (
+                  <Animated.View style={localStyles.headerContainer}>
+                    {renderedHeader}
+                  </Animated.View>
+                ) : null}
                 {renderedContent}
               </Animated.View>
               {/* reserve space for the detached footer without coupling body layout to footer rendering */}
@@ -193,7 +202,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           className={renderedFooterClassName}
           onLayout={handleVisibleFooterLayout}
           style={[
-            styles.footer,
+            trayStyles.footer,
             footerContainerStyle,
             dragStyle,
             renderedFooterStyle,
@@ -214,7 +223,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           
           <Animated.View
             style={[
-              styles.measureFooter,
+              trayStyles.measureFooter,
               {
                 left: presentationFullScreen ? 0 : HORIZONTAL_MARGIN,
                 right: presentationFullScreen ? 0 : HORIZONTAL_MARGIN,
@@ -268,3 +277,9 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
 ActionTray.displayName = "ActionTray";
 
 export { ActionTray };
+
+const localStyles = StyleSheet.create({
+  headerContainer: {
+    paddingHorizontal: TRAY_HORIZONTAL_PADDING,
+  },
+});

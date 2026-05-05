@@ -32,6 +32,7 @@ type PresentedTray = {
   rootTrayId: string;
   trayId: string;
   keyboardTransitionMode: KeyboardTransitionMode;
+  header: React.ReactNode;
   content: React.ReactNode;
   footer: React.ReactNode;
   fullScreen: boolean;
@@ -126,6 +127,19 @@ export const TrayPresenter: React.FC = () => {
       rootTrayId: activeTrayId,
       trayId: `${activeTrayId}-${step.key}`,
       keyboardTransitionMode,
+      header: step.header ? (
+        <TrayScopeProvider value={activeTrayId}>
+          <TrayStepOptionsProvider value={stepOptions}>
+            <TrayStepContent
+              stepKey={`${activeTrayId}-${step.key}-header`}
+              scale={false}
+              skipEntering={isFirstRender}
+            >
+              {step.header}
+            </TrayStepContent>
+          </TrayStepOptionsProvider>
+        </TrayScopeProvider>
+      ) : null,
       content: (
         <TrayScopeProvider value={activeTrayId}>
           <TrayStepOptionsProvider value={stepOptions}>
@@ -358,6 +372,7 @@ export const TrayPresenter: React.FC = () => {
             keyboardTransitionMode={payload?.keyboardTransitionMode}
             rootTrayId={payload?.rootTrayId}
             content={payload?.content}
+            header={payload?.header}
             footer={payload?.footer}
             onClose={slot.interactive ? requestCloseActiveTray : () => {}}
             onCloseComplete={() =>
