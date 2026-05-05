@@ -52,13 +52,13 @@ export const useActionTrayAnimatedStyles = ({
       left: fullScreen ? 0 : HORIZONTAL_MARGIN,
       right: fullScreen ? 0 : HORIZONTAL_MARGIN,
       bottom: fullScreen ? 0 : bottom,
-      top: fullScreen ? top : "auto",
+      top: fullScreen ? 0 : "auto",
       height: fullScreen
-        ? SCREEN_HEIGHT - top
+        ? SCREEN_HEIGHT
         : resolvedSheetHeight,
       borderRadius: BORDER_RADIUS,
     };
-  }, [bottom, contentHeight, fullScreen, top]);
+  }, [bottom, contentHeight, fullScreen]);
 
   const footerContainerStyle = useAnimatedStyle(() => {
     const targetLeft = fullScreen ? 0 : HORIZONTAL_MARGIN;
