@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Text } from "react-native";
+import { Text, View } from "react-native";
 import {
   Tray,
   useTrayFlow,
@@ -14,13 +14,15 @@ const OnboardingFooter = () => {
   const { next, back, index, total, close } = useTrayFlow();
 
   return (
-    <AnimatedFlowButton
-      step={index}
-      totalSteps={total}
-      onNext={next}
-      onSecondaryPress={back}
-      onFinish={close}
-    />
+    <Tray.Footer style={{ width: "100%" }}>
+      <AnimatedFlowButton
+        step={index}
+        totalSteps={total}
+        onNext={next}
+        onSecondaryPress={back}
+        onFinish={close}
+      />
+    </Tray.Footer>
   );
 };
 
@@ -40,11 +42,11 @@ const FirstStep = () => {
 
       <Tray.Section>
         <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
-          This is a test 
+          This is a test title
         </Text>
 
         <Text
-          className="text-black font-sf-medium"
+          className="text-black font-sf-regular"
           style={trayDemoText.bodyLarge}
         >
           This is some example test that spans over multiple lines bla bla bla
@@ -71,13 +73,21 @@ const SecondStep = () => {
         />
       </Tray.Header>
 
-      <Tray.Section >
+      <Tray.Section>
         <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
           Different heading
         </Text>
 
         <Text
-          className="text-black font-sf-medium"
+          className="text-black font-sf-regular"
+          style={trayDemoText.bodyLarge}
+        >
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Reprehenderit
+          earum
+        </Text>
+
+        <Text
+          className="text-black font-sf-regular"
           style={trayDemoText.bodyLarge}
         >
           Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
@@ -86,15 +96,13 @@ const SecondStep = () => {
         </Text>
 
         <Text
-          className="text-black font-sf-medium"
+          className="text-black font-sf-regular"
           style={trayDemoText.bodyLarge}
         >
           This is some example test that spans over multiple lines bla bla bla
           test test test many wods. this is a new sentence and we'll see how
           that fares too.
         </Text>
-
-
       </Tray.Section>
     </Tray.Body>
   );
@@ -104,8 +112,8 @@ const ThirdStep = () => {
   const { close, back, index } = useTrayFlow();
 
   return (
-    <Tray.Body>
-      <Tray.Header withSeparator>
+    <Tray.Pages>
+      <Tray.Pages.Header>
         <FlowHeader
           step={index}
           leftLabel="Content Three"
@@ -113,28 +121,95 @@ const ThirdStep = () => {
           onBack={back}
           onClose={close}
         />
-      </Tray.Header>
+      </Tray.Pages.Header>
 
-      <Tray.Section>
+    <Tray.Page className="flex-1">
+        <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
+
         <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
-          Another heading
+          More headings
         </Text>
 
         <Text
-          className="text-black font-sf-medium"
+          className="text-black font-sf-regular"
           style={trayDemoText.bodyLarge}
         >
-          Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum dolor
-          amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
+          Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
+          amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
+          dolor amet. Lorem ipsum dolor amet.
         </Text>
 
         <Text
-          className="text-black font-sf-medium"
+          className="text-black font-sf-regular"
+          style={trayDemoText.bodyLarge}
+        >
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laborum hic
+          ut excepturi, aut eum obcaecati repudiandae! Aliquam expedita, minima,
+          ducimus obcaecati excepturi maiores porro rerum ipsam doloremque error
+          numquam omnis.
+        </Text>
+
+        <Text
+          className="text-black font-sf-regular"
+          style={trayDemoText.bodyLarge}
+        >
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laborum hic
+          ut excepturi, aut eum obcaecati repudiandae! Aliquam expedita, minima,
+          ducimus obcaecati excepturi maiores porro rerum ipsam doloremque error
+          numquam omnis.
+        </Text>
+
+        <Text
+          className="text-black font-sf-regular"
           style={trayDemoText.bodyLarge}
         >
           This is some example test that spans over multiple lines bla bla bla
           test test test many wods. this is a new sentence and we'll see how
           that fares too.
+        </Text>
+     </Tray.Body>
+      </Tray.Page>
+    </Tray.Pages>
+  );
+};
+
+const FourthStep = () => {
+  const { close, back, index } = useTrayFlow();
+
+  return (
+    <Tray.Body>
+      <Tray.Header withSeparator>
+        <FlowHeader
+          step={index}
+          leftLabel="Content Four"
+          shouldClose
+          onBack={back}
+          onClose={close}
+        />
+      </Tray.Header>
+
+      <Tray.Section >
+        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+          Last Heading
+        </Text>
+
+        <Text
+          className="text-black font-sf-regular"
+          style={trayDemoText.bodyLarge}
+        >
+          Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
+          amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
+          dolor amet. Lorem ipsum dolor amet.
+        </Text>
+
+        <Text
+          className="text-black font-sf-regular"
+          style={trayDemoText.bodyLarge}
+        >
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laborum hic
+          ut excepturi, aut eum obcaecati repudiandae! Aliquam expedita, minima,
+          ducimus obcaecati excepturi maiores porro rerum ipsam doloremque error
+          numquam omnis.
         </Text>
       </Tray.Section>
     </Tray.Body>
@@ -157,7 +232,19 @@ const OnboardingExample = () => {
       {
         key: "content-three",
         content: <ThirdStep />,
-        options: { className: "bg-white" },
+        options: { className: "bg-white",
+             fullScreen: true,
+          fullScreenDraggable: false,
+          fullScreenCloseBehavior:
+           "returnToShell" ,
+         },
+      },
+      {
+        key: "content-four",
+        content: <FourthStep />,
+        options: { className: "bg-white",
+          
+         },
       },
     ],
     [],

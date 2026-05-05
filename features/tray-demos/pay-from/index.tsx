@@ -31,6 +31,24 @@ const wallets = [
     address: "0x9f90•••3d79",
     avatar: "https://i.pravatar.cc/100?img=3",
   },
+  {
+    id: "4",
+    name: "Testing frl",
+    address: "0x9f90•••3d79",
+    avatar: "https://i.pravatar.cc/100?img=3",
+  },
+  {
+    id: "5",
+    name: "F",
+    address: "0x9f90•••3d79",
+    avatar: "https://i.pravatar.cc/100?img=3",
+  },
+  {
+    id: "6",
+    name: "Test",
+    address: "0x9f90•••3d79",
+    avatar: "https://i.pravatar.cc/100?img=3",
+  },
  
 ];
 
@@ -55,7 +73,7 @@ const WalletSelectionStep = ({
         />
       </Tray.Header>
 
-      <Tray.Section>
+      <Tray.Section style={{gap: 16}}>
         {wallets.map((wallet) => {
           const isSelected = wallet.id === selectedId;
 

@@ -1,5 +1,5 @@
 {
-  "name": "react-native-morpheus",
+  "name": "morpheus",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {

@@ -16,38 +16,23 @@ type Props = {
   skipExiting?: boolean;
 };
 
-const MORPH_EASING = Easing.bezier(0.26, 0.08, 0.25, 1);
+export const MORPH_EASING = Easing.bezier(0.25, 1.0, 0.5, 1);
+export const SHEET_EASING = Easing.bezier(0.34, 1.12, 0.64, 1);
 
 const createMorphEntering = (scale: boolean): EntryExitAnimationFunction => {
   return () => {
     "worklet";
-
     return {
       initialValues: {
         opacity: 0,
-        transform: [
-          { scale: scale ? 0.95 : 1 },
-          { translateY: 6 },
-        ],
+        transform: [{ scale: scale ? 1.05 : 1 }, { translateY: 0 }],
+      
       },
       animations: {
-        opacity: withTiming(1, {
-          duration: MORPH_DURATION,
-          easing: MORPH_EASING,
-        }),
+        opacity: withTiming(1, { duration: MORPH_DURATION, easing: MORPH_EASING }),
         transform: [
-          {
-            scale: withTiming(scale ? 1 : 1, {
-              duration: MORPH_DURATION,
-              easing: MORPH_EASING,
-            }),
-          },
-          {
-            translateY: withTiming(0, {
-              duration: MORPH_DURATION,
-              easing: MORPH_EASING,
-            }),
-          },
+          { scale: withTiming(1, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
+          { translateY: withTiming(0, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
         ],
       },
     };
@@ -57,38 +42,24 @@ const createMorphEntering = (scale: boolean): EntryExitAnimationFunction => {
 const createMorphExiting = (scale: boolean): EntryExitAnimationFunction => {
   return () => {
     "worklet";
-
     return {
       initialValues: {
         opacity: 1,
-        transform: [
-          { scale: 1 },
-          { translateY: 0 },
-        ],
+        transform: [{ scale: 1 }, { translateY: 0 }],
       },
       animations: {
-        opacity: withTiming(0, {
-          duration: 190, // slightly faster for snappier exit
-          easing: MORPH_EASING,
-        }),
+        opacity: withTiming(0, { duration: MORPH_DURATION, easing: MORPH_EASING }),
+    
         transform: [
-          {
-            scale: withTiming(scale ? 1.05 : 1, { // 🔥 scale OUT
-              duration: 160,
-              easing: Easing.out(Easing.cubic),
-            }),
-          },
-          {
-            translateY: withTiming(6, {
-              duration: 160,
-              easing: MORPH_EASING,
-            }),
-          },
+          { scale: withTiming(scale ? 0.98 : 1, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
+        
+          { translateY: withTiming(0, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
         ],
       },
     };
   };
 };
+
 export const TrayStepContent: React.FC<Props> = ({
   children,
   scale = true,

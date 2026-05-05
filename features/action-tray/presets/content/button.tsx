@@ -136,7 +136,7 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
             width: "100%",
             height: BUTTON_HEIGHT,
             alignItems: "center",
-            backgroundColor: "#41BBFF",
+            backgroundColor: "#3EB1FF",
             borderRadius: 50,
             justifyContent: "center",
             paddingHorizontal: 20,

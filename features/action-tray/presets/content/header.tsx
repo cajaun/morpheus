@@ -60,8 +60,8 @@ export default function Header({
             style={{
               position: "absolute",
               right: 0,
-              height: 32,
-              width: 32,
+              height: 40,
+              width: 40,
             }}
           >
             <SymbolView

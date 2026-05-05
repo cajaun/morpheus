@@ -92,7 +92,7 @@ export const WatchAddressInputStep = () => {
             onChangeText={setAddress}
             autoCapitalize="none"
             autoCorrect={false}
-            autoFocus={false}
+            autoFocus={true}
             autoComplete="off"
             clearButtonMode="while-editing"
             keyboardType="ascii-capable"

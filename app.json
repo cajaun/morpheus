@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "react-native-morpheus",
-    "slug": "react-native-morpheus",
+    "name": "Morpheus",
+    "slug": "Morpheus",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

@@ -125,7 +125,7 @@ export const AnimatedFlowButton: React.FC<Props> = ({
             alignItems: "center",
           }}
         >
-          <Text className="text-black font-sf-Bold" style={trayDemoText.button}>
+          <Text className="text-black font-sf-bold" style={trayDemoText.button}>
             Cancel
           </Text>
         </PressableScale>
@@ -153,7 +153,7 @@ export const AnimatedFlowButton: React.FC<Props> = ({
             paddingHorizontal: 20,
           }}
         >
-          <Text className="text-white font-sf-Bold" style={trayDemoText.button}>
+          <Text className="text-white font-sf-bold" style={trayDemoText.button}>
             Continue
           </Text>
         </PressableScale>
