@@ -163,6 +163,11 @@ export const useActionTrayMeasurements = ({
 
       // visible footer measurement handles late footer changes after the first open
       const height = e.nativeEvent.layout.height;
+      // during footer morph-out, transient near-zero layouts can fire before the
+      // visual exit finishes; keep the last stable height to avoid a drop/jump.
+      if (height <= 1 && latestMeasuredFooterHeightRef.current > 0) {
+        return;
+      }
 
       log("VISIBLE FOOTER onLayout", {
         height,

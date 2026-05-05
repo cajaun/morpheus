@@ -19,6 +19,7 @@ export type TrayStepOptions = {
   fullScreenDraggable?: boolean;
   fullScreenCloseBehavior?: TrayFullScreenCloseBehavior;
   fullScreenTransition?: TrayFullScreenTransition;
+  fullScreenSafeAreaTop?: boolean;
   style?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
@@ -44,6 +45,7 @@ export type ResolvedTrayStepOptions = {
   fullScreenDraggable: boolean;
   fullScreenCloseBehavior: TrayFullScreenCloseBehavior;
   fullScreenTransition: TrayFullScreenTransition;
+  fullScreenSafeAreaTop: boolean;
   style?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
@@ -57,6 +59,7 @@ export const DEFAULT_TRAY_STEP_OPTIONS: ResolvedTrayStepOptions = {
   fullScreenDraggable: true,
   fullScreenCloseBehavior: "dismiss",
   fullScreenTransition: "morph",
+  fullScreenSafeAreaTop: false,
   style: undefined,
   className: undefined,
   footerStyle: undefined,

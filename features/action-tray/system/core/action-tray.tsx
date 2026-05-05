@@ -35,6 +35,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       footer,
       trayId,
       fullScreen,
+      fullScreenSafeAreaTop,
       fullScreenDraggable,
       visible,
       interactive = true,
@@ -61,6 +62,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       rootTrayId,
       trayId,
       fullScreen,
+      fullScreenSafeAreaTop,
       fullScreenDraggable,
       containerStyle,
       className,
@@ -90,6 +92,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         renderedContent,
         renderedTrayId,
         renderedFullScreen,
+        renderedFullScreenSafeAreaTop,
         renderedFullScreenDraggable,
         renderedContainerStyle,
         renderedClassName,
@@ -140,6 +143,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       footerHeight,
       keyboardHeight: trayKeyboardHeight,
       fullScreen: presentationFullScreen,
+      fullScreenSafeAreaTop: renderedFullScreenSafeAreaTop,
       visible,
     });
 

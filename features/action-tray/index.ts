@@ -22,7 +22,7 @@ export {
   type TrayStepDefinition,
   type TrayStepOptions,
 } from "./system/runtime/tray-context";
-export { useTrayPages } from "./system/pages-context";
+export { useOptionalTrayPages, useTrayPages } from "./system/pages-context";
 
 // the namespace mirrors the mental model used by tray authors
 export const Tray = {

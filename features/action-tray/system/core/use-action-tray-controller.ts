@@ -31,6 +31,7 @@ type Params = {
   rootTrayId?: string;
   trayId?: string;
   fullScreen?: boolean;
+  fullScreenSafeAreaTop?: boolean;
   fullScreenDraggable?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
@@ -53,6 +54,7 @@ export const useActionTrayController = ({
   rootTrayId,
   trayId,
   fullScreen,
+  fullScreenSafeAreaTop,
   fullScreenDraggable,
   containerStyle,
   className,
@@ -70,6 +72,7 @@ export const useActionTrayController = ({
     footer,
     trayId,
     fullScreen,
+    fullScreenSafeAreaTop,
     fullScreenDraggable,
     containerStyle,
     className,
@@ -333,6 +336,8 @@ export const useActionTrayController = ({
       renderedFullScreen: renderState.state.renderedFullScreen,
       renderedFullScreenDraggable:
         renderState.state.renderedFullScreenDraggable,
+      renderedFullScreenSafeAreaTop:
+        renderState.state.renderedFullScreenSafeAreaTop,
       renderedContainerStyle: renderState.state.renderedContainerStyle,
       renderedClassName: renderState.state.renderedClassName,
       renderedFooterStyle: renderState.state.renderedFooterStyle,

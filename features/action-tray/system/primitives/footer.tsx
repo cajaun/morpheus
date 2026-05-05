@@ -8,7 +8,7 @@ export const TrayFooter: React.FC<{
   className?: string;
 }> = ({ children, style, className }) => {
   return (
-    <View className={className} style={style}>
+    <View className={className} style={[{ width: "100%", alignItems: "center" }, style]}>
       {children}
     </View>
   );

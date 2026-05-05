@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Text, View } from "react-native";
+import { Text } from "react-native";
 import {
   Tray,
   useTrayFlow,
@@ -114,60 +114,62 @@ const ThirdStep = () => {
   return (
     <Tray.Pages>
       <Tray.Pages.Header>
-        <FlowHeader
-          step={index}
-          leftLabel="Content Three"
-          shouldClose
-          onBack={back}
-          onClose={close}
-        />
+        <Tray.Header withSeparator style={{ paddingHorizontal: 32 }}>
+          <FlowHeader
+            step={index}
+            leftLabel="Content Three"
+            shouldClose
+            onBack={back}
+            onClose={close}
+          />
+        </Tray.Header>
       </Tray.Pages.Header>
 
-    <Tray.Page className="flex-1">
+      <Tray.Page className="flex-1">
         <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
+          <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+            Content Three A
+          </Text>
+          <Text className="text-black font-sf-regular" style={trayDemoText.bodyLarge}>
+            Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
+            Lorem ipsum dolor amet. Lorem ipsum dolor amet.
+          </Text>
+          <Text className="text-black font-sf-regular" style={trayDemoText.bodyLarge}>
+            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laborum hic
+            ut excepturi, aut eum obcaecati repudiandae! Aliquam expedita, minima.
+          </Text>
+        </Tray.Body>
+      </Tray.Page>
 
-        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
-          More headings
-        </Text>
+      <Tray.Page className="flex-1">
+        <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
+          <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+            Content Three B
+          </Text>
+          <Text className="text-black font-sf-regular" style={trayDemoText.bodyLarge}>
+            This is the second fullscreen page. Keep tapping Continue to move
+            through the built-in tray pages flow.
+          </Text>
+          <Text className="text-black font-sf-regular" style={trayDemoText.bodyLarge}>
+            Quisquam placeat praesentium at delectus veritatis, adipisci sint
+            atque deserunt velit rem laborum neque minus doloribus.
+          </Text>
+        </Tray.Body>
+      </Tray.Page>
 
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-          Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
-          amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
-          dolor amet. Lorem ipsum dolor amet.
-        </Text>
-
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laborum hic
-          ut excepturi, aut eum obcaecati repudiandae! Aliquam expedita, minima,
-          ducimus obcaecati excepturi maiores porro rerum ipsam doloremque error
-          numquam omnis.
-        </Text>
-
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laborum hic
-          ut excepturi, aut eum obcaecati repudiandae! Aliquam expedita, minima,
-          ducimus obcaecati excepturi maiores porro rerum ipsam doloremque error
-          numquam omnis.
-        </Text>
-
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-          This is some example test that spans over multiple lines bla bla bla
-          test test test many wods. this is a new sentence and we'll see how
-          that fares too.
-        </Text>
-     </Tray.Body>
+      <Tray.Page className="flex-1">
+        <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
+          <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+            Content Three C
+          </Text>
+          <Text className="text-black font-sf-regular" style={trayDemoText.bodyLarge}>
+            Final fullscreen page before returning to shell and going to Content Four.
+          </Text>
+          <Text className="text-black font-sf-regular" style={trayDemoText.bodyLarge}>
+            This is some example test that spans over multiple lines bla bla bla
+            test test many words. This is a new sentence and we'll see how that fares too.
+          </Text>
+        </Tray.Body>
       </Tray.Page>
     </Tray.Pages>
   );
@@ -234,6 +236,7 @@ const OnboardingExample = () => {
         content: <ThirdStep />,
         options: { className: "bg-white",
              fullScreen: true,
+          fullScreenSafeAreaTop: true,
           fullScreenDraggable: false,
           fullScreenCloseBehavior:
            "returnToShell" ,

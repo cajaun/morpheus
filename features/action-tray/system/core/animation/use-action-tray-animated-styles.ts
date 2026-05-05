@@ -18,6 +18,7 @@ type Params = {
   footerHeight: { value: number };
   keyboardHeight: { value: number };
   fullScreen: boolean;
+  fullScreenSafeAreaTop: boolean;
   visible: boolean;
 };
 
@@ -30,9 +31,10 @@ export const useActionTrayAnimatedStyles = ({
   footerHeight,
   keyboardHeight,
   fullScreen,
+  fullScreenSafeAreaTop,
   visible,
 }: Params) => {
-  const { bottom } = useSafeAreaInsets();
+  const { top, bottom } = useSafeAreaInsets();
 
   // body content reserves footer height so detached footers never cover content
   const footerSpacerStyle = useAnimatedStyle(() => ({
@@ -60,21 +62,26 @@ export const useActionTrayAnimatedStyles = ({
   }, [bottom, contentHeight, fullScreen]);
 
   const footerContainerStyle = useAnimatedStyle(() => {
+    const targetLeft = fullScreen ? 0 : HORIZONTAL_MARGIN;
+    const targetRight = fullScreen ? 0 : HORIZONTAL_MARGIN;
+    const targetBottom =
+      keyboardHeight.value > 0
+        ? keyboardHeight.value
+        : bottom;
+    const targetRadius = fullScreen ? 0 : BORDER_RADIUS;
+
     return {
-      left: fullScreen ? 0 : HORIZONTAL_MARGIN,
-      right: fullScreen ? 0 : HORIZONTAL_MARGIN,
-      // fullscreen footers should clear the keyboard without moving the shell
-      bottom: fullScreen
-        ? keyboardHeight.value > 0
-          ? keyboardHeight.value
-          : 0
-        : bottom,
-      borderTopLeftRadius: BORDER_RADIUS,
-      borderTopRightRadius: BORDER_RADIUS,
-      borderBottomLeftRadius: BORDER_RADIUS,
-      borderBottomRightRadius: BORDER_RADIUS,
+      // animate footer frame so it morphs with the sheet instead of snapping.
+      left: targetLeft,
+      right: targetRight,
+      // keep footer clear of keyboard and anchored above safe area in all modes.
+      bottom: withTiming(targetBottom, { duration: MORPH_DURATION }),
+      borderTopLeftRadius: withTiming(targetRadius, { duration: MORPH_DURATION }),
+      borderTopRightRadius: withTiming(targetRadius, { duration: MORPH_DURATION }),
+      borderBottomLeftRadius: withTiming(targetRadius, { duration: MORPH_DURATION }),
+      borderBottomRightRadius: withTiming(targetRadius, { duration: MORPH_DURATION }),
     };
-  }, [bottom, fullScreen]);
+  }, [bottom, fullScreen, keyboardHeight]);
 
   // every visible surface reads the same drag translation to avoid shearing
   const dragStyle = useAnimatedStyle(() => {
@@ -98,6 +105,7 @@ export const useActionTrayAnimatedStyles = ({
   const contentPaddingStyle = useAnimatedStyle(() => ({
     paddingHorizontal: 0,
     paddingBottom: 0,
+    paddingTop: fullScreen && fullScreenSafeAreaTop ? top : 0,
   }));
 
   // fullscreen fill should arrive with the morph or keyboard transitions expose the old sheet shell

@@ -27,3 +27,5 @@ export const useTrayPages = () => {
 
   return ctx;
 };
+
+export const useOptionalTrayPages = () => useContext(TrayPagesContext);

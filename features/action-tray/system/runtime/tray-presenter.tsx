@@ -36,6 +36,7 @@ type PresentedTray = {
   content: React.ReactNode;
   footer: React.ReactNode;
   fullScreen: boolean;
+  fullScreenSafeAreaTop: boolean;
   fullScreenDraggable: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
@@ -161,6 +162,7 @@ export const TrayPresenter: React.FC = () => {
         </TrayScopeProvider>
       ) : null,
       fullScreen: stepOptions.fullScreen,
+      fullScreenSafeAreaTop: stepOptions.fullScreenSafeAreaTop,
       fullScreenDraggable: stepOptions.fullScreenDraggable,
       containerStyle: stepOptions.style,
       className: stepOptions.className,
@@ -380,6 +382,7 @@ export const TrayPresenter: React.FC = () => {
             }
             trayId={payload?.trayId}
             fullScreen={payload?.fullScreen}
+            fullScreenSafeAreaTop={payload?.fullScreenSafeAreaTop}
             fullScreenDraggable={payload?.fullScreenDraggable}
             containerStyle={payload?.containerStyle}
             className={payload?.className}
