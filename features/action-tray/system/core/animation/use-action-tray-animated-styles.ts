@@ -18,7 +18,6 @@ type Params = {
   footerHeight: { value: number };
   keyboardHeight: { value: number };
   fullScreen: boolean;
-  fullScreenSafeAreaTop: boolean;
   visible: boolean;
 };
 
@@ -31,10 +30,9 @@ export const useActionTrayAnimatedStyles = ({
   footerHeight,
   keyboardHeight,
   fullScreen,
-  fullScreenSafeAreaTop,
   visible,
 }: Params) => {
-  const { top, bottom } = useSafeAreaInsets();
+  const { bottom } = useSafeAreaInsets();
 
   // body content reserves footer height so detached footers never cover content
   const footerSpacerStyle = useAnimatedStyle(() => ({
@@ -105,7 +103,7 @@ export const useActionTrayAnimatedStyles = ({
   const contentPaddingStyle = useAnimatedStyle(() => ({
     paddingHorizontal: 0,
     paddingBottom: 0,
-    paddingTop: fullScreen && fullScreenSafeAreaTop ? top : 0,
+    paddingTop: 0,
   }));
 
   // fullscreen fill should arrive with the morph or keyboard transitions expose the old sheet shell
