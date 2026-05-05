@@ -35,6 +35,7 @@ const PAGE_SPRING_CONFIG = {
 
 const TrayPagesHeaderSlot: React.FC<{
   children: React.ReactNode;
+  shell?: boolean;
 }> = ({ children }) => {
   return <>{children}</>;
 };
@@ -145,7 +146,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
 
     React.Children.forEach(children, (child) => {
       if (isElementOfType(child, TrayPagesHeaderSlot)) {
-        header = child.props.children;
+        header = child.props.shell ? null : child.props.children;
         return;
       }
 
@@ -164,14 +165,16 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
 
   const totalPages = parsed.pages.length;
   const trayId = useTrayScope();
-  const activeTrayId = useTrayHostSelector((state) => state.activeTrayId);
   const activeIndex = useTrayHostSelector((state) => state.activeIndex);
   const activeStepKey = useTrayHostSelector((state) => {
-    if (!trayId || state.activeTrayId !== trayId) {
+    if (!trayId) {
       return null;
     }
 
-    return state.registry[trayId]?.steps[state.activeIndex]?.key ?? null;
+    const stackEntry = state.stack.find((entry) => entry.trayId === trayId);
+    const stepIndex = stackEntry?.index ?? state.activeIndex;
+
+    return state.registry[trayId]?.steps[stepIndex]?.key ?? null;
   });
   const { registerTrayPages } = useTrayHost();
   const resolvedInitialPage = clampPageIndex(initialPage, totalPages);
@@ -241,7 +244,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   }, [pageIndex, setPage]);
 
   useEffect(() => {
-    if (!trayId || activeTrayId !== trayId || !activeStepKey) {
+    if (!trayId || !activeStepKey) {
       return;
     }
 
@@ -255,6 +258,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
       nextPage,
       backPage,
       setPage,
+      progress,
     });
 
     return () => {
@@ -263,11 +267,11 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   }, [
     activeIndex,
     activeStepKey,
-    activeTrayId,
     backPage,
     nextPage,
     pageIndex,
     parsed.footer,
+    progress,
     registerTrayPages,
     setPage,
     totalPages,

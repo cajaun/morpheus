@@ -21,7 +21,7 @@ import { PressableScale } from "@/shared/ui/pressable-scale";
 import { SymbolView } from "expo-symbols";
 import { createCreatingWalletsInfoSteps } from "../creating-wallets-info";
 
-const FULLSCREEN_STEP_INDEX = 2;
+
 
 const OnboardingFooter = () => {
   const { next, index, total, close } = useTrayFlow();
@@ -151,64 +151,62 @@ export const OnboardingPageHeader = () => {
   const isFirstPage = pageIndex === 0;
 
   return (
+    // <View
+    //   style={{
+    //     paddingTop: top + 10,
+    //     flexDirection: "column",
+
+    //     gap: 24,
+    //        alignItems: "center",
+    //   }}
+    // >
     <View
       style={{
-        paddingTop: top + 10,
-        flexDirection: "column",
-        paddingHorizontal: 24,
-        gap: 24,
-           alignItems: "center",
+        paddingTop: 24,
+        flexDirection: "row",
+        alignItems: "center",
       }}
     >
-      <View
+      <PressableScale
+        onPress={isFirstPage ? requestClose : backPage}
         style={{
-          flexDirection: "row",
-          alignItems: "center",
+          width: 32,
+          height: 32,
+          alignItems: "flex-start",
+          justifyContent: "center",
         }}
       >
-        <PressableScale
-          onPress={isFirstPage ? requestClose : backPage}
-          style={{
-            width: 32,
-            height: 32,
-            alignItems: "flex-start",
-            justifyContent: "center",
-          }}
-        >
-          <SymbolView
-            name={"xmark"}
-            type="palette"
-            size={22}
-            weight="semibold"
-            tintColor="#2A2A2C"
-          />
-        </PressableScale>
+        <SymbolView
+          name={"xmark"}
+          type="palette"
+          size={22}
+          weight="semibold"
+          tintColor="#2A2A2C"
+        />
+      </PressableScale>
 
-        <OnboardingPageProgress totalPages={totalPages} progress={progress} />
+      <OnboardingPageProgress totalPages={totalPages} progress={progress} />
 
-        <Tray.Nested
-          steps={CREATING_WALLETS_INFO_STEPS}
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 16,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <SymbolView
-            name="questionmark.circle"
-            type="palette"
-            size={32}
-            tintColor="#2A2A2C"
-          />
-        </Tray.Nested>
-      </View>
-
-      <View>
-        <Text style={trayDemoText.title}>Content Three</Text>
-      </View>
+      <Tray.Nested
+        steps={CREATING_WALLETS_INFO_STEPS}
+        style={{
+          width: 32,
+          height: 32,
+      
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <SymbolView
+          name="questionmark.circle"
+          type="palette"
+          size={32}
+          tintColor="#2A2A2C"
+        />
+      </Tray.Nested>
     </View>
+
+    // </View>
   );
 };
 
@@ -274,7 +272,7 @@ const SecondStep = () => {
 const ThirdStep = () => {
   return (
     <Tray.Pages>
-      <Tray.Pages.Header>
+      <Tray.Pages.Header shell>
         <OnboardingPageHeader />
       </Tray.Pages.Header>
 
@@ -430,6 +428,7 @@ const OnboardingExample = () => {
       {
         key: "content-three",
         content: <ThirdStep />,
+        header: <OnboardingPageHeader />,
         options: {
           className: "bg-white",
           fullScreen: true,
@@ -450,7 +449,7 @@ const OnboardingExample = () => {
   const footer = useMemo(() => <OnboardingFooter />, []);
 
   return (
-    <Tray.Root steps={steps} footer={footer} >
+    <Tray.Root steps={steps} footer={footer}>
       <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Onboarding" />
       </Tray.Trigger>

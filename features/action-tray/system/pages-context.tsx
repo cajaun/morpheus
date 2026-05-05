@@ -1,5 +1,6 @@
 import React, { createContext, useContext } from "react";
-import type { SharedValue } from "react-native-reanimated";
+import { useSharedValue, type SharedValue } from "react-native-reanimated";
+import { useTrayHostSelector, useTrayScope } from "./runtime/tray-context";
 
 // page state stays local because tray steps change shell semantics while pages do not
 type TrayPagesContextValue = {
@@ -18,14 +19,31 @@ const TrayPagesContext = createContext<TrayPagesContextValue | null>(null);
 export const TrayPagesProvider = TrayPagesContext.Provider;
 
 export const useTrayPages = () => {
-  // pages consumers should fail fast when mounted outside the pages boundary
   const ctx = useContext(TrayPagesContext);
+  const trayId = useTrayScope();
+  const fallbackProgress = useSharedValue(0);
+  const registeredPages = useTrayHostSelector((state) =>
+    trayId ? state.registry[trayId]?.pages : undefined,
+  );
 
-  if (!ctx) {
-    throw new Error("Must be used within Tray.Pages");
+  if (ctx) {
+    return ctx;
   }
 
-  return ctx;
+  if (registeredPages) {
+    return registeredPages;
+  }
+
+  return {
+    pageIndex: 0,
+    totalPages: 0,
+    canGoNext: false,
+    canGoBack: false,
+    nextPage: () => {},
+    backPage: () => {},
+    setPage: () => {},
+    progress: fallbackProgress,
+  };
 };
 
 export const useOptionalTrayPages = () => useContext(TrayPagesContext);

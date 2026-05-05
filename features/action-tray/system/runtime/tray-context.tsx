@@ -56,6 +56,7 @@ export type TrayPagesRegistration = {
   nextPage: () => void;
   backPage: () => void;
   setPage: (index: number) => void;
+  progress: SharedValue<number>;
 };
 
 export type ResolvedTrayStepOptions = {

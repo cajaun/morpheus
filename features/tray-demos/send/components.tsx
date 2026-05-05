@@ -142,7 +142,7 @@ export const SendFlowHeader = ({ action }: { action: SendAction }) => {
   return (
     <View
       style={{
-        paddingTop: top + 20,
+        paddingTop: 24,
         paddingBottom: 24,
       }}
     >

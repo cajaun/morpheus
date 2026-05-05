@@ -32,7 +32,7 @@ export const useActionTrayAnimatedStyles = ({
   fullScreen,
   visible,
 }: Params) => {
-  const { bottom } = useSafeAreaInsets();
+  const { bottom, top } = useSafeAreaInsets();
 
   // body content reserves footer height so detached footers never cover content
   const footerSpacerStyle = useAnimatedStyle(() => ({
@@ -52,12 +52,13 @@ export const useActionTrayAnimatedStyles = ({
       left: fullScreen ? 0 : HORIZONTAL_MARGIN,
       right: fullScreen ? 0 : HORIZONTAL_MARGIN,
       bottom: fullScreen ? 0 : bottom,
+      top: fullScreen ? top : "auto",
       height: fullScreen
-        ? SCREEN_HEIGHT
+        ? SCREEN_HEIGHT - top
         : resolvedSheetHeight,
       borderRadius: BORDER_RADIUS,
     };
-  }, [bottom, contentHeight, fullScreen]);
+  }, [bottom, contentHeight, fullScreen, top]);
 
   const footerContainerStyle = useAnimatedStyle(() => {
     const targetLeft = fullScreen ? 0 : HORIZONTAL_MARGIN;

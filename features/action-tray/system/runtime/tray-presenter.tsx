@@ -86,11 +86,13 @@ const resolveNextActiveSlotIndex = (
 const createPresentedTray = ({
   entry,
   registration,
+  previousIndex,
   stackIndex,
   stackLength,
 }: {
   entry: TrayStackEntry;
   registration: TrayRegistration;
+  previousIndex?: number;
   stackIndex: number;
   stackLength: number;
 }): PresentedTray | null => {
@@ -103,7 +105,7 @@ const createPresentedTray = ({
   }
 
   const stepOptions = resolveTrayStepOptions(step.options);
-  const isFirstRender = trayIndex === 0;
+  const isFirstRender = previousIndex === undefined;
   const keyboardTransitionMode: KeyboardTransitionMode =
     stepOptions.keyboardAware ? "entering" : "idle";
 
@@ -468,6 +470,7 @@ export const TrayPresenter: React.FC = () => {
   const stack = useTrayHostSelector((state) => state.stack);
   const keyboardHeight = useTrayHostSelector((state) => state.keyboardHeight);
   const { dismissKeyboardForTray, requestCloseActiveTray } = useTrayHostActions();
+  const previousIndexByTrayRef = useRef<Record<string, number>>({});
 
   const rootHost = useMemo<PresentedTray | null>(() => {
     const entry = stack[0];
@@ -485,6 +488,7 @@ export const TrayPresenter: React.FC = () => {
     return createPresentedTray({
       entry,
       registration,
+      previousIndex: previousIndexByTrayRef.current[entry.trayId],
       stackIndex: 0,
       stackLength: stack.length,
     });
@@ -501,6 +505,7 @@ export const TrayPresenter: React.FC = () => {
       const host = createPresentedTray({
         entry,
         registration,
+        previousIndex: previousIndexByTrayRef.current[entry.trayId],
         stackIndex: index + 1,
         stackLength: stack.length,
       });
@@ -508,6 +513,16 @@ export const TrayPresenter: React.FC = () => {
       return host ? [host] : [];
     });
   }, [registry, stack]);
+
+  useEffect(() => {
+    const nextIndexes: Record<string, number> = {};
+
+    stack.forEach((entry) => {
+      nextIndexes[entry.trayId] = entry.index;
+    });
+
+    previousIndexByTrayRef.current = nextIndexes;
+  }, [stack]);
 
   return (
     <>
