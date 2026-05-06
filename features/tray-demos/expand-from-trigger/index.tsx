@@ -8,6 +8,7 @@ import {
   useTrayFlow,
   type TrayStepDefinition,
 } from "@/features/action-tray";
+import { EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET } from "@/features/action-tray/system/core/constants";
 import FlowHeader from "@/features/action-tray/presets/flow-header";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import {
@@ -17,6 +18,7 @@ import {
 } from "@/shared/theme/tokens";
 import { FieldShell } from "../shared/field-shell";
 import { trayTextInputStyle } from "../shared/input-styles";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const AddContactButtonVisual = () => (
   <View
@@ -139,6 +141,7 @@ const ExpandFooter = () => {
 };
 
 const ExpandFromTriggerDemo = () => {
+  const { bottom } = useSafeAreaInsets();
   const steps = useMemo<TrayStepDefinition[]>(
     () => [
       {
@@ -200,7 +203,7 @@ const ExpandFromTriggerDemo = () => {
       >
         <View
           style={{
-            bottom: 34,
+            bottom: bottom + EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
             left: 28,
             position: "absolute",
             right: 28,

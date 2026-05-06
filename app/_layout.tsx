@@ -6,6 +6,7 @@ import { TrayProvider } from "@/features/action-tray";
 import "../global.css";
 
 export default function RootLayout() {
+
   const [loaded] = useFonts({
     "Sf-black": require("../assets/fonts/SF-Pro-Rounded-Black.otf"),
     "Sf-bold": require("../assets/fonts/SF-Pro-Rounded-Bold.otf"),
@@ -19,6 +20,8 @@ export default function RootLayout() {
   if (!loaded) {
     return null;
   }
+
+
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

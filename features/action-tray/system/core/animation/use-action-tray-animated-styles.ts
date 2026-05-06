@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { TrayTransitionOptions } from "../../runtime/tray-context";
 import {
   BORDER_RADIUS,
+  EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_FOOTER_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT,
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
@@ -79,7 +80,7 @@ export const useActionTrayAnimatedStyles = ({
       const targetWidth = SCREEN_WIDTH - targetLeft - targetRight;
       const collapsedTop =
         SCREEN_HEIGHT -
-        targetBottom -
+        (bottom + EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET) -
         EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT;
 
       return {
@@ -141,7 +142,9 @@ export const useActionTrayAnimatedStyles = ({
       const targetTop =
         SCREEN_HEIGHT - targetBottom - targetFooterHeight;
       const collapsedTop =
-        SCREEN_HEIGHT - targetBottom - EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT;
+        SCREEN_HEIGHT -
+        (bottom + EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET) -
+        EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT;
 
       return {
         left: targetLeft,
