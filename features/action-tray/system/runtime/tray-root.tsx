@@ -4,6 +4,7 @@ import {
   useTrayHostActions,
   type TrayRegistration,
   type TrayStepDefinition,
+  type TrayTransitionOptions,
 } from "./tray-context";
 
 // root turns local step definitions into a runtime registration entry
@@ -13,6 +14,7 @@ type TrayRootProps = {
   steps: TrayStepDefinition[];
   footer?: React.ReactNode;
   dismissible?: boolean;
+  transition?: TrayTransitionOptions;
 };
 
 export const TrayRoot: React.FC<TrayRootProps> = ({
@@ -21,6 +23,7 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
   steps,
   footer,
   dismissible,
+  transition,
 }) => {
   const reactId = useId();
   // explicit ids support deterministic tests and cross component references
@@ -31,8 +34,9 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
       steps,
       footer,
       dismissible,
+      transition,
     }),
-    [dismissible, footer, steps],
+    [dismissible, footer, steps, transition],
   );
 
   useEffect(() => {

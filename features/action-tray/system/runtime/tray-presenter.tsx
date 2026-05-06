@@ -18,6 +18,7 @@ import {
   useTrayHostSelector,
   type TrayRegistration,
   type TrayStackEntry,
+  type TrayTransitionOptions,
 } from "./tray-context";
 
 // the presenter maps store state onto a bounded pool of host slots
@@ -41,6 +42,7 @@ type PresentedTray = {
   fullScreenSafeAreaTop: boolean;
   fullScreenDraggable: boolean;
   dismissible: boolean;
+  transition?: TrayTransitionOptions;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
@@ -150,6 +152,7 @@ const createPresentedTray = ({
     fullScreenSafeAreaTop: stepOptions.fullScreenSafeAreaTop,
     fullScreenDraggable: stepOptions.fullScreenDraggable,
     dismissible: registration.dismissible ?? true,
+    transition: registration.transition,
     containerStyle: stepOptions.style,
     className: stepOptions.className,
     footerStyle: stepOptions.footerStyle,
@@ -192,6 +195,7 @@ const PresentedActionTray = ({
       fullScreenSafeAreaTop={payload.fullScreenSafeAreaTop}
       fullScreenDraggable={payload.fullScreenDraggable}
       dismissible={payload.dismissible}
+      transition={payload.transition}
       containerStyle={payload.containerStyle}
       className={payload.className}
       footerStyle={payload.footerStyle}

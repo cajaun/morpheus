@@ -10,6 +10,7 @@ import { type SharedValue } from "react-native-reanimated";
 import { log } from "./logger";
 import { SCREEN_HEIGHT, TRAY_KEYBOARD_GAP } from "./constants";
 import { KeyboardTransitionMode } from "./action-tray-types";
+import type { TrayTransitionOptions } from "../runtime/tray-context";
 import { useActionTrayContentSync } from "./controller/use-action-tray-content-sync";
 import { useActionTrayHeightCache } from "./controller/use-action-tray-height-cache";
 import { useActionTrayMeasurements } from "./controller/use-action-tray-measurements";
@@ -33,6 +34,7 @@ type Params = {
   fullScreen?: boolean;
   fullScreenSafeAreaTop?: boolean;
   fullScreenDraggable?: boolean;
+  transition?: TrayTransitionOptions;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
@@ -56,6 +58,7 @@ export const useActionTrayController = ({
   fullScreen,
   fullScreenSafeAreaTop,
   fullScreenDraggable,
+  transition,
   containerStyle,
   className,
   footerStyle,
@@ -234,6 +237,7 @@ export const useActionTrayController = ({
     presentation.shared.closeGeneration.value += 1;
     presentation.shared.translateY.value = SCREEN_HEIGHT;
     presentation.shared.animationTravel.value = SCREEN_HEIGHT;
+    presentation.shared.originProgress.value = 1;
     presentation.shared.surfaceOpacity.value = 0;
     presentation.shared.active.value = false;
     renderState.actions.clear();
@@ -243,6 +247,7 @@ export const useActionTrayController = ({
     presentation.shared.active,
     presentation.shared.animationTravel,
     presentation.shared.closeGeneration,
+    presentation.shared.originProgress,
     presentation.shared.surfaceOpacity,
     presentation.shared.translateY,
     measurements.actions.reset,
@@ -266,8 +271,10 @@ export const useActionTrayController = ({
       animationTravel: presentation.shared.animationTravel,
       closeGeneration: presentation.shared.closeGeneration,
       surfaceOpacity: presentation.shared.surfaceOpacity,
+      originProgress: presentation.shared.originProgress,
     },
     resolveClosedTranslateY: presentation.helpers.resolveClosedTranslateY,
+    transition,
   });
 
   // content sync updates the committed snapshot without losing transition continuity
@@ -322,6 +329,7 @@ export const useActionTrayController = ({
       surfaceOpacity: presentation.shared.surfaceOpacity,
       totalHeight: presentation.shared.totalHeight,
       progress: presentation.shared.progress,
+      originProgress: presentation.shared.originProgress,
     },
     state: {
       layoutEnabled: measurements.state.layoutEnabled,

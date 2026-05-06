@@ -11,9 +11,12 @@ import {
   runOnJS,
   runOnUI,
   withSpring,
+  withTiming,
   type SharedValue,
 } from "react-native-reanimated";
 import {
+  EXPAND_FROM_TRIGGER_CLOSE_DURATION,
+  EXPAND_FROM_TRIGGER_OPEN_DURATION,
   SCREEN_HEIGHT,
   TRAY_SPRING_CONFIG,
 } from "../constants";
@@ -23,6 +26,7 @@ import {
   markTrayOpenStarted,
   markTrayReadyToOpen,
 } from "../../telemetry/tray-open-timing";
+import type { TrayTransitionOptions } from "../../runtime/tray-context";
 
 // lifecycle owns the tray state machine around measurement springing and teardown
 type Params = {
@@ -69,11 +73,13 @@ type Params = {
     animationTravel: SharedValue<number>;
     closeGeneration: SharedValue<number>;
     surfaceOpacity: SharedValue<number>;
+    originProgress: SharedValue<number>;
   };
   resolveClosedTranslateY: (
     nextFooterHeight?: number,
     nextContentHeight?: number,
   ) => number;
+  transition?: TrayTransitionOptions;
 };
 
 export const useActionTrayOpenCloseLifecycle = ({
@@ -86,6 +92,7 @@ export const useActionTrayOpenCloseLifecycle = ({
   measurements,
   shared,
   resolveClosedTranslateY,
+  transition,
 }: Params) => {
   const justOpenedRef = useRef(false);
   const [isSurfaceReady, setIsSurfaceReady] = useState(true);
@@ -111,6 +118,7 @@ export const useActionTrayOpenCloseLifecycle = ({
     shared.translateY.value = SCREEN_HEIGHT;
     shared.animationTravel.value = SCREEN_HEIGHT;
     shared.surfaceOpacity.value = 1;
+    shared.originProgress.value = 1;
     setIsSurfaceReady(true);
     clear();
     reset();
@@ -143,19 +151,42 @@ export const useActionTrayOpenCloseLifecycle = ({
       nextContentHeight,
     );
 
+    const shouldExpandFromTrigger =
+      transition?.open === "expandFromTrigger";
+
     // the ui thread spring owns the visible open transition from travel to zero
     runOnUI(
       (
         nextOpenTravel: number,
         nextFooterHeightValue: number,
+        expandFromTrigger: boolean,
       ) => {
         "worklet";
 
         shared.footerHeight.value = nextFooterHeightValue;
         shared.animationTravel.value = nextOpenTravel;
-        shared.translateY.value = nextOpenTravel;
+        shared.translateY.value = expandFromTrigger ? 0 : nextOpenTravel;
+        shared.originProgress.value = expandFromTrigger ? 0 : 1;
         shared.surfaceOpacity.value = 1;
         shared.active.value = true;
+
+        if (expandFromTrigger) {
+          shared.originProgress.value = withTiming(
+            1,
+            { duration: EXPAND_FROM_TRIGGER_OPEN_DURATION },
+            (finished) => {
+              if (finished) {
+                runOnJS(markTrayOpenFinished)(
+                  rootTrayId ?? trayId ?? "unknown",
+                  trayId,
+                );
+                runOnJS(log)("EXPAND OPEN FINISHED");
+                runOnJS(enableLayout)();
+              }
+            },
+          );
+          return;
+        }
 
         shared.translateY.value = withSpring(
           0,
@@ -172,7 +203,7 @@ export const useActionTrayOpenCloseLifecycle = ({
           },
         );
       }
-    )(openTravel, nextFooterHeight);
+    )(openTravel, nextFooterHeight, shouldExpandFromTrigger);
 
     setIsSurfaceReady(true);
   }, [
@@ -183,12 +214,15 @@ export const useActionTrayOpenCloseLifecycle = ({
     resolveClosedTranslateY,
     resolvedContentHeight,
     shared,
+    transition?.open,
   ]);
 
   useLayoutEffect(() => {
     if (visible) {
       // hide the shell until we know the geometry that defines the spring travel
       shared.translateY.value = SCREEN_HEIGHT;
+      shared.originProgress.value =
+        transition?.open === "expandFromTrigger" ? 0 : 1;
       shared.surfaceOpacity.value = 0;
       shared.closeGeneration.value += 1;
       justOpenedRef.current = true;
@@ -227,6 +261,36 @@ export const useActionTrayOpenCloseLifecycle = ({
       prepareForClose();
       shared.active.value = false;
 
+      const shouldReverseExpand =
+        transition?.close === "collapseToTrigger" &&
+        transition?.open === "expandFromTrigger" &&
+        shared.translateY.value < 8;
+
+      if (shouldReverseExpand) {
+        shared.translateY.value = 0;
+        shared.originProgress.value = withTiming(
+          0,
+          { duration: EXPAND_FROM_TRIGGER_CLOSE_DURATION },
+          (finished) => {
+            if (!finished) {
+              return;
+            }
+
+            if (shared.closeGeneration.value === myGeneration) {
+              runOnJS(handleCloseSpringFinished)();
+            } else {
+              runOnJS(log)(
+                "COLLAPSE CLOSE — stale, skipping reset",
+                myGeneration,
+                shared.closeGeneration.value,
+              );
+            }
+          },
+        );
+        return;
+      }
+
+      shared.originProgress.value = 1;
       shared.translateY.value = withSpring(
         closeTravel,
         TRAY_SPRING_CONFIG,

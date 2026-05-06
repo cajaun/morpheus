@@ -26,6 +26,10 @@ export default function RootLayout() {
         <TrayProvider>
           <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="expand-from-trigger"
+              options={{ headerShown: false }}
+            />
           </Stack>
         </TrayProvider>
       </KeyboardProvider>

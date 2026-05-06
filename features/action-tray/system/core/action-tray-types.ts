@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
+import type { TrayTransitionOptions } from "../runtime/tray-context";
 
 export type KeyboardTransitionMode = "idle" | "entering" | "exiting";
 
@@ -22,6 +23,7 @@ export type ActionTrayProps = {
   fullScreenSafeAreaTop?: boolean;
   fullScreenDraggable?: boolean;
   dismissible?: boolean;
+  transition?: TrayTransitionOptions;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;

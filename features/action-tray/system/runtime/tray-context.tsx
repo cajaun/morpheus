@@ -11,6 +11,13 @@ import type { SharedValue } from "react-native-reanimated";
 // store scope and step options are separate concerns so they get separate contexts
 export type TrayFullScreenCloseBehavior = "dismiss" | "returnToShell";
 export type TrayFullScreenTransition = "morph" | "slide";
+export type TrayOpenTransition = "slide" | "expandFromTrigger";
+export type TrayCloseTransition = "slide" | "collapseToTrigger";
+
+export type TrayTransitionOptions = {
+  open?: TrayOpenTransition;
+  close?: TrayCloseTransition;
+};
 
 export type TrayStepOptions = {
   scale?: boolean;
@@ -37,6 +44,7 @@ export type TrayRegistration = {
   steps: TrayStepDefinition[];
   footer?: React.ReactNode;
   dismissible?: boolean;
+  transition?: TrayTransitionOptions;
   pages?: TrayPagesRegistration;
 };
 
@@ -108,7 +116,10 @@ export type TrayHostActionsValue = {
   unregisterTray: (id: string) => void;
   registerTrayPages: (id: string, pages: TrayPagesRegistration | null) => void;
   openTray: (id: string) => void;
-  openNestedTray: (id: string, parentTrayId?: string | null) => void;
+  openNestedTray: (
+    id: string,
+    parentTrayId?: string | null,
+  ) => void;
   closeActiveTray: () => void;
   requestCloseActiveTray: () => void;
   nextStep: () => void;

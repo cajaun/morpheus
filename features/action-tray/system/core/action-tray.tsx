@@ -1,6 +1,6 @@
 import React, { forwardRef, useImperativeHandle, useMemo } from "react";
 import { StyleSheet } from "react-native";
-import Animated from "react-native-reanimated";
+import Animated, { useDerivedValue } from "react-native-reanimated";
 import { GestureDetector } from "react-native-gesture-handler";
 import { KeyboardStickyView } from "react-native-keyboard-controller";
 import { Backdrop } from "../primitives/backdrop";
@@ -38,6 +38,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       fullScreenSafeAreaTop,
       fullScreenDraggable,
       dismissible = true,
+      transition,
       visible,
       interactive = true,
       keyboardTransitionMode = "idle",
@@ -65,6 +66,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       fullScreen,
       fullScreenSafeAreaTop,
       fullScreenDraggable,
+      transition,
       containerStyle,
       className,
       footerStyle,
@@ -84,6 +86,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         surfaceOpacity,
         totalHeight,
         progress,
+        originProgress,
       },
       state: {
         layoutEnabled,
@@ -113,6 +116,14 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     useImperativeHandle(ref, () => imperativeApi, [imperativeApi]);
 
     const presentationFullScreen = renderedFullScreen;
+    const shouldUseOriginTransition =
+      transition?.open === "expandFromTrigger" && !presentationFullScreen;
+    const originBackdropProgress = useDerivedValue(
+      () => originProgress.value * progress.value,
+    );
+    const backdropProgress = shouldUseOriginTransition
+      ? originBackdropProgress
+      : progress;
 
     // drag should not start before layout and keyboard state settle
     const gesture = useActionTrayGesture({
@@ -134,7 +145,10 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       contentPaddingStyle,
       dragStyle,
       surfaceVisibilityStyle,
+      originSurfaceVisibilityStyle,
+      contentRevealStyle,
       footerVisibilityStyle,
+      footerContentFrameStyle,
       fullScreenSurfaceFillStyle,
     } = useActionTrayAnimatedStyles({
       translateY,
@@ -145,6 +159,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       keyboardHeight: trayKeyboardHeight,
       fullScreen: presentationFullScreen,
       visible,
+      originProgress,
+      transition,
     });
 
     const layoutAnimationConfig = useMemo(
@@ -180,12 +196,13 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
               trayLayoutStyle,
               renderedContainerStyle,
               surfaceVisibilityStyle,
+              originSurfaceVisibilityStyle,
               dragStyle,
               style,
             ]}
             layout={shouldUseLayoutAnimation ? layoutAnimationConfig : undefined}
           >
-            <Animated.View style={trayStyles.content}>
+            <Animated.View style={[trayStyles.content, contentRevealStyle]}>
               <Animated.View
                 style={contentPaddingStyle}
                 onLayout={handleContentLayout}
@@ -207,16 +224,18 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           onLayout={handleVisibleFooterLayout}
           style={[
             trayStyles.footer,
-            footerContainerStyle,
             dragStyle,
             renderedFooterStyle,
+            footerContainerStyle,
             footerVisibilityStyle,
           ]}
           pointerEvents={
             renderedFooter && interactive && isSurfaceReady ? "auto" : "none"
           }
         >
-          {renderedFooter ?? null}
+          <Animated.View style={footerContentFrameStyle}>
+            {renderedFooter ?? null}
+          </Animated.View>
         </Animated.View>
       </>
     );
@@ -246,8 +265,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         <Backdrop
           onTap={dismissible ? handleRequestClose : () => {}}
           isRendered={renderedTrayId !== undefined}
-          interactive={interactive && dismissible}
-          progress={progress}
+          interactive={interactive}
+          progress={backdropProgress}
         />
 
         {renderedTrayId !== undefined && (
