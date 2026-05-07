@@ -140,7 +140,13 @@ const ExpandFooter = () => {
   );
 };
 
-const ExpandFromTriggerDemo = () => {
+type ExpandFromTriggerDemoProps = {
+  showBackLink?: boolean;
+};
+
+const ExpandFromTriggerDemo = ({
+  showBackLink = true,
+}: ExpandFromTriggerDemoProps) => {
   const { bottom } = useSafeAreaInsets();
   const steps = useMemo<TrayStepDefinition[]>(
     () => [
@@ -160,24 +166,26 @@ const ExpandFromTriggerDemo = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F5F5F5" }}>
-      <View style={{ paddingHorizontal: 24, paddingTop: 64 }}>
-        <Link
-          href="/"
-          style={{
-            color: "#8B8F98",
-            fontFamily: "Sf-semibold",
-            fontSize: 16,
-          }}
-        >
-          Back
-        </Link>
-      </View>
+      {showBackLink ? (
+        <View style={{ paddingHorizontal: 24, paddingTop: 64 }}>
+          <Link
+            href="/"
+            style={{
+              color: "#8B8F98",
+              fontFamily: "Sf-semibold",
+              fontSize: 16,
+            }}
+          >
+            Back
+          </Link>
+        </View>
+      ) : null}
 
       <View
         style={{
           flex: 1,
           alignItems: "center",
-          paddingTop: 72,
+          paddingTop: showBackLink ? 72 : 136,
         }}
       >
         <Text
