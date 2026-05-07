@@ -132,7 +132,7 @@ const ExpandFooter = () => {
   };
 
   return (
-    <Tray.Footer className = "rounded-full"style={{ width: "100%", backgroundColor: "white", }}>
+    <Tray.Footer className = "rounded-full" style={{ width: "100%", backgroundColor: "white", }}>
       <PressableScale onPress={handlePress} style={{ width: "100%" }}>
         <AddContactButtonVisual />
       </PressableScale>
