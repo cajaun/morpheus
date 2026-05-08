@@ -5,6 +5,7 @@ import Animated, {
   Easing,
   runOnJS,
   useAnimatedStyle,
+  withDelay,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
@@ -18,6 +19,8 @@ export type PressableScaleProps = {
 };
 
 const ANIMATION_DURATION = 250;
+const TAP_MAX_DISTANCE = 8;
+const SCALE_ACTIVATION_DELAY_MS = 80;
 
 const PressableScale: React.FC<PressableScaleProps> = ({
   children,
@@ -30,6 +33,7 @@ const PressableScale: React.FC<PressableScaleProps> = ({
 
   const gesture = Gesture.Tap()
     .maxDuration(4000)
+    .maxDistance(TAP_MAX_DISTANCE)
     .onBegin(() => {
       active.value = true;
     })
@@ -47,10 +51,18 @@ const PressableScale: React.FC<PressableScaleProps> = ({
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       {
-        scale: withTiming(active.value ? 0.95 : 1, {
-          duration: ANIMATION_DURATION,
-          easing: Easing.bezier(0.4, 0, 0.2, 1),
-        }),
+        scale: active.value
+          ? withDelay(
+              SCALE_ACTIVATION_DELAY_MS,
+              withTiming(0.95, {
+                duration: ANIMATION_DURATION,
+                easing: Easing.bezier(0.4, 0, 0.2, 1),
+              }),
+            )
+          : withTiming(1, {
+              duration: ANIMATION_DURATION,
+              easing: Easing.bezier(0.4, 0, 0.2, 1),
+            }),
       },
     ],
   }));

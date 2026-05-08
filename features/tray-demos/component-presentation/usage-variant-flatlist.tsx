@@ -3,11 +3,11 @@ import React, { memo, useCallback, useRef, useState } from "react";
 import {
   FlatList,
   Platform,
-  Pressable,
   StyleSheet,
   useWindowDimensions,
   View,
 } from "react-native";
+import { PressableScale } from "@/shared/ui/pressable-scale";
 import Animated, {
   Extrapolation,
   interpolate,
@@ -20,9 +20,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PaginationIndicator } from "./pagination-indicator";
 import type { UsageVariant } from "./types";
 import { UsageVariantsSelect } from "./usage-variants-select";
+import { useTrayDemoTheme } from "../theme";
 
 type UsageVariantFlatListProps = {
   data: UsageVariant[];
+  initialVariantValue?: string;
   scrollEnabled?: boolean;
 };
 
@@ -68,11 +70,19 @@ VariantItem.displayName = "VariantItem";
 
 export const UsageVariantFlatList = ({
   data,
+  initialVariantValue,
   scrollEnabled = true,
 }: UsageVariantFlatListProps) => {
-  const [currentVariant, setCurrentVariant] = useState<UsageVariant>(data[0]!);
+  const initialIndex = Math.max(
+    0,
+    data.findIndex((item) => item.value === initialVariantValue),
+  );
+  const [currentVariant, setCurrentVariant] = useState<UsageVariant>(
+    data[initialIndex] ?? data[0]!,
+  );
   const [selectorOpen, setSelectorOpen] = useState(false);
   const insets = useSafeAreaInsets();
+  const theme = useTrayDemoTheme();
   const { width, height } = useWindowDimensions();
   const listRef = useRef<FlatList<UsageVariant>>(null);
   const scrollY = useSharedValue(0);
@@ -115,11 +125,26 @@ export const UsageVariantFlatList = ({
     setSelectorOpen(true);
   }, [data.length]);
 
+  const selectVariant = useCallback(
+    (variant: UsageVariant) => {
+      setCurrentVariant(variant);
+      listRef.current?.scrollToIndex({
+        animated: false,
+        index: data.indexOf(variant),
+      });
+    },
+    [data],
+  );
+
   return (
-    <>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Animated.FlatList
         ref={listRef}
         data={data}
+        alwaysBounceVertical={false}
+        automaticallyAdjustContentInsets={false}
+        bounces={false}
+        contentInsetAdjustmentBehavior="never"
         decelerationRate="fast"
         getItemLayout={(_, index) => ({
           index,
@@ -130,7 +155,10 @@ export const UsageVariantFlatList = ({
         keyboardShouldPersistTaps="handled"
         onScroll={scrollHandler}
         onViewableItemsChanged={handleViewableItemsChanged}
+        overScrollMode="never"
         pagingEnabled
+        initialScrollIndex={initialIndex}
+        style={{ backgroundColor: theme.background }}
         renderItem={({ item, index }) => (
           <VariantItem
             height={height}
@@ -144,14 +172,10 @@ export const UsageVariantFlatList = ({
         scrollEnabled={scrollEnabled}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        snapToInterval={itemHeight}
         viewabilityConfig={viewabilityConfig}
       />
 
-      <Pressable
-        accessibilityLabel="Select tray example"
-        disabled={data.length === 1}
-        hitSlop={12}
+      <PressableScale
         onPress={openSelector}
         style={[
           styles.pagination,
@@ -171,7 +195,7 @@ export const UsageVariantFlatList = ({
             />
           ))}
         </View>
-      </Pressable>
+      </PressableScale>
 
       <UsageVariantsSelect
         data={data}
@@ -181,11 +205,14 @@ export const UsageVariantFlatList = ({
         setOpen={setSelectorOpen}
         variant={currentVariant}
       />
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   pagination: {
     left: 24,
     position: "absolute",

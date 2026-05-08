@@ -5,6 +5,7 @@ import Animated, {
   type SharedValue,
   useAnimatedStyle,
 } from "react-native-reanimated";
+import { useTrayDemoTheme } from "../theme";
 
 type PaginationIndicatorProps = {
   index: number;
@@ -19,6 +20,7 @@ export const PaginationIndicator = ({
   label,
   scrollY,
 }: PaginationIndicatorProps) => {
+  const theme = useTrayDemoTheme();
   const barStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
       scrollY.value / itemSize,
@@ -62,7 +64,7 @@ export const PaginationIndicator = ({
       <Animated.View
         style={[
           {
-            backgroundColor: "#151515",
+            backgroundColor: theme.foreground,
             height: 2,
             transformOrigin: ["0%", "50%", 0],
             width: 12,
@@ -83,7 +85,7 @@ export const PaginationIndicator = ({
         <Text
           className="font-sf-medium"
           numberOfLines={1}
-          style={{ color: "#151515", fontSize: 18 }}
+          style={{ color: theme.foreground, fontSize: 18 }}
         >
           {label}
         </Text>

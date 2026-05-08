@@ -1,6 +1,6 @@
 import { BlurView } from "expo-blur";
 import { SymbolView } from "expo-symbols";
-import React, { PropsWithChildren, useEffect } from "react";
+import React, { useEffect } from "react";
 import {
   FlatList,
   Modal,
@@ -8,6 +8,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,36 +20,46 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
+import { EdgeBlur } from "../search/effects/edge-blur";
+import { useTrayDemoTheme } from "../theme";
 import type { UsageVariant } from "./types";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const SPRING_CONFIG = { damping: 160, stiffness: 1600 };
-const CLOSED_ORIGIN_EXTRA_OFFSET = 40;
 
 type UsageVariantsSelectProps = {
   data: UsageVariant[];
   listRef: React.RefObject<FlatList<UsageVariant> | null>;
+  listIndexOffset?: number;
   open: boolean;
   setVariant: (variant: UsageVariant) => void;
   setOpen: (open: boolean) => void;
   variant: UsageVariant;
 };
 
-type AnimatedOptionRowProps = PropsWithChildren<{
+type AnimatedOptionRowProps = {
+  closedOriginOffset: number;
   containerHeight: SharedValue<number>;
   index: number;
   isOpen: SharedValue<boolean>;
+  item: UsageVariant;
   numberOfRows: number;
-}>;
+  onSelect: (variant: UsageVariant) => void;
+  selected: boolean;
+};
 
 const AnimatedOptionRow = ({
-  children,
+  closedOriginOffset,
   containerHeight,
   index,
   isOpen,
+  item,
   numberOfRows,
+  onSelect,
+  selected,
 }: AnimatedOptionRowProps) => {
+  const theme = useTrayDemoTheme();
   const rowStyle = useAnimatedStyle(() => ({
     transform: [
       {
@@ -60,18 +71,78 @@ const AnimatedOptionRow = ({
             ? 0
             : containerHeight.value -
                 index * (containerHeight.value / numberOfRows) +
-                CLOSED_ORIGIN_EXTRA_OFFSET,
+                closedOriginOffset,
           SPRING_CONFIG,
         ),
       },
     ],
   }));
 
-  return <Animated.View style={rowStyle}>{children}</Animated.View>;
+  const selectedChromeStyle = useAnimatedStyle(
+    () => ({
+      opacity: selected
+        ? withTiming(isOpen.value ? 1 : 0, { duration: 220 })
+        : 0,
+    }),
+    [selected],
+  );
+
+  return (
+    <Animated.View
+      style={[
+        rowStyle,
+        selected ? styles.selectedOptionFrame : styles.optionFrame,
+      ]}
+    >
+      <Pressable
+        onPress={() => onSelect(item)}
+        style={[
+          styles.option,
+          selected && styles.selectedOptionPressable,
+        ]}
+      >
+        {selected ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFillObject,
+              styles.selectedOptionBackground,
+              { backgroundColor: theme.selectedRowBackground },
+              selectedChromeStyle,
+            ]}
+          />
+        ) : null}
+        <Text
+          className="font-sf-semibold"
+          numberOfLines={1}
+          style={[styles.optionLabel, { color: theme.foreground }]}
+        >
+          {item.label}
+        </Text>
+        {selected ? (
+          <Animated.View
+            style={[
+              styles.selectedIndicator,
+              { backgroundColor: theme.selectionCheckBackground },
+              selectedChromeStyle,
+            ]}
+          >
+            <SymbolView
+              name="checkmark"
+              tintColor={theme.selectionCheckForeground}
+              size={12}
+              weight="bold"
+            />
+          </Animated.View>
+        ) : null}
+      </Pressable>
+    </Animated.View>
+  );
 };
 
 export const UsageVariantsSelect = ({
   data,
+  listIndexOffset = 0,
   listRef,
   open,
   setVariant,
@@ -79,8 +150,11 @@ export const UsageVariantsSelect = ({
   variant,
 }: UsageVariantsSelectProps) => {
   const insets = useSafeAreaInsets();
+  const theme = useTrayDemoTheme();
+  const { height } = useWindowDimensions();
   const isOpen = useSharedValue(false);
   const containerHeight = useSharedValue(0);
+  const closedOriginOffset = Math.max(0, height - insets.top - 120);
 
   useEffect(() => {
     isOpen.value = open;
@@ -108,7 +182,7 @@ export const UsageVariantsSelect = ({
     setVariant(nextVariant);
     listRef.current?.scrollToIndex({
       animated: false,
-      index: data.indexOf(nextVariant),
+      index: data.indexOf(nextVariant) + listIndexOffset,
     });
     setOpen(false);
   };
@@ -124,7 +198,7 @@ export const UsageVariantsSelect = ({
         {Platform.OS === "ios" ? (
           <AnimatedBlurView
             animatedProps={blurAnimatedProps}
-            tint="systemUltraThinMaterialLight"
+            tint={theme.fullScreenBlurTint}
             style={StyleSheet.absoluteFill}
           />
         ) : (
@@ -132,7 +206,7 @@ export const UsageVariantsSelect = ({
             onPress={() => setOpen(false)}
             style={[
               StyleSheet.absoluteFill,
-              { backgroundColor: "rgba(245, 245, 245, 0.96)" },
+              { backgroundColor: theme.androidVeil },
               androidBackdropStyle,
             ]}
           />
@@ -166,41 +240,22 @@ export const UsageVariantsSelect = ({
               return (
                 <AnimatedOptionRow
                   key={item.value}
+                  closedOriginOffset={closedOriginOffset}
                   containerHeight={containerHeight}
                   index={index}
                   isOpen={isOpen}
+                  item={item}
                   numberOfRows={data.length}
-                >
-                  <Pressable
-                    onPress={() => selectVariant(item)}
-                    style={[
-                      styles.option,
-                      selected && styles.selectedOption,
-                    ]}
-                  >
-                    <Text
-                      className="font-sf-semibold"
-                      numberOfLines={1}
-                      style={styles.optionLabel}
-                    >
-                      {item.label}
-                    </Text>
-                    {selected ? (
-                      <View style={styles.selectedIndicator}>
-                        <SymbolView
-                          name="checkmark"
-                          tintColor="#FFFFFF"
-                          size={12}
-                          weight="bold"
-                        />
-                      </View>
-                    ) : null}
-                  </Pressable>
-                </AnimatedOptionRow>
+                  onSelect={selectVariant}
+                  selected={selected}
+                />
               );
             })}
           </Animated.View>
         </Animated.ScrollView>
+
+        <EdgeBlur edge="top" height={insets.top + 92} />
+        <EdgeBlur edge="bottom" height={insets.bottom + 100} />
 
         <Pressable
           accessibilityLabel="Close tray example selector"
@@ -208,13 +263,14 @@ export const UsageVariantsSelect = ({
           style={[
             styles.closeButton,
             {
+              backgroundColor: theme.foreground,
               bottom: insets.bottom + 24,
             },
           ]}
         >
           <SymbolView
             name="xmark"
-            tintColor="#FFFFFF"
+            tintColor={theme.background}
             size={24}
             weight="regular"
           />
@@ -227,7 +283,6 @@ export const UsageVariantsSelect = ({
 const styles = StyleSheet.create({
   closeButton: {
     alignItems: "center",
-    backgroundColor: "#151515",
     borderCurve: "continuous",
     borderRadius: 24,
     height: 48,
@@ -239,7 +294,6 @@ const styles = StyleSheet.create({
   },
   option: {
     alignItems: "center",
-    alignSelf: "flex-start",
     borderCurve: "continuous",
     borderRadius: 18,
     flexDirection: "row",
@@ -249,8 +303,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     paddingVertical: 8,
   },
+  optionFrame: {
+    alignSelf: "flex-start",
+  },
   optionLabel: {
-    color: "#151515",
     fontSize: 18,
   },
   optionsContainer: {
@@ -258,18 +314,24 @@ const styles = StyleSheet.create({
   },
   selectedIndicator: {
     alignItems: "center",
-    backgroundColor: "#151515",
     borderRadius: 13,
     height: 26,
     justifyContent: "center",
     width: 26,
   },
-  selectedOption: {
-    alignSelf: "stretch",
-    backgroundColor: "#FFFFFF",
+  selectedOptionBackground: {
+    borderCurve: "continuous",
+    borderRadius: 18,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     shadowRadius: 24,
+  },
+  selectedOptionFrame: {
+    alignSelf: "stretch",
+  },
+  selectedOptionPressable: {
+    alignSelf: "stretch",
+    width: "100%",
   },
 });

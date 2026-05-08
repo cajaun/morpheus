@@ -19,6 +19,7 @@ import {
 import { FieldShell } from "../shared/field-shell";
 import { trayTextInputStyle } from "../shared/input-styles";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTrayDemoTheme } from "../theme";
 
 const AddContactButtonVisual = () => (
   <View
@@ -148,6 +149,7 @@ const ExpandFromTriggerDemo = ({
   showBackLink = true,
 }: ExpandFromTriggerDemoProps) => {
   const { bottom } = useSafeAreaInsets();
+  const theme = useTrayDemoTheme();
   const steps = useMemo<TrayStepDefinition[]>(
     () => [
       {
@@ -165,13 +167,13 @@ const ExpandFromTriggerDemo = ({
   const footer = useMemo(() => <ExpandFooter />, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F5F5F5" }}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
       {showBackLink ? (
         <View style={{ paddingHorizontal: 24, paddingTop: 64 }}>
           <Link
             href="/"
             style={{
-              color: "#8B8F98",
+              color: theme.muted,
               fontFamily: "Sf-semibold",
               fontSize: 16,
             }}
@@ -191,7 +193,7 @@ const ExpandFromTriggerDemo = ({
         <Text
           className="font-sf-semiBold"
           style={{
-            color: "#8B8F98",
+            color: theme.muted,
             fontSize: 22,
             lineHeight: 28,
             letterSpacing: 0.2,
