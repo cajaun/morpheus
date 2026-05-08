@@ -21,6 +21,11 @@ import type {
 
 const EXPAND_FROM_TRIGGER_COLLAPSED_RADIUS =
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT / 2;
+const EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_TOP_PADDING = 6;
+const EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT =
+  EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT +
+  EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_TOP_PADDING +
+  TRAY_VERTICAL_PADDING;
 
 type Params = Pick<
   ActionTrayAnimatedStyleParams,
@@ -47,16 +52,22 @@ export const useActionTrayFrameStyles = ({
     transition?.origin === "fullScreenFooter" ? collapsedBottomInset : 0;
 
   const footerSpacerStyle = useAnimatedStyle(() => ({
-    height: hasFooter.value ? footerHeight.value : 0,
+    height: hasFooter.value
+      ? shouldUseOriginTransition
+        ? EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT
+        : footerHeight.value
+      : 0,
   }));
 
   const trayLayoutStyle = useAnimatedStyle(() => {
+    const resolvedFooterHeight = hasFooter.value
+      ? shouldUseOriginTransition
+        ? EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT
+        : footerHeight.value
+      : 0;
     const resolvedSheetHeight =
       contentHeight.value > 0
-        ? Math.max(
-            0,
-            contentHeight.value + (hasFooter.value ? footerHeight.value : 0),
-          )
+        ? Math.max(0, contentHeight.value + resolvedFooterHeight)
         : undefined;
     const targetLeft = fullScreen ? 0 : HORIZONTAL_MARGIN;
     const targetRight = fullScreen ? 0 : HORIZONTAL_MARGIN;
@@ -128,12 +139,8 @@ export const useActionTrayFrameStyles = ({
         EXPAND_FROM_TRIGGER_COLLAPSED_FOOTER_INSET,
         TRAY_VERTICAL_PADDING,
       ]);
-      const targetFooterHeight =
-        footerHeight.value > 0
-          ? footerHeight.value
-          : EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT;
-      const targetTop =
-        SCREEN_HEIGHT - targetBottom - targetFooterHeight;
+      const targetFooterHeight = EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT;
+      const targetTop = SCREEN_HEIGHT - targetBottom - targetFooterHeight;
       const collapsedTop =
         SCREEN_HEIGHT -
         (bottom + collapsedBottomInset) -
@@ -143,14 +150,17 @@ export const useActionTrayFrameStyles = ({
         left: targetLeft,
         top: interpolate(progress, [0, 1], [collapsedTop, targetTop]),
         width: targetWidth,
-        minHeight: interpolate(progress, [0, 1], [
+        height: interpolate(progress, [0, 1], [
           EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT,
           targetFooterHeight,
         ]),
         paddingHorizontal: 0,
         paddingLeft: currentHorizontalInset,
         paddingRight: currentHorizontalInset,
-        paddingTop: interpolate(revealProgress, [0, 1], [0, 6]),
+        paddingTop: interpolate(revealProgress, [0, 1], [
+          0,
+          EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_TOP_PADDING,
+        ]),
         paddingBottom: interpolate(revealProgress, [0, 1], [
           0,
           TRAY_VERTICAL_PADDING,

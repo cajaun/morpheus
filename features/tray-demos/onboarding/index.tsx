@@ -370,7 +370,7 @@ export const OnboardingPageHeader = () => {
     // >
     <View
       style={{
-        paddingTop: top,
+        paddingTop: 24,
         flexDirection: "row",
         alignItems: "center",
       }}
