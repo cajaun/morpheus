@@ -17,6 +17,7 @@ export type TrayCloseTransition = "slide" | "collapseToTrigger";
 export type TrayTransitionOptions = {
   open?: TrayOpenTransition;
   close?: TrayCloseTransition;
+  origin?: "screenBottom" | "fullScreenFooter";
 };
 
 export type TrayStepOptions = {
@@ -220,6 +221,24 @@ export const useTrayFlow = () => {
   const stackEntry = useTrayHostSelector((state) =>
     trayId ? state.stack.find((entry) => entry.trayId === trayId) : undefined,
   );
+  const parentPageControls = useTrayHostSelector((state) => {
+    const parentTrayId = stackEntry?.parentTrayId;
+
+    if (!parentTrayId) {
+      return null;
+    }
+
+    const parentEntry = state.stack.find((entry) => entry.trayId === parentTrayId);
+    const parentRegistration = state.registry[parentTrayId];
+    const parentStep = parentRegistration?.steps[parentEntry?.index ?? 0];
+    const pages = parentRegistration?.pages;
+
+    if (!parentStep || pages?.stepKey !== parentStep.key || pages.hasFooter) {
+      return null;
+    }
+
+    return pages;
+  });
   const {
     openTray,
     closeActiveTray,
@@ -254,10 +273,17 @@ export const useTrayFlow = () => {
     total,
     canGoNext,
     canGoBack,
+    pageIndex: pageControls?.pageIndex,
     open: () => openTray(trayId),
     close: () => {
       if (isActive) {
         closeActiveTray();
+      }
+    },
+    closeAndNextParentPage: () => {
+      if (isActive) {
+        closeActiveTray();
+        parentPageControls?.nextPage();
       }
     },
     requestClose: () => {

@@ -124,7 +124,7 @@ const AddAddressStep = () => {
   );
 };
 
-const ExpandFooter = () => {
+const AddContactFooter = () => {
   const { close } = useTrayFlow();
 
   const handlePress = async () => {
@@ -164,7 +164,7 @@ const ExpandFromTriggerDemo = ({
     [],
   );
 
-  const footer = useMemo(() => <ExpandFooter />, []);
+  const footer = useMemo(() => <AddContactFooter />, []);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>

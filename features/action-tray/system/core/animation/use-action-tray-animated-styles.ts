@@ -29,6 +29,7 @@ export const useActionTrayAnimatedStyles = ({
     keyboardHeight,
     originProgress,
     shouldUseOriginTransition,
+    transition,
   });
   const dragStyle = useActionTrayDragStyle({
     originProgress,

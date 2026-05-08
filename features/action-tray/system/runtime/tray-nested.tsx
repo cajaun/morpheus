@@ -5,6 +5,7 @@ import {
   useTrayScope,
   type TrayRegistration,
   type TrayStepDefinition,
+  type TrayTransitionOptions,
 } from "./tray-context";
 
 type TrayNestedProps = Omit<PressableProps, "onPress"> & {
@@ -12,6 +13,7 @@ type TrayNestedProps = Omit<PressableProps, "onPress"> & {
   children: React.ReactNode;
   steps: TrayStepDefinition[];
   footer?: React.ReactNode;
+  transition?: TrayTransitionOptions;
   onPress?: PressableProps["onPress"];
 };
 
@@ -20,6 +22,7 @@ export const TrayNested: React.FC<TrayNestedProps> = ({
   children,
   steps,
   footer,
+  transition,
   onPress,
   ...rest
 }) => {
@@ -34,8 +37,9 @@ export const TrayNested: React.FC<TrayNestedProps> = ({
     () => ({
       steps,
       footer,
+      transition,
     }),
-    [footer, steps],
+    [footer, steps, transition],
   );
 
   useEffect(() => {

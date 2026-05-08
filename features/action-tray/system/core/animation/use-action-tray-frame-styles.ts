@@ -24,7 +24,7 @@ const EXPAND_FROM_TRIGGER_COLLAPSED_RADIUS =
 
 type Params = Pick<
   ActionTrayAnimatedStyleParams,
-  "contentHeight" | "footerHeight" | "hasFooter" | "keyboardHeight"
+  "contentHeight" | "footerHeight" | "hasFooter" | "keyboardHeight" | "transition"
 > &
   ActionTrayAnimationState;
 
@@ -37,7 +37,15 @@ export const useActionTrayFrameStyles = ({
   keyboardHeight,
   originProgress,
   shouldUseOriginTransition,
+  transition,
 }: Params) => {
+  const collapsedBottomInset =
+    transition?.origin === "fullScreenFooter"
+      ? TRAY_VERTICAL_PADDING
+      : EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET;
+  const targetBottomInset =
+    transition?.origin === "fullScreenFooter" ? collapsedBottomInset : 0;
+
   const footerSpacerStyle = useAnimatedStyle(() => ({
     height: hasFooter.value ? footerHeight.value : 0,
   }));
@@ -52,7 +60,7 @@ export const useActionTrayFrameStyles = ({
         : undefined;
     const targetLeft = fullScreen ? 0 : HORIZONTAL_MARGIN;
     const targetRight = fullScreen ? 0 : HORIZONTAL_MARGIN;
-    const targetBottom = fullScreen ? 0 : bottom;
+    const targetBottom = fullScreen ? 0 : bottom + targetBottomInset;
     const targetRadius = fullScreen ? 0 : BORDER_RADIUS;
     const targetTop = fullScreen
       ? 0
@@ -65,7 +73,7 @@ export const useActionTrayFrameStyles = ({
       const targetWidth = SCREEN_WIDTH - targetLeft - targetRight;
       const collapsedTop =
         SCREEN_HEIGHT -
-        (bottom + EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET) -
+        (bottom + collapsedBottomInset) -
         EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT;
 
       return {
@@ -95,10 +103,12 @@ export const useActionTrayFrameStyles = ({
     };
   }, [
     bottom,
+    collapsedBottomInset,
     contentHeight,
     fullScreen,
     originProgress,
     shouldUseOriginTransition,
+    targetBottomInset,
   ]);
 
   const footerContainerStyle = useAnimatedStyle(() => {
@@ -107,7 +117,7 @@ export const useActionTrayFrameStyles = ({
     const targetBottom =
       !shouldUseOriginTransition && keyboardHeight.value > 0
         ? keyboardHeight.value
-        : bottom;
+        : bottom + targetBottomInset;
     const targetRadius = fullScreen ? 0 : BORDER_RADIUS;
 
     if (shouldUseOriginTransition) {
@@ -126,7 +136,7 @@ export const useActionTrayFrameStyles = ({
         SCREEN_HEIGHT - targetBottom - targetFooterHeight;
       const collapsedTop =
         SCREEN_HEIGHT -
-        (bottom + EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET) -
+        (bottom + collapsedBottomInset) -
         EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT;
 
       return {
@@ -172,11 +182,13 @@ export const useActionTrayFrameStyles = ({
     };
   }, [
     bottom,
+    collapsedBottomInset,
     footerHeight,
     fullScreen,
     keyboardHeight,
     originProgress,
     shouldUseOriginTransition,
+    targetBottomInset,
   ]);
 
   return {
