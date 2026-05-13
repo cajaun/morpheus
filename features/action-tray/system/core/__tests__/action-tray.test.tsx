@@ -37,6 +37,7 @@ jest.mock("../animation/use-action-tray-animated-styles", () => ({
     contentPaddingStyle: {},
     dragStyle: {},
     surfaceVisibilityStyle: {},
+    originSurfaceVisibilityStyle: {},
     footerVisibilityStyle: {},
     fullScreenSurfaceFillStyle: {},
   }),
@@ -60,6 +61,7 @@ jest.mock("../use-action-tray-controller", () => ({
         surfaceOpacity: { value: 1 },
         totalHeight: { value: 0 },
         progress: { value: 1 },
+        originProgress: { value: 1 },
       },
       state: {
         layoutEnabled: false,

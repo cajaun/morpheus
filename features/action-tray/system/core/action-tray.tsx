@@ -159,6 +159,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       keyboardHeight: trayKeyboardHeight,
       fullScreen: presentationFullScreen,
       visible,
+      layoutEnabled,
       originProgress,
       transition,
     });

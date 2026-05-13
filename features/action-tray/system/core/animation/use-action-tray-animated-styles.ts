@@ -13,12 +13,13 @@ export const useActionTrayAnimatedStyles = ({
   keyboardHeight,
   fullScreen,
   visible,
+  layoutEnabled,
   originProgress,
   transition,
 }: ActionTrayAnimatedStyleParams) => {
   const { bottom } = useSafeAreaInsets();
   const shouldUseOriginTransition =
-    transition?.open === "expandFromTrigger" && !fullScreen;
+    transition?.open === "expandFromTrigger" && !fullScreen && !layoutEnabled;
 
   const frameStyles = useActionTrayFrameStyles({
     bottom,

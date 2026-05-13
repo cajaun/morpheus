@@ -13,6 +13,7 @@ export type ActionTrayAnimatedStyleParams = {
   keyboardHeight: AnimatedValue<number>;
   fullScreen: boolean;
   visible: boolean;
+  layoutEnabled: boolean;
   originProgress: AnimatedValue<number>;
   transition?: TrayTransitionOptions;
 };

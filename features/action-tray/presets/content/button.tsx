@@ -1,11 +1,13 @@
 import React from "react";
-import { Text, Dimensions, View } from "react-native";
+import { Dimensions, Text, View } from "react-native";
 import Animated, {
+  Easing,
   interpolate,
   useAnimatedStyle,
   useDerivedValue,
-  withSpring,
+  withTiming,
 } from "react-native-reanimated";
+import { Laminar } from "react-native-laminar";
 import { PressableScale } from "@/components/ui/utils/pressable-scale";
 import * as Haptics from "expo-haptics";
 
@@ -25,6 +27,7 @@ type Props = {
   onFinish?: () => void;
   onSecondaryPress?: () => void;
   showSecondary?: boolean;
+  primaryColor?: string;
 };
 
 // this preset preserves footer width so step changes do not reflow the tray
@@ -35,19 +38,18 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
   onFinish,
   onSecondaryPress,
   showSecondary,
+  primaryColor = "#3EB1FF",
 }) => {
   const isLastStep = step === totalSteps - 1;
 
   // callers can override the default onboarding rule without forking the preset
   const shouldShowSecondary =
-    showSecondary !== undefined
-      ? showSecondary
-      : step > 0 && !isLastStep;
+    showSecondary !== undefined ? showSecondary : step > 0 && !isLastStep;
 
   const progress = useDerivedValue(() =>
-    withSpring(shouldShowSecondary ? 1 : 0, {
-      stiffness: 1600,
-      damping: 80,
+    withTiming(shouldShowSecondary ? 1 : 0, {
+      duration: 200,
+      easing: Easing.bezier(0.23, 1, 0.32, 1),
     }),
   );
 
@@ -113,9 +115,7 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
             alignItems: "center",
           }}
         >
-          <Text className="text-black font-sfBold text-2xl">
-            Cancel
-          </Text>
+          <Text className="text-black font-sfBold text-2xl">Cancel</Text>
         </PressableScale>
       </Animated.View>
 
@@ -136,15 +136,16 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
             width: "100%",
             height: BUTTON_HEIGHT,
             alignItems: "center",
-            backgroundColor: "#3EB1FF",
+            backgroundColor: primaryColor,
             borderRadius: 50,
             justifyContent: "center",
-            paddingHorizontal: 20,
           }}
         >
-          <Text className="text-white font-sfBold text-2xl">
-            Continue
-          </Text>
+          <Laminar
+            text={isLastStep ? "Continue and Finish" : "Continue"}
+            className="text-white font-sfBold text-2xl"
+            align="center"
+          />
         </PressableScale>
       </Animated.View>
     </View>

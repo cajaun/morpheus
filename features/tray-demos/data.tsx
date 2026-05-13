@@ -6,6 +6,7 @@ import CreatingWalletsInfoTray from "./creating-wallets-info";
 import ExpandFromTriggerDemo from "./expand-from-trigger";
 import HelpSupportTray from "./help-support";
 import IdentityRateBoostTray from "./identity-rate-boost";
+import AaveExample from "./aave-tray";
 import OnboardingExample from "./onboarding";
 import PayFromTray from "./pay-from";
 import Send from "./send";
@@ -37,6 +38,15 @@ const TrayExampleFrame = ({ children }: TrayExampleFrameProps) => {
 };
 
 export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
+  {
+    value: "aave",
+    label: "Aave",
+    content: (
+      <TrayExampleFrame>
+        <AaveExample />
+      </TrayExampleFrame>
+    ),
+  },
   {
     value: "onboarding",
     label: "Onboarding",
