@@ -9,6 +9,7 @@ import IdentityRateBoostTray from "./identity-rate-boost";
 import AaveExample from "./aave-tray";
 import OnboardingExample from "./onboarding";
 import PayFromTray from "./pay-from";
+import RemoveWalletWarningTray from "./remove-wallet-warning";
 import Send from "./send";
 import WalletGroupTray from "./wallet-group";
 import WatchAddressTray from "./watch-address";
@@ -132,6 +133,11 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     value: "expand-from-trigger",
     label: "Expand From Trigger",
     content: <ExpandFromTriggerDemo showBackLink={false} />,
+  },
+  {
+    value: "remove-wallet-warning",
+    label: "Remove Wallet",
+    content: <RemoveWalletWarningTray />,
   },
   {
     value: "wallet-group",

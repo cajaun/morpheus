@@ -6,6 +6,7 @@ import { KeyboardStickyView } from "react-native-keyboard-controller";
 import { Backdrop } from "../primitives/backdrop";
 import { createTrayLayoutTransition } from "./animation/action-tray-layout";
 import { styles as trayStyles } from "./animation/action-tray-styles";
+import { TrayOriginProgressProvider } from "./tray-origin-progress";
 import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animated-styles";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayController } from "./use-action-tray-controller";
@@ -235,7 +236,9 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           }
         >
           <Animated.View style={footerContentFrameStyle}>
-            {renderedFooter ?? null}
+            <TrayOriginProgressProvider value={originProgress}>
+              {renderedFooter ?? null}
+            </TrayOriginProgressProvider>
           </Animated.View>
         </Animated.View>
       </>
@@ -259,7 +262,9 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             onLayout={handleMeasureFooterLayout}
             pointerEvents="none"
           >
-            {measureFooter}
+            <TrayOriginProgressProvider value={originProgress}>
+              {measureFooter}
+            </TrayOriginProgressProvider>
           </Animated.View>
         )}
 
