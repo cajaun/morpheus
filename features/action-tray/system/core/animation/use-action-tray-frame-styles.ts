@@ -8,6 +8,7 @@ import {
   EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_FOOTER_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT,
+  EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
   HORIZONTAL_MARGIN,
   MORPH_DURATION,
   SCREEN_HEIGHT,
@@ -82,15 +83,23 @@ export const useActionTrayFrameStyles = ({
     if (shouldUseOriginTransition && targetTop !== undefined) {
       const progress = originProgress.value;
       const targetWidth = SCREEN_WIDTH - targetLeft - targetRight;
+      const currentLeft = interpolate(progress, [0, 1], [
+        EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
+        targetLeft,
+      ]);
+      const currentWidth = interpolate(progress, [0, 1], [
+        SCREEN_WIDTH - EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN * 2,
+        targetWidth,
+      ]);
       const collapsedTop =
         SCREEN_HEIGHT -
         (bottom + collapsedBottomInset) -
         EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT;
 
       return {
-        left: targetLeft,
+        left: currentLeft,
         top: interpolate(progress, [0, 1], [collapsedTop, targetTop]),
-        width: targetWidth,
+        width: currentWidth,
         height: interpolate(progress, [0, 1], [
           EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT,
           resolvedSheetHeight ?? EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT,
@@ -135,6 +144,14 @@ export const useActionTrayFrameStyles = ({
       const progress = originProgress.value;
       const revealProgress = progress * progress;
       const targetWidth = SCREEN_WIDTH - targetLeft - targetRight;
+      const currentLeft = interpolate(progress, [0, 1], [
+        EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
+        targetLeft,
+      ]);
+      const currentWidth = interpolate(progress, [0, 1], [
+        SCREEN_WIDTH - EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN * 2,
+        targetWidth,
+      ]);
       const currentHorizontalInset = interpolate(revealProgress, [0, 1], [
         EXPAND_FROM_TRIGGER_COLLAPSED_FOOTER_INSET,
         TRAY_VERTICAL_PADDING,
@@ -147,9 +164,9 @@ export const useActionTrayFrameStyles = ({
         EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT;
 
       return {
-        left: targetLeft,
+        left: currentLeft,
         top: interpolate(progress, [0, 1], [collapsedTop, targetTop]),
-        width: targetWidth,
+        width: currentWidth,
         height: interpolate(progress, [0, 1], [
           EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT,
           targetFooterHeight,

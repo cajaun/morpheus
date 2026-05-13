@@ -219,7 +219,7 @@ const OnboardingContinueTrayFooter = () => {
   const { closeAndNextParentPage } = useTrayFlow();
 
   return (
-    <Tray.Footer style={{ width: "100%", backgroundColor: trayDemoColors.white }}>
+    <Tray.Footer style={{ width: "100%"}}>
       <PressableScale
         onPress={closeAndNextParentPage}
         style={{
