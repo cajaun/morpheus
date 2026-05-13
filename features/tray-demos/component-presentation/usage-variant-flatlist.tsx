@@ -175,7 +175,7 @@ export const UsageVariantFlatList = ({
         viewabilityConfig={viewabilityConfig}
       />
 
-      <PressableScale
+      {/* <PressableScale
         onPress={openSelector}
         style={[
           styles.pagination,
@@ -195,7 +195,7 @@ export const UsageVariantFlatList = ({
             />
           ))}
         </View>
-      </PressableScale>
+      </PressableScale> */}
 
       <UsageVariantsSelect
         data={data}

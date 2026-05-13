@@ -182,11 +182,16 @@ export const useActionTrayFrameStyles = ({
           0,
           TRAY_VERTICAL_PADDING,
         ]),
-        backgroundColor: "transparent",
         right: "auto",
         bottom: "auto",
-        borderTopLeftRadius: 0,
-        borderTopRightRadius: 0,
+        borderTopLeftRadius: interpolate(progress, [0, 1], [
+          EXPAND_FROM_TRIGGER_COLLAPSED_RADIUS,
+          0,
+        ]),
+        borderTopRightRadius: interpolate(progress, [0, 1], [
+          EXPAND_FROM_TRIGGER_COLLAPSED_RADIUS,
+          0,
+        ]),
         borderBottomLeftRadius: interpolate(progress, [0, 1], [
           EXPAND_FROM_TRIGGER_COLLAPSED_RADIUS,
           targetRadius,
