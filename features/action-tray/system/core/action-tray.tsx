@@ -7,6 +7,7 @@ import { Backdrop } from "../primitives/backdrop";
 import { createTrayLayoutTransition } from "./animation/action-tray-layout";
 import { styles as trayStyles } from "./animation/action-tray-styles";
 import { TrayOriginProgressProvider } from "./tray-origin-progress";
+import { TrayMeasurementProvider } from "../runtime/tray-context";
 import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animated-styles";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayController } from "./use-action-tray-controller";
@@ -104,9 +105,11 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         renderedFooterStyle,
         renderedFooterClassName,
         measureFooter,
+        measureContent,
       },
       handlers: {
         handleContentLayout,
+        handleMeasureContentLayout,
         handleVisibleFooterLayout,
         handleMeasureFooterLayout,
         handleRequestClose,
@@ -246,8 +249,30 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
 
     return (
       <>
+        {measureContent && (
+          <Animated.View
+            style={[
+              trayStyles.measureContent,
+              {
+                left: measureContent.fullScreen ? 0 : HORIZONTAL_MARGIN,
+                right: measureContent.fullScreen ? 0 : HORIZONTAL_MARGIN,
+              },
+            ]}
+            onLayout={handleMeasureContentLayout}
+            pointerEvents="none"
+          >
+            <TrayMeasurementProvider value={true}>
+              {measureContent.header ? (
+                <Animated.View style={localStyles.headerContainer}>
+                  {measureContent.header}
+                </Animated.View>
+              ) : null}
+              {measureContent.content}
+            </TrayMeasurementProvider>
+          </Animated.View>
+        )}
+
         {measureFooter && (
-          
           <Animated.View
             style={[
               trayStyles.measureFooter,

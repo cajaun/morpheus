@@ -87,9 +87,8 @@ export const useActionTrayContentSync = ({
     renderedFullScreen,
   } =
     renderState.state;
-  const { showLatestSnapshot, syncRenderedNodes } = renderState.actions;
-  const isEnteringFullScreen = !!fullScreen && !renderedFullScreen;
-
+  // Fullscreen geometry still needs pre-paint sync; visual node publication
+  // waits for the pending content measurement instead of this layout effect.
   useLayoutEffect(() => {
     if (!visible) {
       return;
@@ -110,10 +109,10 @@ export const useActionTrayContentSync = ({
       contentHeight: contentHeight.value,
       footerHeight: footerHeight.value,
       layoutEnabled,
-      isEnteringFullScreen,
+      syncsFullscreenGeometry: !!fullScreen,
     });
 
-    if (isEnteringFullScreen) {
+    if (fullScreen) {
       const incomingHeight = resolveIncomingContentHeight(
         measuredContentHeight.value,
       );
@@ -132,17 +131,14 @@ export const useActionTrayContentSync = ({
     }
     footerHeight.value = measuredFooterHeight.value;
     setLayoutAnimationEnabled(true);
-    showLatestSnapshot();
     // shell level swaps key off tray identity not every prop change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    isEnteringFullScreen,
     measuredContentHeight,
     measuredFooterHeight,
     resolveIncomingContentHeight,
     restoreContentHeight,
     setLayoutAnimationEnabled,
-    showLatestSnapshot,
     trayId,
     visible,
     footerHeight,
@@ -153,26 +149,6 @@ export const useActionTrayContentSync = ({
     renderedFullScreen,
     renderedTrayId,
     contentHeight,
-  ]);
-
-  useLayoutEffect(() => {
-    if (!visible) {
-      return;
-    }
-
-    syncRenderedNodes(trayId);
-  }, [
-    className,
-    containerStyle,
-    content,
-    header,
-    footer,
-    footerClassName,
-    footerStyle,
-    fullScreen,
-    syncRenderedNodes,
-    trayId,
-    visible,
   ]);
 
   useEffect(() => {

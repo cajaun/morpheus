@@ -163,6 +163,7 @@ const AboutAaveStep = () => {
           shouldClose
           onClose={close}
           titleWeight="bold"
+
         
         />
       </Tray.Header>

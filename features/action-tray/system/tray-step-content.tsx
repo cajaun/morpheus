@@ -26,13 +26,25 @@ const createMorphEntering = (scale: boolean): EntryExitAnimationFunction => {
       initialValues: {
         opacity: 0,
         transform: [{ scale: scale ? 1.05 : 1 }, { translateY: 0 }],
-      
       },
       animations: {
-        opacity: withTiming(1, { duration: MORPH_DURATION, easing: MORPH_EASING }),
+        opacity: withTiming(1, {
+          duration: MORPH_DURATION,
+          easing: MORPH_EASING,
+        }),
         transform: [
-          { scale: withTiming(1, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
-          { translateY: withTiming(0, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
+          {
+            scale: withTiming(1, {
+              duration: MORPH_DURATION,
+              easing: MORPH_EASING,
+            }),
+          },
+          {
+            translateY: withTiming(0, {
+              duration: MORPH_DURATION,
+              easing: MORPH_EASING,
+            }),
+          },
         ],
       },
     };
@@ -42,18 +54,30 @@ const createMorphEntering = (scale: boolean): EntryExitAnimationFunction => {
 const createMorphExiting = (scale: boolean): EntryExitAnimationFunction => {
   return () => {
     "worklet";
+
     return {
       initialValues: {
         opacity: 1,
         transform: [{ scale: 1 }, { translateY: 0 }],
       },
       animations: {
-        opacity: withTiming(0, { duration: MORPH_DURATION, easing: MORPH_EASING }),
-    
+        opacity: withTiming(0, {
+          duration: MORPH_DURATION,
+          easing: MORPH_EASING,
+        }),
         transform: [
-          { scale: withTiming(scale ? 0.98 : 1, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
-        
-          { translateY: withTiming(0, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
+          {
+            scale: withTiming(scale ? 0.98 : 1, {
+              duration: MORPH_DURATION,
+              easing: MORPH_EASING,
+            }),
+          },
+          {
+            translateY: withTiming(0, {
+              duration: MORPH_DURATION,
+              easing: MORPH_EASING,
+            }),
+          },
         ],
       },
     };

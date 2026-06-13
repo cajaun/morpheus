@@ -1,8 +1,9 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import { RenderedTrayState } from "../action-tray-types";
 
-// render state holds the committed payload while newer props continue to stream in
+// render state keeps a retained payload for teardown while active trays render
+// the live payload from the same commit that changes shell options.
 type TraySnapshot = {
   header?: React.ReactNode;
   content?: React.ReactNode;
@@ -15,6 +16,12 @@ type TraySnapshot = {
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
   footerClassName?: string;
+};
+
+type PendingContentMeasurement = {
+  header: React.ReactNode;
+  content: React.ReactNode;
+  fullScreen: boolean;
 };
 
 const toRenderedTrayState = ({
@@ -56,6 +63,36 @@ export const useActionTrayRenderState = ({
   footerStyle,
   footerClassName,
 }: TraySnapshot) => {
+  const liveTray = useMemo(
+    () =>
+      toRenderedTrayState({
+        content,
+        header,
+        footer,
+        trayId,
+        fullScreen,
+        fullScreenSafeAreaTop,
+        fullScreenDraggable,
+        containerStyle,
+        className,
+        footerStyle,
+        footerClassName,
+      }),
+    [
+      className,
+      containerStyle,
+      content,
+      footer,
+      footerClassName,
+      footerStyle,
+      fullScreen,
+      fullScreenDraggable,
+      fullScreenSafeAreaTop,
+      header,
+      trayId,
+    ],
+  );
+
   const headerRef = useRef(header);
   headerRef.current = header;
 
@@ -129,7 +166,7 @@ export const useActionTrayRenderState = ({
     }
 
     setRenderedTray((current) => {
-      if (current.trayId !== activeTrayId) {
+      if (trayIdRef.current !== activeTrayId) {
         return current;
       }
 
@@ -137,7 +174,7 @@ export const useActionTrayRenderState = ({
         content: contentRef.current ?? null,
         header: headerRef.current ?? null,
         footer: footerRef.current ?? null,
-        trayId: current.trayId,
+        trayId: trayIdRef.current,
         fullScreen: fullScreenRef.current,
         fullScreenSafeAreaTop: fullScreenSafeAreaTopRef.current,
         fullScreenDraggable: fullScreenDraggableRef.current,
@@ -165,19 +202,47 @@ export const useActionTrayRenderState = ({
     });
   }, []);
 
+  const presentationTray = trayId !== undefined ? liveTray : renderedTray;
+  const visualTray = trayId !== undefined ? renderedTray : presentationTray;
+  const needsVisualSync =
+    trayId !== undefined &&
+    (renderedTray.trayId !== liveTray.trayId ||
+      renderedTray.content !== liveTray.content ||
+      renderedTray.header !== liveTray.header ||
+      renderedTray.footer !== liveTray.footer ||
+      renderedTray.fullScreen !== liveTray.fullScreen ||
+      renderedTray.fullScreenSafeAreaTop !== liveTray.fullScreenSafeAreaTop ||
+      renderedTray.fullScreenDraggable !== liveTray.fullScreenDraggable ||
+      renderedTray.containerStyle !== liveTray.containerStyle ||
+      renderedTray.className !== liveTray.className ||
+      renderedTray.footerStyle !== liveTray.footerStyle ||
+      renderedTray.footerClassName !== liveTray.footerClassName);
+  const pendingContentMeasurement: PendingContentMeasurement | null =
+    needsVisualSync
+      ? {
+          header: liveTray.header,
+          content: liveTray.content,
+          fullScreen: liveTray.fullScreen ?? false,
+        }
+      : null;
+
   return {
     state: {
-      renderedContent: renderedTray.content,
-      renderedHeader: renderedTray.header,
-      renderedFooter: renderedTray.footer,
-      renderedTrayId: renderedTray.trayId,
-      renderedFullScreen: renderedTray.fullScreen ?? false,
-      renderedFullScreenSafeAreaTop: renderedTray.fullScreenSafeAreaTop ?? false,
-      renderedFullScreenDraggable: renderedTray.fullScreenDraggable ?? true,
-      renderedContainerStyle: renderedTray.containerStyle,
-      renderedClassName: renderedTray.className,
-      renderedFooterStyle: renderedTray.footerStyle,
-      renderedFooterClassName: renderedTray.footerClassName,
+      renderedContent: visualTray.content,
+      renderedHeader: visualTray.header,
+      renderedFooter: visualTray.footer,
+      renderedTrayId: presentationTray.trayId,
+      renderedFullScreen: presentationTray.fullScreen ?? false,
+      renderedFullScreenSafeAreaTop:
+        presentationTray.fullScreenSafeAreaTop ?? false,
+      renderedFullScreenDraggable:
+        presentationTray.fullScreenDraggable ?? true,
+      renderedContainerStyle: presentationTray.containerStyle,
+      renderedClassName: presentationTray.className,
+      renderedFooterStyle: presentationTray.footerStyle,
+      renderedFooterClassName: presentationTray.footerClassName,
+      pendingContentMeasurement,
+      needsVisualSync,
     },
     actions: {
       showLatestSnapshot,

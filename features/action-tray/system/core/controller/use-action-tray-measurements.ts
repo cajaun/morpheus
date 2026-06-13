@@ -1,6 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutChangeEvent } from "react-native";
-import { useSharedValue, type SharedValue } from "react-native-reanimated";
+import {
+  runOnJS,
+  runOnUI,
+  useSharedValue,
+  type SharedValue,
+} from "react-native-reanimated";
 import { log } from "../logger";
 
 // measurement owns the geometry contract that open animation depends on
@@ -16,6 +21,7 @@ type Params = {
     measuredHeight: number,
     trayId?: string,
   ) => void;
+  onMeasuredContentReady?: () => void;
 };
 
 export const useActionTrayMeasurements = ({
@@ -25,6 +31,7 @@ export const useActionTrayMeasurements = ({
   renderedFooter,
   resolveContentHeight,
   onContentHeightResolved,
+  onMeasuredContentReady,
 }: Params) => {
   const [layoutEnabled, setLayoutEnabled] = useState(false);
   const [footerMeasured, setFooterMeasured] = useState(false);
@@ -113,9 +120,8 @@ export const useActionTrayMeasurements = ({
     resolvedContentHeight,
   ]);
 
-  const handleContentLayout = useCallback(
-    (e: LayoutChangeEvent) => {
-      const height = e.nativeEvent.layout.height;
+  const resolveAndStoreContentHeight = useCallback(
+    (height: number, commitSharedValues = true) => {
       const resolvedHeight = resolveContentHeight
         ? resolveContentHeight(height)
         : height;
@@ -125,9 +131,12 @@ export const useActionTrayMeasurements = ({
       // measured height is raw content size while resolved height respects tray policy
       latestMeasuredContentHeightRef.current = height;
       latestResolvedContentHeightRef.current = resolvedHeight;
-      measuredContentHeight.value = height;
-      resolvedContentHeight.value = resolvedHeight;
-      contentHeight.value = resolvedHeight;
+      if (commitSharedValues) {
+        measuredContentHeight.value = height;
+        resolvedContentHeight.value = resolvedHeight;
+        contentHeight.value = resolvedHeight;
+      }
+
       onContentHeightResolved?.(resolvedHeight, height, renderedTrayId);
 
       if (!contentMeasured && renderedTrayId !== undefined) {
@@ -140,18 +149,61 @@ export const useActionTrayMeasurements = ({
         trayId: renderedTrayId,
         previousMeasuredHeight,
         previousResolvedHeight,
+        sharedCommit: commitSharedValues ? "js" : "deferred-ui",
         currentContentHeight: contentHeight.value,
         currentFooterHeight: footerHeight.value,
       });
+
+      return { measuredHeight: height, resolvedHeight };
     },
     [
       contentHeight,
       contentMeasured,
+      footerHeight,
       measuredContentHeight,
       onContentHeightResolved,
       renderedTrayId,
       resolvedContentHeight,
       resolveContentHeight,
+    ],
+  );
+
+  const handleContentLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      resolveAndStoreContentHeight(e.nativeEvent.layout.height);
+    },
+    [resolveAndStoreContentHeight],
+  );
+
+  const handleMeasureContentLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      const { measuredHeight: height, resolvedHeight } =
+        resolveAndStoreContentHeight(e.nativeEvent.layout.height, false);
+
+      if (!onMeasuredContentReady) {
+        measuredContentHeight.value = height;
+        resolvedContentHeight.value = resolvedHeight;
+        contentHeight.value = resolvedHeight;
+        return;
+      }
+
+      runOnUI(
+        (nextMeasuredHeight: number, nextResolvedHeight: number) => {
+          "worklet";
+
+          measuredContentHeight.value = nextMeasuredHeight;
+          resolvedContentHeight.value = nextResolvedHeight;
+          contentHeight.value = nextResolvedHeight;
+          runOnJS(onMeasuredContentReady)();
+        },
+      )(height, resolvedHeight);
+    },
+    [
+      contentHeight,
+      measuredContentHeight,
+      onMeasuredContentReady,
+      resolveAndStoreContentHeight,
+      resolvedContentHeight,
     ],
   );
 
@@ -226,6 +278,7 @@ export const useActionTrayMeasurements = ({
     },
     handlers: {
       handleContentLayout,
+      handleMeasureContentLayout,
       handleVisibleFooterLayout,
       handleMeasureFooterLayout,
     },

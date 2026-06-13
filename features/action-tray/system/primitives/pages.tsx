@@ -20,6 +20,7 @@ import { TrayPagesProvider } from "../pages-context";
 import {
   useTrayHost,
   useTrayHostSelector,
+  useTrayMeasurementMode,
   useTrayScope,
   useTrayStepOptions,
 } from "../runtime/tray-context";
@@ -165,6 +166,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
 
   const totalPages = parsed.pages.length;
   const trayId = useTrayScope();
+  const isMeasuring = useTrayMeasurementMode();
   const activeIndex = useTrayHostSelector((state) => state.activeIndex);
   const activeStepKey = useTrayHostSelector((state) => {
     if (!trayId) {
@@ -244,7 +246,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   }, [pageIndex, setPage]);
 
   useEffect(() => {
-    if (!trayId || !activeStepKey) {
+    if (!trayId || !activeStepKey || isMeasuring) {
       return;
     }
 
@@ -268,6 +270,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
     activeIndex,
     activeStepKey,
     backPage,
+    isMeasuring,
     nextPage,
     pageIndex,
     parsed.footer,

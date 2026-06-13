@@ -15,6 +15,8 @@ export const EXPAND_FROM_TRIGGER_COLLAPSED_FOOTER_INSET = 0;
 export const EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS = 0.04;
 
 
+
+
 // tuned to settle fast without reading as a modal snap
 export const TRAY_SPRING_CONFIG = {
   stiffness: 700,

@@ -157,6 +157,13 @@ export const useActionTrayController = ({
     fullScreen,
     contentHeight: presentation.shared.contentHeight,
   });
+  const handleMeasuredContentReady = useCallback(() => {
+    if (!renderState.state.needsVisualSync) {
+      return;
+    }
+
+    renderState.actions.showLatestSnapshot();
+  }, [renderState.actions.showLatestSnapshot, renderState.state.needsVisualSync]);
 
   // measurements gate the first open spring until geometry is known
   const measurements = useActionTrayMeasurements({
@@ -166,6 +173,7 @@ export const useActionTrayController = ({
     renderedFooter: renderState.state.renderedFooter,
     resolveContentHeight: resolveMeasuredContentHeight,
     onContentHeightResolved: heightCache.actions.handleContentHeightResolved,
+    onMeasuredContentReady: handleMeasuredContentReady,
   });
 
   useEffect(() => {
@@ -353,6 +361,7 @@ export const useActionTrayController = ({
       measureFooter: measurements.state.shouldMeasureFooter
         ? renderState.state.renderedFooter
         : null,
+      measureContent: renderState.state.pendingContentMeasurement,
     },
     handlers: {
       ...measurements.handlers,

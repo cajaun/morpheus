@@ -148,11 +148,13 @@ export type TrayRuntimeStore = {
 
 const TrayStoreContext = createContext<TrayRuntimeStore | null>(null);
 const TrayScopeContext = createContext<string | null>(null);
+const TrayMeasurementContext = createContext(false);
 const TrayStepOptionsContext =
   createContext<ResolvedTrayStepOptions>(DEFAULT_TRAY_STEP_OPTIONS);
 
 export const TrayStoreProvider = TrayStoreContext.Provider;
 export const TrayScopeProvider = TrayScopeContext.Provider;
+export const TrayMeasurementProvider = TrayMeasurementContext.Provider;
 export const TrayStepOptionsProvider = TrayStepOptionsContext.Provider;
 
 export const useTrayRuntimeStore = () => {
@@ -200,6 +202,7 @@ export const useTrayHost = () => {
 };
 
 export const useTrayScope = () => useContext(TrayScopeContext);
+export const useTrayMeasurementMode = () => useContext(TrayMeasurementContext);
 
 export const useTrayStepOptions = () => useContext(TrayStepOptionsContext);
 

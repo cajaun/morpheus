@@ -23,4 +23,9 @@ export const styles = StyleSheet.create({
     opacity: 0,
     top: -10000,
   },
+  measureContent: {
+    position: "absolute",
+    opacity: 0,
+    top: -10000,
+  },
 });
