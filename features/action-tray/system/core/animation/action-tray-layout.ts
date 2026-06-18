@@ -12,6 +12,7 @@ type TrayLayoutTransitionParams = {
   fullScreenTransitionGeneration: number;
   layoutStartedAt: SharedValue<number>;
   layoutStartedFullScreenGeneration: SharedValue<number>;
+  onConfigure?: (configuredAt: number) => void;
   onStart?: (startedAt: number) => void;
   onComplete?: (finishedAt: number) => void;
 };
@@ -20,6 +21,7 @@ export const createTrayLayoutTransition = ({
   fullScreenTransitionGeneration,
   layoutStartedAt,
   layoutStartedFullScreenGeneration,
+  onConfigure,
   onStart,
   onComplete,
 }: TrayLayoutTransitionParams) => {
@@ -33,6 +35,10 @@ export const createTrayLayoutTransition = ({
   const buildTransition = transition.build();
   const synchronizedTransition: LayoutAnimationFunction = (values) => {
     "worklet";
+
+    if (onConfigure) {
+      runOnJS(onConfigure)(performance.now());
+    }
 
     const animation = buildTransition(values);
     animation.animations.width = withFullScreenLayoutStartSignal(

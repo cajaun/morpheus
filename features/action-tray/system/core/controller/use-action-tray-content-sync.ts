@@ -7,12 +7,14 @@ import {
 } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
+import { markTrayStepSnapshotPublished } from "../../telemetry/tray-step-timing";
 import { log } from "../logger";
 
 // this hook decides when new props should update the committed shell snapshot
 type Params = {
   visible: boolean;
   interactive: boolean;
+  rootTrayId?: string;
   trayId?: string;
   fullScreen?: boolean;
   content?: ReactNode;
@@ -61,6 +63,7 @@ type Params = {
 export const useActionTrayContentSync = ({
   visible,
   interactive,
+  rootTrayId,
   trayId,
   fullScreen,
   content,
@@ -170,6 +173,7 @@ export const useActionTrayContentSync = ({
       return;
     }
 
+    markTrayStepSnapshotPublished(rootTrayId, trayId);
     showLatestSnapshot();
   }, [
     className,
@@ -180,6 +184,7 @@ export const useActionTrayContentSync = ({
     footerClassName,
     footerStyle,
     fullScreen,
+    rootTrayId,
     renderedTrayId,
     showLatestSnapshot,
     syncRenderedNodes,

@@ -9,6 +9,12 @@ import React, {
 import type { StyleProp, ViewStyle } from "react-native";
 import { ActionTray } from "../core/action-tray";
 import type { KeyboardTransitionMode } from "../core/action-tray-types";
+import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
+import {
+  markTrayStepPresenterResolved,
+  markTrayStepReactRenderStarted,
+  markTrayStepSlotCommitted,
+} from "../telemetry/tray-step-timing";
 import { TrayStepContent } from "../tray-step-content";
 import {
   resolveTrayStepOptions,
@@ -178,7 +184,24 @@ const PresentedActionTray = ({
   onCloseComplete: () => void;
   dismissKeyboardForTray: (trayId?: string | null) => void;
 }) => {
-  return (
+  const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
+    (
+      _id,
+      _phase,
+      actualDuration,
+      _baseDuration,
+      startTime,
+    ) => {
+      markTrayStepReactRenderStarted(
+        payload.rootTrayId,
+        payload.trayId,
+        startTime,
+        actualDuration,
+      );
+    },
+    [payload.rootTrayId, payload.trayId],
+  );
+  const tray = (
     <ActionTray
       assignmentId={assignmentId}
       visible={payload.visible}
@@ -203,6 +226,19 @@ const PresentedActionTray = ({
       keyboardHeight={keyboardHeight}
       dismissKeyboard={() => dismissKeyboardForTray(payload.rootTrayId)}
     />
+  );
+
+  if (!isActionTrayInstrumentationEnabled()) {
+    return tray;
+  }
+
+  return (
+    <React.Profiler
+      id={`action-tray-${assignmentId}`}
+      onRender={handleProfileRender}
+    >
+      {tray}
+    </React.Profiler>
   );
 };
 
@@ -281,6 +317,10 @@ const RootTraySlots = ({
   );
 
   useLayoutEffect(() => {
+    if (isActionTrayInstrumentationEnabled()) {
+      markTrayStepPresenterResolved(activeHost?.rootTrayId);
+    }
+
     setHostSlots((current) => {
       const next = [...current] as [TrayHostSlot, TrayHostSlot];
       const currentActiveSlotIndex = activeSlotIndexRef.current;
@@ -382,6 +422,18 @@ const RootTraySlots = ({
       return next;
     });
   }, [activeHost]);
+
+  useLayoutEffect(() => {
+    if (!isActionTrayInstrumentationEnabled()) {
+      return;
+    }
+
+    const activeSlotIndex = activeSlotIndexRef.current;
+    const activeSlot =
+      activeSlotIndex === null ? null : hostSlots[activeSlotIndex];
+
+    markTrayStepSlotCommitted(activeSlot?.payload?.rootTrayId);
+  }, [hostSlots]);
 
   return (
     <>

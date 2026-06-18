@@ -1,4 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   LayoutChangeEvent,
   PixelRatio,
@@ -10,6 +17,7 @@ import {
 import Animated, {
   Extrapolation,
   interpolate,
+  runOnJS,
   type SharedValue,
   useAnimatedStyle,
   useSharedValue,
@@ -87,6 +95,12 @@ const clampPageIndex = (index: number, totalPages: number) => {
 
   return Math.max(0, Math.min(index, totalPages - 1));
 };
+
+export const isTrayPageInRenderWindow = (
+  index: number,
+  pageIndex: number,
+  transitionFromIndex: number | null = null,
+) => index === pageIndex || index === transitionFromIndex;
 
 type TrayPagesProps = {
   children: React.ReactNode;
@@ -179,22 +193,29 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   const { registerTrayPages } = useTrayHost();
   const resolvedInitialPage = clampPageIndex(initialPage, totalPages);
   const [pageIndex, setPageIndex] = useState(resolvedInitialPage);
+  const [transitionFromIndex, setTransitionFromIndex] = useState<
+    number | null
+  >(null);
   const [viewportWidthState, setViewportWidthState] = useState(SCREEN_WIDTH);
   const progress = useSharedValue(resolvedInitialPage);
+  const transitionTargetRef = useRef<number | null>(null);
+  const startedTransitionTargetRef = useRef<number | null>(null);
   const pageWidth = viewportWidthState > 0 ? viewportWidthState : SCREEN_WIDTH;
 
   useEffect(() => {
     // clamp after child changes so removing a page never leaves an invalid index
-    setPageIndex((currentIndex) => {
-      const nextIndex = clampPageIndex(currentIndex, totalPages);
+    const nextIndex = clampPageIndex(pageIndex, totalPages);
 
-      if (nextIndex !== currentIndex) {
-        progress.value = nextIndex;
-      }
+    if (nextIndex === pageIndex) {
+      return;
+    }
 
-      return nextIndex;
-    });
-  }, [progress, totalPages]);
+    transitionTargetRef.current = null;
+    startedTransitionTargetRef.current = null;
+    setTransitionFromIndex(null);
+    setPageIndex(nextIndex);
+    progress.value = nextIndex;
+  }, [pageIndex, progress, totalPages]);
 
   const handleViewportLayout = useCallback(
     (event: LayoutChangeEvent) => {
@@ -216,24 +237,59 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
     (nextIndex: number) => {
       const resolvedIndex = clampPageIndex(nextIndex, totalPages);
 
-      if (resolvedIndex === pageIndex) {
+      if (
+        resolvedIndex === pageIndex ||
+        transitionFromIndex !== null
+      ) {
         return;
       }
 
+      transitionTargetRef.current = resolvedIndex;
+      setTransitionFromIndex(pageIndex);
       setPageIndex(resolvedIndex);
-      // one spring feeds scene transforms and any page aware chrome
-      progress.value = withSpring(
-        resolvedIndex,
-        PAGE_SPRING_CONFIG,
-        (finished) => {
-          if (finished) {
-            progress.value = resolvedIndex;
-          }
-        },
-      );
     },
-    [pageIndex, progress, totalPages],
+    [pageIndex, totalPages, transitionFromIndex],
   );
+
+  const handlePageTransitionComplete = useCallback((targetIndex: number) => {
+    if (transitionTargetRef.current !== targetIndex) {
+      return;
+    }
+
+    transitionTargetRef.current = null;
+    startedTransitionTargetRef.current = null;
+    setTransitionFromIndex(null);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (
+      transitionFromIndex === null ||
+      transitionTargetRef.current !== pageIndex ||
+      startedTransitionTargetRef.current === pageIndex
+    ) {
+      return;
+    }
+
+    // The target page now exists in the committed tree. Start the existing
+    // spring from that commit so neither endpoint needs to stay mounted while
+    // the pager is idle.
+    startedTransitionTargetRef.current = pageIndex;
+    progress.value = withSpring(
+      pageIndex,
+      PAGE_SPRING_CONFIG,
+      (finished) => {
+        if (finished) {
+          progress.value = pageIndex;
+          runOnJS(handlePageTransitionComplete)(pageIndex);
+        }
+      },
+    );
+  }, [
+    handlePageTransitionComplete,
+    pageIndex,
+    progress,
+    transitionFromIndex,
+  ]);
 
   const nextPage = useCallback(() => {
     setPage(pageIndex + 1);
@@ -295,17 +351,29 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
         {parsed.header}
 
         <View style={styles.viewport} onLayout={handleViewportLayout}>
-          {parsed.pages.map((page, index) => (
-            <TrayPagesScene
-              key={(page.key as string | null) ?? `tray-page-${index}`}
-              index={index}
-              pageIndex={pageIndex}
-              pageWidth={pageWidth}
-              progress={progress}
-            >
-              {page}
-            </TrayPagesScene>
-          ))}
+          {parsed.pages.map((page, index) => {
+            if (
+              !isTrayPageInRenderWindow(
+                index,
+                pageIndex,
+                transitionFromIndex,
+              )
+            ) {
+              return null;
+            }
+
+            return (
+              <TrayPagesScene
+                key={(page.key as string | null) ?? `tray-page-${index}`}
+                index={index}
+                pageIndex={pageIndex}
+                pageWidth={pageWidth}
+                progress={progress}
+              >
+                {page}
+              </TrayPagesScene>
+            );
+          })}
         </View>
 
         {parsed.footer}

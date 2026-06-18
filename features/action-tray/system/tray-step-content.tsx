@@ -13,6 +13,11 @@ import {
   withFullScreenLayoutStart,
 } from "./core/full-screen-transition-start";
 import { log } from "./core/logger";
+import {
+  ACTION_TRAY_INSTRUMENTATION_ENABLED,
+  isActionTrayInstrumentationEnabled,
+} from "./telemetry/config";
+import { markTrayStepContentReleased } from "./telemetry/tray-step-timing";
 
 // content transitions live here so every step swap shares the same motion language
 type Props = {
@@ -27,7 +32,7 @@ export const MORPH_EASING = Easing.bezier(0.25, 1.0, 0.5, 1);
 export const SHEET_EASING = Easing.bezier(0.34, 1.12, 0.64, 1);
 
 const logStepEnterFinished = (stepKey: string, finishedAt: number) => {
-  if (!__DEV__) {
+  if (!isActionTrayInstrumentationEnabled()) {
     return;
   }
 
@@ -38,9 +43,11 @@ const logStepEnterFinished = (stepKey: string, finishedAt: number) => {
 };
 
 const logStepEnterStarted = (stepKey: string, startedAt: number) => {
-  if (!__DEV__) {
+  if (!isActionTrayInstrumentationEnabled()) {
     return;
   }
+
+  markTrayStepContentReleased(stepKey, startedAt);
 
   console.log("[step-enter-started]", {
     stepKey,
@@ -74,12 +81,20 @@ const createMorphEntering = (
         fullScreenTransition.startedGeneration,
         fullScreenTransition.startedAt,
         fullScreenTransition.generation,
-        logRelease && __DEV__ ? logStepEnterStarted : undefined,
+        logRelease &&
+          __DEV__ &&
+          ACTION_TRAY_INSTRUMENTATION_ENABLED
+          ? logStepEnterStarted
+          : undefined,
         stepKey,
       );
     };
 
-    if (__DEV__ && !shouldAwaitLayout) {
+    if (
+      __DEV__ &&
+      ACTION_TRAY_INSTRUMENTATION_ENABLED &&
+      !shouldAwaitLayout
+    ) {
       runOnJS(logStepEnterStarted)(stepKey, performance.now());
     }
 
@@ -116,7 +131,11 @@ const createMorphEntering = (
         ],
       },
       callback: (finished: boolean) => {
-        if (finished) {
+        if (
+          finished &&
+          __DEV__ &&
+          ACTION_TRAY_INSTRUMENTATION_ENABLED
+        ) {
           runOnJS(logStepEnterFinished)(stepKey, performance.now());
         }
       },

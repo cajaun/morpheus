@@ -15,6 +15,14 @@ import { log } from "./logger";
 import { SCREEN_HEIGHT, TRAY_KEYBOARD_GAP } from "./constants";
 import { KeyboardTransitionMode } from "./action-tray-types";
 import type { TrayTransitionOptions } from "../runtime/tray-context";
+import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
+import {
+  markTrayStepLayoutConfigured,
+  markTrayStepLayoutFinished,
+  markTrayStepLayoutStarted,
+  markTrayStepRenderedCommit,
+  markTrayStepShellLayout,
+} from "../telemetry/tray-step-timing";
 import { useActionTrayContentSync } from "./controller/use-action-tray-content-sync";
 import { useActionTrayHeightCache } from "./controller/use-action-tray-height-cache";
 import { useActionTrayMeasurements } from "./controller/use-action-tray-measurements";
@@ -330,6 +338,7 @@ export const useActionTrayController = ({
   useActionTrayContentSync({
     visible,
     interactive,
+    rootTrayId,
     trayId,
     fullScreen,
     content,
@@ -349,25 +358,63 @@ export const useActionTrayController = ({
     onSheetFramePrepared: handleSheetFramePrepared,
   });
 
+  useLayoutEffect(() => {
+    if (!isActionTrayInstrumentationEnabled()) {
+      return;
+    }
+
+    markTrayStepRenderedCommit(
+      rootTrayId,
+      renderState.state.renderedTrayId,
+    );
+  }, [renderState.state.renderedTrayId, rootTrayId]);
+
   const handleRequestClose = useCallback(() => {
     dismissKeyboard();
     onClose?.();
   }, [dismissKeyboard, onClose]);
 
+  const handleShellLayout = useCallback(() => {
+    markTrayStepShellLayout(rootTrayId, renderedTrayIdRef.current);
+  }, [rootTrayId]);
+
+  const handleLayoutTransitionConfigured = useCallback(
+    (configuredAt: number) => {
+      markTrayStepLayoutConfigured(
+        rootTrayId,
+        renderedTrayIdRef.current,
+        configuredAt,
+      );
+    },
+    [rootTrayId],
+  );
+
   const handleLayoutTransitionStart = useCallback((startedAt: number) => {
-    if (!__DEV__) {
+    if (!isActionTrayInstrumentationEnabled()) {
       return;
     }
+
+    markTrayStepLayoutStarted(
+      rootTrayId,
+      renderedTrayIdRef.current,
+      startedAt,
+    );
 
     console.log("[tray-layout-started]", {
       trayId: renderedTrayIdRef.current,
       fullScreen: renderedFullScreenRef.current,
       startedAt: Number(startedAt.toFixed(2)),
     });
-  }, []);
+  }, [rootTrayId]);
 
   const handleLayoutTransitionComplete = useCallback((finishedAt: number) => {
-    if (__DEV__) {
+    markTrayStepLayoutFinished(
+      rootTrayId,
+      renderedTrayIdRef.current,
+      finishedAt,
+    );
+
+    if (isActionTrayInstrumentationEnabled()) {
       console.log("[tray-layout-finished]", {
         trayId: renderedTrayIdRef.current,
         fullScreen: renderedFullScreenRef.current,
@@ -381,7 +428,7 @@ export const useActionTrayController = ({
 
     returningToSheetRef.current = false;
     setUseMeasuredSheetHeight(false);
-  }, []);
+  }, [rootTrayId]);
 
   const imperativeApi = useMemo(
     () => ({
@@ -442,6 +489,8 @@ export const useActionTrayController = ({
     },
     handlers: {
       ...measurements.handlers,
+      handleShellLayout,
+      handleLayoutTransitionConfigured,
       handleLayoutTransitionStart,
       handleLayoutTransitionComplete,
       handleRequestClose,

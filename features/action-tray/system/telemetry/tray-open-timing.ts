@@ -1,3 +1,5 @@
+import { isActionTrayInstrumentationEnabled } from "./config";
+
 type TrayOpenTrace = {
   attemptId: number;
   rootTrayId: string;
@@ -90,6 +92,10 @@ const logSummary = (summary: TrayOpenTimingSummary) => {
 };
 
 export const markTrayTriggerPressed = (rootTrayId: string) => {
+  if (!isActionTrayInstrumentationEnabled()) {
+    return;
+  }
+
   // trigger press is the cleanest origin point for a new attempt
   const trace = createTrace(rootTrayId);
   trace.triggerPressedAt = now();
@@ -97,6 +103,10 @@ export const markTrayTriggerPressed = (rootTrayId: string) => {
 };
 
 export const markTrayOpenRequested = (rootTrayId: string) => {
+  if (!isActionTrayInstrumentationEnabled()) {
+    return;
+  }
+
   const trace = getOrCreateTrace(rootTrayId);
   trace.openRequestedAt = now();
 };
@@ -105,6 +115,10 @@ export const markTrayOpenStarted = (
   rootTrayId: string,
   presentedTrayId?: string,
 ) => {
+  if (!isActionTrayInstrumentationEnabled()) {
+    return;
+  }
+
   const trace = getOrCreateTrace(rootTrayId);
   trace.presentedTrayId = presentedTrayId;
   trace.openStartedAt = now();
@@ -114,6 +128,10 @@ export const markTrayReadyToOpen = (
   rootTrayId: string,
   presentedTrayId?: string,
 ) => {
+  if (!isActionTrayInstrumentationEnabled()) {
+    return;
+  }
+
   const trace = getOrCreateTrace(rootTrayId);
   trace.presentedTrayId = presentedTrayId;
   trace.readyToOpenAt = now();
@@ -123,6 +141,10 @@ export const markTrayOpenFinished = (
   rootTrayId: string,
   presentedTrayId?: string,
 ) => {
+  if (!isActionTrayInstrumentationEnabled()) {
+    return;
+  }
+
   const trace = getOrCreateTrace(rootTrayId);
   const finishedAt = now();
   trace.presentedTrayId = presentedTrayId;

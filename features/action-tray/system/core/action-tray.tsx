@@ -7,6 +7,7 @@ import { Backdrop } from "../primitives/backdrop";
 import { createTrayLayoutTransition } from "./animation/action-tray-layout";
 import { styles as trayStyles } from "./animation/action-tray-styles";
 import { TrayOriginProgressProvider } from "./tray-origin-progress";
+import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
 import { FullScreenTransitionStartProvider } from "./full-screen-transition-start";
 import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animated-styles";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
@@ -116,6 +117,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         handleContentLayout,
         handleVisibleFooterLayout,
         handleMeasureFooterLayout,
+        handleShellLayout,
+        handleLayoutTransitionConfigured,
         handleLayoutTransitionStart,
         handleLayoutTransitionComplete,
         handleRequestClose,
@@ -126,6 +129,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     useImperativeHandle(ref, () => imperativeApi, [imperativeApi]);
 
     const presentationFullScreen = renderedFullScreen;
+    const instrumentationEnabled = isActionTrayInstrumentationEnabled();
     const shouldUseOriginTransition =
       transition?.open === "expandFromTrigger" && !presentationFullScreen;
     const originBackdropProgress = useDerivedValue(
@@ -185,14 +189,21 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           fullScreenTransitionGeneration,
           layoutStartedAt: fullScreenLayoutStartedAt,
           layoutStartedFullScreenGeneration,
-          onStart: __DEV__ ? handleLayoutTransitionStart : undefined,
+          onConfigure: instrumentationEnabled
+            ? handleLayoutTransitionConfigured
+            : undefined,
+          onStart: instrumentationEnabled
+            ? handleLayoutTransitionStart
+            : undefined,
           onComplete: handleLayoutTransitionComplete,
         }),
       [
         fullScreenTransitionGeneration,
         fullScreenLayoutStartedAt,
+        handleLayoutTransitionConfigured,
         handleLayoutTransitionComplete,
         handleLayoutTransitionStart,
+        instrumentationEnabled,
         layoutStartedFullScreenGeneration,
       ],
     );
@@ -243,6 +254,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
               dragStyle,
               style,
             ]}
+            onLayout={instrumentationEnabled ? handleShellLayout : undefined}
             layout={shouldUseLayoutAnimation ? layoutAnimationConfig : undefined}
           >
             <Animated.View style={[trayStyles.content, contentRevealStyle]}>

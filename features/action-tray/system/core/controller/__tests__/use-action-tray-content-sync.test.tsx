@@ -101,6 +101,7 @@ describe("useActionTrayContentSync", () => {
     expect(contentHeight.value).toBe(780);
     expect(resolveIncomingContentHeight).toHaveBeenCalledTimes(1);
     expect(restoreContentHeight).not.toHaveBeenCalled();
+    expect(showLatestSnapshot).toHaveBeenCalledTimes(1);
 
     act(() => {
       renderer!.update(
@@ -117,6 +118,7 @@ describe("useActionTrayContentSync", () => {
     expect(contentHeight.value).toBe(780);
     expect(resolveIncomingContentHeight).toHaveBeenCalledTimes(1);
     expect(restoreContentHeight).not.toHaveBeenCalled();
+    expect(showLatestSnapshot).toHaveBeenCalledTimes(1);
 
     act(() => {
       renderer!.update(
@@ -131,5 +133,6 @@ describe("useActionTrayContentSync", () => {
     });
 
     expect(onSheetFramePrepared).toHaveBeenCalledWith(304);
+    expect(showLatestSnapshot).toHaveBeenCalledTimes(2);
   });
 });

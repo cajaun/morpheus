@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useMemo } from "react";
+import React, { useEffect, useId, useLayoutEffect, useMemo } from "react";
 import {
   TrayScopeProvider,
   useTrayHostActions,
@@ -39,8 +39,9 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
     [dismissible, footer, steps, transition],
   );
 
-  useEffect(() => {
-    // registration tracks react lifetime so the store never sees phantom trays
+  useLayoutEffect(() => {
+    // Step definitions must reach the presenter before paint so dynamic keys
+    // do not spend an extra frame in the passive-effect queue.
     registerTray(trayId, registration);
   }, [registration, registerTray, trayId]);
 

@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
+import { markTrayStepRequested } from "../telemetry/tray-step-timing";
 
 // store scope and step options are separate concerns so they get separate contexts
 export type TrayFullScreenCloseBehavior = "dismiss" | "returnToShell";
@@ -288,6 +289,18 @@ export const useTrayFlow = () => {
     },
     requestClose: () => {
       if (isActive) {
+        if (
+          activeStep?.options?.fullScreen &&
+          activeStep.options.fullScreenCloseBehavior === "returnToShell" &&
+          index > 0
+        ) {
+          const previousStepDefinition = registration?.steps[index - 1];
+
+          if (previousStepDefinition) {
+            markTrayStepRequested(trayId);
+          }
+        }
+
         requestCloseActiveTray();
       }
     },
@@ -298,6 +311,13 @@ export const useTrayFlow = () => {
           return;
         }
 
+        const nextIndex = clampIndex(index + 1, total);
+        const nextStepDefinition = registration?.steps[nextIndex];
+
+        if (nextIndex !== index && nextStepDefinition) {
+          markTrayStepRequested(trayId);
+        }
+
         nextStep();
       }
     },
@@ -306,6 +326,13 @@ export const useTrayFlow = () => {
         if (pageControls?.canGoBack) {
           pageControls.backPage();
           return;
+        }
+
+        const previousIndex = clampIndex(index - 1, total);
+        const previousStepDefinition = registration?.steps[previousIndex];
+
+        if (previousIndex !== index && previousStepDefinition) {
+          markTrayStepRequested(trayId);
         }
 
         previousStep();
