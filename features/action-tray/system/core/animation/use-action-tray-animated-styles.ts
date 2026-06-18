@@ -11,7 +11,10 @@ export const useActionTrayAnimatedStyles = ({
   surfaceOpacity,
   footerHeight,
   keyboardHeight,
+  frameFullScreen,
   fullScreen,
+  preparedSheetFrameHeight,
+  useMeasuredSheetHeight,
   visible,
   layoutEnabled,
   originProgress,
@@ -19,18 +22,22 @@ export const useActionTrayAnimatedStyles = ({
 }: ActionTrayAnimatedStyleParams) => {
   const { bottom } = useSafeAreaInsets();
   const shouldUseOriginTransition =
-    transition?.open === "expandFromTrigger" && !fullScreen && !layoutEnabled;
+    transition?.open === "expandFromTrigger" &&
+    !frameFullScreen &&
+    !layoutEnabled;
 
   const frameStyles = useActionTrayFrameStyles({
     bottom,
     contentHeight,
     footerHeight,
-    fullScreen,
+    fullScreen: frameFullScreen,
     hasFooter,
     keyboardHeight,
     originProgress,
+    preparedSheetFrameHeight,
     shouldUseOriginTransition,
     transition,
+    useMeasuredSheetHeight,
   });
   const dragStyle = useActionTrayDragStyle({
     originProgress,

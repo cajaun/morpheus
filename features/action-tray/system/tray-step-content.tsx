@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import Animated, {
   Easing,
   EntryExitAnimationFunction,
+  runOnJS,
   withTiming,
 } from "react-native-reanimated";
 import { MORPH_DURATION } from "./core/constants";
@@ -19,7 +20,21 @@ type Props = {
 export const MORPH_EASING = Easing.bezier(0.25, 1.0, 0.5, 1);
 export const SHEET_EASING = Easing.bezier(0.34, 1.12, 0.64, 1);
 
-const createMorphEntering = (scale: boolean): EntryExitAnimationFunction => {
+const logStepEnterFinished = (stepKey: string, finishedAt: number) => {
+  if (!__DEV__) {
+    return;
+  }
+
+  console.log("[step-enter-finished]", {
+    stepKey,
+    finishedAt: Number(finishedAt.toFixed(2)),
+  });
+};
+
+const createMorphEntering = (
+  scale: boolean,
+  stepKey: string,
+): EntryExitAnimationFunction => {
   return () => {
     "worklet";
     return {
@@ -34,6 +49,11 @@ const createMorphEntering = (scale: boolean): EntryExitAnimationFunction => {
           { scale: withTiming(1, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
           { translateY: withTiming(0, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
         ],
+      },
+      callback: (finished: boolean) => {
+        if (finished) {
+          runOnJS(logStepEnterFinished)(stepKey, performance.now());
+        }
       },
     };
   };
@@ -79,7 +99,11 @@ export const TrayStepContent: React.FC<Props> = ({
     <Animated.View
       key={stepKey}
       // first render can skip enter because shell open already provides the arrival cue
-      entering={skipEntering ? undefined : createMorphEntering(scale)}
+      entering={
+        skipEntering
+          ? undefined
+          : createMorphEntering(scale, stepKey ?? "unknown-step")
+      }
       exiting={skipExiting ? undefined : createMorphExiting(scale)}
     >
       {children}

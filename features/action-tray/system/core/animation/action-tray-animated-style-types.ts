@@ -11,7 +11,10 @@ export type ActionTrayAnimatedStyleParams = {
   surfaceOpacity: AnimatedValue<number>;
   footerHeight: AnimatedValue<number>;
   keyboardHeight: AnimatedValue<number>;
+  frameFullScreen: boolean;
   fullScreen: boolean;
+  preparedSheetFrameHeight?: number;
+  useMeasuredSheetHeight: boolean;
   visible: boolean;
   layoutEnabled: boolean;
   originProgress: AnimatedValue<number>;
@@ -22,5 +25,7 @@ export type ActionTrayAnimationState = {
   bottom: number;
   fullScreen: boolean;
   originProgress: AnimatedValue<number>;
+  preparedSheetFrameHeight?: number;
   shouldUseOriginTransition: boolean;
+  useMeasuredSheetHeight: boolean;
 };

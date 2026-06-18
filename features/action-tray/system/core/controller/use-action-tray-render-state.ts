@@ -43,6 +43,22 @@ const toRenderedTrayState = ({
   footerClassName,
 });
 
+const areTrayStatesEqual = (
+  current: RenderedTrayState,
+  next: RenderedTrayState,
+) =>
+  current.header === next.header &&
+  current.content === next.content &&
+  current.footer === next.footer &&
+  current.trayId === next.trayId &&
+  current.fullScreen === next.fullScreen &&
+  current.fullScreenSafeAreaTop === next.fullScreenSafeAreaTop &&
+  current.fullScreenDraggable === next.fullScreenDraggable &&
+  current.containerStyle === next.containerStyle &&
+  current.className === next.className &&
+  current.footerStyle === next.footerStyle &&
+  current.footerClassName === next.footerClassName;
+
 export const useActionTrayRenderState = ({
   header,
   content,
@@ -106,20 +122,22 @@ export const useActionTrayRenderState = ({
   );
 
   const showLatestSnapshot = useCallback(() => {
-    setRenderedTray(
-      toRenderedTrayState({
-        content: contentRef.current,
-        header: headerRef.current,
-        footer: footerRef.current,
-        trayId: trayIdRef.current,
-        fullScreen: fullScreenRef.current,
-        fullScreenSafeAreaTop: fullScreenSafeAreaTopRef.current,
-        fullScreenDraggable: fullScreenDraggableRef.current,
-        containerStyle: containerStyleRef.current,
-        className: classNameRef.current,
-        footerStyle: footerStyleRef.current,
-        footerClassName: footerClassNameRef.current,
-      }),
+    const next = toRenderedTrayState({
+      content: contentRef.current,
+      header: headerRef.current,
+      footer: footerRef.current,
+      trayId: trayIdRef.current,
+      fullScreen: fullScreenRef.current,
+      fullScreenSafeAreaTop: fullScreenSafeAreaTopRef.current,
+      fullScreenDraggable: fullScreenDraggableRef.current,
+      containerStyle: containerStyleRef.current,
+      className: classNameRef.current,
+      footerStyle: footerStyleRef.current,
+      footerClassName: footerClassNameRef.current,
+    });
+
+    setRenderedTray((current) =>
+      areTrayStatesEqual(current, next) ? current : next,
     );
   }, []);
 
@@ -133,7 +151,7 @@ export const useActionTrayRenderState = ({
         return current;
       }
 
-      return {
+      const next = {
         content: contentRef.current ?? null,
         header: headerRef.current ?? null,
         footer: footerRef.current ?? null,
@@ -146,6 +164,8 @@ export const useActionTrayRenderState = ({
         footerStyle: footerStyleRef.current,
         footerClassName: footerClassNameRef.current,
       };
+
+      return areTrayStatesEqual(current, next) ? current : next;
     });
   }, []);
 

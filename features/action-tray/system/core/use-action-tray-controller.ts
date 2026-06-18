@@ -4,6 +4,7 @@ import React, {
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import { type SharedValue } from "react-native-reanimated";
@@ -68,6 +69,11 @@ export const useActionTrayController = ({
   onClose,
 }: Params) => {
   const lastResetAssignmentIdRef = useRef(0);
+  const returningToSheetRef = useRef(false);
+  const [preparedSheetFrameHeight, setPreparedSheetFrameHeight] = useState<
+    number | undefined
+  >(undefined);
+  const [useMeasuredSheetHeight, setUseMeasuredSheetHeight] = useState(false);
   // rendered state is a snapshot so the shell can animate while props keep changing
   const renderState = useActionTrayRenderState({
     content,
@@ -85,6 +91,25 @@ export const useActionTrayController = ({
 
   const presentationFullScreen = renderState.state.renderedFullScreen;
   const isEnteringFullScreen = !!fullScreen && !presentationFullScreen;
+  const renderedTrayIdRef = useRef(renderState.state.renderedTrayId);
+  renderedTrayIdRef.current = renderState.state.renderedTrayId;
+  const renderedFullScreenRef = useRef(presentationFullScreen);
+  renderedFullScreenRef.current = presentationFullScreen;
+  const frameFullScreen =
+    !!fullScreen || (presentationFullScreen && !useMeasuredSheetHeight);
+
+  useLayoutEffect(() => {
+    if (!fullScreen && presentationFullScreen) {
+      returningToSheetRef.current = true;
+      setUseMeasuredSheetHeight(true);
+      return;
+    }
+
+    if (fullScreen && returningToSheetRef.current) {
+      returningToSheetRef.current = false;
+      setUseMeasuredSheetHeight(false);
+    }
+  }, [fullScreen, presentationFullScreen]);
 
   // presentation owns the shared values read by gestures animations and layout
   const presentation = useActionTrayPresentationState({
@@ -157,6 +182,9 @@ export const useActionTrayController = ({
     fullScreen,
     contentHeight: presentation.shared.contentHeight,
   });
+  const handleSheetFramePrepared = useCallback((height: number) => {
+    setPreparedSheetFrameHeight(height);
+  }, []);
 
   // measurements gate the first open spring until geometry is known
   const measurements = useActionTrayMeasurements({
@@ -173,6 +201,14 @@ export const useActionTrayController = ({
       return;
     }
 
+    if (
+      renderState.state.renderedTrayId !== trayId ||
+      measurements.refs.latestMeasuredTrayIdRef.current !==
+        renderState.state.renderedTrayId
+    ) {
+      return;
+    }
+
     if (measurements.shared.measuredContentHeight.value <= 0) {
       return;
     }
@@ -183,6 +219,8 @@ export const useActionTrayController = ({
     measurements.shared.measuredContentHeight,
     resolveMeasuredContentHeight,
     presentation.shared.contentHeight,
+    renderState.state.renderedTrayId,
+    trayId,
     visible,
   ]);
 
@@ -242,6 +280,9 @@ export const useActionTrayController = ({
     presentation.shared.active.value = false;
     renderState.actions.clear();
     measurements.actions.reset();
+    setPreparedSheetFrameHeight(undefined);
+    returningToSheetRef.current = false;
+    setUseMeasuredSheetHeight(false);
   }, [
     assignmentId,
     presentation.shared.active,
@@ -297,12 +338,30 @@ export const useActionTrayController = ({
     footerHeight: presentation.shared.footerHeight,
     resolveIncomingContentHeight: resolveMeasuredContentHeight,
     restoreContentHeight: heightCache.actions.restoreContentHeight,
+    onSheetFramePrepared: handleSheetFramePrepared,
   });
 
   const handleRequestClose = useCallback(() => {
     dismissKeyboard();
     onClose?.();
   }, [dismissKeyboard, onClose]);
+
+  const handleLayoutTransitionComplete = useCallback((finishedAt: number) => {
+    if (__DEV__) {
+      console.log("[tray-layout-finished]", {
+        trayId: renderedTrayIdRef.current,
+        fullScreen: renderedFullScreenRef.current,
+        finishedAt: Number(finishedAt.toFixed(2)),
+      });
+    }
+
+    if (!returningToSheetRef.current) {
+      return;
+    }
+
+    returningToSheetRef.current = false;
+    setUseMeasuredSheetHeight(false);
+  }, []);
 
   const imperativeApi = useMemo(
     () => ({
@@ -336,12 +395,14 @@ export const useActionTrayController = ({
       footerMeasured: measurements.state.footerMeasured,
       contentMeasured: measurements.state.contentMeasured,
       pendingOpen: measurements.state.pendingOpen,
+      preparedSheetFrameHeight,
       isSurfaceReady: openCloseLifecycle.state.isSurfaceReady,
       renderedFooter: renderState.state.renderedFooter,
       renderedHeader: renderState.state.renderedHeader,
       renderedContent: renderState.state.renderedContent,
       renderedTrayId: renderState.state.renderedTrayId,
       renderedFullScreen: renderState.state.renderedFullScreen,
+      frameFullScreen,
       renderedFullScreenDraggable:
         renderState.state.renderedFullScreenDraggable,
       renderedFullScreenSafeAreaTop:
@@ -353,9 +414,11 @@ export const useActionTrayController = ({
       measureFooter: measurements.state.shouldMeasureFooter
         ? renderState.state.renderedFooter
         : null,
+      useMeasuredSheetHeight,
     },
     handlers: {
       ...measurements.handlers,
+      handleLayoutTransitionComplete,
       handleRequestClose,
     },
     imperativeApi,

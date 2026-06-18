@@ -28,7 +28,7 @@ export const useActionTrayHeightCache = ({
   const restoreContentHeight = useCallback(
     (trayId: string | undefined, measuredContentHeight: number) => {
       if (!trayId) {
-        return;
+        return undefined;
       }
 
       const cachedHeight = contentHeightCacheRef.current[trayId];
@@ -36,12 +36,15 @@ export const useActionTrayHeightCache = ({
       // fullscreen derives height from viewport constraints not prior sheet measurements
       if (!fullScreen && cachedHeight != null) {
         contentHeight.value = cachedHeight;
-        return;
+        return cachedHeight;
       }
 
       if (measuredContentHeight > 0) {
         contentHeight.value = measuredContentHeight;
+        return measuredContentHeight;
       }
+
+      return undefined;
     },
     [contentHeight, fullScreen],
   );

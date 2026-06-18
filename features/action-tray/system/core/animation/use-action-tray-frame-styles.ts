@@ -42,8 +42,10 @@ export const useActionTrayFrameStyles = ({
   hasFooter,
   keyboardHeight,
   originProgress,
+  preparedSheetFrameHeight,
   shouldUseOriginTransition,
   transition,
+  useMeasuredSheetHeight,
 }: Params) => {
   const collapsedBottomInset =
     transition?.origin === "fullScreenFooter"
@@ -51,6 +53,26 @@ export const useActionTrayFrameStyles = ({
       : EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET;
   const targetBottomInset =
     transition?.origin === "fullScreenFooter" ? collapsedBottomInset : 0;
+  // Presentation mode changes need concrete layout props in the same native
+  // commit as the keyed content swap. Worklet-driven styles still own the
+  // continuous interpolation inside each mode.
+  const presentationFrameStyle = fullScreen
+    ? {
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        height: SCREEN_HEIGHT,
+      }
+    : useMeasuredSheetHeight && preparedSheetFrameHeight !== undefined
+      ? {
+          left: HORIZONTAL_MARGIN,
+          right: HORIZONTAL_MARGIN,
+          top: "auto" as const,
+          bottom: bottom + targetBottomInset,
+          height: preparedSheetFrameHeight,
+        }
+      : undefined;
 
   const footerSpacerStyle = useAnimatedStyle(() => ({
     height: hasFooter.value
@@ -118,7 +140,16 @@ export const useActionTrayFrameStyles = ({
       right: targetRight,
       bottom: targetBottom,
       top: fullScreen ? 0 : "auto",
-      height: fullScreen ? SCREEN_HEIGHT : resolvedSheetHeight,
+      // Regular sheets derive geometry from their children so layout and enter
+      // animations share a native commit. Returning from fullscreen is the one
+      // exception: the retained exiting subtree can still claim 100% height, so
+      // the previously measured sheet target owns the frame until that layout
+      // transition completes.
+      height: fullScreen
+        ? SCREEN_HEIGHT
+        : useMeasuredSheetHeight
+          ? resolvedSheetHeight
+          : undefined,
       borderRadius: BORDER_RADIUS,
     };
   }, [
@@ -129,6 +160,7 @@ export const useActionTrayFrameStyles = ({
     originProgress,
     shouldUseOriginTransition,
     targetBottomInset,
+    useMeasuredSheetHeight,
   ]);
 
   const footerContainerStyle = useAnimatedStyle(() => {
@@ -224,6 +256,7 @@ export const useActionTrayFrameStyles = ({
   ]);
 
   return {
+    presentationFrameStyle,
     footerSpacerStyle,
     trayLayoutStyle,
     footerContainerStyle,

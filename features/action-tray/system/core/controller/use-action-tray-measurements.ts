@@ -35,6 +35,7 @@ export const useActionTrayMeasurements = ({
   const latestMeasuredContentHeightRef = useRef(0);
   const latestResolvedContentHeightRef = useRef(0);
   const latestMeasuredFooterHeightRef = useRef(0);
+  const latestMeasuredTrayIdRef = useRef<string | undefined>(undefined);
   const measuredContentHeight = useSharedValue(0);
   const resolvedContentHeight = useSharedValue(0);
   const measuredFooterHeight = useSharedValue(0);
@@ -55,6 +56,7 @@ export const useActionTrayMeasurements = ({
       // zeroing measurements avoids animating from stale geometry left by a prior step
       latestMeasuredContentHeightRef.current = 0;
       latestResolvedContentHeightRef.current = 0;
+      latestMeasuredTrayIdRef.current = undefined;
       contentHeight.value = 0;
       measuredContentHeight.value = 0;
       resolvedContentHeight.value = 0;
@@ -95,6 +97,7 @@ export const useActionTrayMeasurements = ({
     latestMeasuredContentHeightRef.current = 0;
     latestResolvedContentHeightRef.current = 0;
     latestMeasuredFooterHeightRef.current = 0;
+    latestMeasuredTrayIdRef.current = undefined;
     contentHeight.value = 0;
     footerHeight.value = 0;
     measuredContentHeight.value = 0;
@@ -125,6 +128,7 @@ export const useActionTrayMeasurements = ({
       // measured height is raw content size while resolved height respects tray policy
       latestMeasuredContentHeightRef.current = height;
       latestResolvedContentHeightRef.current = resolvedHeight;
+      latestMeasuredTrayIdRef.current = renderedTrayId;
       measuredContentHeight.value = height;
       resolvedContentHeight.value = resolvedHeight;
       contentHeight.value = resolvedHeight;
@@ -207,6 +211,7 @@ export const useActionTrayMeasurements = ({
       latestMeasuredContentHeightRef,
       latestResolvedContentHeightRef,
       latestMeasuredFooterHeightRef,
+      latestMeasuredTrayIdRef,
     },
     state: {
       layoutEnabled,

@@ -2,6 +2,7 @@ import {
   RefObject,
   useEffect,
   useLayoutEffect,
+  useRef,
   type ReactNode,
 } from "react";
 import { StyleProp, ViewStyle } from "react-native";
@@ -53,7 +54,8 @@ type Params = {
   restoreContentHeight: (
     trayId: string | undefined,
     measuredContentHeight: number,
-  ) => void;
+  ) => number | undefined;
+  onSheetFramePrepared?: (height: number) => void;
 };
 
 export const useActionTrayContentSync = ({
@@ -75,6 +77,7 @@ export const useActionTrayContentSync = ({
   footerHeight,
   resolveIncomingContentHeight,
   restoreContentHeight,
+  onSheetFramePrepared,
 }: Params) => {
   const { layoutEnabled } = measurements.state;
   const { setLayoutAnimationEnabled } = measurements.actions;
@@ -88,8 +91,18 @@ export const useActionTrayContentSync = ({
   } =
     renderState.state;
   const { showLatestSnapshot, syncRenderedNodes } = renderState.actions;
-  const isEnteringFullScreen = !!fullScreen && !renderedFullScreen;
+  const resolveIncomingContentHeightRef = useRef(resolveIncomingContentHeight);
+  resolveIncomingContentHeightRef.current = resolveIncomingContentHeight;
 
+  const restoreContentHeightRef = useRef(restoreContentHeight);
+  restoreContentHeightRef.current = restoreContentHeight;
+
+  const onSheetFramePreparedRef = useRef(onSheetFramePrepared);
+  onSheetFramePreparedRef.current = onSheetFramePrepared;
+
+  // Geometry preparation remains pre-paint, but publishing the incoming React
+  // nodes does not belong in this phase. Keeping this effect keyed to live tray
+  // identity also prevents rendered snapshot changes from replaying it.
   useLayoutEffect(() => {
     if (!visible) {
       return;
@@ -110,11 +123,11 @@ export const useActionTrayContentSync = ({
       contentHeight: contentHeight.value,
       footerHeight: footerHeight.value,
       layoutEnabled,
-      isEnteringFullScreen,
+      preparesFullScreen: !!fullScreen,
     });
 
-    if (isEnteringFullScreen) {
-      const incomingHeight = resolveIncomingContentHeight(
+    if (fullScreen) {
+      const incomingHeight = resolveIncomingContentHeightRef.current(
         measuredContentHeight.value,
       );
 
@@ -128,39 +141,36 @@ export const useActionTrayContentSync = ({
 
       contentHeight.value = incomingHeight;
     } else {
-      restoreContentHeight(trayId, measuredContentHeight.value);
+      const restoredContentHeight = restoreContentHeightRef.current(
+        trayId,
+        measuredContentHeight.value,
+      );
+
+      if (renderedFullScreen && restoredContentHeight !== undefined) {
+        onSheetFramePreparedRef.current?.(
+          restoredContentHeight + measuredFooterHeight.value,
+        );
+      }
     }
     footerHeight.value = measuredFooterHeight.value;
     setLayoutAnimationEnabled(true);
-    showLatestSnapshot();
     // shell level swaps key off tray identity not every prop change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    isEnteringFullScreen,
-    measuredContentHeight,
-    measuredFooterHeight,
-    resolveIncomingContentHeight,
-    restoreContentHeight,
-    setLayoutAnimationEnabled,
-    showLatestSnapshot,
-    trayId,
-    visible,
-    footerHeight,
-    fullScreen,
-    interactive,
-    justOpenedRef,
-    layoutEnabled,
-    renderedFullScreen,
-    renderedTrayId,
-    contentHeight,
-  ]);
+  }, [trayId, visible, fullScreen]);
 
-  useLayoutEffect(() => {
+  // Visual publication is passive. The commit that installs the new keyed
+  // subtree also lets native layout derive the sheet's intrinsic target frame.
+  useEffect(() => {
     if (!visible) {
       return;
     }
 
-    syncRenderedNodes(trayId);
+    if (renderedTrayId === trayId) {
+      syncRenderedNodes(trayId);
+      return;
+    }
+
+    showLatestSnapshot();
   }, [
     className,
     containerStyle,
@@ -170,6 +180,8 @@ export const useActionTrayContentSync = ({
     footerClassName,
     footerStyle,
     fullScreen,
+    renderedTrayId,
+    showLatestSnapshot,
     syncRenderedNodes,
     trayId,
     visible,

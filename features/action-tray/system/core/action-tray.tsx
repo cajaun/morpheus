@@ -92,11 +92,13 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       state: {
         layoutEnabled,
         isSurfaceReady,
+        preparedSheetFrameHeight,
         renderedHeader,
         renderedFooter,
         renderedContent,
         renderedTrayId,
         renderedFullScreen,
+        frameFullScreen,
         renderedFullScreenSafeAreaTop,
         renderedFullScreenDraggable,
         renderedContainerStyle,
@@ -104,11 +106,13 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         renderedFooterStyle,
         renderedFooterClassName,
         measureFooter,
+        useMeasuredSheetHeight,
       },
       handlers: {
         handleContentLayout,
         handleVisibleFooterLayout,
         handleMeasureFooterLayout,
+        handleLayoutTransitionComplete,
         handleRequestClose,
       },
       imperativeApi,
@@ -141,6 +145,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
 
     const {
       footerSpacerStyle,
+      presentationFrameStyle,
       trayLayoutStyle,
       footerContainerStyle,
       contentPaddingStyle,
@@ -158,7 +163,10 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       surfaceOpacity,
       footerHeight,
       keyboardHeight: trayKeyboardHeight,
+      frameFullScreen,
       fullScreen: presentationFullScreen,
+      preparedSheetFrameHeight,
+      useMeasuredSheetHeight,
       visible,
       layoutEnabled,
       originProgress,
@@ -166,8 +174,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     });
 
     const layoutAnimationConfig = useMemo(
-      () => createTrayLayoutTransition(),
-      [],
+      () => createTrayLayoutTransition(handleLayoutTransitionComplete),
+      [handleLayoutTransitionComplete],
     );
     const shouldUseLayoutAnimation = layoutEnabled;
     const flattenedContainerStyle = useMemo(
@@ -196,6 +204,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             style={[
               trayStyles.container,
               trayLayoutStyle,
+              presentationFrameStyle,
               renderedContainerStyle,
               surfaceVisibilityStyle,
               originSurfaceVisibilityStyle,
