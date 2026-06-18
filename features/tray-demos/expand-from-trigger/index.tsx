@@ -199,7 +199,7 @@ const ExpandFromTriggerDemo = ({
             letterSpacing: 0.2,
           }}
         >
-          Choose Wallet Group
+          Add Contact
         </Text>
       </View>
 

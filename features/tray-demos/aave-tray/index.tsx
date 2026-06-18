@@ -119,7 +119,48 @@ const ThirdStep = () => {
           className="text-black font-sf-regular"
           style={trayDemoText.bodyLarge}
         >
-               This is some example test that spans over multiple lines bla bla bla
+          Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
+          amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
+          dolor amet. Lorem ipsum dolor amet.
+        </Text>
+
+        <Text
+          className="text-black font-sf-regular"
+          style={trayDemoText.bodyLarge}
+        >
+          This is some example test that spans over multiple lines bla bla bla
+          test test test many wods. this is a new sentence and we'll see how
+          that fares too.
+        </Text>
+      </Tray.Section>
+    </Tray.Body>
+  );
+};
+
+const FourthStep = () => {
+  return (
+    <Tray.Body>
+      <Tray.Section>
+        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+          Another heading
+        </Text>
+
+        <Text
+          className="text-black font-sf-regular"
+          style={trayDemoText.bodyLarge}
+        >
+         Lorem ipsum dolor amet. Lorem ipsum dolor
+          amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
+          dolor amet. 
+        </Text>
+
+      
+
+        <Text
+          className="text-black font-sf-regular"
+          style={trayDemoText.bodyLarge}
+        >
+          This is some example test that spans over multiple lines bla bla bla
           test test test many wods. this is a new sentence and we'll see how
           that fares too.
         </Text>
@@ -147,6 +188,12 @@ const AaveExample = () => {
         key: "content-three",
         content: <ThirdStep />,
         header: <AaveHeader title="Content Three" />,
+        options: sharedStepOptions,
+      },
+      {
+        key: "content-four",
+        content: <FourthStep />,
+        header: <AaveHeader title="Content Four" />,
         options: sharedStepOptions,
       },
     ],

@@ -142,9 +142,10 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
           }}
         >
           <Laminar
-            text={isLastStep ? "Continue and Finish" : "Continue"}
+            text={isLastStep ? "Continue" : "Continue"}
             className="text-white font-sfBold text-2xl"
             align="center"
+         
           />
         </PressableScale>
       </Animated.View>

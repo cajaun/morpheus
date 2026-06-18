@@ -1,7 +1,7 @@
 import type { TextStyle, ViewStyle } from "react-native";
 
 export const trayDemoColors = {
-  triggerBackground: "#F5F5FA",
+  triggerBackground: "#F0F2F4",
   primaryAction: "#41BBFF",
   primaryActionDisabled: "#BFE7FF",
   fieldBackground: "#F5F5F7",
