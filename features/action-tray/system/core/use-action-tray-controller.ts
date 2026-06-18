@@ -7,7 +7,10 @@ import React, {
   useState,
 } from "react";
 import { StyleProp, ViewStyle } from "react-native";
-import { type SharedValue } from "react-native-reanimated";
+import {
+  type SharedValue,
+  useSharedValue,
+} from "react-native-reanimated";
 import { log } from "./logger";
 import { SCREEN_HEIGHT, TRAY_KEYBOARD_GAP } from "./constants";
 import { KeyboardTransitionMode } from "./action-tray-types";
@@ -88,6 +91,8 @@ export const useActionTrayController = ({
     footerStyle,
     footerClassName,
   });
+  const layoutStartedFullScreenGeneration = useSharedValue(0);
+  const fullScreenLayoutStartedAt = useSharedValue(0);
 
   const presentationFullScreen = renderState.state.renderedFullScreen;
   const isEnteringFullScreen = !!fullScreen && !presentationFullScreen;
@@ -95,8 +100,11 @@ export const useActionTrayController = ({
   renderedTrayIdRef.current = renderState.state.renderedTrayId;
   const renderedFullScreenRef = useRef(presentationFullScreen);
   renderedFullScreenRef.current = presentationFullScreen;
-  const frameFullScreen =
-    !!fullScreen || (presentationFullScreen && !useMeasuredSheetHeight);
+  // the frame and keyed content must enter a presentation mode in the same
+  // commit
+  // live props may prepare geometry, but the visible frame follows the
+  // rendered snapshot so neither side of the morph gets a head start
+  const frameFullScreen = presentationFullScreen;
 
   useLayoutEffect(() => {
     if (!fullScreen && presentationFullScreen) {
@@ -346,6 +354,18 @@ export const useActionTrayController = ({
     onClose?.();
   }, [dismissKeyboard, onClose]);
 
+  const handleLayoutTransitionStart = useCallback((startedAt: number) => {
+    if (!__DEV__) {
+      return;
+    }
+
+    console.log("[tray-layout-started]", {
+      trayId: renderedTrayIdRef.current,
+      fullScreen: renderedFullScreenRef.current,
+      startedAt: Number(startedAt.toFixed(2)),
+    });
+  }, []);
+
   const handleLayoutTransitionComplete = useCallback((finishedAt: number) => {
     if (__DEV__) {
       console.log("[tray-layout-finished]", {
@@ -389,6 +409,8 @@ export const useActionTrayController = ({
       totalHeight: presentation.shared.totalHeight,
       progress: presentation.shared.progress,
       originProgress: presentation.shared.originProgress,
+      fullScreenLayoutStartedAt,
+      layoutStartedFullScreenGeneration,
     },
     state: {
       layoutEnabled: measurements.state.layoutEnabled,
@@ -402,6 +424,8 @@ export const useActionTrayController = ({
       renderedContent: renderState.state.renderedContent,
       renderedTrayId: renderState.state.renderedTrayId,
       renderedFullScreen: renderState.state.renderedFullScreen,
+      fullScreenTransitionGeneration:
+        renderState.state.fullScreenTransitionGeneration,
       frameFullScreen,
       renderedFullScreenDraggable:
         renderState.state.renderedFullScreenDraggable,
@@ -418,6 +442,7 @@ export const useActionTrayController = ({
     },
     handlers: {
       ...measurements.handlers,
+      handleLayoutTransitionStart,
       handleLayoutTransitionComplete,
       handleRequestClose,
     },

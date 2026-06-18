@@ -7,6 +7,7 @@ import { Backdrop } from "../primitives/backdrop";
 import { createTrayLayoutTransition } from "./animation/action-tray-layout";
 import { styles as trayStyles } from "./animation/action-tray-styles";
 import { TrayOriginProgressProvider } from "./tray-origin-progress";
+import { FullScreenTransitionStartProvider } from "./full-screen-transition-start";
 import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animated-styles";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayController } from "./use-action-tray-controller";
@@ -88,6 +89,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         totalHeight,
         progress,
         originProgress,
+        fullScreenLayoutStartedAt,
+        layoutStartedFullScreenGeneration,
       },
       state: {
         layoutEnabled,
@@ -98,6 +101,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         renderedContent,
         renderedTrayId,
         renderedFullScreen,
+        fullScreenTransitionGeneration,
         frameFullScreen,
         renderedFullScreenSafeAreaTop,
         renderedFullScreenDraggable,
@@ -112,6 +116,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         handleContentLayout,
         handleVisibleFooterLayout,
         handleMeasureFooterLayout,
+        handleLayoutTransitionStart,
         handleLayoutTransitionComplete,
         handleRequestClose,
       },
@@ -173,11 +178,38 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       transition,
     });
 
-    const layoutAnimationConfig = useMemo(
-      () => createTrayLayoutTransition(handleLayoutTransitionComplete),
-      [handleLayoutTransitionComplete],
-    );
     const shouldUseLayoutAnimation = layoutEnabled;
+    const layoutAnimationConfig = useMemo(
+      () =>
+        createTrayLayoutTransition({
+          fullScreenTransitionGeneration,
+          layoutStartedAt: fullScreenLayoutStartedAt,
+          layoutStartedFullScreenGeneration,
+          onStart: __DEV__ ? handleLayoutTransitionStart : undefined,
+          onComplete: handleLayoutTransitionComplete,
+        }),
+      [
+        fullScreenTransitionGeneration,
+        fullScreenLayoutStartedAt,
+        handleLayoutTransitionComplete,
+        handleLayoutTransitionStart,
+        layoutStartedFullScreenGeneration,
+      ],
+    );
+    const fullScreenTransitionStart = useMemo(
+      () => ({
+        enabled: shouldUseLayoutAnimation,
+        generation: fullScreenTransitionGeneration,
+        startedAt: fullScreenLayoutStartedAt,
+        startedGeneration: layoutStartedFullScreenGeneration,
+      }),
+      [
+        fullScreenTransitionGeneration,
+        fullScreenLayoutStartedAt,
+        layoutStartedFullScreenGeneration,
+        shouldUseLayoutAnimation,
+      ],
+    );
     const flattenedContainerStyle = useMemo(
       () => StyleSheet.flatten(renderedContainerStyle),
       [renderedContainerStyle],
@@ -218,12 +250,16 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
                 style={contentPaddingStyle}
                 onLayout={handleContentLayout}
               >
-                {renderedHeader ? (
-                  <Animated.View style={localStyles.headerContainer}>
-                    {renderedHeader}
-                  </Animated.View>
-                ) : null}
-                {renderedContent}
+                <FullScreenTransitionStartProvider
+                  value={fullScreenTransitionStart}
+                >
+                  {renderedHeader ? (
+                    <Animated.View style={localStyles.headerContainer}>
+                      {renderedHeader}
+                    </Animated.View>
+                  ) : null}
+                  {renderedContent}
+                </FullScreenTransitionStartProvider>
               </Animated.View>
               {/* reserve space for the detached footer without coupling body layout to footer rendering */}
               <Animated.View style={footerSpacerStyle} />

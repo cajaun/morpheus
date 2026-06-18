@@ -6,6 +6,12 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { MORPH_DURATION } from "./core/constants";
+import {
+  type FullScreenTransitionStart,
+  shouldAwaitFullScreenLayoutStart,
+  useFullScreenTransitionStart,
+  withFullScreenLayoutStart,
+} from "./core/full-screen-transition-start";
 import { log } from "./core/logger";
 
 // content transitions live here so every step swap shares the same motion language
@@ -31,23 +37,82 @@ const logStepEnterFinished = (stepKey: string, finishedAt: number) => {
   });
 };
 
+const logStepEnterStarted = (stepKey: string, startedAt: number) => {
+  if (!__DEV__) {
+    return;
+  }
+
+  console.log("[step-enter-started]", {
+    stepKey,
+    startedAt: Number(startedAt.toFixed(2)),
+  });
+};
+
 const createMorphEntering = (
   scale: boolean,
   stepKey: string,
+  fullScreenTransition: FullScreenTransitionStart | null,
 ): EntryExitAnimationFunction => {
   return () => {
     "worklet";
+
+    const shouldAwaitLayout = shouldAwaitFullScreenLayoutStart(
+      fullScreenTransition,
+    );
+    const synchronizeWithLayout = (
+      animation: number,
+      logRelease = false,
+    ) => {
+      "worklet";
+
+      if (!shouldAwaitLayout || fullScreenTransition === null) {
+        return animation;
+      }
+
+      return withFullScreenLayoutStart(
+        animation,
+        fullScreenTransition.startedGeneration,
+        fullScreenTransition.startedAt,
+        fullScreenTransition.generation,
+        logRelease && __DEV__ ? logStepEnterStarted : undefined,
+        stepKey,
+      );
+    };
+
+    if (__DEV__ && !shouldAwaitLayout) {
+      runOnJS(logStepEnterStarted)(stepKey, performance.now());
+    }
+
     return {
       initialValues: {
         opacity: 0,
         transform: [{ scale: scale ? 1.05 : 1 }, { translateY: 0 }],
-      
       },
       animations: {
-        opacity: withTiming(1, { duration: MORPH_DURATION, easing: MORPH_EASING }),
+        opacity: synchronizeWithLayout(
+          withTiming(1, {
+            duration: MORPH_DURATION,
+            easing: MORPH_EASING,
+          }),
+          true,
+        ),
         transform: [
-          { scale: withTiming(1, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
-          { translateY: withTiming(0, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
+          {
+            scale: synchronizeWithLayout(
+              withTiming(1, {
+                duration: MORPH_DURATION,
+                easing: MORPH_EASING,
+              }),
+            ),
+          },
+          {
+            translateY: synchronizeWithLayout(
+              withTiming(0, {
+                duration: MORPH_DURATION,
+                easing: MORPH_EASING,
+              }),
+            ),
+          },
         ],
       },
       callback: (finished: boolean) => {
@@ -87,6 +152,8 @@ export const TrayStepContent: React.FC<Props> = ({
   skipEntering = false,
   skipExiting = false,
 }) => {
+  const fullScreenTransition = useFullScreenTransitionStart();
+
   useEffect(() => {
     log("TrayStepContent", {
       stepKey,
@@ -102,7 +169,11 @@ export const TrayStepContent: React.FC<Props> = ({
       entering={
         skipEntering
           ? undefined
-          : createMorphEntering(scale, stepKey ?? "unknown-step")
+          : createMorphEntering(
+              scale,
+              stepKey ?? "unknown-step",
+              fullScreenTransition,
+            )
       }
       exiting={skipExiting ? undefined : createMorphExiting(scale)}
     >

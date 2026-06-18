@@ -17,6 +17,10 @@ type TraySnapshot = {
   footerClassName?: string;
 };
 
+type InternalRenderedTrayState = RenderedTrayState & {
+  fullScreenTransitionGeneration: number;
+};
+
 const toRenderedTrayState = ({
   header,
   content,
@@ -58,6 +62,24 @@ const areTrayStatesEqual = (
   current.className === next.className &&
   current.footerStyle === next.footerStyle &&
   current.footerClassName === next.footerClassName;
+
+const commitTraySnapshot = (
+  current: InternalRenderedTrayState,
+  next: RenderedTrayState,
+): InternalRenderedTrayState => {
+  if (areTrayStatesEqual(current, next)) {
+    return current;
+  }
+
+  const fullScreenModeChanged = !!current.fullScreen !== !!next.fullScreen;
+
+  return {
+    ...next,
+    fullScreenTransitionGeneration:
+      current.fullScreenTransitionGeneration +
+      (fullScreenModeChanged ? 1 : 0),
+  };
+};
 
 export const useActionTrayRenderState = ({
   header,
@@ -105,21 +127,23 @@ export const useActionTrayRenderState = ({
   const footerClassNameRef = useRef(footerClassName);
   footerClassNameRef.current = footerClassName;
 
-  const [renderedTray, setRenderedTray] = useState<RenderedTrayState>(
-    toRenderedTrayState({
-      content,
-      header,
-      footer,
-      trayId,
-      fullScreen,
-      fullScreenSafeAreaTop,
-      fullScreenDraggable,
-      containerStyle,
-      className,
-      footerStyle,
-      footerClassName,
-    }),
-  );
+  const [renderedTray, setRenderedTray] =
+    useState<InternalRenderedTrayState>(() => ({
+      ...toRenderedTrayState({
+        content,
+        header,
+        footer,
+        trayId,
+        fullScreen,
+        fullScreenSafeAreaTop,
+        fullScreenDraggable,
+        containerStyle,
+        className,
+        footerStyle,
+        footerClassName,
+      }),
+      fullScreenTransitionGeneration: 0,
+    }));
 
   const showLatestSnapshot = useCallback(() => {
     const next = toRenderedTrayState({
@@ -136,9 +160,7 @@ export const useActionTrayRenderState = ({
       footerClassName: footerClassNameRef.current,
     });
 
-    setRenderedTray((current) =>
-      areTrayStatesEqual(current, next) ? current : next,
-    );
+    setRenderedTray((current) => commitTraySnapshot(current, next));
   }, []);
 
   const syncRenderedNodes = useCallback((activeTrayId?: string) => {
@@ -165,12 +187,12 @@ export const useActionTrayRenderState = ({
         footerClassName: footerClassNameRef.current,
       };
 
-      return areTrayStatesEqual(current, next) ? current : next;
+      return commitTraySnapshot(current, next);
     });
   }, []);
 
   const clear = useCallback(() => {
-    setRenderedTray({
+    setRenderedTray((current) => ({
       content: null,
       header: null,
       footer: null,
@@ -182,7 +204,11 @@ export const useActionTrayRenderState = ({
       className: undefined,
       footerStyle: undefined,
       footerClassName: undefined,
-    });
+      // The UI-thread latch is slot-scoped and survives close/reopen, so its
+      // generation must remain monotonic for the lifetime of this host slot.
+      fullScreenTransitionGeneration:
+        current.fullScreenTransitionGeneration,
+    }));
   }, []);
 
   return {
@@ -198,6 +224,8 @@ export const useActionTrayRenderState = ({
       renderedClassName: renderedTray.className,
       renderedFooterStyle: renderedTray.footerStyle,
       renderedFooterClassName: renderedTray.footerClassName,
+      fullScreenTransitionGeneration:
+        renderedTray.fullScreenTransitionGeneration,
     },
     actions: {
       showLatestSnapshot,

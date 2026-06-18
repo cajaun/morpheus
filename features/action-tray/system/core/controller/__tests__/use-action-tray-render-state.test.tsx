@@ -33,4 +33,72 @@ describe("useActionTrayRenderState", () => {
 
     expect(renderCount).toBe(committedRenderCount);
   });
+
+  it("advances fullscreen generations only when presentation mode changes", () => {
+    let state: ReturnType<typeof useActionTrayRenderState> | null = null;
+
+    const Probe = ({
+      content,
+      fullScreen,
+    }: {
+      content: string;
+      fullScreen: boolean;
+    }) => {
+      state = useActionTrayRenderState({
+        content,
+        trayId: `tray-${content}`,
+        fullScreen,
+      });
+
+      return null;
+    };
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <Probe content="sheet-one" fullScreen={false} />,
+      );
+    });
+
+    expect(state!.state.fullScreenTransitionGeneration).toBe(0);
+
+    act(() => {
+      renderer!.update(
+        <Probe content="sheet-two" fullScreen={false} />,
+      );
+    });
+
+    act(() => {
+      state!.actions.showLatestSnapshot();
+    });
+
+    expect(state!.state.fullScreenTransitionGeneration).toBe(0);
+
+    act(() => {
+      renderer!.update(<Probe content="full" fullScreen />);
+    });
+
+    act(() => {
+      state!.actions.showLatestSnapshot();
+    });
+
+    expect(state!.state.fullScreenTransitionGeneration).toBe(1);
+
+    act(() => {
+      renderer!.update(<Probe content="sheet-three" fullScreen={false} />);
+    });
+
+    act(() => {
+      state!.actions.showLatestSnapshot();
+    });
+
+    expect(state!.state.fullScreenTransitionGeneration).toBe(2);
+
+    act(() => {
+      state!.actions.clear();
+    });
+
+    expect(state!.state.fullScreenTransitionGeneration).toBe(2);
+  });
 });
