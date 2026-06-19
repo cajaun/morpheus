@@ -124,14 +124,24 @@ describe("fullscreen transition start synchronization", () => {
     const geometry: AnimationObject<number> = {
       current: 40,
       onStart: jest.fn(),
-      onFrame: jest.fn(() => false),
+      onFrame: jest.fn((animation: AnimationObject<number>) => {
+        animation.current = 70;
+        return false;
+      }),
     };
+    const linkedValue = shared(0);
 
     const signaledGeometry = withFullScreenLayoutStartSignal(
       geometry as unknown as number,
       startedGeneration,
       layoutStartedAt,
       1,
+      undefined,
+      {
+        value: linkedValue,
+        target: 50,
+        layoutTarget: 100,
+      },
     ) as unknown as AnimationObject<number>;
 
     signaledGeometry.onStart(signaledGeometry, 40, 125, null);
@@ -144,5 +154,8 @@ describe("fullscreen transition start synchronization", () => {
     );
     expect(layoutStartedAt.value).toBe(125);
     expect(startedGeneration.value).toBe(1);
+
+    signaledGeometry.onFrame(signaledGeometry, 130);
+    expect(linkedValue.value).toBe(25);
   });
 });

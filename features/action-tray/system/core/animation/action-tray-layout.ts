@@ -12,6 +12,8 @@ type TrayLayoutTransitionParams = {
   fullScreenTransitionGeneration: number;
   layoutStartedAt: SharedValue<number>;
   layoutStartedFullScreenGeneration: SharedValue<number>;
+  fullScreenSafeAreaTop: SharedValue<number>;
+  fullScreenSafeAreaTopTarget: number;
   onConfigure?: (configuredAt: number) => void;
   onStart?: (startedAt: number) => void;
   onComplete?: (finishedAt: number) => void;
@@ -21,6 +23,8 @@ export const createTrayLayoutTransition = ({
   fullScreenTransitionGeneration,
   layoutStartedAt,
   layoutStartedFullScreenGeneration,
+  fullScreenSafeAreaTop,
+  fullScreenSafeAreaTopTarget,
   onConfigure,
   onStart,
   onComplete,
@@ -47,6 +51,11 @@ export const createTrayLayoutTransition = ({
       layoutStartedAt,
       fullScreenTransitionGeneration,
       onStart,
+      {
+        value: fullScreenSafeAreaTop,
+        target: fullScreenSafeAreaTopTarget,
+        layoutTarget: values.targetWidth,
+      },
     );
 
     return {

@@ -154,8 +154,16 @@ export const publishFullScreenLayoutStart = (
 interface LayoutStartSignalAnimation
   extends Animation<LayoutStartSignalAnimation> {
   current: AnimatableValue;
+  layoutStart: number;
+  linkedStart: number;
   previousAnimation: AnimationObject | null;
 }
+
+type LinkedLayoutValue = {
+  value: SharedValue<number>;
+  target: number;
+  layoutTarget: number;
+};
 
 type WithFullScreenLayoutStartSignal = <T extends AnimatableValue>(
   nextAnimation: T,
@@ -163,6 +171,7 @@ type WithFullScreenLayoutStartSignal = <T extends AnimatableValue>(
   layoutStartedAt: SharedValue<number>,
   generation: number,
   onStartSignal?: (startedAt: number) => void,
+  linkedLayoutValue?: LinkedLayoutValue,
 ) => T;
 
 // The signal comes from a real geometry animation's onStart, not from layout
@@ -175,6 +184,7 @@ export const withFullScreenLayoutStartSignal = function <
   layoutStartedAt: SharedValue<number>,
   generation: number,
   onStartSignal?: (startedAt: number) => void,
+  linkedLayoutValue?: LinkedLayoutValue,
 ): Animation<LayoutStartSignalAnimation> {
   "worklet";
 
@@ -194,6 +204,33 @@ export const withFullScreenLayoutStartSignal = function <
       ) => {
         const finished = nextAnimation.onFrame(nextAnimation, now);
         animation.current = nextAnimation.current ?? animation.current;
+
+        if (linkedLayoutValue) {
+          const layoutCurrent =
+            typeof animation.current === "number"
+              ? animation.current
+              : linkedLayoutValue.layoutTarget;
+          const layoutDistance =
+            linkedLayoutValue.layoutTarget - animation.layoutStart;
+          const progress =
+            Math.abs(layoutDistance) < 0.001
+              ? 1
+              : Math.min(
+                  1,
+                  Math.max(
+                    0,
+                    (layoutCurrent - animation.layoutStart) /
+                      layoutDistance,
+                  ),
+                );
+
+          linkedLayoutValue.value.value = finished
+            ? linkedLayoutValue.target
+            : animation.linkedStart +
+              (linkedLayoutValue.target - animation.linkedStart) *
+                progress;
+        }
+
         return finished;
       };
 
@@ -209,6 +246,11 @@ export const withFullScreenLayoutStartSignal = function <
 
         nextAnimation.onStart(nextAnimation, value, now, previousAnimation);
         animation.current = nextAnimation.current ?? value;
+        animation.layoutStart =
+          typeof value === "number"
+            ? value
+            : linkedLayoutValue?.layoutTarget ?? 0;
+        animation.linkedStart = linkedLayoutValue?.value.value ?? 0;
         animation.previousAnimation = previousAnimation;
 
         publishFullScreenLayoutStart(
@@ -232,6 +274,8 @@ export const withFullScreenLayoutStartSignal = function <
         onFrame,
         onStart,
         current: nextAnimation.current!,
+        layoutStart: 0,
+        linkedStart: 0,
         callback,
         previousAnimation: null,
       };

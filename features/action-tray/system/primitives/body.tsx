@@ -18,6 +18,8 @@ export const TrayBody: React.FC<{
   const presentation = useTrayStepOptions();
   const resolvedFullScreen = fullScreen ?? presentation.fullScreen;
 
+
+
   return (
     <View
       className={className}
@@ -25,7 +27,7 @@ export const TrayBody: React.FC<{
         styles.body,
         resolvedFullScreen
           ? {
-              paddingTop: top + TRAY_VERTICAL_PADDING,
+              paddingTop: 0,
             }
           : null,
         style,

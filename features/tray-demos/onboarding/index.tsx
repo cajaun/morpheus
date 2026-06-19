@@ -13,6 +13,7 @@ import { OnboardingPageHeader as SharedOnboardingPageHeader } from "../shared/on
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { SymbolView } from "expo-symbols";
 import { createCreatingWalletsInfoSteps } from "../creating-wallets-info";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const OnboardingFooter = () => {
   const { next, index, total, close, pageIndex } = useTrayFlow();
@@ -367,6 +368,8 @@ const SecondStep = () => {
 };
 
 const ThirdStep = () => {
+
+  const {top} = useSafeAreaInsets();
   return (
     <Tray.Pages>
       <Tray.Pages.Header shell>
@@ -374,7 +377,7 @@ const ThirdStep = () => {
       </Tray.Pages.Header>
 
       <Tray.Page className="flex-1">
-        <Tray.Body style={{ paddingHorizontal: 40, flex: 1, gap: 24 }}>
+        <Tray.Body style={{ paddingHorizontal: 40, flex: 1, gap: 24}}>
           <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
             Content Three A
           </Text>

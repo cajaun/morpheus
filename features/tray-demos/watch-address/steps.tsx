@@ -15,6 +15,7 @@ import {
 } from "./components";
 import { OnboardingPageHeader } from "../shared/onboarding-page-header";
 import type { WalletAction } from "./types";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export const WatchAddressHeader = ({
   title,
@@ -153,6 +154,7 @@ export const CreateNewWalletStep = () => {
   const [walletName, setWalletName] = useState("");
   const [selectedColor, setSelectedColor] = useState("#41BBFF");
   const [hasAvatar, setHasAvatar] = useState(false);
+  const {top} = useSafeAreaInsets();
 
   return (
     <Tray.Pages>

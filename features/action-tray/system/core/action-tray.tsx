@@ -1,8 +1,19 @@
-import React, { forwardRef, useImperativeHandle, useMemo } from "react";
+import React, {
+  forwardRef,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { StyleSheet } from "react-native";
-import Animated, { useDerivedValue } from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+} from "react-native-reanimated";
 import { GestureDetector } from "react-native-gesture-handler";
 import { KeyboardStickyView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Backdrop } from "../primitives/backdrop";
 import { createTrayLayoutTransition } from "./animation/action-tray-layout";
 import { styles as trayStyles } from "./animation/action-tray-styles";
@@ -129,6 +140,22 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     useImperativeHandle(ref, () => imperativeApi, [imperativeApi]);
 
     const presentationFullScreen = renderedFullScreen;
+    const { top: safeAreaTopInset } = useSafeAreaInsets();
+    const fullScreenSafeAreaTopTarget =
+      presentationFullScreen && renderedFullScreenSafeAreaTop
+        ? safeAreaTopInset
+        : 0;
+    const fullScreenSafeAreaTopHeight = useSharedValue(
+      fullScreenSafeAreaTopTarget,
+    );
+    const previousPresentationFullScreenRef = useRef(
+      presentationFullScreen,
+    );
+    const fullScreenSafeAreaHeaderStyle = useAnimatedStyle(() => ({
+      transform: [
+        { translateY: fullScreenSafeAreaTopHeight.value },
+      ],
+    }));
     const instrumentationEnabled = isActionTrayInstrumentationEnabled();
     const shouldUseOriginTransition =
       transition?.open === "expandFromTrigger" && !presentationFullScreen;
@@ -183,12 +210,30 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     });
 
     const shouldUseLayoutAnimation = layoutEnabled;
+    useLayoutEffect(() => {
+      const presentationModeChanged =
+        previousPresentationFullScreenRef.current !==
+        presentationFullScreen;
+      previousPresentationFullScreenRef.current = presentationFullScreen;
+
+      if (!presentationModeChanged || !shouldUseLayoutAnimation) {
+        fullScreenSafeAreaTopHeight.value =
+          fullScreenSafeAreaTopTarget;
+      }
+    }, [
+      fullScreenSafeAreaTopHeight,
+      fullScreenSafeAreaTopTarget,
+      presentationFullScreen,
+      shouldUseLayoutAnimation,
+    ]);
     const layoutAnimationConfig = useMemo(
       () =>
         createTrayLayoutTransition({
           fullScreenTransitionGeneration,
           layoutStartedAt: fullScreenLayoutStartedAt,
           layoutStartedFullScreenGeneration,
+          fullScreenSafeAreaTop: fullScreenSafeAreaTopHeight,
+          fullScreenSafeAreaTopTarget,
           onConfigure: instrumentationEnabled
             ? handleLayoutTransitionConfigured
             : undefined,
@@ -199,6 +244,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         }),
       [
         fullScreenTransitionGeneration,
+        fullScreenSafeAreaTopHeight,
+        fullScreenSafeAreaTopTarget,
         fullScreenLayoutStartedAt,
         handleLayoutTransitionConfigured,
         handleLayoutTransitionComplete,
@@ -266,7 +313,12 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
                   value={fullScreenTransitionStart}
                 >
                   {renderedHeader ? (
-                    <Animated.View style={localStyles.headerContainer}>
+                    <Animated.View
+                      style={[
+                        localStyles.headerContainer,
+                        fullScreenSafeAreaHeaderStyle,
+                      ]}
+                    >
                       {renderedHeader}
                     </Animated.View>
                   ) : null}
@@ -367,5 +419,7 @@ export { ActionTray };
 const localStyles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: TRAY_HORIZONTAL_PADDING,
+    position: "relative",
+    zIndex: 1,
   },
 });
