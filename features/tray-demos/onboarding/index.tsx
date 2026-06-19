@@ -1,27 +1,18 @@
 import React, { useMemo } from "react";
 import { Text, View } from "react-native";
-import Animated, {
-  interpolate,
-  interpolateColor,
-  useAnimatedStyle,
-  type SharedValue,
-} from "react-native-reanimated";
 import {
   Tray,
   useTrayFlow,
-  useTrayPages,
   type TrayStepDefinition,
 } from "@/features/action-tray";
 import { BUTTON_HEIGHT } from "@/features/action-tray/presets/animated-flow-button";
 import FlowHeader from "@/features/action-tray/presets/flow-header";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { OnboardingPageHeader as SharedOnboardingPageHeader } from "../shared/onboarding-page-header";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { SymbolView } from "expo-symbols";
 import { createCreatingWalletsInfoSteps } from "../creating-wallets-info";
-
-
 
 const OnboardingFooter = () => {
   const { next, index, total, close, pageIndex } = useTrayFlow();
@@ -291,130 +282,28 @@ const sharedStepOptions = {
   className: "bg-white",
 } as const;
 
-const OnboardingPageProgressItem = ({
-  index,
-  progress,
-}: {
-  index: number;
-  progress: SharedValue<number>;
-}) => {
-  const animatedStyle = useAnimatedStyle(() => {
-    const distance = Math.min(Math.abs(progress.value - index), 1);
-
-    return {
-      width: interpolate(distance, [0, 1], [42, 22]),
-      backgroundColor: interpolateColor(
-        distance,
-        [0, 1],
-        ["#41BBFF", "#DCDDDF"],
-      ),
-    };
-  }, [index, progress]);
-
-  return (
-    <Animated.View
-      style={[
-        {
-          height: 4,
-          borderRadius: 999,
-        },
-        animatedStyle,
-      ]}
-    />
-  );
-};
-
-const OnboardingPageProgress = ({
-  totalPages,
-  progress,
-}: {
-  totalPages: number;
-  progress: SharedValue<number>;
-}) => {
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        flex: 1,
-      }}
-    >
-      {Array.from({ length: totalPages }, (_, index) => (
-        <OnboardingPageProgressItem
-          key={index}
-          index={index}
-          progress={progress}
-        />
-      ))}
-    </View>
-  );
-};
-
 export const OnboardingPageHeader = () => {
-  const { requestClose } = useTrayFlow();
-  const { pageIndex, totalPages, backPage, progress } = useTrayPages();
-  const { top } = useSafeAreaInsets();
-  const isFirstPage = pageIndex === 0;
-
   return (
-    // <View
-    //   style={{
-    //     paddingTop: top + 10,
-    //     flexDirection: "column",
-
-    //     gap: 24,
-    //        alignItems: "center",
-    //   }}
-    // >
-    <View
-      style={{
-        paddingTop: 24,
-        flexDirection: "row",
-        alignItems: "center",
-      }}
-    >
-      <PressableScale
-        onPress={isFirstPage ? requestClose : backPage}
-        style={{
-          width: 32,
-          height: 32,
-          alignItems: "flex-start",
-          justifyContent: "center",
-        }}
-      >
-        <SymbolView
-          name={"xmark"}
-          type="palette"
-          size={22}
-          weight="semibold"
-          tintColor="#2A2A2C"
-        />
-      </PressableScale>
-
-      <OnboardingPageProgress totalPages={totalPages} progress={progress} />
-
-      <Tray.Nested
-        steps={ONBOARDING_HELP_INFO_STEPS}
-        style={{
-          width: 32,
-          height: 32,
-      
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <SymbolView
-          name="questionmark.circle"
-          type="palette"
-          size={32}
-          tintColor="#2A2A2C"
-        />
-      </Tray.Nested>
-    </View>
-
-    // </View>
+    <SharedOnboardingPageHeader
+      rightAccessory={
+        <Tray.Nested
+          steps={ONBOARDING_HELP_INFO_STEPS}
+          style={{
+            width: 32,
+            height: 32,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <SymbolView
+            name="questionmark.circle"
+            type="palette"
+            size={32}
+            tintColor="#2A2A2C"
+          />
+        </Tray.Nested>
+      }
+    />
   );
 };
 

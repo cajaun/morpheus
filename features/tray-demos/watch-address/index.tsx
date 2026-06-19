@@ -3,9 +3,11 @@ import { Tray, type TrayStepDefinition } from "@/features/action-tray";
 import { ExampleTrigger } from "../shared/example-trigger";
 import {
   CreateNewWalletStep,
+  WatchAddressHeader,
   WatchAddressChooserStep,
   WatchAddressInputStep,
 } from "./steps";
+import { OnboardingPageHeader } from "../shared/onboarding-page-header";
 import type { WalletAction } from "./types";
 
 const WatchAddressTray = () => {
@@ -14,11 +16,18 @@ const WatchAddressTray = () => {
     () => [
       {
         key: "watch-address-entry",
+        header: <WatchAddressHeader title="New Wallet" />,
         content: <WatchAddressChooserStep onSelectAction={setSelectedAction} />,
         options: { className: "bg-white" },
       },
       {
         key: `watch-address-next-${selectedAction}`,
+        header:
+          selectedAction === "create" ? (
+            <OnboardingPageHeader />
+          ) : (
+            <WatchAddressHeader title="Watch Address" showBack />
+          ),
         content:
           selectedAction === "create" ? (
             <CreateNewWalletStep />
@@ -29,6 +38,7 @@ const WatchAddressTray = () => {
           className: "bg-white",
           keyboardAware: true,
           fullScreen: selectedAction === "create",
+          fullScreenSafeAreaTop: selectedAction === "create",
           fullScreenDraggable: selectedAction !== "create",
           fullScreenCloseBehavior:
             selectedAction === "create" ? "returnToShell" : "dismiss",

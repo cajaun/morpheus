@@ -11,29 +11,42 @@ import {
   CreateWalletAvatarPicker,
   CreateWalletColorGrid,
   CreateWalletFlowFooter,
-  CreateWalletFlowHeader,
   WalletActionRow,
 } from "./components";
+import { OnboardingPageHeader } from "../shared/onboarding-page-header";
 import type { WalletAction } from "./types";
+
+export const WatchAddressHeader = ({
+  title,
+  showBack = false,
+}: {
+  title: string;
+  showBack?: boolean;
+}) => {
+  const { close, back, index } = useTrayFlow();
+
+  return (
+    <Tray.Header withSeparator>
+      <FlowHeader
+        step={index}
+        leftLabel={title}
+        shouldClose
+        onClose={close}
+        onBack={showBack ? back : undefined}
+      />
+    </Tray.Header>
+  );
+};
 
 export const WatchAddressChooserStep = ({
   onSelectAction,
 }: {
   onSelectAction: (action: WalletAction) => void;
 }) => {
-  const { close, next, index } = useTrayFlow();
+  const { next } = useTrayFlow();
 
   return (
     <Tray.Body>
-      <Tray.Header withSeparator>
-        <FlowHeader
-          step={index}
-          leftLabel="New Wallet"
-          shouldClose
-          onClose={close}
-        />
-      </Tray.Header>
-
       <Tray.Section>
         <WalletActionRow
           icon="plus"
@@ -69,22 +82,12 @@ export const WatchAddressChooserStep = ({
 };
 
 export const WatchAddressInputStep = () => {
-  const { close, back, index } = useTrayFlow();
+  const { close } = useTrayFlow();
   const [address, setAddress] = useState("");
   const canContinue = address.trim().length > 0;
 
   return (
     <Tray.Body>
-      <Tray.Header withSeparator>
-        <FlowHeader
-          step={index}
-          leftLabel="Watch Address"
-          shouldClose
-          onClose={close}
-          onBack={back}
-        />
-      </Tray.Header>
-
       <Tray.Section style={{ gap: 20 }}>
         <FieldShell>
           <Tray.TextInput
@@ -153,8 +156,8 @@ export const CreateNewWalletStep = () => {
 
   return (
     <Tray.Pages>
-      <Tray.Pages.Header>
-        <CreateWalletFlowHeader />
+      <Tray.Pages.Header shell>
+        <OnboardingPageHeader />
       </Tray.Pages.Header>
 
       <Tray.Page className="flex-1">
