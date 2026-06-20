@@ -15,7 +15,6 @@ import {
 } from "./components";
 import { OnboardingPageHeader } from "../shared/onboarding-page-header";
 import type { WalletAction } from "./types";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export const WatchAddressHeader = ({
   title,
@@ -154,7 +153,6 @@ export const CreateNewWalletStep = () => {
   const [walletName, setWalletName] = useState("");
   const [selectedColor, setSelectedColor] = useState("#41BBFF");
   const [hasAvatar, setHasAvatar] = useState(false);
-  const {top} = useSafeAreaInsets();
 
   return (
     <Tray.Pages>
@@ -164,138 +162,146 @@ export const CreateNewWalletStep = () => {
 
       <Tray.Page className="flex-1">
         <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
-          <View style={{ gap: 18 }}>
-            <Text
-              className="font-sf-semibold text-[#2D2E30]"
-              style={{
-                fontSize: 32,
-                lineHeight: 34,
-                letterSpacing: 0.2,
-              }}
-            >
-              Name Your Wallet
-            </Text>
+          <Tray.Section style={{ gap: 0 }}>
+            <View style={{ gap: 18 }}>
+              <Text
+                className="font-sf-semibold text-[#2D2E30]"
+                style={{
+                  fontSize: 32,
+                  lineHeight: 34,
+                  letterSpacing: 0.2,
+                }}
+              >
+                Name Your Wallet
+              </Text>
+
+              <Text
+                className="font-sf-medium text-[#A0A4AA]"
+                style={{
+                  fontSize: 21,
+                  lineHeight: 28,
+                  letterSpacing: 0.15,
+                }}
+              >
+                Choose a nickname for your wallet.
+              </Text>
+            </View>
+
+            <View style={{ paddingTop: 28 }}>
+              <View
+                style={{
+                  paddingBottom: 12,
+                }}
+              >
+                <Tray.TextInput
+                  value={walletName}
+                  onChangeText={setWalletName}
+                  autoCapitalize="words"
+                  autoFocus={false}
+                  autoCorrect={false}
+                  autoComplete="off"
+                  placeholder="My New Wallet"
+                  placeholderTextColor="#D2D5DA"
+                  returnKeyType="done"
+                  smartInsertDelete={false}
+                  spellCheck={false}
+                  textContentType="none"
+                  style={trayTextInputStyle}
+                />
+              </View>
+            </View>
 
             <Text
-              className="font-sf-medium text-[#A0A4AA]"
+              className="font-sf-medium text-[#B2B6BC]"
               style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.15,
+                fontSize: 16,
+                lineHeight: 24,
+                letterSpacing: 0.12,
+                paddingTop: 22,
               }}
             >
-              Choose a nickname for your wallet.
+              Your nickname is private and only visible to you
             </Text>
-          </View>
+          </Tray.Section>
+        </Tray.Body>
+      </Tray.Page>
 
-          <View style={{ paddingTop: 28 }}>
-            <View
-              style={{
-                paddingBottom: 12,
-              }}
-            >
-              <Tray.TextInput
-                value={walletName}
-                onChangeText={setWalletName}
-                autoCapitalize="words"
-                autoFocus={false}
-                autoCorrect={false}
-                autoComplete="off"
-                placeholder="My New Wallet"
-                placeholderTextColor="#D2D5DA"
-                returnKeyType="done"
-                smartInsertDelete={false}
-                spellCheck={false}
-                textContentType="none"
-                style={trayTextInputStyle}
+      <Tray.Page className="flex-1">
+        <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
+          <Tray.Section style={{ gap: 0 }}>
+            <View style={{ gap: 12 }}>
+              <Text
+                className="font-sf-semibold text-[#2D2E30]"
+                style={{
+                  fontSize: 32,
+                  lineHeight: 34,
+                  letterSpacing: 0.2,
+                }}
+              >
+                Choose a Color
+              </Text>
+
+              <Text
+                className="font-sf-medium text-[#A0A4AA]"
+                style={{
+                  fontSize: 21,
+                  lineHeight: 28,
+                  letterSpacing: 0.15,
+                }}
+              >
+                Great. Now choose a color for your{"\n"}wallet, you can always
+                edit this later.
+              </Text>
+            </View>
+
+            <View style={{ paddingTop: 58 }}>
+              <CreateWalletColorGrid
+                selectedColor={selectedColor}
+                onSelect={setSelectedColor}
               />
             </View>
-          </View>
-
-          <Text
-            className="font-sf-medium text-[#B2B6BC]"
-            style={{
-              fontSize: 16,
-              lineHeight: 24,
-              letterSpacing: 0.12,
-              paddingTop: 22,
-            }}
-          >
-            Your nickname is private and only visible to you
-          </Text>
+          </Tray.Section>
         </Tray.Body>
       </Tray.Page>
 
       <Tray.Page className="flex-1">
         <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
-          <View style={{ gap: 12, paddingTop: 18 }}>
-            <Text
-              className="font-sf-semibold text-[#2D2E30]"
-              style={{
-                fontSize: 32,
-                lineHeight: 34,
-                letterSpacing: 0.2,
-              }}
+          <Tray.Section style={{ gap: 0, flex: 1 }}>
+            <View style={{ gap: 12 }}>
+              <Text
+                className="font-sf-semibold text-[#2D2E30]"
+                style={{
+                  fontSize: 32,
+                  lineHeight: 34,
+                  letterSpacing: 0.2,
+                }}
+              >
+                Set a Display Image
+              </Text>
+
+              <Text
+                className="font-sf-medium text-[#A0A4AA]"
+                style={{
+                  fontSize: 21,
+                  lineHeight: 28,
+                  letterSpacing: 0.15,
+                }}
+              >
+                Finally, let's choose an avatar for your{"\n"}wallet. This is
+                visible only to you.
+              </Text>
+            </View>
+
+            <View
+              style={{ flex: 1, justifyContent: "center", paddingBottom: 60 }}
             >
-              Choose a Color
-            </Text>
-
-            <Text
-              className="font-sf-medium text-[#A0A4AA]"
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.15,
-              }}
-            >
-              Great. Now choose a color for your{"\n"}wallet, you can always
-              edit this later.
-            </Text>
-          </View>
-
-          <View style={{ paddingTop: 58 }}>
-            <CreateWalletColorGrid
-              selectedColor={selectedColor}
-              onSelect={setSelectedColor}
-            />
-          </View>
-        </Tray.Body>
-      </Tray.Page>
-
-      <Tray.Page className="flex-1">
-        <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
-          <View style={{ gap: 12, paddingTop: 18 }}>
-            <Text
-              className="font-sf-semibold text-[#2D2E30]"
-              style={{
-                fontSize: 32,
-                lineHeight: 34,
-                letterSpacing: 0.2,
-              }}
-            >
-              Set a Display Image
-            </Text>
-
-            <Text
-              className="font-sf-medium text-[#A0A4AA]"
-              style={{
-                fontSize: 21,
-                lineHeight: 28,
-                letterSpacing: 0.15,
-              }}
-            >
-              Finally, let's choose an avatar for your{"\n"}wallet. This is
-              visible only to you.
-            </Text>
-          </View>
-
-          <View style={{ flex: 1, justifyContent: "center", paddingBottom: 60 }}>
-            <CreateWalletAvatarPicker
-              selectedColor={selectedColor}
-              selected={hasAvatar}
-              onPress={() => setHasAvatar((current) => !current)}
-            />
-          </View>
+              <CreateWalletAvatarPicker
+                selectedColor={selectedColor}
+                selected={hasAvatar}
+                onPress={() => setHasAvatar((current) => !current)}
+              />
+            </View>
+          </Tray.Section>
         </Tray.Body>
       </Tray.Page>
 

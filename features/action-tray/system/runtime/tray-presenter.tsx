@@ -140,6 +140,7 @@ const createPresentedTray = ({
           <TrayStepContent
             stepKey={`${entry.trayId}-${step.key}`}
             scale={stepOptions.scale}
+            anchorScaleToTop={stepOptions.fullScreen}
             skipEntering={isFirstRender}
           >
             {step.content}

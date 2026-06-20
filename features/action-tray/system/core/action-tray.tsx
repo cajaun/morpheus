@@ -27,6 +27,7 @@ import {
   HORIZONTAL_MARGIN,
   TRAY_HORIZONTAL_PADDING,
   TRAY_KEYBOARD_GAP,
+  TRAY_SECTION_GAP,
   TRAY_VERTICAL_PADDING,
 } from "./constants";
 import {
@@ -151,7 +152,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     const previousPresentationFullScreenRef = useRef(
       presentationFullScreen,
     );
-    const fullScreenSafeAreaHeaderStyle = useAnimatedStyle(() => ({
+    const fullScreenSafeAreaContentStyle = useAnimatedStyle(() => ({
       transform: [
         { translateY: fullScreenSafeAreaTopHeight.value },
       ],
@@ -306,7 +307,10 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           >
             <Animated.View style={[trayStyles.content, contentRevealStyle]}>
               <Animated.View
-                style={contentPaddingStyle}
+                style={[
+                  contentPaddingStyle,
+                  fullScreenSafeAreaContentStyle,
+                ]}
                 onLayout={handleContentLayout}
               >
                 <FullScreenTransitionStartProvider
@@ -316,7 +320,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
                     <Animated.View
                       style={[
                         localStyles.headerContainer,
-                        fullScreenSafeAreaHeaderStyle,
+                        presentationFullScreen &&
+                          localStyles.fullScreenHeaderContainer,
                       ]}
                     >
                       {renderedHeader}
@@ -419,7 +424,12 @@ export { ActionTray };
 const localStyles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: TRAY_HORIZONTAL_PADDING,
-    position: "relative",
-    zIndex: 1,
+    // position: "relative",
+    // zIndex: 1,
+  },
+  fullScreenHeaderContainer: {
+    // Fullscreen chrome owns the gap between its header controls and body.
+    // Tray.Section then supplies its independent content inset.
+    paddingBottom: TRAY_SECTION_GAP,
   },
 });

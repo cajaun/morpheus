@@ -13,7 +13,6 @@ import { OnboardingPageHeader as SharedOnboardingPageHeader } from "../shared/on
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { SymbolView } from "expo-symbols";
 import { createCreatingWalletsInfoSteps } from "../creating-wallets-info";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const OnboardingFooter = () => {
   const { next, index, total, close, pageIndex } = useTrayFlow();
@@ -368,8 +367,6 @@ const SecondStep = () => {
 };
 
 const ThirdStep = () => {
-
-  const {top} = useSafeAreaInsets();
   return (
     <Tray.Pages>
       <Tray.Pages.Header shell>
@@ -377,102 +374,110 @@ const ThirdStep = () => {
       </Tray.Pages.Header>
 
       <Tray.Page className="flex-1">
-        <Tray.Body style={{ paddingHorizontal: 40, flex: 1, gap: 24}}>
-          <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
-            Content Three A
-          </Text>
-          <Text
-            className="text-black font-sf-regular"
-            style={trayDemoText.bodyLarge}
-          >
-            Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
-            amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
-          </Text>
-          <Text
-            className="text-black font-sf-regular"
-            style={trayDemoText.bodyLarge}
-          >
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laborum
-            hic ut excepturi, aut eum obcaecati repudiandae! Aliquam expedita,
-            minima.
-          </Text>
+        <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
+          <Tray.Section>
+            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+              Content Three A
+            </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
+              amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
+            </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laborum
+              hic ut excepturi, aut eum obcaecati repudiandae! Aliquam expedita,
+              minima.
+            </Text>
 
-          <Text
-            className="text-black font-sf-regular"
-            style={trayDemoText.bodyLarge}
-          >
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Atque,
-            esse blanditiis. Est ipsum temporibus quis esse dolores similique
-            amet doloribus adipisci modi ullam rerum itaque tempore perferendis
-            id unde aperiam libero facilis, repellendus tempora velit. Dolores
-            iste ipsam molestiae harum?
-          </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              Lorem ipsum dolor sit amet, consectetur adipisicing elit. Atque,
+              esse blanditiis. Est ipsum temporibus quis esse dolores similique
+              amet doloribus adipisci modi ullam rerum itaque tempore
+              perferendis id unde aperiam libero facilis, repellendus tempora
+              velit. Dolores iste ipsam molestiae harum?
+            </Text>
+          </Tray.Section>
         </Tray.Body>
       </Tray.Page>
 
       <Tray.Page className="flex-1">
         <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
-          <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
-            Content Three B
-          </Text>
-          <Text
-            className="text-black font-sf-regular"
-            style={trayDemoText.bodyLarge}
-          >
-            This is the second fullscreen page. Keep tapping Continue to move
-            through the built-in tray pages flow.
-          </Text>
-          <Text
-            className="text-black font-sf-regular"
-            style={trayDemoText.bodyLarge}
-          >
-            Quisquam placeat praesentium at delectus veritatis, adipisci sint
-            atque deserunt velit rem laborum neque minus doloribus.
-          </Text>
+          <Tray.Section>
+            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+              Content Three B
+            </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              This is the second fullscreen page. Keep tapping Continue to move
+              through the built-in tray pages flow.
+            </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              Quisquam placeat praesentium at delectus veritatis, adipisci sint
+              atque deserunt velit rem laborum neque minus doloribus.
+            </Text>
+          </Tray.Section>
         </Tray.Body>
       </Tray.Page>
 
       <Tray.Page className="flex-1">
         <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
-          <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
-            Content Three C
-          </Text>
-          <Text
-            className="text-black font-sf-regular"
-            style={trayDemoText.bodyLarge}
-          >
-            Final fullscreen page before returning to shell and going to Content
-            Four.
-          </Text>
-          <Text
-            className="text-black font-sf-regular"
-            style={trayDemoText.bodyLarge}
-          >
-            This is some example test that spans over multiple lines bla bla bla
-            test test many words. This is a new sentence and we'll see how that
-            fares too.
-          </Text>
+          <Tray.Section>
+            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+              Content Three C
+            </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              Final fullscreen page before returning to shell and going to
+              Content Four.
+            </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              This is some example test that spans over multiple lines bla bla
+              bla test test many words. This is a new sentence and we'll see how
+              that fares too.
+            </Text>
+          </Tray.Section>
         </Tray.Body>
       </Tray.Page>
 
       <Tray.Page className="flex-1">
         <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
-          <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
-            Content Three D
-          </Text>
-          <Text
-            className="text-black font-sf-regular"
-            style={trayDemoText.bodyLarge}
-          >
-            This is the fourth fullscreen page in the onboarding sequence.
-          </Text>
-          <Text
-            className="text-black font-sf-regular"
-            style={trayDemoText.bodyLarge}
-          >
-            The progress indicator should now show four items and keep the
-            active page emphasized as you continue through the flow.
-          </Text>
+          <Tray.Section>
+            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+              Content Three D
+            </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              This is the fourth fullscreen page in the onboarding sequence.
+            </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              The progress indicator should now show four items and keep the
+              active page emphasized as you continue through the flow.
+            </Text>
+          </Tray.Section>
         </Tray.Body>
       </Tray.Page>
     </Tray.Pages>

@@ -34,7 +34,7 @@ const PageProgressItem = ({
     <Animated.View
       style={[
         {
-          height: 4,
+          height: 3,
           borderRadius: 999,
         },
         animatedStyle,

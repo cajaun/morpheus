@@ -1,11 +1,6 @@
 import React from "react";
 import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  TRAY_HORIZONTAL_PADDING,
-  TRAY_VERTICAL_PADDING,
-} from "../core/constants";
-import { useTrayStepOptions } from "../runtime/tray-context";
+import { TRAY_HORIZONTAL_PADDING } from "../core/constants";
 
 // body owns horizontal padding so steps share one visual grid
 export const TrayBody: React.FC<{
@@ -13,25 +8,11 @@ export const TrayBody: React.FC<{
   style?: StyleProp<ViewStyle>;
   className?: string;
   fullScreen?: boolean;
-}> = ({ children, style, className, fullScreen }) => {
-  const { top } = useSafeAreaInsets();
-  const presentation = useTrayStepOptions();
-  const resolvedFullScreen = fullScreen ?? presentation.fullScreen;
-
-
-
+}> = ({ children, style, className }) => {
   return (
     <View
       className={className}
-      style={[
-        styles.body,
-        resolvedFullScreen
-          ? {
-              paddingTop: 0,
-            }
-          : null,
-        style,
-      ]}
+      style={[styles.body, style]}
     >
       {children}
     </View>

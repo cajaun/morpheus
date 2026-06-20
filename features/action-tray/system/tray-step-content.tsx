@@ -23,6 +23,7 @@ import { markTrayStepContentReleased } from "./telemetry/tray-step-timing";
 type Props = {
   children: React.ReactNode;
   scale?: boolean;
+  anchorScaleToTop?: boolean;
   stepKey?: string;
   skipEntering?: boolean;
   skipExiting?: boolean;
@@ -167,6 +168,7 @@ const createMorphExiting = (scale: boolean): EntryExitAnimationFunction => {
 export const TrayStepContent: React.FC<Props> = ({
   children,
   scale = true,
+  anchorScaleToTop = false,
   stepKey,
   skipEntering = false,
   skipExiting = false,
@@ -184,6 +186,14 @@ export const TrayStepContent: React.FC<Props> = ({
   return (
     <Animated.View
       key={stepKey}
+      // A fullscreen-height layer must scale from the body boundary so it
+      // cannot expand upward into the header. Regular steps retain the native
+      // center origin and therefore their existing transition motion.
+      style={
+        anchorScaleToTop
+          ? { transformOrigin: ["50%", "0%", 0] }
+          : undefined
+      }
       // first render can skip enter because shell open already provides the arrival cue
       entering={
         skipEntering
