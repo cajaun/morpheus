@@ -50,6 +50,7 @@ export const useActionTrayAnimatedStyles = ({
     originProgress,
     shouldUseOriginTransition,
     surfaceOpacity,
+    transition,
     visible,
   });
 

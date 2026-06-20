@@ -18,7 +18,7 @@ import type {
 
 type Params = Pick<
   ActionTrayAnimatedStyleParams,
-  "hasFooter" | "surfaceOpacity" | "visible"
+  "hasFooter" | "surfaceOpacity" | "transition" | "visible"
 > &
   Pick<
     ActionTrayAnimationState,
@@ -31,6 +31,7 @@ export const useActionTrayVisibilityStyles = ({
   originProgress,
   shouldUseOriginTransition,
   surfaceOpacity,
+  transition,
   visible,
 }: Params) => {
   const surfaceVisibilityStyle = useAnimatedStyle(() => ({
@@ -70,25 +71,31 @@ export const useActionTrayVisibilityStyles = ({
   }));
 
   const footerContentFrameStyle = useAnimatedStyle(() => {
+    const sheetContentWidth =
+      SCREEN_WIDTH - HORIZONTAL_MARGIN * 2 - TRAY_VERTICAL_PADDING * 2;
+
     if (!shouldUseOriginTransition) {
       return {
-        width: "100%",
+        // The detached footer surface may become edge-to-edge in fullscreen,
+        // but its visible content should retain the sheet's inner width.
+        alignSelf: "center",
+        width: sheetContentWidth,
       };
     }
 
     const collapsedWidth =
-      SCREEN_WIDTH - EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN * 2;
-    const expandedWidth =
-      SCREEN_WIDTH - HORIZONTAL_MARGIN * 2 - TRAY_VERTICAL_PADDING * 2;
+      transition?.origin === "fullScreenFooter"
+        ? sheetContentWidth
+        : SCREEN_WIDTH - EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN * 2;
 
     return {
       alignSelf: "center",
       width: interpolate(originProgress.value, [0, 1], [
         collapsedWidth,
-        expandedWidth,
+        sheetContentWidth,
       ]),
     };
-  }, [originProgress, shouldUseOriginTransition]);
+  }, [originProgress, shouldUseOriginTransition, transition?.origin]);
 
   const contentPaddingStyle = useAnimatedStyle(() => ({
     paddingHorizontal: 0,
