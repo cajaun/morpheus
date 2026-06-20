@@ -1,1 +1,1 @@
-export type WalletAction = "watch" | "create";
+export type WalletAction = "watch" | "create" | "existing";

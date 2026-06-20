@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Tray, type TrayStepDefinition } from "@/features/action-tray";
 import { ExampleTrigger } from "../shared/example-trigger";
 import {
+  AddExistingWalletStep,
   CreateNewWalletStep,
   WatchAddressHeader,
   WatchAddressChooserStep,
@@ -23,25 +24,29 @@ const WatchAddressTray = () => {
       {
         key: `watch-address-next-${selectedAction}`,
         header:
-          selectedAction === "create" ? (
-            <OnboardingPageHeader />
+          selectedAction !== "watch" ? (
+            <OnboardingPageHeader
+              showProgress={selectedAction !== "existing"}
+            />
           ) : (
             <WatchAddressHeader title="Watch Address" showBack />
           ),
         content:
           selectedAction === "create" ? (
             <CreateNewWalletStep />
+          ) : selectedAction === "existing" ? (
+            <AddExistingWalletStep />
           ) : (
             <WatchAddressInputStep />
           ),
         options: {
           className: "bg-white",
-          keyboardAware: true,
-          fullScreen: selectedAction === "create",
-          fullScreenSafeAreaTop: selectedAction === "create",
-          fullScreenDraggable: selectedAction !== "create",
+          keyboardAware: selectedAction !== "existing",
+          fullScreen: selectedAction !== "watch",
+          fullScreenSafeAreaTop: selectedAction !== "watch",
+          fullScreenDraggable: selectedAction === "watch",
           fullScreenCloseBehavior:
-            selectedAction === "create" ? "returnToShell" : "dismiss",
+            selectedAction !== "watch" ? "returnToShell" : "dismiss",
         },
       },
     ],

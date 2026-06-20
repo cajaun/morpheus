@@ -11,6 +11,9 @@ import {
   CreateWalletAvatarPicker,
   CreateWalletColorGrid,
   CreateWalletFlowFooter,
+  ExistingWalletHero,
+  ExistingWalletOption,
+  FamilyAccountIcon,
   WalletActionRow,
 } from "./components";
 import { OnboardingPageHeader } from "../shared/onboarding-page-header";
@@ -64,6 +67,10 @@ export const WatchAddressChooserStep = ({
           iconColor="#3DCA46"
           label="Add Existing"
           description="Add an existing wallet by importing or restoring."
+          onPress={() => {
+            onSelectAction("existing");
+            next();
+          }}
         />
 
         <WalletActionRow
@@ -78,6 +85,90 @@ export const WatchAddressChooserStep = ({
         />
       </Tray.Section>
     </Tray.Body>
+  );
+};
+
+export const AddExistingWalletStep = () => {
+  return (
+    <Tray.Pages>
+      <Tray.Pages.Header shell>
+        <OnboardingPageHeader showProgress={false} />
+      </Tray.Pages.Header>
+
+      <Tray.Page className="flex-1">
+        <Tray.Body style={{ paddingHorizontal: 0, flex: 1 }}>
+          <ExistingWalletHero />
+
+          <View style={{ height: 1, backgroundColor: "#ECEDEF" }} />
+
+          <Tray.Section
+            style={{
+              paddingHorizontal: 28,
+              paddingTop: 24,
+              gap: 24,
+            }}
+          >
+            <View
+              style={{
+                width: "100%",
+                alignItems: "center",
+                gap: 12,
+               
+              }}
+            >
+              <Text
+                className="font-sf-semibold"
+                style={{
+                  fontSize: 28,
+                  lineHeight: 36,
+                  letterSpacing: 0.2,
+                  color: "#2D2E30",
+                  textAlign: "center",
+                }}
+              >
+                Add an Existing Wallet
+              </Text>
+              <Text
+                className="font-sf-medium"
+                style={{
+                  fontSize: 21,
+                  lineHeight: 28,
+                  letterSpacing: 0.15,
+                  color: "#A0A4AA",
+                  textAlign: "center",
+                }}
+              >
+                Continue using a wallet you already{"\n"}own by importing or
+                restoring.
+              </Text>
+            </View>
+
+            <ExistingWalletOption
+              iconContent={<FamilyAccountIcon />}
+              layout="stacked"
+              title="Account"
+              description="Add an existing wallet from your Family account."
+              disabled
+            />
+
+            <ExistingWalletOption
+              icon="arrow.down"
+              iconBackground="#62778B"
+              title="Import"
+              description="Add an existing wallet via a Secret Phrase or Private Key."
+            />
+
+            <ExistingWalletOption
+              icon="icloud.slash.fill"
+              iconBackground="#D9DEE3"
+              title="No Backup Found"
+              description="Recover an existing wallet stored in your iCloud backup."
+              disabled
+            />
+          </Tray.Section>
+        </Tray.Body>
+      </Tray.Page>
+    </Tray.Pages>
   );
 };
 

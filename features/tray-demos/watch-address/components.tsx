@@ -84,6 +84,224 @@ export const WalletActionRow = ({
   );
 };
 
+export const ExistingWalletHero = () => {
+  return (
+    <View
+      style={{
+        height: 128,
+        alignItems: "center",
+        justifyContent: "flex-end",
+        overflow: "hidden",
+      }}
+    >
+      <View
+        style={{
+          position: "absolute",
+          bottom: 63,
+          width: "54%",
+          height: 63,
+          borderRadius: 18,
+          backgroundColor: "#31C94F",
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          bottom: 43,
+          width: "62%",
+          height: 63,
+          borderRadius: 18,
+          backgroundColor: "#FFB40B",
+        }}
+      />
+      <View
+        style={{
+          width: "73%",
+          height: 84,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          backgroundColor: "#3EADF0",
+          paddingHorizontal: 17,
+          paddingTop: 17,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+        }}
+      >
+        <View
+          style={{
+            width: 41,
+            height: 41,
+            borderRadius: 21,
+            backgroundColor: "#65C8F4",
+          }}
+        />
+        <View
+          style={{
+            marginTop: 5,
+            width: 103,
+            height: 20,
+            borderRadius: 10,
+            backgroundColor: "#65C8F4",
+          }}
+        />
+      </View>
+    </View>
+  );
+};
+
+export const ExistingWalletOption = ({
+  icon,
+  iconBackground,
+  iconColor = "#FFFFFF",
+  iconContent,
+  layout = "horizontal",
+  title,
+  description,
+  disabled = false,
+}: {
+  icon?: SFSymbol;
+  iconBackground?: string;
+  iconColor?: string;
+  iconContent?: React.ReactNode;
+  layout?: "horizontal" | "stacked";
+  title: string;
+  description: string;
+  disabled?: boolean;
+}) => {
+  const isStacked = layout === "stacked";
+  const optionStyle = {
+    minHeight: isStacked ? 190 : 100,
+    flexDirection: isStacked ? ("column" as const) : ("row" as const),
+    alignItems: isStacked ? ("flex-start" as const) : ("center" as const),
+    gap: isStacked ? 20 : 14,
+    borderRadius: 28,
+    backgroundColor: disabled ? "transparent" : trayDemoColors.softSurface,
+    borderWidth: disabled ? 1 : 0,
+    borderStyle: disabled ? ("dashed" as const) : ("solid" as const),
+    borderColor: "#E5E7EA",
+    paddingHorizontal: isStacked ? 28 : 20,
+    paddingVertical: isStacked ? 20 : 12,
+  };
+  const content = (
+    <>
+      {iconContent ?? (
+        <View
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: iconBackground,
+          }}
+        >
+          {icon ? (
+            <SymbolView
+              name={icon}
+              tintColor={iconColor}
+              size={25}
+              weight="semibold"
+            />
+          ) : null}
+        </View>
+      )}
+
+      <View style={{ flex: 1 }}>
+        <Text
+          className="font-sf-semibold"
+          style={[
+            trayDemoText.bodyLarge,
+            { color: disabled ? "#BFC2C6" : "#282828" },
+          ]}
+        >
+          {title}
+        </Text>
+        <Text
+          className="font-sf-medium"
+          style={[
+            trayDemoText.body,
+            { color: disabled ? "#D6D8DB" : "#9FA4AA" },
+          ]}
+        >
+          {description}
+        </Text>
+      </View>
+    </>
+  );
+
+  if (disabled) {
+    return <View style={optionStyle}>{content}</View>;
+  }
+
+  return <PressableScale style={optionStyle}>{content}</PressableScale>;
+};
+
+export const FamilyAccountIcon = () => {
+  return (
+    <View
+      style={{
+        width: 66,
+        height: 66,
+        borderRadius: 33,
+        backgroundColor: "#FFF5D9",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <View
+        style={{
+          position: "absolute",
+          top: 17,
+          width: 44,
+          height: 34,
+          borderRadius: 18,
+          backgroundColor: "#FFE3A0",
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          top: 10,
+          width: 25,
+          height: 25,
+          borderRadius: 13,
+          backgroundColor: "#FFE3A0",
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          top: 18,
+          left: 10,
+          width: 25,
+          height: 25,
+          borderRadius: 13,
+          backgroundColor: "#FFE3A0",
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          top: 18,
+          right: 10,
+          width: 25,
+          height: 25,
+          borderRadius: 13,
+          backgroundColor: "#FFE3A0",
+        }}
+      />
+      <SymbolView
+        name="face.smiling"
+        tintColor="#9DAFC0"
+        size={22}
+        weight="medium"
+        style={{ marginTop: 17 }}
+      />
+    </View>
+  );
+};
+
 export const CreateWalletNameHint = () => {
   return (
     <View

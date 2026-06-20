@@ -69,8 +69,10 @@ const PageProgress = ({
 
 export const OnboardingPageHeader = ({
   rightAccessory,
+  showProgress = true,
 }: {
   rightAccessory?: React.ReactNode;
+  showProgress?: boolean;
 }) => {
   const { requestClose } = useTrayFlow();
   const { pageIndex, totalPages, backPage, progress } = useTrayPages();
@@ -102,7 +104,11 @@ export const OnboardingPageHeader = ({
         />
       </PressableScale>
 
-      <PageProgress totalPages={totalPages} progress={progress} />
+      {showProgress ? (
+        <PageProgress totalPages={totalPages} progress={progress} />
+      ) : (
+        <View style={{ flex: 1 }} />
+      )}
 
       <View
         style={{
