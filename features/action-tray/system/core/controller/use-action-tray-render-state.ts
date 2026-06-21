@@ -9,6 +9,7 @@ type TraySnapshot = {
   footer?: React.ReactNode;
   trayId?: string;
   fullScreen?: boolean;
+  fullScreenBackgroundScale?: number;
   fullScreenSafeAreaTop?: boolean;
   fullScreenDraggable?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
@@ -27,6 +28,7 @@ const toRenderedTrayState = ({
   footer,
   trayId,
   fullScreen,
+  fullScreenBackgroundScale,
   fullScreenSafeAreaTop,
   fullScreenDraggable,
   containerStyle,
@@ -39,6 +41,7 @@ const toRenderedTrayState = ({
   footer: footer ?? null,
   trayId,
   fullScreen,
+  fullScreenBackgroundScale,
   fullScreenSafeAreaTop,
   fullScreenDraggable,
   containerStyle,
@@ -56,6 +59,7 @@ const areTrayStatesEqual = (
   current.footer === next.footer &&
   current.trayId === next.trayId &&
   current.fullScreen === next.fullScreen &&
+  current.fullScreenBackgroundScale === next.fullScreenBackgroundScale &&
   current.fullScreenSafeAreaTop === next.fullScreenSafeAreaTop &&
   current.fullScreenDraggable === next.fullScreenDraggable &&
   current.containerStyle === next.containerStyle &&
@@ -87,6 +91,7 @@ export const useActionTrayRenderState = ({
   footer,
   trayId,
   fullScreen,
+  fullScreenBackgroundScale,
   fullScreenSafeAreaTop,
   fullScreenDraggable,
   containerStyle,
@@ -108,6 +113,9 @@ export const useActionTrayRenderState = ({
 
   const fullScreenRef = useRef(fullScreen);
   fullScreenRef.current = fullScreen;
+
+  const fullScreenBackgroundScaleRef = useRef(fullScreenBackgroundScale);
+  fullScreenBackgroundScaleRef.current = fullScreenBackgroundScale;
 
   const fullScreenSafeAreaTopRef = useRef(fullScreenSafeAreaTop);
   fullScreenSafeAreaTopRef.current = fullScreenSafeAreaTop;
@@ -135,6 +143,7 @@ export const useActionTrayRenderState = ({
         footer,
         trayId,
         fullScreen,
+        fullScreenBackgroundScale,
         fullScreenSafeAreaTop,
         fullScreenDraggable,
         containerStyle,
@@ -152,6 +161,7 @@ export const useActionTrayRenderState = ({
       footer: footerRef.current,
       trayId: trayIdRef.current,
       fullScreen: fullScreenRef.current,
+      fullScreenBackgroundScale: fullScreenBackgroundScaleRef.current,
       fullScreenSafeAreaTop: fullScreenSafeAreaTopRef.current,
       fullScreenDraggable: fullScreenDraggableRef.current,
       containerStyle: containerStyleRef.current,
@@ -179,6 +189,7 @@ export const useActionTrayRenderState = ({
         footer: footerRef.current ?? null,
         trayId: current.trayId,
         fullScreen: fullScreenRef.current,
+        fullScreenBackgroundScale: fullScreenBackgroundScaleRef.current,
         fullScreenSafeAreaTop: fullScreenSafeAreaTopRef.current,
         fullScreenDraggable: fullScreenDraggableRef.current,
         containerStyle: containerStyleRef.current,
@@ -198,6 +209,7 @@ export const useActionTrayRenderState = ({
       footer: null,
       trayId: undefined,
       fullScreen: undefined,
+      fullScreenBackgroundScale: undefined,
       fullScreenSafeAreaTop: undefined,
       fullScreenDraggable: undefined,
       containerStyle: undefined,
@@ -218,6 +230,8 @@ export const useActionTrayRenderState = ({
       renderedFooter: renderedTray.footer,
       renderedTrayId: renderedTray.trayId,
       renderedFullScreen: renderedTray.fullScreen ?? false,
+      renderedFullScreenBackgroundScale:
+        renderedTray.fullScreenBackgroundScale ?? 1,
       renderedFullScreenSafeAreaTop: renderedTray.fullScreenSafeAreaTop ?? false,
       renderedFullScreenDraggable: renderedTray.fullScreenDraggable ?? true,
       renderedContainerStyle: renderedTray.containerStyle,

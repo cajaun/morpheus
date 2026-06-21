@@ -515,6 +515,59 @@ const FourthStep = () => {
   );
 };
 
+const BackgroundScalePreview = () => (
+  <View
+    pointerEvents="none"
+    style={{
+      position: "absolute",
+      top: 28,
+      right: 0,
+      bottom: 28,
+      left: 0,
+      borderColor: trayDemoColors.primaryAction,
+      borderRadius: 32,
+      borderWidth: 3,
+      overflow: "hidden",
+    }}
+  >
+    <View
+      style={{
+        position: "absolute",
+        top: -42,
+        right: -42,
+        backgroundColor: trayDemoColors.primaryAction,
+        borderRadius: 999,
+        height: 120,
+        opacity: 0.22,
+        width: 120,
+      }}
+    />
+    <View
+      style={{
+        position: "absolute",
+        bottom: -28,
+        left: -28,
+        backgroundColor: trayDemoColors.primaryAction,
+        borderRadius: 999,
+        height: 88,
+        opacity: 0.14,
+        width: 88,
+      }}
+    />
+    <Text
+      className="font-sf-semibold"
+      style={{
+        color: trayDemoColors.primaryAction,
+        fontSize: 14,
+        letterSpacing: 1.2,
+        padding: 20,
+      }}
+    >
+      BACKGROUND SCALE PREVIEW
+    </Text>
+  </View>
+);
+
 const OnboardingExample = () => {
   const steps = useMemo<TrayStepDefinition[]>(
     () => [
@@ -537,6 +590,7 @@ const OnboardingExample = () => {
         options: {
           className: "bg-white",
           fullScreen: true,
+          fullScreenBackgroundScale: 0.94,
           fullScreenSafeAreaTop: true,
           fullScreenDraggable: false,
           fullScreenCloseBehavior: "returnToShell",
@@ -554,11 +608,22 @@ const OnboardingExample = () => {
   const footer = useMemo(() => <OnboardingFooter />, []);
 
   return (
-    <Tray.Root steps={steps} footer={footer}>
-      <Tray.Trigger haptics="feedback">
-        <ExampleTrigger label="Onboarding" />
-      </Tray.Trigger>
-    </Tray.Root>
+    <View
+      style={{
+        alignItems: "center",
+        flex: 1,
+        justifyContent: "center",
+        width: "100%",
+      }}
+    >
+      <BackgroundScalePreview />
+
+      <Tray.Root steps={steps} footer={footer}>
+        <Tray.Trigger haptics="feedback">
+          <ExampleTrigger label="Onboarding" />
+        </Tray.Trigger>
+      </Tray.Root>
+    </View>
   );
 };
 

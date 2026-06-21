@@ -44,6 +44,7 @@ type Params = {
   rootTrayId?: string;
   trayId?: string;
   fullScreen?: boolean;
+  fullScreenBackgroundScale?: number;
   fullScreenSafeAreaTop?: boolean;
   fullScreenDraggable?: boolean;
   transition?: TrayTransitionOptions;
@@ -68,6 +69,7 @@ export const useActionTrayController = ({
   rootTrayId,
   trayId,
   fullScreen,
+  fullScreenBackgroundScale,
   fullScreenSafeAreaTop,
   fullScreenDraggable,
   transition,
@@ -92,6 +94,7 @@ export const useActionTrayController = ({
     footer,
     trayId,
     fullScreen,
+    fullScreenBackgroundScale,
     fullScreenSafeAreaTop,
     fullScreenDraggable,
     containerStyle,
@@ -341,6 +344,7 @@ export const useActionTrayController = ({
     rootTrayId,
     trayId,
     fullScreen,
+    fullScreenBackgroundScale,
     content,
     header,
     footer,
@@ -471,6 +475,8 @@ export const useActionTrayController = ({
       renderedContent: renderState.state.renderedContent,
       renderedTrayId: renderState.state.renderedTrayId,
       renderedFullScreen: renderState.state.renderedFullScreen,
+      renderedFullScreenBackgroundScale:
+        renderState.state.renderedFullScreenBackgroundScale,
       fullScreenTransitionGeneration:
         renderState.state.fullScreenTransitionGeneration,
       frameFullScreen,

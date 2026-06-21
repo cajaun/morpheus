@@ -1,5 +1,11 @@
 import React from "react";
+import { StyleSheet } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
 import { useActionTrayKeyboard } from "../core/input/use-action-tray-keyboard";
+import { TrayBackgroundScaleProvider } from "./tray-background-scale";
 import { TrayStoreProvider } from "./tray-context";
 import { TrayPresenter } from "./tray-presenter";
 import { useTrayFocusManager } from "./use-tray-focus-manager";
@@ -19,12 +25,26 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
     dismissFocusedInputs,
     registerFocusable,
   });
+  const backgroundScale = useSharedValue(1);
+  const backgroundStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: backgroundScale.value }],
+  }));
 
   return (
     <TrayStoreProvider value={runtime}>
-      {children}
+      <TrayBackgroundScaleProvider value={backgroundScale}>
+        <Animated.View style={[styles.background, backgroundStyle]}>
+          {children}
+        </Animated.View>
 
-      <TrayPresenter />
+        <TrayPresenter />
+      </TrayBackgroundScaleProvider>
     </TrayStoreProvider>
   );
 };
+
+const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+  },
+});

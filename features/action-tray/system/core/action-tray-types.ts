@@ -20,6 +20,7 @@ export type ActionTrayProps = {
   footer?: React.ReactNode;
   trayId?: string;
   fullScreen?: boolean;
+  fullScreenBackgroundScale?: number;
   fullScreenSafeAreaTop?: boolean;
   fullScreenDraggable?: boolean;
   dismissible?: boolean;
@@ -44,6 +45,7 @@ export type RenderedTrayState = {
   footer: React.ReactNode;
   trayId?: string;
   fullScreen?: boolean;
+  fullScreenBackgroundScale?: number;
   fullScreenSafeAreaTop?: boolean;
   fullScreenDraggable?: boolean;
   containerStyle?: StyleProp<ViewStyle>;

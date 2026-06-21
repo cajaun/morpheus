@@ -2,9 +2,9 @@ import React, { useEffect } from "react";
 import Animated, {
   Easing,
   EntryExitAnimationFunction,
-  runOnJS,
   withTiming,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import {
   MORPH_ENTERING_DURATION,
   MORPH_EXITING_DURATION,
@@ -99,7 +99,7 @@ const createMorphEntering = (
       ACTION_TRAY_INSTRUMENTATION_ENABLED &&
       !shouldAwaitLayout
     ) {
-      runOnJS(logStepEnterStarted)(stepKey, performance.now());
+      scheduleOnRN(logStepEnterStarted, stepKey, performance.now());
     }
 
     return {
@@ -140,7 +140,7 @@ const createMorphEntering = (
           __DEV__ &&
           ACTION_TRAY_INSTRUMENTATION_ENABLED
         ) {
-          runOnJS(logStepEnterFinished)(stepKey, performance.now());
+          scheduleOnRN(logStepEnterFinished, stepKey, performance.now());
         }
       },
     };

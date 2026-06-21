@@ -17,6 +17,7 @@ type Params = {
   rootTrayId?: string;
   trayId?: string;
   fullScreen?: boolean;
+  fullScreenBackgroundScale?: number;
   content?: ReactNode;
   header?: ReactNode;
   footer?: ReactNode;
@@ -66,6 +67,7 @@ export const useActionTrayContentSync = ({
   rootTrayId,
   trayId,
   fullScreen,
+  fullScreenBackgroundScale,
   content,
   header,
   footer,
@@ -184,6 +186,7 @@ export const useActionTrayContentSync = ({
     footerClassName,
     footerStyle,
     fullScreen,
+    fullScreenBackgroundScale,
     rootTrayId,
     renderedTrayId,
     showLatestSnapshot,
@@ -203,6 +206,7 @@ export const useActionTrayContentSync = ({
       hasFooter: footer != null,
       hasHeader: header != null,
       incomingFullScreen: fullScreen,
+      fullScreenBackgroundScale,
       renderedFullScreen,
       hasContainerStyle: containerStyle != null,
       hasFooterStyle: footerStyle != null,
@@ -219,7 +223,9 @@ export const useActionTrayContentSync = ({
     footerClassName,
     footerStyle,
     fullScreen,
+    fullScreenBackgroundScale,
     interactive,
+    renderedFullScreen,
     trayId,
     visible,
   ]);

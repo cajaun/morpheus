@@ -25,6 +25,7 @@ export type TrayStepOptions = {
   scale?: boolean;
   keyboardAware?: boolean;
   fullScreen?: boolean;
+  fullScreenBackgroundScale?: number;
   fullScreenDraggable?: boolean;
   fullScreenCloseBehavior?: TrayFullScreenCloseBehavior;
   fullScreenTransition?: TrayFullScreenTransition;
@@ -73,6 +74,7 @@ export type ResolvedTrayStepOptions = {
   scale: boolean;
   keyboardAware: boolean;
   fullScreen: boolean;
+  fullScreenBackgroundScale: number;
   fullScreenDraggable: boolean;
   fullScreenCloseBehavior: TrayFullScreenCloseBehavior;
   fullScreenTransition: TrayFullScreenTransition;
@@ -87,6 +89,7 @@ export const DEFAULT_TRAY_STEP_OPTIONS: ResolvedTrayStepOptions = {
   scale: true,
   keyboardAware: false,
   fullScreen: false,
+  fullScreenBackgroundScale: 1,
   fullScreenDraggable: true,
   fullScreenCloseBehavior: "dismiss",
   fullScreenTransition: "morph",
@@ -99,11 +102,21 @@ export const DEFAULT_TRAY_STEP_OPTIONS: ResolvedTrayStepOptions = {
 
 export const resolveTrayStepOptions = (
   options?: TrayStepOptions,
-): ResolvedTrayStepOptions => ({
-  // downstream code should never branch on missing option fields
-  ...DEFAULT_TRAY_STEP_OPTIONS,
-  ...options,
-});
+): ResolvedTrayStepOptions => {
+  const requestedBackgroundScale = options?.fullScreenBackgroundScale;
+
+  return {
+    // downstream code should never branch on missing option fields
+    ...DEFAULT_TRAY_STEP_OPTIONS,
+    ...options,
+    fullScreenBackgroundScale:
+      requestedBackgroundScale !== undefined &&
+      Number.isFinite(requestedBackgroundScale) &&
+      requestedBackgroundScale >= 0
+        ? requestedBackgroundScale
+        : DEFAULT_TRAY_STEP_OPTIONS.fullScreenBackgroundScale,
+  };
+};
 
 export type TrayHostStateValue = {
   registry: Record<string, TrayRegistration>;

@@ -19,7 +19,20 @@ jest.mock("react-native-reanimated", () => {
   return {
     ...Reanimated,
     defineAnimation: (_starting: unknown, factory: () => unknown) => factory(),
-    runOnJS: (callback: (...args: never[]) => unknown) => callback,
+  };
+});
+
+jest.mock("react-native-worklets", () => {
+  const Worklets = jest.requireActual(
+    "react-native-worklets",
+  ) as Record<string, unknown>;
+
+  return {
+    ...Worklets,
+    scheduleOnRN: (
+      callback: (...args: never[]) => unknown,
+      ...args: never[]
+    ) => callback(...args),
   };
 });
 
@@ -130,6 +143,7 @@ describe("fullscreen transition start synchronization", () => {
       }),
     };
     const linkedValue = shared(0);
+    const secondLinkedValue = shared(1);
 
     const signaledGeometry = withFullScreenLayoutStartSignal(
       geometry as unknown as number,
@@ -137,11 +151,18 @@ describe("fullscreen transition start synchronization", () => {
       layoutStartedAt,
       1,
       undefined,
-      {
-        value: linkedValue,
-        target: 50,
-        layoutTarget: 100,
-      },
+      [
+        {
+          value: linkedValue,
+          target: 50,
+          layoutTarget: 100,
+        },
+        {
+          value: secondLinkedValue,
+          target: 0.9,
+          layoutTarget: 100,
+        },
+      ],
     ) as unknown as AnimationObject<number>;
 
     signaledGeometry.onStart(signaledGeometry, 40, 125, null);
@@ -157,5 +178,6 @@ describe("fullscreen transition start synchronization", () => {
 
     signaledGeometry.onFrame(signaledGeometry, 130);
     expect(linkedValue.value).toBe(25);
+    expect(secondLinkedValue.value).toBeCloseTo(0.95);
   });
 });

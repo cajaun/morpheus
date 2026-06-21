@@ -8,12 +8,12 @@ import {
   type ReactNode,
 } from "react";
 import {
-  runOnJS,
   runOnUI,
   withSpring,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import {
   EXPAND_FROM_TRIGGER_CLOSE_DURATION,
   EXPAND_FROM_TRIGGER_OPEN_DURATION,
@@ -176,12 +176,13 @@ export const useActionTrayOpenCloseLifecycle = ({
             { duration: EXPAND_FROM_TRIGGER_OPEN_DURATION },
             (finished) => {
               if (finished) {
-                runOnJS(markTrayOpenFinished)(
+                scheduleOnRN(
+                  markTrayOpenFinished,
                   rootTrayId ?? trayId ?? "unknown",
                   trayId,
                 );
-                runOnJS(log)("EXPAND OPEN FINISHED");
-                runOnJS(enableLayout)();
+                scheduleOnRN(log, "EXPAND OPEN FINISHED");
+                scheduleOnRN(enableLayout);
               }
             },
           );
@@ -193,12 +194,13 @@ export const useActionTrayOpenCloseLifecycle = ({
           TRAY_SPRING_CONFIG,
           (finished) => {
             if (finished) {
-              runOnJS(markTrayOpenFinished)(
+              scheduleOnRN(
+                markTrayOpenFinished,
                 rootTrayId ?? trayId ?? "unknown",
                 trayId,
               );
-              runOnJS(log)("OPEN SPRING FINISHED");
-              runOnJS(enableLayout)();
+              scheduleOnRN(log, "OPEN SPRING FINISHED");
+              scheduleOnRN(enableLayout);
             }
           },
         );
@@ -277,9 +279,10 @@ export const useActionTrayOpenCloseLifecycle = ({
             }
 
             if (shared.closeGeneration.value === myGeneration) {
-              runOnJS(handleCloseSpringFinished)();
+              scheduleOnRN(handleCloseSpringFinished);
             } else {
-              runOnJS(log)(
+              scheduleOnRN(
+                log,
                 "COLLAPSE CLOSE — stale, skipping reset",
                 myGeneration,
                 shared.closeGeneration.value,
@@ -300,9 +303,10 @@ export const useActionTrayOpenCloseLifecycle = ({
           }
 
           if (shared.closeGeneration.value === myGeneration) {
-            runOnJS(handleCloseSpringFinished)();
+            scheduleOnRN(handleCloseSpringFinished);
           } else {
-            runOnJS(log)(
+            scheduleOnRN(
+              log,
               "CLOSE SPRING — stale, skipping reset",
               myGeneration,
               shared.closeGeneration.value,

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Gesture } from "react-native-gesture-handler";
-import { runOnJS, withSpring } from "react-native-reanimated";
+import { withSpring } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
 // drag logic stays small because dismissal feel depends on predictable thresholds
 type Params = {
@@ -33,7 +34,7 @@ export const useActionTrayGesture = ({
       .enabled(interactive && dragEnabled)
       .onStart(() => {
         if (keyboardHeight.value > 0) {
-          runOnJS(dismissKeyboard)();
+          scheduleOnRN(dismissKeyboard);
         }
 
         context.value = { y: Math.max(0, translateY.value) };
@@ -55,7 +56,7 @@ export const useActionTrayGesture = ({
           (translateY.value > 20 && e.velocityY > 1200);
 
         if (shouldClose) {
-          runOnJS(onRequestClose)();
+          scheduleOnRN(onRequestClose);
         } else {
           translateY.value = withSpring(0, {
             damping: 25,

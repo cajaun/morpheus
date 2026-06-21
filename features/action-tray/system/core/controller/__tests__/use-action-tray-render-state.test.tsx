@@ -40,14 +40,17 @@ describe("useActionTrayRenderState", () => {
     const Probe = ({
       content,
       fullScreen,
+      fullScreenBackgroundScale,
     }: {
       content: string;
       fullScreen: boolean;
+      fullScreenBackgroundScale?: number;
     }) => {
       state = useActionTrayRenderState({
         content,
         trayId: `tray-${content}`,
         fullScreen,
+        fullScreenBackgroundScale,
       });
 
       return null;
@@ -76,7 +79,13 @@ describe("useActionTrayRenderState", () => {
     expect(state!.state.fullScreenTransitionGeneration).toBe(0);
 
     act(() => {
-      renderer!.update(<Probe content="full" fullScreen />);
+      renderer!.update(
+        <Probe
+          content="full"
+          fullScreen
+          fullScreenBackgroundScale={0.94}
+        />,
+      );
     });
 
     act(() => {
@@ -84,6 +93,24 @@ describe("useActionTrayRenderState", () => {
     });
 
     expect(state!.state.fullScreenTransitionGeneration).toBe(1);
+    expect(state!.state.renderedFullScreenBackgroundScale).toBe(0.94);
+
+    act(() => {
+      renderer!.update(
+        <Probe
+          content="full"
+          fullScreen
+          fullScreenBackgroundScale={0.9}
+        />,
+      );
+    });
+
+    act(() => {
+      state!.actions.showLatestSnapshot();
+    });
+
+    expect(state!.state.fullScreenTransitionGeneration).toBe(1);
+    expect(state!.state.renderedFullScreenBackgroundScale).toBe(0.9);
 
     act(() => {
       renderer!.update(<Probe content="sheet-three" fullScreen={false} />);

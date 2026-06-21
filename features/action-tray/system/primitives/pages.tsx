@@ -17,12 +17,12 @@ import {
 import Animated, {
   Extrapolation,
   interpolate,
-  runOnJS,
   type SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { SCREEN_WIDTH } from "../core/constants";
 import { TrayPagesProvider } from "../pages-context";
 import {
@@ -280,7 +280,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
       (finished) => {
         if (finished) {
           progress.value = pageIndex;
-          runOnJS(handlePageTransitionComplete)(pageIndex);
+          scheduleOnRN(handlePageTransitionComplete, pageIndex);
         }
       },
     );

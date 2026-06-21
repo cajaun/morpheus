@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { StyleSheet } from "react-native";
 import Animated, {
+  useAnimatedReaction,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
@@ -15,6 +16,7 @@ import { GestureDetector } from "react-native-gesture-handler";
 import { KeyboardStickyView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Backdrop } from "../primitives/backdrop";
+import { useTrayBackgroundScale } from "../runtime/tray-background-scale";
 import { createTrayLayoutTransition } from "./animation/action-tray-layout";
 import { styles as trayStyles } from "./animation/action-tray-styles";
 import { TrayOriginProgressProvider } from "./tray-origin-progress";
@@ -50,6 +52,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       footer,
       trayId,
       fullScreen,
+      fullScreenBackgroundScale,
       fullScreenSafeAreaTop,
       fullScreenDraggable,
       dismissible = true,
@@ -79,6 +82,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       rootTrayId,
       trayId,
       fullScreen,
+      fullScreenBackgroundScale,
       fullScreenSafeAreaTop,
       fullScreenDraggable,
       transition,
@@ -114,6 +118,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         renderedContent,
         renderedTrayId,
         renderedFullScreen,
+        renderedFullScreenBackgroundScale,
         fullScreenTransitionGeneration,
         frameFullScreen,
         renderedFullScreenSafeAreaTop,
@@ -142,6 +147,16 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
 
     const presentationFullScreen = renderedFullScreen;
     const { top: safeAreaTopInset } = useSafeAreaInsets();
+    const providerBackgroundScale = useTrayBackgroundScale();
+    const fallbackBackgroundScale = useSharedValue(1);
+    const backgroundScale =
+      providerBackgroundScale ?? fallbackBackgroundScale;
+    const fullScreenBackgroundScaleTarget = presentationFullScreen
+      ? renderedFullScreenBackgroundScale
+      : 1;
+    const fullScreenBackgroundMorphScale = useSharedValue(
+      fullScreenBackgroundScaleTarget,
+    );
     const fullScreenSafeAreaTopTarget =
       presentationFullScreen && renderedFullScreenSafeAreaTop
         ? safeAreaTopInset
@@ -157,6 +172,17 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         { translateY: fullScreenSafeAreaTopHeight.value },
       ],
     }));
+    useAnimatedReaction(
+      () => ({
+        morphScale: fullScreenBackgroundMorphScale.value,
+        visibility: progress.value,
+      }),
+      ({ morphScale, visibility }) => {
+        backgroundScale.value =
+          1 + (morphScale - 1) * visibility;
+      },
+      [backgroundScale, fullScreenBackgroundMorphScale, progress],
+    );
     const instrumentationEnabled = isActionTrayInstrumentationEnabled();
     const shouldUseOriginTransition =
       transition?.open === "expandFromTrigger" && !presentationFullScreen;
@@ -220,8 +246,12 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       if (!presentationModeChanged || !shouldUseLayoutAnimation) {
         fullScreenSafeAreaTopHeight.value =
           fullScreenSafeAreaTopTarget;
+        fullScreenBackgroundMorphScale.value =
+          fullScreenBackgroundScaleTarget;
       }
     }, [
+      fullScreenBackgroundMorphScale,
+      fullScreenBackgroundScaleTarget,
       fullScreenSafeAreaTopHeight,
       fullScreenSafeAreaTopTarget,
       presentationFullScreen,
@@ -233,6 +263,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           fullScreenTransitionGeneration,
           layoutStartedAt: fullScreenLayoutStartedAt,
           layoutStartedFullScreenGeneration,
+          fullScreenBackgroundScale: fullScreenBackgroundMorphScale,
+          fullScreenBackgroundScaleTarget,
           fullScreenSafeAreaTop: fullScreenSafeAreaTopHeight,
           fullScreenSafeAreaTopTarget,
           onConfigure: instrumentationEnabled
@@ -245,6 +277,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         }),
       [
         fullScreenTransitionGeneration,
+        fullScreenBackgroundMorphScale,
+        fullScreenBackgroundScaleTarget,
         fullScreenSafeAreaTopHeight,
         fullScreenSafeAreaTopTarget,
         fullScreenLayoutStartedAt,

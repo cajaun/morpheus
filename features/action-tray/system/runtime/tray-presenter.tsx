@@ -45,6 +45,7 @@ type PresentedTray = {
   content: React.ReactNode;
   footer: React.ReactNode;
   fullScreen: boolean;
+  fullScreenBackgroundScale: number;
   fullScreenSafeAreaTop: boolean;
   fullScreenDraggable: boolean;
   dismissible: boolean;
@@ -156,6 +157,7 @@ const createPresentedTray = ({
       </TrayScopeProvider>
     ) : null,
     fullScreen: stepOptions.fullScreen,
+    fullScreenBackgroundScale: stepOptions.fullScreenBackgroundScale,
     fullScreenSafeAreaTop: stepOptions.fullScreenSafeAreaTop,
     fullScreenDraggable: stepOptions.fullScreenDraggable,
     dismissible: registration.dismissible ?? true,
@@ -216,6 +218,7 @@ const PresentedActionTray = ({
       onCloseComplete={onCloseComplete}
       trayId={payload.trayId}
       fullScreen={payload.fullScreen}
+      fullScreenBackgroundScale={payload.fullScreenBackgroundScale}
       fullScreenSafeAreaTop={payload.fullScreenSafeAreaTop}
       fullScreenDraggable={payload.fullScreenDraggable}
       dismissible={payload.dismissible}

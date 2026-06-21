@@ -2,9 +2,9 @@ import {
   Easing,
   LinearTransition,
   type LayoutAnimationFunction,
-  runOnJS,
   type SharedValue,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { MORPH_ENTERING_DURATION } from "../constants";
 import { withFullScreenLayoutStartSignal } from "../full-screen-transition-start";
 
@@ -12,6 +12,8 @@ type TrayLayoutTransitionParams = {
   fullScreenTransitionGeneration: number;
   layoutStartedAt: SharedValue<number>;
   layoutStartedFullScreenGeneration: SharedValue<number>;
+  fullScreenBackgroundScale: SharedValue<number>;
+  fullScreenBackgroundScaleTarget: number;
   fullScreenSafeAreaTop: SharedValue<number>;
   fullScreenSafeAreaTopTarget: number;
   onConfigure?: (configuredAt: number) => void;
@@ -23,6 +25,8 @@ export const createTrayLayoutTransition = ({
   fullScreenTransitionGeneration,
   layoutStartedAt,
   layoutStartedFullScreenGeneration,
+  fullScreenBackgroundScale,
+  fullScreenBackgroundScaleTarget,
   fullScreenSafeAreaTop,
   fullScreenSafeAreaTopTarget,
   onConfigure,
@@ -41,7 +45,7 @@ export const createTrayLayoutTransition = ({
     "worklet";
 
     if (onConfigure) {
-      runOnJS(onConfigure)(performance.now());
+      scheduleOnRN(onConfigure, performance.now());
     }
 
     const animation = buildTransition(values);
@@ -51,18 +55,25 @@ export const createTrayLayoutTransition = ({
       layoutStartedAt,
       fullScreenTransitionGeneration,
       onStart,
-      {
-        value: fullScreenSafeAreaTop,
-        target: fullScreenSafeAreaTopTarget,
-        layoutTarget: values.targetWidth,
-      },
+      [
+        {
+          value: fullScreenSafeAreaTop,
+          target: fullScreenSafeAreaTopTarget,
+          layoutTarget: values.targetWidth,
+        },
+        {
+          value: fullScreenBackgroundScale,
+          target: fullScreenBackgroundScaleTarget,
+          layoutTarget: values.targetWidth,
+        },
+      ],
     );
 
     return {
       ...animation,
       callback: (finished) => {
         if (finished && onComplete) {
-          runOnJS(onComplete)(performance.now());
+          scheduleOnRN(onComplete, performance.now());
         }
       },
     };

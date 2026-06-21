@@ -3,11 +3,11 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 
 export type PressableScaleProps = {
@@ -38,7 +38,7 @@ const PressableScale: React.FC<PressableScaleProps> = ({
       active.value = false;
 
       if (success && onPress) {
-        runOnJS(onPress)();
+        scheduleOnRN(onPress);
       }
     })
     .onFinalize(() => {
