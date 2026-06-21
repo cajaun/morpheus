@@ -66,7 +66,7 @@ describe("tray step timing", () => {
     markTrayStepLayoutFinished(
       "root-tray",
       "root-tray-fullscreen",
-      485,
+      405,
     );
 
     expect(timingGlobal.__ACTION_TRAY_STEP_TIMINGS__).toEqual([
@@ -88,7 +88,7 @@ describe("tray step timing", () => {
         snapshotToLayoutStartMs: 15,
         requestToLayoutStartMs: 35,
         layoutStartToContentReleaseMs: 10,
-        layoutStartToFinishMs: 350,
+        layoutStartToFinishMs: 270,
       },
     ]);
     expect(consoleSpy).toHaveBeenCalledWith("[ActionTrayStepPerf]", {
@@ -109,7 +109,7 @@ describe("tray step timing", () => {
       snapshotToLayoutStartMs: 15,
       requestToLayoutStartMs: 35,
       layoutStartToContentReleaseMs: 10,
-      layoutStartToFinishMs: 350,
+      layoutStartToFinishMs: 270,
     });
   });
 });

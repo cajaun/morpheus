@@ -5,7 +5,10 @@ import Animated, {
   runOnJS,
   withTiming,
 } from "react-native-reanimated";
-import { MORPH_DURATION } from "./core/constants";
+import {
+  MORPH_ENTERING_DURATION,
+  MORPH_EXITING_DURATION,
+} from "./core/constants";
 import {
   type FullScreenTransitionStart,
   shouldAwaitFullScreenLayoutStart,
@@ -107,7 +110,7 @@ const createMorphEntering = (
       animations: {
         opacity: synchronizeWithLayout(
           withTiming(1, {
-            duration: MORPH_DURATION,
+            duration: MORPH_ENTERING_DURATION,
             easing: MORPH_EASING,
           }),
           true,
@@ -116,7 +119,7 @@ const createMorphEntering = (
           {
             scale: synchronizeWithLayout(
               withTiming(1, {
-                duration: MORPH_DURATION,
+                duration: MORPH_ENTERING_DURATION,
                 easing: MORPH_EASING,
               }),
             ),
@@ -124,7 +127,7 @@ const createMorphEntering = (
           {
             translateY: synchronizeWithLayout(
               withTiming(0, {
-                duration: MORPH_DURATION,
+                duration: MORPH_ENTERING_DURATION,
                 easing: MORPH_EASING,
               }),
             ),
@@ -153,12 +156,25 @@ const createMorphExiting = (scale: boolean): EntryExitAnimationFunction => {
         transform: [{ scale: 1 }, { translateY: 0 }],
       },
       animations: {
-        opacity: withTiming(0, { duration: MORPH_DURATION, easing: MORPH_EASING }),
+        opacity: withTiming(0, {
+          duration: MORPH_EXITING_DURATION,
+          easing: MORPH_EASING,
+        }),
     
         transform: [
-          { scale: withTiming(scale ? 0.98 : 1, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
+          {
+            scale: withTiming(scale ? 0.98 : 1, {
+              duration: MORPH_EXITING_DURATION,
+              easing: MORPH_EASING,
+            }),
+          },
         
-          { translateY: withTiming(0, { duration: MORPH_DURATION, easing: MORPH_EASING }) },
+          {
+            translateY: withTiming(0, {
+              duration: MORPH_EXITING_DURATION,
+              easing: MORPH_EASING,
+            }),
+          },
         ],
       },
     };

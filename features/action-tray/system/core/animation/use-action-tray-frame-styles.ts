@@ -10,7 +10,7 @@ import {
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT,
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
   HORIZONTAL_MARGIN,
-  MORPH_DURATION,
+  MORPH_ENTERING_DURATION,
   SCREEN_HEIGHT,
   SCREEN_WIDTH,
   TRAY_VERTICAL_PADDING,
@@ -238,11 +238,21 @@ export const useActionTrayFrameStyles = ({
     return {
       left: targetLeft,
       right: targetRight,
-      bottom: withTiming(targetBottom, { duration: MORPH_DURATION }),
-      borderTopLeftRadius: withTiming(targetRadius, { duration: MORPH_DURATION }),
-      borderTopRightRadius: withTiming(targetRadius, { duration: MORPH_DURATION }),
-      borderBottomLeftRadius: withTiming(targetRadius, { duration: MORPH_DURATION }),
-      borderBottomRightRadius: withTiming(targetRadius, { duration: MORPH_DURATION }),
+      bottom: withTiming(targetBottom, {
+        duration: MORPH_ENTERING_DURATION,
+      }),
+      borderTopLeftRadius: withTiming(targetRadius, {
+        duration: MORPH_ENTERING_DURATION,
+      }),
+      borderTopRightRadius: withTiming(targetRadius, {
+        duration: MORPH_ENTERING_DURATION,
+      }),
+      borderBottomLeftRadius: withTiming(targetRadius, {
+        duration: MORPH_ENTERING_DURATION,
+      }),
+      borderBottomRightRadius: withTiming(targetRadius, {
+        duration: MORPH_ENTERING_DURATION,
+      }),
     };
   }, [
     bottom,

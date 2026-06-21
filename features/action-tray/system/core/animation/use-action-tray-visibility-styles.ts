@@ -7,7 +7,7 @@ import {
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
   EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS,
   HORIZONTAL_MARGIN,
-  MORPH_DURATION,
+  MORPH_ENTERING_DURATION,
   SCREEN_WIDTH,
   TRAY_VERTICAL_PADDING,
 } from "../constants";
@@ -107,7 +107,7 @@ export const useActionTrayVisibilityStyles = ({
     () => ({
       opacity:
         fullScreen && visible
-          ? withTiming(1, { duration: MORPH_DURATION })
+          ? withTiming(1, { duration: MORPH_ENTERING_DURATION })
           : withTiming(0, { duration: 0 }),
     }),
     [fullScreen, visible],
