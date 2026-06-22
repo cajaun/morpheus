@@ -9,7 +9,10 @@ import Animated, {
 import { SymbolView } from "expo-symbols";
 import { useTrayFlow, useTrayPages } from "@/features/action-tray";
 import { PressableScale } from "@/shared/ui/pressable-scale";
-import { FULL_SCREEN_CONTROL_SIZE } from "@/features/action-tray/system/core/constants";
+import {
+  FULL_SCREEN_CONTROL_SIZE,
+  FULL_SCREEN_HEADER_PADDING_TOP,
+} from "@/features/action-tray/system/core/constants";
 
 const PageProgressItem = ({
   index,
@@ -82,7 +85,10 @@ export const OnboardingPageHeader = ({
   return (
     <View
       style={{
-        paddingTop: 4,
+        // 24 + 44 + 16 matches the sheet header's vertical frame closely,
+        // keeping both headers and both body boundaries aligned while their
+        // keyed trees overlap during the fullscreen morph.
+        paddingTop: FULL_SCREEN_HEADER_PADDING_TOP,
         flexDirection: "row",
         alignItems: "center",
       }}
