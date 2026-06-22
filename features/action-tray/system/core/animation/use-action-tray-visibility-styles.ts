@@ -1,12 +1,10 @@
 import {
   interpolate,
   useAnimatedStyle,
-  withTiming,
 } from "react-native-reanimated";
 import {
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
   EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS,
-  FULL_SCREEN_LAYOUT_DURATION,
   HORIZONTAL_MARGIN,
   SCREEN_WIDTH,
   TRAY_SHEET_BODY_HORIZONTAL_PADDING,
@@ -18,21 +16,19 @@ import type {
 
 type Params = Pick<
   ActionTrayAnimatedStyleParams,
-  "hasFooter" | "surfaceOpacity" | "transition" | "visible"
+  "hasFooter" | "surfaceOpacity" | "transition"
 > &
   Pick<
     ActionTrayAnimationState,
-    "fullScreen" | "originProgress" | "shouldUseOriginTransition"
+    "originProgress" | "shouldUseOriginTransition"
   >;
 
 export const useActionTrayVisibilityStyles = ({
-  fullScreen,
   hasFooter,
   originProgress,
   shouldUseOriginTransition,
   surfaceOpacity,
   transition,
-  visible,
 }: Params) => {
   const surfaceVisibilityStyle = useAnimatedStyle(() => ({
     opacity: surfaceOpacity.value,
@@ -105,16 +101,6 @@ export const useActionTrayVisibilityStyles = ({
     paddingTop: 0,
   }));
 
-  const fullScreenSurfaceFillStyle = useAnimatedStyle(
-    () => ({
-      opacity:
-        fullScreen && visible
-          ? withTiming(1, { duration: FULL_SCREEN_LAYOUT_DURATION })
-          : withTiming(0, { duration: 0 }),
-    }),
-    [fullScreen, visible],
-  );
-
   return {
     contentPaddingStyle,
     surfaceVisibilityStyle,
@@ -122,6 +108,5 @@ export const useActionTrayVisibilityStyles = ({
     contentRevealStyle,
     footerVisibilityStyle,
     footerContentFrameStyle,
-    fullScreenSurfaceFillStyle,
   };
 };

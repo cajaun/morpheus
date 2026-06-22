@@ -177,8 +177,11 @@ const createPresentedTray = ({
     transition: registration.transition,
     containerStyle: stepOptions.style,
     className: stepOptions.className,
-    footerStyle: stepOptions.footerStyle,
-    footerClassName: stepOptions.footerClassName,
+    // The footer is rendered as a detached surface, so it cannot inherit the
+    // tray container's background naturally. Mirror the active step surface
+    // unless the footer intentionally supplies its own styling.
+    footerStyle: stepOptions.footerStyle ?? stepOptions.style,
+    footerClassName: stepOptions.footerClassName ?? stepOptions.className,
     stackIndex,
     visible: true,
     interactive: stackIndex === stackLength - 1,

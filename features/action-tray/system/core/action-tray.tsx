@@ -1,5 +1,6 @@
 import React, {
   forwardRef,
+  useCallback,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
@@ -165,6 +166,11 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     const fullScreenSafeAreaTopHeight = useSharedValue(
       fullScreenSafeAreaTopTarget,
     );
+    const fullScreenSurfaceFillOpacityTarget = presentationFullScreen ? 1 : 0;
+    const fullScreenSurfaceFillOpacity = useSharedValue(
+      fullScreenSurfaceFillOpacityTarget,
+    );
+    const fullScreenLayoutActiveRef = useRef(false);
     const previousPresentationFullScreenRef = useRef(
       presentationFullScreen,
     );
@@ -172,6 +178,9 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       transform: [
         { translateY: fullScreenSafeAreaTopHeight.value },
       ],
+    }));
+    const fullScreenSurfaceFillStyle = useAnimatedStyle(() => ({
+      opacity: fullScreenSurfaceFillOpacity.value,
     }));
     useAnimatedReaction(
       () => ({
@@ -219,7 +228,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       contentRevealStyle,
       footerVisibilityStyle,
       footerContentFrameStyle,
-      fullScreenSurfaceFillStyle,
     } = useActionTrayAnimatedStyles({
       translateY,
       contentHeight,
@@ -244,20 +252,39 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         presentationFullScreen;
       previousPresentationFullScreenRef.current = presentationFullScreen;
 
-      if (!presentationModeChanged || !shouldUseLayoutAnimation) {
+      if (presentationModeChanged && shouldUseLayoutAnimation) {
+        fullScreenLayoutActiveRef.current = true;
+        if (!presentationFullScreen) {
+          fullScreenSurfaceFillOpacity.value = 0;
+        }
+        return;
+      }
+
+      if (!fullScreenLayoutActiveRef.current) {
         fullScreenSafeAreaTopHeight.value =
           fullScreenSafeAreaTopTarget;
         fullScreenBackgroundMorphScale.value =
           fullScreenBackgroundScaleTarget;
+        fullScreenSurfaceFillOpacity.value =
+          fullScreenSurfaceFillOpacityTarget;
       }
     }, [
       fullScreenBackgroundMorphScale,
       fullScreenBackgroundScaleTarget,
       fullScreenSafeAreaTopHeight,
       fullScreenSafeAreaTopTarget,
+      fullScreenSurfaceFillOpacity,
+      fullScreenSurfaceFillOpacityTarget,
       presentationFullScreen,
       shouldUseLayoutAnimation,
     ]);
+    const handleSynchronizedLayoutTransitionComplete = useCallback(
+      (finishedAt: number) => {
+        fullScreenLayoutActiveRef.current = false;
+        handleLayoutTransitionComplete(finishedAt);
+      },
+      [handleLayoutTransitionComplete],
+    );
     const layoutAnimationConfig = useMemo(
       () =>
         createTrayLayoutTransition({
@@ -268,13 +295,15 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           fullScreenBackgroundScaleTarget,
           fullScreenSafeAreaTop: fullScreenSafeAreaTopHeight,
           fullScreenSafeAreaTopTarget,
+          fullScreenSurfaceFillOpacity,
+          fullScreenSurfaceFillOpacityTarget,
           onConfigure: instrumentationEnabled
             ? handleLayoutTransitionConfigured
             : undefined,
           onStart: instrumentationEnabled
             ? handleLayoutTransitionStart
             : undefined,
-          onComplete: handleLayoutTransitionComplete,
+          onComplete: handleSynchronizedLayoutTransitionComplete,
         }),
       [
         fullScreenTransitionGeneration,
@@ -282,9 +311,11 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         fullScreenBackgroundScaleTarget,
         fullScreenSafeAreaTopHeight,
         fullScreenSafeAreaTopTarget,
+        fullScreenSurfaceFillOpacity,
+        fullScreenSurfaceFillOpacityTarget,
         fullScreenLayoutStartedAt,
         handleLayoutTransitionConfigured,
-        handleLayoutTransitionComplete,
+        handleSynchronizedLayoutTransitionComplete,
         handleLayoutTransitionStart,
         instrumentationEnabled,
         layoutStartedFullScreenGeneration,

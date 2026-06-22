@@ -36,13 +36,11 @@ const renderVisibilityStyles = ({
 
   const Probe = () => {
     styles = useActionTrayVisibilityStyles({
-      fullScreen: false,
       hasFooter: shared(true),
       originProgress: shared(0),
       shouldUseOriginTransition: true,
       surfaceOpacity: shared(1),
       transition: { open: "expandFromTrigger", origin },
-      visible: true,
     });
 
     return null;

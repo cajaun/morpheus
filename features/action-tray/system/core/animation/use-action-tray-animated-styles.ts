@@ -12,10 +12,8 @@ export const useActionTrayAnimatedStyles = ({
   footerHeight,
   keyboardHeight,
   frameFullScreen,
-  fullScreen,
   preparedSheetFrameHeight,
   useMeasuredSheetHeight,
-  visible,
   layoutEnabled,
   originProgress,
   transition,
@@ -45,13 +43,11 @@ export const useActionTrayAnimatedStyles = ({
     translateY,
   });
   const visibilityStyles = useActionTrayVisibilityStyles({
-    fullScreen,
     hasFooter,
     originProgress,
     shouldUseOriginTransition,
     surfaceOpacity,
     transition,
-    visible,
   });
 
   return {

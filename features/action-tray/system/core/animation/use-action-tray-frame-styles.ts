@@ -1,4 +1,5 @@
 import {
+  Easing,
   interpolate,
   useAnimatedStyle,
   withTiming,
@@ -9,8 +10,8 @@ import {
   EXPAND_FROM_TRIGGER_COLLAPSED_FOOTER_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT,
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
+  FULL_SCREEN_LAYOUT_DURATION,
   HORIZONTAL_MARGIN,
-  MORPH_ENTERING_DURATION,
   SCREEN_HEIGHT,
   SCREEN_WIDTH,
   TRAY_VERTICAL_PADDING,
@@ -27,6 +28,7 @@ const EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT =
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT +
   EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_TOP_PADDING +
   TRAY_VERTICAL_PADDING;
+const FULL_SCREEN_FRAME_EASING = Easing.bezier(0, 0, 0.58, 1);
 
 type Params = Pick<
   ActionTrayAnimatedStyleParams,
@@ -95,7 +97,9 @@ export const useActionTrayFrameStyles = ({
     const targetLeft = fullScreen ? 0 : HORIZONTAL_MARGIN;
     const targetRight = fullScreen ? 0 : HORIZONTAL_MARGIN;
     const targetBottom = fullScreen ? 0 : bottom + targetBottomInset;
-    const targetRadius = fullScreen ? 0 : BORDER_RADIUS;
+    // Fullscreen is the same rounded shell expanded to the viewport. Keeping
+    // the radius stable avoids introducing a second shape morph.
+    const targetRadius = BORDER_RADIUS;
     const targetTop = fullScreen
       ? 0
       : resolvedSheetHeight === undefined
@@ -170,7 +174,7 @@ export const useActionTrayFrameStyles = ({
       !shouldUseOriginTransition && keyboardHeight.value > 0
         ? keyboardHeight.value
         : bottom + targetBottomInset;
-    const targetRadius = fullScreen ? 0 : BORDER_RADIUS;
+    const targetRadius = BORDER_RADIUS;
 
     if (shouldUseOriginTransition) {
       const progress = originProgress.value;
@@ -236,23 +240,26 @@ export const useActionTrayFrameStyles = ({
     }
 
     return {
-      left: targetLeft,
-      right: targetRight,
+      // The footer is detached from the shell for keyboard handling, so it
+      // must explicitly follow the same fullscreen geometry clock.
+      left: withTiming(targetLeft, {
+        duration: FULL_SCREEN_LAYOUT_DURATION,
+        easing: FULL_SCREEN_FRAME_EASING,
+      }),
+      right: withTiming(targetRight, {
+        duration: FULL_SCREEN_LAYOUT_DURATION,
+        easing: FULL_SCREEN_FRAME_EASING,
+      }),
       bottom: withTiming(targetBottom, {
-        duration: MORPH_ENTERING_DURATION,
+        duration: FULL_SCREEN_LAYOUT_DURATION,
+        easing: FULL_SCREEN_FRAME_EASING,
       }),
-      borderTopLeftRadius: withTiming(targetRadius, {
-        duration: MORPH_ENTERING_DURATION,
-      }),
-      borderTopRightRadius: withTiming(targetRadius, {
-        duration: MORPH_ENTERING_DURATION,
-      }),
-      borderBottomLeftRadius: withTiming(targetRadius, {
-        duration: MORPH_ENTERING_DURATION,
-      }),
-      borderBottomRightRadius: withTiming(targetRadius, {
-        duration: MORPH_ENTERING_DURATION,
-      }),
+      // Its top edge merges into the tray body; only the shell's outer bottom
+      // corners participate in the visible 40pt radius.
+      borderTopLeftRadius: 0,
+      borderTopRightRadius: 0,
+      borderBottomLeftRadius: targetRadius,
+      borderBottomRightRadius: targetRadius,
     };
   }, [
     bottom,

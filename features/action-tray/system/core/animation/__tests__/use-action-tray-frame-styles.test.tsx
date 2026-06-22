@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "@jest/globals";
 import TestRenderer, { act } from "react-test-renderer";
-import { SCREEN_HEIGHT } from "../../constants";
+import { BORDER_RADIUS, SCREEN_HEIGHT } from "../../constants";
 import { useActionTrayFrameStyles } from "../use-action-tray-frame-styles";
 
 jest.mock("react-native-reanimated", () => {
@@ -73,7 +73,16 @@ describe("useActionTrayFrameStyles", () => {
     const styles = renderFrameStyles({ fullScreen: true });
 
     expect(styles.trayLayoutStyle.height).toBe(SCREEN_HEIGHT);
+    expect(styles.trayLayoutStyle.borderRadius).toBe(BORDER_RADIUS);
     expect(styles.presentationFrameStyle?.height).toBe(SCREEN_HEIGHT);
+    expect(styles.footerContainerStyle.borderTopLeftRadius).toBe(0);
+    expect(styles.footerContainerStyle.borderTopRightRadius).toBe(0);
+    expect(styles.footerContainerStyle.borderBottomLeftRadius).toBe(
+      BORDER_RADIUS,
+    );
+    expect(styles.footerContainerStyle.borderBottomRightRadius).toBe(
+      BORDER_RADIUS,
+    );
   });
 
   it("uses measured sheet geometry while returning from fullscreen", () => {

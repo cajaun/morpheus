@@ -115,14 +115,7 @@ const ThirdStep = () => {
           dolor amet. 
         </Text>
 
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-          Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
-          amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
-          dolor amet. Lorem ipsum dolor amet.
-        </Text>
+      
 
         <Text
           className="text-black font-sf-regular"
@@ -140,9 +133,11 @@ const ThirdStep = () => {
 const FourthStep = () => {
   return (
     <Tray.Body>
+     
+
       <Tray.Section>
         <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
-          Another heading
+          Some heading
         </Text>
 
         <Text
@@ -154,7 +149,14 @@ const FourthStep = () => {
           dolor amet. 
         </Text>
 
-      
+        <Text
+          className="text-black font-sf-regular"
+          style={trayDemoText.bodyLarge}
+        >
+          Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
+          amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
+          dolor amet. Lorem ipsum dolor amet.
+        </Text>
 
         <Text
           className="text-black font-sf-regular"

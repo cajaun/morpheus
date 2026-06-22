@@ -19,6 +19,8 @@ type TrayLayoutTransitionParams = {
   fullScreenBackgroundScaleTarget: number;
   fullScreenSafeAreaTop: SharedValue<number>;
   fullScreenSafeAreaTopTarget: number;
+  fullScreenSurfaceFillOpacity: SharedValue<number>;
+  fullScreenSurfaceFillOpacityTarget: number;
   onConfigure?: (configuredAt: number) => void;
   onStart?: (startedAt: number) => void;
   onComplete?: (finishedAt: number) => void;
@@ -32,6 +34,8 @@ export const createTrayLayoutTransition = ({
   fullScreenBackgroundScaleTarget,
   fullScreenSafeAreaTop,
   fullScreenSafeAreaTopTarget,
+  fullScreenSurfaceFillOpacity,
+  fullScreenSurfaceFillOpacityTarget,
   onConfigure,
   onStart,
   onComplete,
@@ -43,9 +47,10 @@ export const createTrayLayoutTransition = ({
     .duration(FULL_SCREEN_LAYOUT_DURATION)
     .easing(Easing.bezier(0, 0, 0.58, 1).factory());
 
-  // linearTransition still owns every geometry value
-  // its width timing is the canonical clock because width always 
-  // changes between sheet and fullscreen
+  // linearTransition still owns every geometry value. The vertical origin is
+  // the canonical fullscreen clock: the background reaches its target exactly
+  // when the tray reaches the top edge, rather than tracking the much shorter
+  // horizontal expansion.
   const buildTransition = transition.build();
   const buildFullScreenTransition = fullScreenTransition.build();
   const synchronizedTransition: LayoutAnimationFunction = (values) => {
@@ -58,11 +63,17 @@ export const createTrayLayoutTransition = ({
     const isFullScreenTransition =
       layoutStartedFullScreenGeneration.value <
       fullScreenTransitionGeneration;
+    if (
+      isFullScreenTransition &&
+      fullScreenSurfaceFillOpacityTarget === 0
+    ) {
+      fullScreenSurfaceFillOpacity.value = 0;
+    }
     const animation = isFullScreenTransition
       ? buildFullScreenTransition(values)
       : buildTransition(values);
-    animation.animations.width = withFullScreenLayoutStartSignal(
-      animation.animations.width as number,
+    animation.animations.originY = withFullScreenLayoutStartSignal(
+      animation.animations.originY as number,
       layoutStartedFullScreenGeneration,
       layoutStartedAt,
       fullScreenTransitionGeneration,
@@ -71,12 +82,12 @@ export const createTrayLayoutTransition = ({
         {
           value: fullScreenSafeAreaTop,
           target: fullScreenSafeAreaTopTarget,
-          layoutTarget: values.targetWidth,
+          layoutTarget: values.targetOriginY,
         },
         {
           value: fullScreenBackgroundScale,
           target: fullScreenBackgroundScaleTarget,
-          layoutTarget: values.targetWidth,
+          layoutTarget: values.targetOriginY,
         },
       ],
     );
@@ -84,6 +95,13 @@ export const createTrayLayoutTransition = ({
     return {
       ...animation,
       callback: (finished) => {
+        if (finished) {
+          // The fill exists to cover the viewport only after the rounded shell
+          // has completed its expansion. It is deliberately a hard handoff,
+          // not another visual animation.
+          fullScreenSurfaceFillOpacity.value =
+            fullScreenSurfaceFillOpacityTarget;
+        }
         if (finished && onComplete) {
           scheduleOnRN(onComplete, performance.now());
         }
