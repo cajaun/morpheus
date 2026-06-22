@@ -25,12 +25,15 @@ import type {
 
 const EXPAND_FROM_TRIGGER_COLLAPSED_RADIUS =
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT / 2;
+
 const EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_TOP_PADDING =
   TRAY_FOOTER_PADDING_TOP;
+
 const EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT =
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT +
   EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_TOP_PADDING +
   TRAY_FOOTER_PADDING_BOTTOM;
+  
 const FULL_SCREEN_FRAME_EASING = Easing.bezier(0, 0, 0.58, 1);
 
 type Params = Pick<
@@ -54,7 +57,7 @@ export const useActionTrayFrameStyles = ({
 }: Params) => {
   const collapsedBottomInset =
     transition?.origin === "fullScreenFooter"
-      ? TRAY_VERTICAL_PADDING
+      ? TRAY_FOOTER_PADDING_BOTTOM
       : EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET;
   const targetBottomInset =
     transition?.origin === "fullScreenFooter" ? collapsedBottomInset : 0;
