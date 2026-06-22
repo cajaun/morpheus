@@ -229,6 +229,8 @@ const OnboardingContinueTrayFooter = () => {
   );
 };
 
+const ONBOARDING_FOOTER_STYLE = { backgroundColor: "#FFFFFF" };
+
 const ONBOARDING_CONTINUE_TRAY_STEPS: TrayStepDefinition[] = [
   {
     key: "save-setup",
@@ -236,7 +238,7 @@ const ONBOARDING_CONTINUE_TRAY_STEPS: TrayStepDefinition[] = [
     content: <OnboardingContinueTrayContent />,
     options: {
       className: "bg-white",
-      footerStyle: { backgroundColor: trayDemoColors.white },
+      footerStyle: ONBOARDING_FOOTER_STYLE,
     },
   },
 ];
@@ -280,6 +282,7 @@ const EXPAND_FROM_TRIGGER_TRANSITION = {
 
 const sharedStepOptions = {
   className: "bg-white",
+  footerStyle: ONBOARDING_FOOTER_STYLE,
 } as const;
 
 export const OnboardingPageHeader = () => {
@@ -589,6 +592,7 @@ const OnboardingExample = () => {
         header: <OnboardingPageHeader />,
         options: {
           className: "bg-white",
+          footerStyle: ONBOARDING_FOOTER_STYLE,
           fullScreen: true,
           fullScreenBackgroundScale: 0.94,
           fullScreenSafeAreaTop: true,
@@ -602,6 +606,7 @@ const OnboardingExample = () => {
         content: <FourthStep />,
         options: sharedStepOptions,
       },
+
     ],
     [],
   );
