@@ -40,9 +40,7 @@ export const SupportChooserStep = ({
 
 export const ChooseAreasStep = () => {
   const { next } = useTrayFlow();
-  const [selectedAreas, setSelectedAreas] = useState<string[]>(() =>
-    AREA_OPTIONS.map((area) => area.key),
-  );
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
 
   const toggleArea = (areaKey: string) => {
     setSelectedAreas((current) =>

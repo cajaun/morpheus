@@ -5,7 +5,7 @@ import {
   type SharedValue,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { MORPH_ENTERING_DURATION } from "../constants";
+import { MORPH_LAYOUT_DURATION } from "../constants";
 import { withFullScreenLayoutStartSignal } from "../full-screen-transition-start";
 
 type TrayLayoutTransitionParams = {
@@ -34,7 +34,7 @@ export const createTrayLayoutTransition = ({
   onComplete,
 }: TrayLayoutTransitionParams) => {
   const transition = LinearTransition
-    .duration(MORPH_ENTERING_DURATION)
+    .duration(MORPH_LAYOUT_DURATION)
     .easing(Easing.bezier(0.34, 1.12, 0.64, 1).factory());
 
   // linearTransition still owns every geometry value

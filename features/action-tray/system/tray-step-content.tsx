@@ -7,7 +7,9 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 import {
   MORPH_ENTERING_DURATION,
+  MORPH_ENTERING_SCALE,
   MORPH_EXITING_DURATION,
+  MORPH_EXITING_SCALE,
 } from "./core/constants";
 import {
   type FullScreenTransitionStart,
@@ -105,7 +107,10 @@ const createMorphEntering = (
     return {
       initialValues: {
         opacity: 0,
-        transform: [{ scale: scale ? 1.05 : 1 }, { translateY: 0 }],
+        transform: [
+          { scale: scale ? MORPH_ENTERING_SCALE : 1 },
+          { translateY: 0 },
+        ],
       },
       animations: {
         opacity: synchronizeWithLayout(
@@ -158,21 +163,21 @@ const createMorphExiting = (scale: boolean): EntryExitAnimationFunction => {
       animations: {
         opacity: withTiming(0, {
           duration: MORPH_EXITING_DURATION,
-          easing: MORPH_EASING,
+          easing: SHEET_EASING,
         }),
-    
+
         transform: [
           {
-            scale: withTiming(scale ? 0.98 : 1, {
+            scale: withTiming(scale ? MORPH_EXITING_SCALE : 1, {
               duration: MORPH_EXITING_DURATION,
-              easing: MORPH_EASING,
+              easing: SHEET_EASING,
             }),
           },
-        
+
           {
             translateY: withTiming(0, {
               duration: MORPH_EXITING_DURATION,
-              easing: MORPH_EASING,
+              easing: SHEET_EASING,
             }),
           },
         ],
