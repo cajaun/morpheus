@@ -6,10 +6,10 @@ import {
 import {
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
   EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS,
+  FULL_SCREEN_LAYOUT_DURATION,
   HORIZONTAL_MARGIN,
-  MORPH_ENTERING_DURATION,
   SCREEN_WIDTH,
-  TRAY_VERTICAL_PADDING,
+  TRAY_SHEET_BODY_HORIZONTAL_PADDING,
 } from "../constants";
 import type {
   ActionTrayAnimatedStyleParams,
@@ -72,7 +72,9 @@ export const useActionTrayVisibilityStyles = ({
 
   const footerContentFrameStyle = useAnimatedStyle(() => {
     const sheetContentWidth =
-      SCREEN_WIDTH - HORIZONTAL_MARGIN * 2 - TRAY_VERTICAL_PADDING * 2;
+      SCREEN_WIDTH -
+      HORIZONTAL_MARGIN * 2 -
+      TRAY_SHEET_BODY_HORIZONTAL_PADDING * 2;
 
     if (!shouldUseOriginTransition) {
       return {
@@ -107,7 +109,7 @@ export const useActionTrayVisibilityStyles = ({
     () => ({
       opacity:
         fullScreen && visible
-          ? withTiming(1, { duration: MORPH_ENTERING_DURATION })
+          ? withTiming(1, { duration: FULL_SCREEN_LAYOUT_DURATION })
           : withTiming(0, { duration: 0 }),
     }),
     [fullScreen, visible],

@@ -103,9 +103,9 @@ export const AddExistingWalletStep = () => {
 
           <Tray.Section
             style={{
-              paddingHorizontal: 28,
+              paddingHorizontal: 32,
               paddingTop: 24,
-              gap: 24,
+              gap: 16,
             }}
           >
             <View
@@ -113,7 +113,7 @@ export const AddExistingWalletStep = () => {
                 width: "100%",
                 alignItems: "center",
                 gap: 12,
-               
+                marginBottom: 8,
               }}
             >
               <Text

@@ -26,10 +26,11 @@ import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animate
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayController } from "./use-action-tray-controller";
 import {
+  FULL_SCREEN_HEADER_BOTTOM_GAP,
+  FULL_SCREEN_HEADER_HORIZONTAL_PADDING,
   HORIZONTAL_MARGIN,
-  TRAY_HORIZONTAL_PADDING,
+  TRAY_HEADER_HORIZONTAL_PADDING,
   TRAY_KEYBOARD_GAP,
-  TRAY_SECTION_GAP,
   TRAY_VERTICAL_PADDING,
 } from "./constants";
 import {
@@ -457,13 +458,14 @@ export { ActionTray };
 
 const localStyles = StyleSheet.create({
   headerContainer: {
-    paddingHorizontal: TRAY_HORIZONTAL_PADDING,
+    paddingHorizontal: TRAY_HEADER_HORIZONTAL_PADDING,
     // position: "relative",
     // zIndex: 1,
   },
   fullScreenHeaderContainer: {
     // Fullscreen chrome owns the gap between its header controls and body.
     // Tray.Section then supplies its independent content inset.
-    paddingBottom: TRAY_SECTION_GAP,
+    paddingHorizontal: FULL_SCREEN_HEADER_HORIZONTAL_PADDING,
+    paddingBottom: FULL_SCREEN_HEADER_BOTTOM_GAP,
   },
 });

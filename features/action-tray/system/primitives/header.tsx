@@ -1,7 +1,10 @@
 import React from "react";
 import { View, StyleSheet, StyleProp, ViewStyle } from "react-native";
 import { TraySeparator } from "./separator";
-import { TRAY_SECTION_GAP } from "../core/constants";
+import {
+  TRAY_HEADER_PADDING_BOTTOM,
+  TRAY_HEADER_PADDING_TOP,
+} from "../core/constants";
 
 // header spacing is centralized so step chrome lines up across demos
 export const TrayHeader: React.FC<{
@@ -11,7 +14,14 @@ export const TrayHeader: React.FC<{
   withSeparator?: boolean;
 }> = ({ children, style, className, withSeparator = false }) => {
   return (
-    <View className={className} style={[styles.header, style]}>
+    <View
+      className={className}
+      style={[
+        styles.header,
+        !withSeparator && styles.headerWithoutSeparator,
+        style,
+      ]}
+    >
       {children}
       {withSeparator ? <TraySeparator /> : null}
     </View>
@@ -20,8 +30,11 @@ export const TrayHeader: React.FC<{
 
 const styles = StyleSheet.create({
   header: {
-    paddingTop: TRAY_SECTION_GAP,
-    gap: TRAY_SECTION_GAP,
+    paddingTop: TRAY_HEADER_PADDING_TOP,
+    gap: TRAY_HEADER_PADDING_BOTTOM,
+  },
+  headerWithoutSeparator: {
+    paddingBottom: TRAY_HEADER_PADDING_BOTTOM,
   },
 });
 

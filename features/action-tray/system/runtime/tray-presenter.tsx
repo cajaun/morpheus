@@ -114,6 +114,17 @@ const createPresentedTray = ({
   }
 
   const stepOptions = resolveTrayStepOptions(step.options);
+  const fullScreenBoundaryExit = [trayIndex - 1, trayIndex + 1].some(
+    (adjacentIndex) => {
+      const adjacentStep = registration.steps[adjacentIndex];
+
+      return (
+        adjacentStep !== undefined &&
+        resolveTrayStepOptions(adjacentStep.options).fullScreen !==
+          stepOptions.fullScreen
+      );
+    },
+  );
   const isFirstRender = previousIndex === undefined;
   const keyboardTransitionMode: KeyboardTransitionMode =
     stepOptions.keyboardAware ? "entering" : "idle";
@@ -128,6 +139,7 @@ const createPresentedTray = ({
           <TrayStepContent
             stepKey={`${entry.trayId}-${step.key}-header`}
             scale={false}
+            fullScreenBoundaryExit={fullScreenBoundaryExit}
             skipEntering={isFirstRender}
           >
             {step.header}
@@ -142,6 +154,7 @@ const createPresentedTray = ({
             stepKey={`${entry.trayId}-${step.key}`}
             scale={stepOptions.scale}
             anchorScaleToTop={stepOptions.fullScreen}
+            fullScreenBoundaryExit={fullScreenBoundaryExit}
             skipEntering={isFirstRender}
           >
             {step.content}

@@ -5,6 +5,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BACKDROP_OPACITY } from "../core/constants";
 
 // backdrop input blocking is separate from backdrop opacity on purpose
 type BackdropProps = {
@@ -31,7 +32,7 @@ const Backdrop: React.FC<BackdropProps> = React.memo(
           style={[
             {
               ...StyleSheet.absoluteFillObject,
-              backgroundColor: "rgba(0,0,0,0.3)",
+              backgroundColor: `rgba(0, 0, 0, ${BACKDROP_OPACITY})`,
             },
             rBackdropStyle,
           ]}

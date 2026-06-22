@@ -5,7 +5,10 @@ import {
   type SharedValue,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { MORPH_LAYOUT_DURATION } from "../constants";
+import {
+  FULL_SCREEN_LAYOUT_DURATION,
+  MORPH_LAYOUT_DURATION,
+} from "../constants";
 import { withFullScreenLayoutStartSignal } from "../full-screen-transition-start";
 
 type TrayLayoutTransitionParams = {
@@ -36,11 +39,15 @@ export const createTrayLayoutTransition = ({
   const transition = LinearTransition
     .duration(MORPH_LAYOUT_DURATION)
     .easing(Easing.bezier(0.34, 1.12, 0.64, 1).factory());
+  const fullScreenTransition = LinearTransition
+    .duration(FULL_SCREEN_LAYOUT_DURATION)
+    .easing(Easing.bezier(0, 0, 0.58, 1).factory());
 
   // linearTransition still owns every geometry value
   // its width timing is the canonical clock because width always 
   // changes between sheet and fullscreen
   const buildTransition = transition.build();
+  const buildFullScreenTransition = fullScreenTransition.build();
   const synchronizedTransition: LayoutAnimationFunction = (values) => {
     "worklet";
 
@@ -48,7 +55,12 @@ export const createTrayLayoutTransition = ({
       scheduleOnRN(onConfigure, performance.now());
     }
 
-    const animation = buildTransition(values);
+    const isFullScreenTransition =
+      layoutStartedFullScreenGeneration.value <
+      fullScreenTransitionGeneration;
+    const animation = isFullScreenTransition
+      ? buildFullScreenTransition(values)
+      : buildTransition(values);
     animation.animations.width = withFullScreenLayoutStartSignal(
       animation.animations.width as number,
       layoutStartedFullScreenGeneration,

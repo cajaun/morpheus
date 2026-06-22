@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTrayFlow, useTrayPages } from "@/features/action-tray";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
+import { TRAY_ITEM_RADIUS } from "@/features/action-tray/system/core/constants";
 
 export const CREATE_WALLET_COLORS = [
   "#F24160",
@@ -47,9 +48,9 @@ export const WalletActionRow = ({
       onPress={onPress}
       style={{
         flexDirection: "row",
-        alignItems: "center",
+        justifyContent: "flex-start",
         gap: 14,
-        borderRadius: 24,
+        borderRadius: TRAY_ITEM_RADIUS,
         backgroundColor: trayDemoColors.softSurface,
         paddingHorizontal: 16,
         paddingVertical: 18,
@@ -65,7 +66,7 @@ export const WalletActionRow = ({
           backgroundColor: iconColor,
         }}
       >
-        <SymbolView name={icon} tintColor="#FFFFFF" size={22} weight="bold" />
+        <SymbolView name={icon} tintColor="#FFFFFF"  weight="semibold" />
       </View>
 
       <View style={{ flex: 1 }}>
@@ -175,7 +176,7 @@ export const ExistingWalletOption = ({
     flexDirection: isStacked ? ("column" as const) : ("row" as const),
     alignItems: isStacked ? ("flex-start" as const) : ("center" as const),
     gap: isStacked ? 20 : 14,
-    borderRadius: 28,
+    borderRadius: TRAY_ITEM_RADIUS,
     backgroundColor: disabled ? "transparent" : trayDemoColors.softSurface,
     borderWidth: disabled ? 1 : 0,
     borderStyle: disabled ? ("dashed" as const) : ("solid" as const),

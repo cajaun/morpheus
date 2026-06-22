@@ -9,6 +9,7 @@ import Animated, {
 import { SymbolView } from "expo-symbols";
 import { useTrayFlow, useTrayPages } from "@/features/action-tray";
 import { PressableScale } from "@/shared/ui/pressable-scale";
+import { FULL_SCREEN_CONTROL_SIZE } from "@/features/action-tray/system/core/constants";
 
 const PageProgressItem = ({
   index,
@@ -81,7 +82,7 @@ export const OnboardingPageHeader = ({
   return (
     <View
       style={{
-        paddingTop: 24,
+        paddingTop: 4,
         flexDirection: "row",
         alignItems: "center",
       }}
@@ -89,16 +90,15 @@ export const OnboardingPageHeader = ({
       <PressableScale
         onPress={isFirstPage ? requestClose : backPage}
         style={{
-          width: 32,
-          height: 32,
-          alignItems: "flex-start",
+          width: FULL_SCREEN_CONTROL_SIZE,
+          height: FULL_SCREEN_CONTROL_SIZE,
+          alignItems: "center",
           justifyContent: "center",
         }}
       >
         <SymbolView
           name="xmark"
           type="palette"
-          size={22}
           weight="semibold"
           tintColor="#2A2A2C"
         />
@@ -112,8 +112,8 @@ export const OnboardingPageHeader = ({
 
       <View
         style={{
-          width: 32,
-          height: 32,
+          width: FULL_SCREEN_CONTROL_SIZE,
+          height: FULL_SCREEN_CONTROL_SIZE,
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -122,7 +122,6 @@ export const OnboardingPageHeader = ({
           <SymbolView
             name="questionmark.circle"
             type="palette"
-            size={32}
             tintColor="#2A2A2C"
           />
         )}

@@ -374,7 +374,7 @@ const ThirdStep = () => {
       </Tray.Pages.Header>
 
       <Tray.Page className="flex-1">
-        <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
+        <Tray.Body style={{ flex: 1 }}>
           <Tray.Section>
             <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
               Content Three A
@@ -410,7 +410,7 @@ const ThirdStep = () => {
       </Tray.Page>
 
       <Tray.Page className="flex-1">
-        <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
+        <Tray.Body style={{  flex: 1 }}>
           <Tray.Section>
             <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
               Content Three B
@@ -434,7 +434,7 @@ const ThirdStep = () => {
       </Tray.Page>
 
       <Tray.Page className="flex-1">
-        <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
+        <Tray.Body style={{ flex: 1 }}>
           <Tray.Section>
             <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
               Content Three C
@@ -459,7 +459,7 @@ const ThirdStep = () => {
       </Tray.Page>
 
       <Tray.Page className="flex-1">
-        <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
+        <Tray.Body style={{ flex: 1 }}>
           <Tray.Section>
             <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
               Content Three D

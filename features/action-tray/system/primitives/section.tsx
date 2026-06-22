@@ -8,7 +8,11 @@ import {
   StyleProp,
   ViewStyle,
 } from "react-native";
-import { TRAY_SECTION_GAP } from "../core/constants";
+import {
+  TRAY_ITEM_GAP,
+  TRAY_SECTION_PADDING_BOTTOM,
+  TRAY_SECTION_PADDING_TOP,
+} from "../core/constants";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
@@ -103,16 +107,17 @@ export const TraySection: React.FC<TraySectionProps> = ({
 
 const styles = StyleSheet.create({
   section: {
-    gap: TRAY_SECTION_GAP,
-    paddingVertical: TRAY_SECTION_GAP,
+    gap: TRAY_ITEM_GAP,
+    paddingTop: TRAY_SECTION_PADDING_TOP,
+    paddingBottom: TRAY_SECTION_PADDING_BOTTOM,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    gap: TRAY_SECTION_GAP,
-    paddingTop: TRAY_SECTION_GAP,
-    paddingBottom: TRAY_SECTION_GAP,
+    gap: TRAY_ITEM_GAP,
+    paddingTop: TRAY_SECTION_PADDING_TOP,
+    paddingBottom: TRAY_SECTION_PADDING_BOTTOM,
     flexGrow: 1,
   },
 });

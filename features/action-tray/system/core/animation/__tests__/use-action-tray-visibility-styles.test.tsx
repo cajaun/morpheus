@@ -5,7 +5,7 @@ import {
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
   HORIZONTAL_MARGIN,
   SCREEN_WIDTH,
-  TRAY_VERTICAL_PADDING,
+  TRAY_SHEET_BODY_HORIZONTAL_PADDING,
 } from "../../constants";
 import { useActionTrayVisibilityStyles } from "../use-action-tray-visibility-styles";
 
@@ -59,7 +59,9 @@ describe("useActionTrayVisibilityStyles", () => {
   it("starts a fullscreen-footer expansion at the stabilized footer width", () => {
     const styles = renderVisibilityStyles({ origin: "fullScreenFooter" });
     const sheetContentWidth =
-      SCREEN_WIDTH - HORIZONTAL_MARGIN * 2 - TRAY_VERTICAL_PADDING * 2;
+      SCREEN_WIDTH -
+      HORIZONTAL_MARGIN * 2 -
+      TRAY_SHEET_BODY_HORIZONTAL_PADDING * 2;
 
     expect(styles.footerContentFrameStyle.width).toBe(sheetContentWidth);
   });

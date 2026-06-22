@@ -6,6 +6,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import {
+  FULL_SCREEN_ENTERING_DURATION,
+  FULL_SCREEN_EXITING_DURATION,
   MORPH_ENTERING_DURATION,
   MORPH_ENTERING_SCALE,
   MORPH_EXITING_DURATION,
@@ -29,6 +31,7 @@ type Props = {
   children: React.ReactNode;
   scale?: boolean;
   anchorScaleToTop?: boolean;
+  fullScreenBoundaryExit?: boolean;
   stepKey?: string;
   skipEntering?: boolean;
   skipExiting?: boolean;
@@ -36,6 +39,7 @@ type Props = {
 
 export const MORPH_EASING = Easing.bezier(0.25, 1.0, 0.5, 1);
 export const SHEET_EASING = Easing.bezier(0.34, 1.12, 0.64, 1);
+export const FULL_SCREEN_CONTENT_EASING = Easing.bezier(0.42, 0, 0.58, 1);
 
 const logStepEnterFinished = (stepKey: string, finishedAt: number) => {
   if (!isActionTrayInstrumentationEnabled()) {
@@ -72,6 +76,17 @@ const createMorphEntering = (
     const shouldAwaitLayout = shouldAwaitFullScreenLayoutStart(
       fullScreenTransition,
     );
+    const duration = shouldAwaitLayout
+      ? FULL_SCREEN_ENTERING_DURATION
+      : MORPH_ENTERING_DURATION;
+    const easing = shouldAwaitLayout
+      ? FULL_SCREEN_CONTENT_EASING
+      : MORPH_EASING;
+    const initialScale = shouldAwaitLayout
+      ? 1
+      : scale
+        ? MORPH_ENTERING_SCALE
+        : 1;
     const synchronizeWithLayout = (
       animation: number,
       logRelease = false,
@@ -108,15 +123,15 @@ const createMorphEntering = (
       initialValues: {
         opacity: 0,
         transform: [
-          { scale: scale ? MORPH_ENTERING_SCALE : 1 },
+          { scale: initialScale },
           { translateY: 0 },
         ],
       },
       animations: {
         opacity: synchronizeWithLayout(
           withTiming(1, {
-            duration: MORPH_ENTERING_DURATION,
-            easing: MORPH_EASING,
+            duration,
+            easing,
           }),
           true,
         ),
@@ -124,16 +139,16 @@ const createMorphEntering = (
           {
             scale: synchronizeWithLayout(
               withTiming(1, {
-                duration: MORPH_ENTERING_DURATION,
-                easing: MORPH_EASING,
+                duration,
+                easing,
               }),
             ),
           },
           {
             translateY: synchronizeWithLayout(
               withTiming(0, {
-                duration: MORPH_ENTERING_DURATION,
-                easing: MORPH_EASING,
+                duration,
+                easing,
               }),
             ),
           },
@@ -152,9 +167,24 @@ const createMorphEntering = (
   };
 };
 
-const createMorphExiting = (scale: boolean): EntryExitAnimationFunction => {
+const createMorphExiting = (
+  scale: boolean,
+  fullScreenBoundaryExit: boolean,
+): EntryExitAnimationFunction => {
   return () => {
     "worklet";
+    const duration = fullScreenBoundaryExit
+      ? FULL_SCREEN_EXITING_DURATION
+      : MORPH_EXITING_DURATION;
+    const easing = fullScreenBoundaryExit
+      ? FULL_SCREEN_CONTENT_EASING
+      : SHEET_EASING;
+    const targetScale = fullScreenBoundaryExit
+      ? 1
+      : scale
+        ? MORPH_EXITING_SCALE
+        : 1;
+
     return {
       initialValues: {
         opacity: 1,
@@ -162,22 +192,22 @@ const createMorphExiting = (scale: boolean): EntryExitAnimationFunction => {
       },
       animations: {
         opacity: withTiming(0, {
-          duration: MORPH_EXITING_DURATION,
-          easing: SHEET_EASING,
+          duration,
+          easing,
         }),
 
         transform: [
           {
-            scale: withTiming(scale ? MORPH_EXITING_SCALE : 1, {
-              duration: MORPH_EXITING_DURATION,
-              easing: SHEET_EASING,
+            scale: withTiming(targetScale, {
+              duration,
+              easing,
             }),
           },
 
           {
             translateY: withTiming(0, {
-              duration: MORPH_EXITING_DURATION,
-              easing: SHEET_EASING,
+              duration,
+              easing,
             }),
           },
         ],
@@ -190,6 +220,7 @@ export const TrayStepContent: React.FC<Props> = ({
   children,
   scale = true,
   anchorScaleToTop = false,
+  fullScreenBoundaryExit = false,
   stepKey,
   skipEntering = false,
   skipExiting = false,
@@ -225,7 +256,11 @@ export const TrayStepContent: React.FC<Props> = ({
               fullScreenTransition,
             )
       }
-      exiting={skipExiting ? undefined : createMorphExiting(scale)}
+      exiting={
+        skipExiting
+          ? undefined
+          : createMorphExiting(scale, fullScreenBoundaryExit)
+      }
     >
       {children}
     </Animated.View>

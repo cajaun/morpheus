@@ -150,7 +150,7 @@ export const useActionTrayFrameStyles = ({
         : useMeasuredSheetHeight
           ? resolvedSheetHeight
           : undefined,
-      borderRadius: BORDER_RADIUS,
+      borderRadius: targetRadius,
     };
   }, [
     bottom,
