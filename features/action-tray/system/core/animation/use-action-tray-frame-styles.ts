@@ -156,7 +156,11 @@ export const useActionTrayFrameStyles = ({
         ? SCREEN_HEIGHT
         : useMeasuredSheetHeight
           ? resolvedSheetHeight
-          : undefined,
+          // Reanimated retains the last native value when an animated style
+          // switches from a concrete height to undefined. Explicitly restore
+          // Yoga ownership after a fullscreen return so later sheets can use
+          // their intrinsic content height.
+          : "auto",
       borderRadius: targetRadius,
     };
   }, [

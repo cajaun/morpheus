@@ -66,7 +66,7 @@ describe("useActionTrayFrameStyles", () => {
   it("lets an opened sheet derive height from its children", () => {
     const styles = renderFrameStyles({});
 
-    expect(styles.trayLayoutStyle.height).toBeUndefined();
+    expect(styles.trayLayoutStyle.height).toBe("auto");
   });
 
   it("keeps fullscreen geometry explicit", () => {
