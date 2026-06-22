@@ -71,6 +71,7 @@ export type TrayPagesRegistration = {
 };
 
 export type ResolvedTrayStepOptions = {
+  hasFooter: boolean;
   scale: boolean;
   keyboardAware: boolean;
   fullScreen: boolean;
@@ -86,6 +87,7 @@ export type ResolvedTrayStepOptions = {
 };
 
 export const DEFAULT_TRAY_STEP_OPTIONS: ResolvedTrayStepOptions = {
+  hasFooter: false,
   scale: true,
   keyboardAware: false,
   fullScreen: false,

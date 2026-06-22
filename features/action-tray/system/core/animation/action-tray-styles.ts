@@ -1,5 +1,9 @@
 import { StyleSheet } from "react-native";
-import { TRAY_VERTICAL_PADDING } from "../constants";
+import {
+  TRAY_FOOTER_PADDING_BOTTOM,
+  TRAY_FOOTER_PADDING_TOP,
+  TRAY_VERTICAL_PADDING,
+} from "../constants";
 
 // static styles stay separate so motion code only reasons about changing values
 export const styles = StyleSheet.create({
@@ -14,8 +18,8 @@ export const styles = StyleSheet.create({
   footer: {
     position: "absolute",
     paddingHorizontal: TRAY_VERTICAL_PADDING,
-    paddingTop: 6,
-    paddingBottom: TRAY_VERTICAL_PADDING,
+    paddingTop: TRAY_FOOTER_PADDING_TOP,
+    paddingBottom: TRAY_FOOTER_PADDING_BOTTOM,
     borderCurve: "continuous",
   },
   measureFooter: {

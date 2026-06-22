@@ -14,6 +14,8 @@ import {
   HORIZONTAL_MARGIN,
   SCREEN_HEIGHT,
   SCREEN_WIDTH,
+  TRAY_FOOTER_PADDING_BOTTOM,
+  TRAY_FOOTER_PADDING_TOP,
   TRAY_VERTICAL_PADDING,
 } from "../constants";
 import type {
@@ -23,11 +25,12 @@ import type {
 
 const EXPAND_FROM_TRIGGER_COLLAPSED_RADIUS =
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT / 2;
-const EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_TOP_PADDING = 6;
+const EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_TOP_PADDING =
+  TRAY_FOOTER_PADDING_TOP;
 const EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT =
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT +
   EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_TOP_PADDING +
-  TRAY_VERTICAL_PADDING;
+  TRAY_FOOTER_PADDING_BOTTOM;
 const FULL_SCREEN_FRAME_EASING = Easing.bezier(0, 0, 0.58, 1);
 
 type Params = Pick<
@@ -216,7 +219,7 @@ export const useActionTrayFrameStyles = ({
         ]),
         paddingBottom: interpolate(revealProgress, [0, 1], [
           0,
-          TRAY_VERTICAL_PADDING,
+          TRAY_FOOTER_PADDING_BOTTOM,
         ]),
         right: "auto",
         bottom: "auto",

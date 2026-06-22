@@ -30,6 +30,8 @@ import {
   FULL_SCREEN_HEADER_BOTTOM_GAP,
   FULL_SCREEN_HEADER_HORIZONTAL_PADDING,
   HORIZONTAL_MARGIN,
+  TRAY_FOOTER_PADDING_BOTTOM,
+  TRAY_FOOTER_PADDING_TOP,
   TRAY_HEADER_HORIZONTAL_PADDING,
   TRAY_KEYBOARD_GAP,
   TRAY_VERTICAL_PADDING,
@@ -435,8 +437,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
                 left: presentationFullScreen ? 0 : HORIZONTAL_MARGIN,
                 right: presentationFullScreen ? 0 : HORIZONTAL_MARGIN,
                 paddingHorizontal: TRAY_VERTICAL_PADDING,
-                paddingTop: 6,
-                paddingBottom: TRAY_VERTICAL_PADDING,
+                paddingTop: TRAY_FOOTER_PADDING_TOP,
+                paddingBottom: TRAY_FOOTER_PADDING_BOTTOM,
               },
             ]}
             onLayout={handleMeasureFooterLayout}

@@ -114,6 +114,10 @@ const createPresentedTray = ({
   }
 
   const stepOptions = resolveTrayStepOptions(step.options);
+  const contextualStepOptions = {
+    ...stepOptions,
+    hasFooter: registration.footer != null,
+  };
   const fullScreenBoundaryExit = [trayIndex - 1, trayIndex + 1].some(
     (adjacentIndex) => {
       const adjacentStep = registration.steps[adjacentIndex];
@@ -135,7 +139,7 @@ const createPresentedTray = ({
     keyboardTransitionMode,
     header: step.header ? (
       <TrayScopeProvider value={entry.trayId}>
-        <TrayStepOptionsProvider value={stepOptions}>
+        <TrayStepOptionsProvider value={contextualStepOptions}>
           <TrayStepContent
             stepKey={`${entry.trayId}-${step.key}-header`}
             scale={false}
@@ -149,7 +153,7 @@ const createPresentedTray = ({
     ) : null,
     content: (
       <TrayScopeProvider value={entry.trayId}>
-        <TrayStepOptionsProvider value={stepOptions}>
+        <TrayStepOptionsProvider value={contextualStepOptions}>
           <TrayStepContent
             stepKey={`${entry.trayId}-${step.key}`}
             scale={stepOptions.scale}
@@ -164,7 +168,7 @@ const createPresentedTray = ({
     ),
     footer: registration.footer ? (
       <TrayScopeProvider value={entry.trayId}>
-        <TrayStepOptionsProvider value={stepOptions}>
+        <TrayStepOptionsProvider value={contextualStepOptions}>
           {registration.footer}
         </TrayStepOptionsProvider>
       </TrayScopeProvider>

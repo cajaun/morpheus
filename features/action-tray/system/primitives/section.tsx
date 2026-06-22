@@ -13,6 +13,7 @@ import {
   TRAY_SECTION_PADDING_BOTTOM,
   TRAY_SECTION_PADDING_TOP,
 } from "../core/constants";
+import { useTrayStepOptions } from "../runtime/tray-context";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
@@ -72,6 +73,7 @@ export const TraySection: React.FC<TraySectionProps> = ({
   contentClassName,
 }) => {
   const height = resolveHeight(maxHeight, maxHeightRatio);
+  const { hasFooter } = useTrayStepOptions();
 
   if (scrollable) {
     return (
@@ -80,6 +82,7 @@ export const TraySection: React.FC<TraySectionProps> = ({
           style={styles.scrollView}
           contentContainerStyle={[
             styles.scrollContent,
+            hasFooter && styles.footerAwareSection,
             contentContainerStyle,
           ]}
           className={contentClassName}
@@ -99,7 +102,14 @@ export const TraySection: React.FC<TraySectionProps> = ({
   }
 
   return (
-    <View style={[styles.section, style]} className={className}>
+    <View
+      style={[
+        styles.section,
+        hasFooter && styles.footerAwareSection,
+        style,
+      ]}
+      className={className}
+    >
       {children}
     </View>
   );
@@ -110,6 +120,11 @@ const styles = StyleSheet.create({
     gap: TRAY_ITEM_GAP,
     paddingTop: TRAY_SECTION_PADDING_TOP,
     paddingBottom: TRAY_SECTION_PADDING_BOTTOM,
+  },
+  footerAwareSection: {
+    // The footer owns the complete 16pt content-to-button gap. Avoid stacking
+    // the section's ordinary 24pt terminal padding in front of it.
+    paddingBottom: 0,
   },
   scrollView: {
     flex: 1,
