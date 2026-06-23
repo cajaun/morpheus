@@ -19,6 +19,7 @@ export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
     const trayId = useTrayScope();
     const { anticipateKeyboard, registerFocusable } = useTrayHostActions();
 
+    // forward the native input ref while keeping tray focus registration local
     useImperativeHandle(forwardedRef, () => ref.current as TextInput);
 
     useEffect(() => {
@@ -36,6 +37,7 @@ export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
       }
 
       anticipateKeyboard();
+      // autofocus is manual so keyboard anticipation can run before focus
       ref.current?.focus();
     }, [anticipateKeyboard, autoFocus]);
 
@@ -51,6 +53,7 @@ export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
     return (
       <TextInput
         ref={ref}
+        // native autofocus would bypass tray keyboard anticipation
         autoFocus={false}
         {...props}
         onFocus={handleFocus}

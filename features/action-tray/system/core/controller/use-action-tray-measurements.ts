@@ -85,15 +85,18 @@ export const useActionTrayMeasurements = ({
   }, []);
 
   const completePendingOpen = useCallback(() => {
+    // pending open ends before the ui spring starts so later layouts can animate
     setPendingOpen(false);
   }, []);
 
   const prepareForClose = useCallback(() => {
+    // closing disables layout animation so teardown does not morph stale content
     setPendingOpen(false);
     setLayoutEnabled(false);
   }, []);
 
   const reset = useCallback(() => {
+    // full reset is used only when a host slot is cleared or reassigned
     latestMeasuredContentHeightRef.current = 0;
     latestResolvedContentHeightRef.current = 0;
     latestMeasuredFooterHeightRef.current = 0;
@@ -135,6 +138,7 @@ export const useActionTrayMeasurements = ({
       onContentHeightResolved?.(resolvedHeight, height, renderedTrayId);
 
       if (!contentMeasured && renderedTrayId !== undefined) {
+        // content is only considered ready after it belongs to a named rendered tray
         setContentMeasured(true);
       }
 
@@ -167,8 +171,7 @@ export const useActionTrayMeasurements = ({
 
       // visible footer measurement handles late footer changes after the first open
       const height = e.nativeEvent.layout.height;
-      // during footer morph-out, transient near-zero layouts can fire before the
-      // visual exit finishes; keep the last stable height to avoid a drop/jump.
+      // keep the last stable footer height during transient morph out layouts
       if (height <= 1 && latestMeasuredFooterHeightRef.current > 0) {
         return;
       }
@@ -182,6 +185,7 @@ export const useActionTrayMeasurements = ({
       latestMeasuredFooterHeightRef.current = height;
       measuredFooterHeight.value = height;
       footerHeight.value = height;
+      // visible footer layouts are late updates and should not reopen measurement gates
     },
     [footerHeight, measuredFooterHeight, renderedFooter],
   );
@@ -196,6 +200,7 @@ export const useActionTrayMeasurements = ({
       latestMeasuredFooterHeightRef.current = height;
       measuredFooterHeight.value = height;
       footerHeight.value = height;
+      // offscreen footer measurement is the gate that lets first open begin
       setFooterMeasured(true);
     },
     [footerHeight, measuredFooterHeight],

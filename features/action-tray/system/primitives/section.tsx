@@ -93,6 +93,7 @@ export const TraySection: React.FC<TraySectionProps> = ({
           keyboardDismissMode={
             Platform.OS === "ios" ? "interactive" : "on-drag"
           }
+          // taps inside tray forms should not dismiss the keyboard before controls run
           keyboardShouldPersistTaps="handled"
         >
           {children}
@@ -110,6 +111,7 @@ export const TraySection: React.FC<TraySectionProps> = ({
       ]}
       className={className}
     >
+      {/* static sections keep intrinsic height so the tray shell measures them directly */}
       {children}
     </View>
   );
@@ -122,8 +124,7 @@ const styles = StyleSheet.create({
     paddingBottom: TRAY_SECTION_PADDING_BOTTOM,
   },
   footerAwareSection: {
-    // The footer owns the complete 16pt content-to-button gap. Avoid stacking
-    // the section's ordinary 24pt terminal padding in front of it.
+    // let the footer own the 16pt content to button gap
     paddingBottom: 0,
   },
   scrollView: {

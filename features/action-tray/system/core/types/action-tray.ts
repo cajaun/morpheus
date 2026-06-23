@@ -1,11 +1,12 @@
 import React from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
-import type { TrayTransitionOptions } from "../runtime/tray-context";
+import type { TrayTransitionOptions } from "../../runtime/types";
 
+// keep shell contracts separate from controller and runtime implementation
 export type KeyboardTransitionMode = "idle" | "entering" | "exiting";
 
-// these types describe the shell after the presenter resolves a step
+// describe the shell payload after the presenter resolves a step
 export type ActionTrayProps = {
   assignmentId?: number;
   visible: boolean;

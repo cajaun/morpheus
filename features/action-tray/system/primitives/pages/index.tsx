@@ -14,93 +14,29 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import Animated, {
-  Extrapolation,
-  interpolate,
-  type SharedValue,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
+import { useSharedValue, withSpring } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { SCREEN_WIDTH } from "../core/constants";
-import { TrayPagesProvider } from "../pages-context";
+import { SCREEN_WIDTH } from "../../core/constants";
+import { TrayPagesProvider } from "../../pages-context";
 import {
-  useTrayHost,
   useTrayHostSelector,
   useTrayScope,
-  useTrayStepOptions,
-} from "../runtime/tray-context";
-import { TrayPage } from "./page";
+  useTrayHost,
+} from "../../runtime/tray-context";
+import { TrayPage } from "../page";
+import {
+  clampPageIndex,
+  isTrayPageInRenderWindow,
+  PAGE_SPRING_CONFIG,
+} from "./model";
+import { TrayPagesScene } from "./scene";
+import {
+  isElementOfType,
+  TrayPagesFooterSlot,
+  TrayPagesHeaderSlot,
+} from "./slots";
 
-// pages are for intra step motion when the tray shell itself should stay unchanged
-const PAGE_SPRING_CONFIG = {
-  stiffness: 1000,
-  damping: 500,
-  mass: 3,
-  overshootClamping: true,
-} as const;
-
-const TrayPagesHeaderSlot: React.FC<{
-  children: React.ReactNode;
-  shell?: boolean;
-}> = ({ children }) => {
-  return <>{children}</>;
-};
-
-TrayPagesHeaderSlot.displayName = "TrayPagesHeader";
-
-const TrayPagesFooterSlot: React.FC<{
-  children: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
-  className?: string;
-}> = ({ children, style, className }) => {
-  const { keyboardHeight } = useTrayHost();
-  const { fullScreen } = useTrayStepOptions();
-  const flattenedStyle = StyleSheet.flatten(style);
-  const hasBackgroundColor = flattenedStyle?.backgroundColor != null;
-  const keyboardAwareStyle = useAnimatedStyle(
-    () => ({
-      transform: [{ translateY: fullScreen ? -keyboardHeight.value : 0 }],
-    }),
-    [fullScreen, keyboardHeight],
-  );
-
-  return (
-    <Animated.View
-      className={className}
-      style={[
-        !hasBackgroundColor && styles.footerTransparentBackground,
-        style,
-        keyboardAwareStyle,
-      ]}
-    >
-      {children}
-    </Animated.View>
-  );
-};
-
-TrayPagesFooterSlot.displayName = "TrayPagesFooter";
-
-const isElementOfType = <T,>(
-  child: React.ReactNode,
-  component: React.ComponentType<T>,
-): child is React.ReactElement<T> =>
-  React.isValidElement(child) && child.type === component;
-
-const clampPageIndex = (index: number, totalPages: number) => {
-  if (totalPages <= 0) {
-    return 0;
-  }
-
-  return Math.max(0, Math.min(index, totalPages - 1));
-};
-
-export const isTrayPageInRenderWindow = (
-  index: number,
-  pageIndex: number,
-  transitionFromIndex: number | null = null,
-) => index === pageIndex || index === transitionFromIndex;
+export { isTrayPageInRenderWindow } from "./model";
 
 type TrayPagesProps = {
   children: React.ReactNode;
@@ -109,50 +45,13 @@ type TrayPagesProps = {
   className?: string;
 };
 
-const TrayPagesScene: React.FC<{
-  children: React.ReactNode;
-  index: number;
-  pageIndex: number;
-  pageWidth: number;
-  progress: SharedValue<number>;
-}> = ({ children, index, pageIndex, pageWidth, progress }) => {
-  const offscreenOffset = pageWidth + 4;
-
-  // keep neighboring pages mounted so horizontal motion can interpolate cleanly
-  const animatedStyle = useAnimatedStyle(
-    () => ({
-      transform: [
-        {
-          translateX: interpolate(
-            progress.value,
-            [index - 1, index, index + 1],
-            [offscreenOffset, 0, -offscreenOffset],
-            Extrapolation.CLAMP,
-          ),
-        },
-      ],
-    }),
-    [index, offscreenOffset, progress],
-  );
-
-  return (
-    <Animated.View
-      collapsable={false}
-      pointerEvents={pageIndex === index ? "auto" : "none"}
-      style={[styles.pageLayer, { width: pageWidth }, animatedStyle]}
-    >
-      <View style={styles.pageSlot}>{children}</View>
-    </Animated.View>
-  );
-};
-
 const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   children,
   initialPage = 0,
   style,
   className,
 }) => {
-  // treat header footer and page children as named slots instead of position based args
+  // parse named children once so page order does not depend on prop position
   const parsed = useMemo(() => {
     const pages: React.ReactElement[] = [];
     let header: React.ReactNode = null;
@@ -160,6 +59,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
 
     React.Children.forEach(children, (child) => {
       if (isElementOfType(child, TrayPagesHeaderSlot)) {
+        // shell headers opt out because the parent tray already renders header chrome
         header = child.props.shell ? null : child.props.children;
         return;
       }
@@ -185,6 +85,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
       return null;
     }
 
+    // page registration follows the active step key instead of global active index alone
     const stackEntry = state.stack.find((entry) => entry.trayId === trayId);
     const stepIndex = stackEntry?.index ?? state.activeIndex;
 
@@ -203,7 +104,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   const pageWidth = viewportWidthState > 0 ? viewportWidthState : SCREEN_WIDTH;
 
   useEffect(() => {
-    // clamp after child changes so removing a page never leaves an invalid index
+    // clamp after children change so removed pages cannot leave a stale index
     const nextIndex = clampPageIndex(pageIndex, totalPages);
 
     if (nextIndex === pageIndex) {
@@ -219,7 +120,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
 
   const handleViewportLayout = useCallback(
     (event: LayoutChangeEvent) => {
-      // viewport width tracks the rendered tray width not the global screen width
+      // measure the rendered tray because sheets and fullscreen use different widths
       const nextWidth = PixelRatio.roundToNearestPixel(
         event.nativeEvent.layout.width || SCREEN_WIDTH,
       );
@@ -241,9 +142,11 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
         resolvedIndex === pageIndex ||
         transitionFromIndex !== null
       ) {
+        // one page transition at a time keeps outgoing and incoming windows bounded
         return;
       }
 
+      // keep the outgoing page mounted until the spring reports completion
       transitionTargetRef.current = resolvedIndex;
       setTransitionFromIndex(pageIndex);
       setPageIndex(resolvedIndex);
@@ -253,6 +156,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
 
   const handlePageTransitionComplete = useCallback((targetIndex: number) => {
     if (transitionTargetRef.current !== targetIndex) {
+      // stale spring callbacks cannot clear a newer transition window
       return;
     }
 
@@ -270,9 +174,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
       return;
     }
 
-    // The target page now exists in the committed tree. Start the existing
-    // spring from that commit so neither endpoint needs to stay mounted while
-    // the pager is idle.
+    // start after the target page commits so idle pages can stay unmounted
     startedTransitionTargetRef.current = pageIndex;
     progress.value = withSpring(
       pageIndex,
@@ -308,6 +210,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
       stepKey: activeStepKey,
       pageIndex,
       totalPages,
+      // footer pages keep controls local instead of delegating flow next back
       hasFooter: parsed.footer != null,
       canGoNext: pageIndex < totalPages - 1,
       canGoBack: pageIndex > 0,
@@ -359,6 +262,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
                 transitionFromIndex,
               )
             ) {
+              // idle pager keeps offscreen pages unmounted to avoid hidden layout work
               return null;
             }
 
@@ -393,23 +297,9 @@ const styles = StyleSheet.create({
   root: {
     height: "100%",
   },
-  footerTransparentBackground: {
-    backgroundColor: "transparent",
-  },
   viewport: {
     flex: 1,
     overflow: "hidden",
     position: "relative",
-  },
-  pageSlot: {
-    flex: 1,
-    width: "100%",
-  },
-  pageLayer: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    overflow: "hidden",
   },
 });

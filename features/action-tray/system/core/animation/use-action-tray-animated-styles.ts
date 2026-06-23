@@ -4,6 +4,7 @@ import { useActionTrayDragStyle } from "./use-action-tray-drag-style";
 import { useActionTrayFrameStyles } from "./use-action-tray-frame-styles";
 import { useActionTrayVisibilityStyles } from "./use-action-tray-visibility-styles";
 
+// collect shell motion styles so the view tree reads one animation contract
 export const useActionTrayAnimatedStyles = ({
   translateY,
   contentHeight,

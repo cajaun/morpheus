@@ -94,9 +94,11 @@ const createMorphEntering = (
       "worklet";
 
       if (!shouldAwaitLayout || fullScreenTransition === null) {
+        // regular step enters can start as soon as reanimated mounts the view
         return animation;
       }
 
+      // fullscreen enters hold until shell layout publishes the matching generation
       return withFullScreenLayoutStart(
         animation,
         fullScreenTransition.startedGeneration,
@@ -116,6 +118,7 @@ const createMorphEntering = (
       ACTION_TRAY_INSTRUMENTATION_ENABLED &&
       !shouldAwaitLayout
     ) {
+      // non-fullscreen enters have no layout latch so log release immediately
       scheduleOnRN(logStepEnterStarted, stepKey, performance.now());
     }
 
@@ -191,6 +194,7 @@ const createMorphExiting = (
         transform: [{ scale: 1 }, { translateY: 0 }],
       },
       animations: {
+        // fullscreen boundary exits fade without scaling so header alignment stays fixed
         opacity: withTiming(0, {
           duration,
           easing,
@@ -238,9 +242,7 @@ export const TrayStepContent: React.FC<Props> = ({
   return (
     <Animated.View
       key={stepKey}
-      // A fullscreen-height layer must scale from the body boundary so it
-      // cannot expand upward into the header. Regular steps retain the native
-      // center origin and therefore their existing transition motion.
+      // scale fullscreen layers from the body boundary so they stay below the header
       style={
         anchorScaleToTop
           ? { transformOrigin: ["50%", "0%", 0] }

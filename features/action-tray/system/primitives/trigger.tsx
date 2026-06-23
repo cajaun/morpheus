@@ -87,6 +87,7 @@ const fireTriggerHaptics = (haptics: TrayTriggerHaptics) => {
 
   switch (haptics) {
     case false:
+      // false is the escape hatch for silent triggers
       return;
     case "selection":
       void Haptics.selectionAsync();
@@ -107,6 +108,7 @@ export const TrayTrigger: React.FC<TrayTriggerProps> = ({
   const { openTray } = useTrayHostActions();
 
   if (!trayId) {
+    // triggers need a scope so runtime knows which registered tray to open
     throw new Error("Tray.Trigger must be used within Tray.Root");
   }
 

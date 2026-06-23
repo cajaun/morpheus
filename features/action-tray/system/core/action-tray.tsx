@@ -2,14 +2,10 @@ import React, {
   forwardRef,
   useCallback,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
-  useRef,
 } from "react";
 import { StyleSheet } from "react-native";
 import Animated, {
-  useAnimatedReaction,
-  useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
 } from "react-native-reanimated";
@@ -24,6 +20,7 @@ import { TrayOriginProgressProvider } from "./tray-origin-progress";
 import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
 import { FullScreenTransitionStartProvider } from "./full-screen-transition-start";
 import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animated-styles";
+import { useFullScreenMorphState } from "./animation/use-full-screen-morph-state";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayController } from "./use-action-tray-controller";
 import {
@@ -39,10 +36,9 @@ import {
 import {
   ActionTrayProps,
   ActionTrayRef,
-} from "./action-tray-types";
+} from "./types";
 
-// this component renders one host slot
-// the presenter decides which tray payload this slot carries
+// render one host slot assigned by the presenter
 const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
   (
     {
@@ -73,7 +69,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     },
     ref,
   ) => {
-    // keep orchestration in one hook so the view tree stays declarative
+    // keep orchestration in one hook so the tree stays declarative
     const controller = useActionTrayController({
       assignmentId,
       visible,
@@ -153,51 +149,13 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     const { top: safeAreaTopInset } = useSafeAreaInsets();
     const providerBackgroundScale = useTrayBackgroundScale();
     const fallbackBackgroundScale = useSharedValue(1);
+    // nested test shells may render without a provider so keep a local scale value
     const backgroundScale =
       providerBackgroundScale ?? fallbackBackgroundScale;
-    const fullScreenBackgroundScaleTarget = presentationFullScreen
-      ? renderedFullScreenBackgroundScale
-      : 1;
-    const fullScreenBackgroundMorphScale = useSharedValue(
-      fullScreenBackgroundScaleTarget,
-    );
-    const fullScreenSafeAreaTopTarget =
-      presentationFullScreen && renderedFullScreenSafeAreaTop
-        ? safeAreaTopInset
-        : 0;
-    const fullScreenSafeAreaTopHeight = useSharedValue(
-      fullScreenSafeAreaTopTarget,
-    );
-    const fullScreenSurfaceFillOpacityTarget = presentationFullScreen ? 1 : 0;
-    const fullScreenSurfaceFillOpacity = useSharedValue(
-      fullScreenSurfaceFillOpacityTarget,
-    );
-    const fullScreenLayoutActiveRef = useRef(false);
-    const previousPresentationFullScreenRef = useRef(
-      presentationFullScreen,
-    );
-    const fullScreenSafeAreaContentStyle = useAnimatedStyle(() => ({
-      transform: [
-        { translateY: fullScreenSafeAreaTopHeight.value },
-      ],
-    }));
-    const fullScreenSurfaceFillStyle = useAnimatedStyle(() => ({
-      opacity: fullScreenSurfaceFillOpacity.value,
-    }));
-    useAnimatedReaction(
-      () => ({
-        morphScale: fullScreenBackgroundMorphScale.value,
-        visibility: progress.value,
-      }),
-      ({ morphScale, visibility }) => {
-        backgroundScale.value =
-          1 + (morphScale - 1) * visibility;
-      },
-      [backgroundScale, fullScreenBackgroundMorphScale, progress],
-    );
     const instrumentationEnabled = isActionTrayInstrumentationEnabled();
     const shouldUseOriginTransition =
       transition?.open === "expandFromTrigger" && !presentationFullScreen;
+    // backdrop follows origin progress only for trigger expansion so opacity waits for the shell
     const originBackdropProgress = useDerivedValue(
       () => originProgress.value * progress.value,
     );
@@ -205,7 +163,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       ? originBackdropProgress
       : progress;
 
-    // drag should not start before layout and keyboard state settle
+    // wait for layout and keyboard state before drag starts
     const gesture = useActionTrayGesture({
       translateY,
       totalHeight,
@@ -248,40 +206,29 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     });
 
     const shouldUseLayoutAnimation = layoutEnabled;
-    useLayoutEffect(() => {
-      const presentationModeChanged =
-        previousPresentationFullScreenRef.current !==
-        presentationFullScreen;
-      previousPresentationFullScreenRef.current = presentationFullScreen;
-
-      if (presentationModeChanged && shouldUseLayoutAnimation) {
-        fullScreenLayoutActiveRef.current = true;
-        if (!presentationFullScreen) {
-          fullScreenSurfaceFillOpacity.value = 0;
-        }
-        return;
-      }
-
-      if (!fullScreenLayoutActiveRef.current) {
-        fullScreenSafeAreaTopHeight.value =
-          fullScreenSafeAreaTopTarget;
-        fullScreenBackgroundMorphScale.value =
-          fullScreenBackgroundScaleTarget;
-        fullScreenSurfaceFillOpacity.value =
-          fullScreenSurfaceFillOpacityTarget;
-      }
-    }, [
+    // fullscreen morph values must survive across layout callback boundaries
+    const {
       fullScreenBackgroundMorphScale,
       fullScreenBackgroundScaleTarget,
+      fullScreenLayoutActiveRef,
+      fullScreenSafeAreaContentStyle,
       fullScreenSafeAreaTopHeight,
       fullScreenSafeAreaTopTarget,
       fullScreenSurfaceFillOpacity,
       fullScreenSurfaceFillOpacityTarget,
+      fullScreenSurfaceFillStyle,
+    } = useFullScreenMorphState({
       presentationFullScreen,
+      renderedFullScreenBackgroundScale,
+      renderedFullScreenSafeAreaTop,
+      safeAreaTopInset,
+      progress,
+      backgroundScale,
       shouldUseLayoutAnimation,
-    ]);
+    });
     const handleSynchronizedLayoutTransitionComplete = useCallback(
       (finishedAt: number) => {
+        // release manual fullscreen guards only after native layout reports completion
         fullScreenLayoutActiveRef.current = false;
         handleLayoutTransitionComplete(finishedAt);
       },
@@ -325,6 +272,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     );
     const fullScreenTransitionStart = useMemo(
       () => ({
+        // entering content reads this latch so it can wait for the layout clock
         enabled: shouldUseLayoutAnimation,
         generation: fullScreenTransitionGeneration,
         startedAt: fullScreenLayoutStartedAt,
@@ -348,6 +296,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           : undefined,
       [flattenedContainerStyle],
     );
+    // keyboard sticky view wants a closed and opened offset even when the gap is zero
     const keyboardStickyOffset = useMemo(
       () => ({
         closed: 0,
@@ -398,7 +347,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
                   {renderedContent}
                 </FullScreenTransitionStartProvider>
               </Animated.View>
-              {/* reserve space for the detached footer without coupling body layout to footer rendering */}
+              {/* reserve detached footer space without coupling body layout to footer rendering */}
               <Animated.View style={footerSpacerStyle} />
             </Animated.View>
           </Animated.View>
@@ -429,7 +378,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     return (
       <>
         {measureFooter && (
-          
           <Animated.View
             style={[
               trayStyles.measureFooter,
@@ -471,6 +419,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         )}
 
         {renderedTrayId !== undefined && (
+          // fullscreen owns the viewport so sheet keyboard stickiness must pause
           <KeyboardStickyView
             enabled={!presentationFullScreen}
             offset={keyboardStickyOffset}
@@ -492,12 +441,9 @@ export { ActionTray };
 const localStyles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: TRAY_HEADER_HORIZONTAL_PADDING,
-    // position: "relative",
-    // zIndex: 1,
   },
   fullScreenHeaderContainer: {
-    // Fullscreen chrome owns the gap between its header controls and body.
-    // Tray.Section then supplies its independent content inset.
+    // fullscreen chrome owns the header to body gap
     paddingHorizontal: FULL_SCREEN_HEADER_HORIZONTAL_PADDING,
     paddingBottom: FULL_SCREEN_HEADER_BOTTOM_GAP,
   },

@@ -5,6 +5,7 @@ const TrayOriginProgressContext = createContext<SharedValue<number> | null>(
   null,
 );
 
+// provide trigger origin progress to chrome rendered outside the shell body
 export const TrayOriginProgressProvider = ({
   children,
   value,

@@ -14,6 +14,7 @@ import {
   type TrayStepTimingSummary,
 } from "../tray-step-timing";
 
+// probe full step timing summaries through the public mark functions
 jest.mock("../config", () => ({
   ACTION_TRAY_INSTRUMENTATION_ENABLED: true,
   isActionTrayInstrumentationEnabled: () => true,

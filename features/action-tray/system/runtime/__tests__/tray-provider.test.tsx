@@ -285,19 +285,26 @@ describe("TrayProvider runtime", () => {
       );
     });
 
-    expect(getRenderedTrayHosts()).toHaveLength(2);
+    expect(getRenderedTrayHosts()).toHaveLength(0);
 
     act(() => {
       latestHost!.openTray("alpha");
     });
 
     expect(getRenderedTrayHosts().length).toBeLessThanOrEqual(2);
+    expect(getRenderedTrayHosts()).toHaveLength(1);
 
     act(() => {
       latestHost!.openTray("beta");
     });
 
-    expect(getRenderedTrayHosts()).toHaveLength(2);
+    // beta waits in pending state while alpha owns the visible closing host
+    expect(getRenderedTrayHosts().length).toBeLessThanOrEqual(2);
+    expect(
+      getRenderedTrayHosts().some(
+        (host) => host.props.rootTrayId === "alpha",
+      ),
+    ).toBe(true);
   });
 
   it("waits for the outgoing tray host to finish closing before opening the replacement tray", () => {
@@ -325,7 +332,8 @@ describe("TrayProvider runtime", () => {
 
     const renderedHosts = getRenderedTrayHosts();
 
-    expect(renderedHosts).toHaveLength(2);
+    // replacement host should not mount until alpha reports close completion
+    expect(renderedHosts).toHaveLength(1);
     expect(renderedHosts.find((host) => host.props.rootTrayId === "alpha")?.props.visible).toBe(false);
     expect(renderedHosts.find((host) => host.props.rootTrayId === "beta")).toBeUndefined();
 
@@ -333,6 +341,7 @@ describe("TrayProvider runtime", () => {
       renderedHosts.find((host) => host.props.rootTrayId === "alpha")?.props.onCloseComplete();
     });
 
+    // after close completion beta claims the freed slot and becomes interactive
     const reopenedHosts = getRenderedTrayHosts();
     expect(reopenedHosts.find((host) => host.props.rootTrayId === "beta")?.props.visible).toBe(true);
     expect(reopenedHosts.find((host) => host.props.rootTrayId === "beta")?.props.interactive).toBe(true);

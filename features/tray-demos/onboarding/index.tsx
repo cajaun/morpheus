@@ -594,7 +594,7 @@ const OnboardingExample = () => {
           className: "bg-white",
           footerStyle: ONBOARDING_FOOTER_STYLE,
           fullScreen: true,
-          fullScreenBackgroundScale: 0.94,
+          shouldScaleBackground: true,
           fullScreenSafeAreaTop: true,
           fullScreenDraggable: false,
           fullScreenCloseBehavior: "returnToShell",

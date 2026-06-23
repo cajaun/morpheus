@@ -31,6 +31,7 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
   const { registerTray, unregisterTray } = useTrayHostActions();
   const registration = useMemo<TrayRegistration>(
     () => ({
+      // memoized registration preserves identity until authored tray inputs change
       steps,
       footer,
       dismissible,
@@ -40,8 +41,7 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
   );
 
   useLayoutEffect(() => {
-    // Step definitions must reach the presenter before paint so dynamic keys
-    // do not spend an extra frame in the passive-effect queue.
+    // register steps before paint so dynamic keys avoid an extra passive frame
     registerTray(trayId, registration);
   }, [registration, registerTray, trayId]);
 
@@ -53,7 +53,10 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
     [trayId, unregisterTray],
   );
 
-  return <TrayScopeProvider value={trayId}>{children}</TrayScopeProvider>;
+  return (
+    // scope lets triggers and flow hooks resolve the nearest tray registration
+    <TrayScopeProvider value={trayId}>{children}</TrayScopeProvider>
+  );
 };
 
 TrayRoot.displayName = "TrayRoot";

@@ -1,166 +1,40 @@
 import React, {
   createContext,
-  RefObject,
   useCallback,
   useContext,
   useSyncExternalStore,
 } from "react";
-import type { StyleProp, ViewStyle } from "react-native";
-import type { SharedValue } from "react-native-reanimated";
 import { markTrayStepRequested } from "../telemetry/tray-step-timing";
+import {
+  DEFAULT_TRAY_STEP_OPTIONS,
+  resolveTrayStepOptions,
+} from "./tray-step-options";
+import type {
+  ResolvedTrayStepOptions,
+  TrayHostStateValue,
+  TrayRuntimeStore,
+} from "./types";
 
-// store scope and step options are separate concerns so they get separate contexts
-export type TrayFullScreenCloseBehavior = "dismiss" | "returnToShell";
-export type TrayFullScreenTransition = "morph" | "slide";
-export type TrayOpenTransition = "slide" | "expandFromTrigger";
-export type TrayCloseTransition = "slide" | "collapseToTrigger";
-
-export type TrayTransitionOptions = {
-  open?: TrayOpenTransition;
-  close?: TrayCloseTransition;
-  origin?: "screenBottom" | "fullScreenFooter";
-};
-
-export type TrayStepOptions = {
-  scale?: boolean;
-  keyboardAware?: boolean;
-  fullScreen?: boolean;
-  fullScreenBackgroundScale?: number;
-  fullScreenDraggable?: boolean;
-  fullScreenCloseBehavior?: TrayFullScreenCloseBehavior;
-  fullScreenTransition?: TrayFullScreenTransition;
-  fullScreenSafeAreaTop?: boolean;
-  style?: StyleProp<ViewStyle>;
-  className?: string;
-  footerStyle?: StyleProp<ViewStyle>;
-  footerClassName?: string;
-};
-
-export type TrayStepDefinition = {
-  key: string;
-  header?: React.ReactNode;
-  content: React.ReactNode;
-  options?: TrayStepOptions;
-};
-
-export type TrayRegistration = {
-  steps: TrayStepDefinition[];
-  footer?: React.ReactNode;
-  dismissible?: boolean;
-  transition?: TrayTransitionOptions;
-  pages?: TrayPagesRegistration;
-};
-
-export type TrayStackEntry = {
-  trayId: string;
-  index: number;
-  parentTrayId?: string | null;
-};
-
-export type TrayPagesRegistration = {
-  stepKey: string;
-  pageIndex: number;
-  totalPages: number;
-  hasFooter: boolean;
-  canGoNext: boolean;
-  canGoBack: boolean;
-  nextPage: () => void;
-  backPage: () => void;
-  setPage: (index: number) => void;
-  progress: SharedValue<number>;
-};
-
-export type ResolvedTrayStepOptions = {
-  hasFooter: boolean;
-  scale: boolean;
-  keyboardAware: boolean;
-  fullScreen: boolean;
-  fullScreenBackgroundScale: number;
-  fullScreenDraggable: boolean;
-  fullScreenCloseBehavior: TrayFullScreenCloseBehavior;
-  fullScreenTransition: TrayFullScreenTransition;
-  fullScreenSafeAreaTop: boolean;
-  style?: StyleProp<ViewStyle>;
-  className?: string;
-  footerStyle?: StyleProp<ViewStyle>;
-  footerClassName?: string;
-};
-
-export const DEFAULT_TRAY_STEP_OPTIONS: ResolvedTrayStepOptions = {
-  hasFooter: false,
-  scale: true,
-  keyboardAware: false,
-  fullScreen: false,
-  fullScreenBackgroundScale: 1,
-  fullScreenDraggable: true,
-  fullScreenCloseBehavior: "dismiss",
-  fullScreenTransition: "morph",
-  fullScreenSafeAreaTop: false,
-  style: undefined,
-  className: undefined,
-  footerStyle: undefined,
-  footerClassName: undefined,
-};
-
-export const resolveTrayStepOptions = (
-  options?: TrayStepOptions,
-): ResolvedTrayStepOptions => {
-  const requestedBackgroundScale = options?.fullScreenBackgroundScale;
-
-  return {
-    // downstream code should never branch on missing option fields
-    ...DEFAULT_TRAY_STEP_OPTIONS,
-    ...options,
-    fullScreenBackgroundScale:
-      requestedBackgroundScale !== undefined &&
-      Number.isFinite(requestedBackgroundScale) &&
-      requestedBackgroundScale >= 0
-        ? requestedBackgroundScale
-        : DEFAULT_TRAY_STEP_OPTIONS.fullScreenBackgroundScale,
-  };
-};
-
-export type TrayHostStateValue = {
-  registry: Record<string, TrayRegistration>;
-  activeTrayId: string | null;
-  activeIndex: number;
-  stack: TrayStackEntry[];
-  keyboardHeight: SharedValue<number>;
-};
-
-export type TrayHostActionsValue = {
-  registerTray: (id: string, registration: TrayRegistration) => void;
-  unregisterTray: (id: string) => void;
-  registerTrayPages: (id: string, pages: TrayPagesRegistration | null) => void;
-  openTray: (id: string) => void;
-  openNestedTray: (
-    id: string,
-    parentTrayId?: string | null,
-  ) => void;
-  closeActiveTray: () => void;
-  requestCloseActiveTray: () => void;
-  nextStep: () => void;
-  previousStep: () => void;
-  anticipateKeyboard: () => void;
-  dismissKeyboardForTray: (trayId?: string | null) => void;
-  registerFocusable: (
-    trayId: string,
-    ref: React.RefObject<any>,
-  ) => () => void;
-};
-
-export type TrayRuntimeStore = {
-  getState: () => TrayHostStateValue;
-  subscribe: (listener: () => void) => () => void;
-  actions: TrayHostActionsValue;
-  justOpenedRef: RefObject<boolean>;
-  setDependencies: (params: {
-    keyboardHeight: SharedValue<number>;
-    anticipateKeyboard: () => void;
-    dismissFocusedInputs: (trayId?: string | null) => void | Promise<void>;
-    registerFocusable: TrayHostActionsValue["registerFocusable"];
-  }) => void;
-};
+export {
+  DEFAULT_TRAY_STEP_OPTIONS,
+  resolveTrayStepOptions,
+} from "./tray-step-options";
+export type {
+  ResolvedTrayStepOptions,
+  TrayCloseTransition,
+  TrayFullScreenCloseBehavior,
+  TrayFullScreenTransition,
+  TrayHostActionsValue,
+  TrayHostStateValue,
+  TrayOpenTransition,
+  TrayPagesRegistration,
+  TrayRegistration,
+  TrayRuntimeStore,
+  TrayStackEntry,
+  TrayStepDefinition,
+  TrayStepOptions,
+  TrayTransitionOptions,
+} from "./types";
 
 const TrayStoreContext = createContext<TrayRuntimeStore | null>(null);
 const TrayScopeContext = createContext<string | null>(null);
@@ -244,6 +118,7 @@ export const useTrayFlow = () => {
       return null;
     }
 
+    // nested trays can close and advance parent pages only when the parent page footer is absent
     const parentEntry = state.stack.find((entry) => entry.trayId === parentTrayId);
     const parentRegistration = state.registry[parentTrayId];
     const parentStep = parentRegistration?.steps[parentEntry?.index ?? 0];
@@ -279,6 +154,7 @@ export const useTrayFlow = () => {
     !registration.pages.hasFooter
       ? registration.pages
       : null;
+  // page controls take priority so page flows can move without changing tray shell steps
   const canGoNext = pageControls ? pageControls.canGoNext : index < total - 1;
   const canGoBack = pageControls ? pageControls.canGoBack : index > 0;
 
@@ -312,6 +188,7 @@ export const useTrayFlow = () => {
           const previousStepDefinition = registration?.steps[index - 1];
 
           if (previousStepDefinition) {
+            // returning from fullscreen is a step transition for timing diagnostics
             markTrayStepRequested(trayId);
           }
         }
@@ -322,6 +199,7 @@ export const useTrayFlow = () => {
     next: () => {
       if (isActive) {
         if (pageControls?.canGoNext) {
+          // pages move inside the current step so the runtime index stays stable
           pageControls.nextPage();
           return;
         }
@@ -339,6 +217,7 @@ export const useTrayFlow = () => {
     back: () => {
       if (isActive) {
         if (pageControls?.canGoBack) {
+          // page back mirrors next by avoiding a shell step transition
           pageControls.backPage();
           return;
         }

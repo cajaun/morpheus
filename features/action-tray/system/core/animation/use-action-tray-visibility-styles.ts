@@ -40,6 +40,7 @@ export const useActionTrayVisibilityStyles = ({
     }
 
     return {
+      // hide the sheet contents while the trigger is still visually a pill
       opacity:
         originProgress.value > EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS
           ? surfaceOpacity.value
@@ -50,6 +51,7 @@ export const useActionTrayVisibilityStyles = ({
   const contentRevealStyle = useAnimatedStyle(() => {
     if (shouldUseOriginTransition) {
       return {
+        // content reveal matches surface reveal so children do not appear inside the collapsed pill
         opacity:
           originProgress.value > EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS
             ? surfaceOpacity.value
@@ -63,6 +65,7 @@ export const useActionTrayVisibilityStyles = ({
   }, [originProgress, shouldUseOriginTransition]);
 
   const footerVisibilityStyle = useAnimatedStyle(() => ({
+    // footer layer stays mounted but invisible when the step has no footer
     opacity: hasFooter.value ? surfaceOpacity.value : 0,
   }));
 
@@ -74,8 +77,7 @@ export const useActionTrayVisibilityStyles = ({
 
     if (!shouldUseOriginTransition) {
       return {
-        // The detached footer surface may become edge-to-edge in fullscreen,
-        // but its visible content should retain the sheet's inner width.
+        // keep visible footer content on the sheet grid in fullscreen
         alignSelf: "center",
         width: sheetContentWidth,
       };
@@ -88,6 +90,7 @@ export const useActionTrayVisibilityStyles = ({
 
     return {
       alignSelf: "center",
+      // footer content narrows from trigger width to the inner sheet grid
       width: interpolate(originProgress.value, [0, 1], [
         collapsedWidth,
         sheetContentWidth,

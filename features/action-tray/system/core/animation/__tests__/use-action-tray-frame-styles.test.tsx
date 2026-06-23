@@ -4,6 +4,7 @@ import TestRenderer, { act } from "react-test-renderer";
 import { BORDER_RADIUS, SCREEN_HEIGHT } from "../../constants";
 import { useActionTrayFrameStyles } from "../use-action-tray-frame-styles";
 
+// probe frame policy by reading returned animated style objects directly
 jest.mock("react-native-reanimated", () => {
   const Reanimated = jest.requireActual("react-native-reanimated/mock");
 
@@ -67,6 +68,50 @@ describe("useActionTrayFrameStyles", () => {
     const styles = renderFrameStyles({});
 
     expect(styles.trayLayoutStyle.height).toBe("auto");
+  });
+
+  it("releases a concrete return height after fullscreen cleanup", () => {
+    let styles: FrameStyles | null = null;
+
+    const Probe = ({
+      useMeasuredSheetHeight,
+    }: {
+      useMeasuredSheetHeight: boolean;
+    }) => {
+      styles = useActionTrayFrameStyles({
+        bottom: 20,
+        contentHeight: shared(320),
+        footerHeight: shared(80),
+        fullScreen: false,
+        hasFooter: shared(true),
+        keyboardHeight: shared(0),
+        originProgress: shared(1),
+        preparedSheetFrameHeight: 400,
+        shouldUseOriginTransition: false,
+        transition: undefined,
+        useMeasuredSheetHeight,
+      });
+
+      return null;
+    };
+
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <Probe useMeasuredSheetHeight={true} />,
+      );
+    });
+
+    // returning from fullscreen temporarily owns a concrete sheet frame
+    expect(styles!.trayLayoutStyle.height).toBe(400);
+
+    act(() => {
+      renderer!.update(<Probe useMeasuredSheetHeight={false} />);
+    });
+
+    // cleanup must release that frame so later sheets use intrinsic height
+    expect(styles!.trayLayoutStyle.height).toBe("auto");
   });
 
   it("keeps fullscreen geometry explicit", () => {

@@ -27,6 +27,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
   });
   const backgroundScale = useSharedValue(1);
   const backgroundStyle = useAnimatedStyle(() => ({
+    // fullscreen steps scale app content behind the tray through this provider value
     transform: [{ scale: backgroundScale.value }],
   }));
 
@@ -37,6 +38,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
           {children}
         </Animated.View>
 
+        {/* presenter stays outside the scaled background so trays keep exact geometry */}
         <TrayPresenter />
       </TrayBackgroundScaleProvider>
     </TrayStoreProvider>

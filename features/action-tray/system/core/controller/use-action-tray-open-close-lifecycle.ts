@@ -165,12 +165,14 @@ export const useActionTrayOpenCloseLifecycle = ({
 
         shared.footerHeight.value = nextFooterHeightValue;
         shared.animationTravel.value = nextOpenTravel;
+        // trigger expansion starts already at translate zero and reveals through origin progress
         shared.translateY.value = expandFromTrigger ? 0 : nextOpenTravel;
         shared.originProgress.value = expandFromTrigger ? 0 : 1;
         shared.surfaceOpacity.value = 1;
         shared.active.value = true;
 
         if (expandFromTrigger) {
+          // trigger-origin open enables layout only after the pill reaches full sheet geometry
           shared.originProgress.value = withTiming(
             1,
             { duration: EXPAND_FROM_TRIGGER_OPEN_DURATION },
@@ -194,6 +196,7 @@ export const useActionTrayOpenCloseLifecycle = ({
           TRAY_SPRING_CONFIG,
           (finished) => {
             if (finished) {
+              // normal sheet open enables later morphs after the travel spring lands
               scheduleOnRN(
                 markTrayOpenFinished,
                 rootTrayId ?? trayId ?? "unknown",
@@ -239,6 +242,7 @@ export const useActionTrayOpenCloseLifecycle = ({
 
       markTrayOpenStarted(rootTrayId ?? trayId ?? "unknown", trayId);
       showLatestSnapshot();
+      // measurement must restart after snapshot publication because content identity may change
       beginOpenMeasurement(!!footer);
       log("OPEN — waiting for measurement");
     } else {
@@ -269,6 +273,7 @@ export const useActionTrayOpenCloseLifecycle = ({
         shared.translateY.value < 8;
 
       if (shouldReverseExpand) {
+        // reverse the origin progress instead of running a vertical close spring
         shared.translateY.value = 0;
         shared.originProgress.value = withTiming(
           0,

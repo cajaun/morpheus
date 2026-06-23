@@ -6,6 +6,7 @@ import {
   useReanimatedKeyboardAnimation,
 } from "react-native-keyboard-controller";
 
+// expose keyboard height and imperative keyboard hooks to tray lifecycle code
 export const useActionTrayKeyboard = () => {
   const { height: rawKeyboardHeight } = useReanimatedKeyboardAnimation();
   const keyboardHeight = useDerivedValue(() =>

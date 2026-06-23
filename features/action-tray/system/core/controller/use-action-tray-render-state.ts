@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from "react";
 import { StyleProp, ViewStyle } from "react-native";
-import { RenderedTrayState } from "../action-tray-types";
+import { RenderedTrayState } from "../types";
 
 // render state holds the committed payload while newer props continue to stream in
 type TraySnapshot = {
@@ -72,6 +72,7 @@ const commitTraySnapshot = (
   next: RenderedTrayState,
 ): InternalRenderedTrayState => {
   if (areTrayStatesEqual(current, next)) {
+    // returning current avoids a render when passive sync repeats the same snapshot
     return current;
   }
 
@@ -79,6 +80,7 @@ const commitTraySnapshot = (
 
   return {
     ...next,
+    // content enter animations use this generation to wait for matching layout start
     fullScreenTransitionGeneration:
       current.fullScreenTransitionGeneration +
       (fullScreenModeChanged ? 1 : 0),
@@ -155,6 +157,7 @@ export const useActionTrayRenderState = ({
     }));
 
   const showLatestSnapshot = useCallback(() => {
+    // refs let passive effects publish the newest props without changing callback identity
     const next = toRenderedTrayState({
       content: contentRef.current,
       header: headerRef.current,
@@ -180,6 +183,7 @@ export const useActionTrayRenderState = ({
 
     setRenderedTray((current) => {
       if (current.trayId !== activeTrayId) {
+        // same-host node sync must not steal a transition owned by another tray id
         return current;
       }
 
@@ -216,8 +220,7 @@ export const useActionTrayRenderState = ({
       className: undefined,
       footerStyle: undefined,
       footerClassName: undefined,
-      // The UI-thread latch is slot-scoped and survives close/reopen, so its
-      // generation must remain monotonic for the lifetime of this host slot.
+      // keep the ui thread latch monotonic for the lifetime of this host slot
       fullScreenTransitionGeneration:
         current.fullScreenTransitionGeneration,
     }));

@@ -52,9 +52,7 @@ type WithFullScreenLayoutStart = <T extends AnimatableValue>(
   releaseStepKey?: string,
 ) => T;
 
-// This is an event latch, not a timed delay. The existing animation remains at
-// its entering initial value until the parent layout worklet publishes the
-// matching fullscreen transition generation.
+// this event latch holds enter animation values until layout publishes a matching generation
 export const withFullScreenLayoutStart = function <T extends AnimationObject>(
   nextAnimationInput: T | (() => T),
   startedGeneration: SharedValue<number>,
@@ -81,9 +79,11 @@ export const withFullScreenLayoutStart = function <T extends AnimationObject>(
       ): boolean => {
         if (!animation.started) {
           if (startedGeneration.value < requiredGeneration) {
+            // keep the entering animation frozen until shell geometry starts
             return false;
           }
 
+          // start the held animation at the layout start timestamp for clock alignment
           nextAnimation.onStart(
             nextAnimation,
             animation.current,
@@ -114,6 +114,7 @@ export const withFullScreenLayoutStart = function <T extends AnimationObject>(
         animation.previousAnimation = previousAnimation;
 
         if (nextAnimation.reduceMotion === undefined) {
+          // preserve reduced motion settings through the higher order animation
           nextAnimation.reduceMotion = animation.reduceMotion;
         }
       };
@@ -144,8 +145,7 @@ export const publishFullScreenLayoutStart = (
   "worklet";
 
   if (generation > startedGeneration.value) {
-    // Publish the timestamp first; the generation is the release flag read by
-    // entering animations and must only become visible once the clock exists.
+    // publish the timestamp before the generation release flag
     layoutStartedAt.value = startedAt;
     startedGeneration.value = generation;
   }
@@ -174,8 +174,7 @@ type WithFullScreenLayoutStartSignal = <T extends AnimatableValue>(
   linkedLayoutValue?: LinkedLayoutValue | LinkedLayoutValue[],
 ) => T;
 
-// The signal comes from a real geometry animation's onStart, not from layout
-// configuration. Content can therefore inherit the exact same UI-frame clock.
+// content inherits the ui frame clock from geometry animation start
 export const withFullScreenLayoutStartSignal = function <
   T extends AnimationObject,
 >(
@@ -211,6 +210,7 @@ export const withFullScreenLayoutStartSignal = function <
         animation.current = nextAnimation.current ?? animation.current;
 
         linkedLayoutValues.forEach((linkedValue, index) => {
+          // linked values follow layout progress instead of their own duration
           const layoutCurrent =
             typeof animation.current === "number"
               ? animation.current
@@ -251,6 +251,7 @@ export const withFullScreenLayoutStartSignal = function <
 
         nextAnimation.onStart(nextAnimation, value, now, previousAnimation);
         animation.current = nextAnimation.current ?? value;
+        // layout start becomes the origin for progress used by linked values
         animation.layoutStart =
           typeof value === "number"
             ? value

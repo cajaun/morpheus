@@ -3,6 +3,7 @@ import { describe, expect, it, jest } from "@jest/globals";
 import TestRenderer, { act } from "react-test-renderer";
 import { ActionTray } from "../action-tray";
 
+// probe shell rendering while native animation modules are replaced by stable hosts
 const mockCloseHandler = jest.fn();
 
 jest.mock("react-native-gesture-handler", () => ({

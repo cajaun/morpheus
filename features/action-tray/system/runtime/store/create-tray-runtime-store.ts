@@ -37,6 +37,7 @@ const createInitialState = (
 const withActiveFromStack = (state: TrayHostStateValue): TrayHostStateValue => {
   const activeEntry = state.stack[state.stack.length - 1];
 
+  // active tray mirrors the stack top so nested trays can take focus
   return {
     ...state,
     activeTrayId: activeEntry?.trayId ?? null,
@@ -53,6 +54,7 @@ export const createTrayRuntimeStore = (
   const justOpenedRef = { current: false };
 
   const emitChange = () => {
+    // use sync external store subscribers need a single emit after each state write
     listeners.forEach((listener) => listener());
   };
 
@@ -65,6 +67,7 @@ export const createTrayRuntimeStore = (
       typeof nextState === "function" ? nextState(state) : nextState;
 
     if (resolvedState === state) {
+      // returning the same object skips subscriber work after no-op actions
       return;
     }
 
@@ -157,6 +160,7 @@ export const createTrayRuntimeStore = (
           return current;
         }
 
+        // page registration is stored beside steps so flow navigation can delegate to pages
         return {
           ...current,
           registry: {
@@ -192,6 +196,7 @@ export const createTrayRuntimeStore = (
           {
             trayId: id,
             index: 0,
+            // parent scope lets nested trays advance parent pages after closing
             parentTrayId: parentTrayId ?? current.activeTrayId,
           },
         ],
@@ -262,6 +267,7 @@ export const createTrayRuntimeStore = (
         const currentEntry = current.stack[activeStackIndex];
 
         if (!currentEntry || nextIndex === currentEntry.index) {
+          // no-op navigation should not wake presenter subscribers
           return current;
         }
 
@@ -284,6 +290,7 @@ export const createTrayRuntimeStore = (
         const currentEntry = current.stack[activeStackIndex];
 
         if (!currentEntry || nextIndex === currentEntry.index) {
+          // clamped back navigation stays silent at the first step
           return current;
         }
 

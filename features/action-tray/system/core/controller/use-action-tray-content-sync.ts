@@ -105,15 +105,14 @@ export const useActionTrayContentSync = ({
   const onSheetFramePreparedRef = useRef(onSheetFramePrepared);
   onSheetFramePreparedRef.current = onSheetFramePrepared;
 
-  // Geometry preparation remains pre-paint, but publishing the incoming React
-  // nodes does not belong in this phase. Keeping this effect keyed to live tray
-  // identity also prevents rendered snapshot changes from replaying it.
+  // prepare geometry before paint without publishing incoming react nodes
   useLayoutEffect(() => {
     if (!visible) {
       return;
     }
 
     if (justOpenedRef.current) {
+      // first open already prepared geometry through measurement callbacks
       justOpenedRef.current = false;
       return;
     }
@@ -132,6 +131,7 @@ export const useActionTrayContentSync = ({
     });
 
     if (fullScreen) {
+      // fullscreen must update shared height before the keyed subtree publishes
       const incomingHeight = resolveIncomingContentHeightRef.current(
         measuredContentHeight.value,
       );
@@ -152,29 +152,32 @@ export const useActionTrayContentSync = ({
       );
 
       if (renderedFullScreen && restoredContentHeight !== undefined) {
+        // sheet return leases the measured frame until the layout transition finishes
         onSheetFramePreparedRef.current?.(
           restoredContentHeight + measuredFooterHeight.value,
         );
       }
     }
+    // footer height follows the incoming step even though visible footer is detached
     footerHeight.value = measuredFooterHeight.value;
     setLayoutAnimationEnabled(true);
     // shell level swaps key off tray identity not every prop change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trayId, visible, fullScreen]);
 
-  // Visual publication is passive. The commit that installs the new keyed
-  // subtree also lets native layout derive the sheet's intrinsic target frame.
+  // publish visual content after native layout can derive the sheet frame
   useEffect(() => {
     if (!visible) {
       return;
     }
 
     if (renderedTrayId === trayId) {
+      // same-key updates can sync nodes without replaying snapshot publication
       syncRenderedNodes(trayId);
       return;
     }
 
+    // key changes publish a new snapshot after pre-paint geometry preparation
     markTrayStepSnapshotPublished(rootTrayId, trayId);
     showLatestSnapshot();
   }, [

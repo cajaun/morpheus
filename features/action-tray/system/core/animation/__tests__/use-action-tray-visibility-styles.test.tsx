@@ -9,6 +9,7 @@ import {
 } from "../../constants";
 import { useActionTrayVisibilityStyles } from "../use-action-tray-visibility-styles";
 
+// probe reveal and footer grid policy without native interpolation timing
 jest.mock("react-native-reanimated", () => {
   const Reanimated = jest.requireActual("react-native-reanimated/mock");
 

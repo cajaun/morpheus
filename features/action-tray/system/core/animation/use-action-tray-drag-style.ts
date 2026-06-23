@@ -10,6 +10,7 @@ type Params = Pick<ActionTrayAnimatedStyleParams, "translateY"> &
     "originProgress" | "shouldUseOriginTransition"
   >;
 
+// apply drag travel after origin progress so trigger expansion stays anchored
 export const useActionTrayDragStyle = ({
   originProgress,
   shouldUseOriginTransition,

@@ -34,21 +34,25 @@ export const useActionTrayGesture = ({
       .enabled(interactive && dragEnabled)
       .onStart(() => {
         if (keyboardHeight.value > 0) {
+          // drag should dismiss the keyboard before measuring gesture travel
           scheduleOnRN(dismissKeyboard);
         }
 
+        // capture current offset so a drag can start while a spring is mid flight
         context.value = { y: Math.max(0, translateY.value) };
       })
 
       .onUpdate((e) => {
         const raw = e.translationY + context.value.y;
 
+        // upward pulls get resistance so the tray does not overshoot above its dock
         const resisted = raw > 0 ? raw : raw * 0.2;
 
         translateY.value = Math.max(0, resisted);
       })
 
       .onEnd((e) => {
+        // combine distance and velocity so a short fast flick can still dismiss
         const closeThreshold = totalHeight.value * 0.4;
 
         const shouldClose =

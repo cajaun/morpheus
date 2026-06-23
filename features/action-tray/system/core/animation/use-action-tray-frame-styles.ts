@@ -33,7 +33,7 @@ const EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT =
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT +
   EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_TOP_PADDING +
   TRAY_FOOTER_PADDING_BOTTOM;
-  
+
 const FULL_SCREEN_FRAME_EASING = Easing.bezier(0, 0, 0.58, 1);
 
 type Params = Pick<
@@ -55,15 +55,14 @@ export const useActionTrayFrameStyles = ({
   transition,
   useMeasuredSheetHeight,
 }: Params) => {
+  // footer-origin transitions begin at the footer edge instead of screen bottom
   const collapsedBottomInset =
     transition?.origin === "fullScreenFooter"
       ? TRAY_FOOTER_PADDING_BOTTOM
       : EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET;
   const targetBottomInset =
     transition?.origin === "fullScreenFooter" ? collapsedBottomInset : 0;
-  // Presentation mode changes need concrete layout props in the same native
-  // commit as the keyed content swap. Worklet-driven styles still own the
-  // continuous interpolation inside each mode.
+  // keep presentation frame props concrete during keyed content swaps
   const presentationFrameStyle = fullScreen
     ? {
         left: 0,
@@ -83,6 +82,7 @@ export const useActionTrayFrameStyles = ({
       : undefined;
 
   const footerSpacerStyle = useAnimatedStyle(() => ({
+    // detached footers still need to reserve body space for layout height
     height: hasFooter.value
       ? shouldUseOriginTransition
         ? EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT
@@ -103,8 +103,7 @@ export const useActionTrayFrameStyles = ({
     const targetLeft = fullScreen ? 0 : HORIZONTAL_MARGIN;
     const targetRight = fullScreen ? 0 : HORIZONTAL_MARGIN;
     const targetBottom = fullScreen ? 0 : bottom + targetBottomInset;
-    // Fullscreen is the same rounded shell expanded to the viewport. Keeping
-    // the radius stable avoids introducing a second shape morph.
+    // keep the same rounded shell while fullscreen expands the frame
     const targetRadius = BORDER_RADIUS;
     const targetTop = fullScreen
       ? 0
@@ -113,6 +112,7 @@ export const useActionTrayFrameStyles = ({
         : SCREEN_HEIGHT - targetBottom - resolvedSheetHeight;
 
     if (shouldUseOriginTransition && targetTop !== undefined) {
+      // trigger expansion owns left width top height and radius as one interpolation
       const progress = originProgress.value;
       const targetWidth = SCREEN_WIDTH - targetLeft - targetRight;
       const currentLeft = interpolate(progress, [0, 1], [
@@ -150,19 +150,12 @@ export const useActionTrayFrameStyles = ({
       right: targetRight,
       bottom: targetBottom,
       top: fullScreen ? 0 : "auto",
-      // Regular sheets derive geometry from their children so layout and enter
-      // animations share a native commit. Returning from fullscreen is the one
-      // exception: the retained exiting subtree can still claim 100% height, so
-      // the previously measured sheet target owns the frame until that layout
-      // transition completes.
+      // let regular sheets derive geometry from children
       height: fullScreen
         ? SCREEN_HEIGHT
         : useMeasuredSheetHeight
           ? resolvedSheetHeight
-          // Reanimated retains the last native value when an animated style
-          // switches from a concrete height to undefined. Explicitly restore
-          // Yoga ownership after a fullscreen return so later sheets can use
-          // their intrinsic content height.
+          // restore yoga height ownership after concrete fullscreen heights
           : "auto",
       borderRadius: targetRadius,
     };
@@ -187,6 +180,7 @@ export const useActionTrayFrameStyles = ({
     const targetRadius = BORDER_RADIUS;
 
     if (shouldUseOriginTransition) {
+      // footer reveal uses squared progress so the button width settles before padding
       const progress = originProgress.value;
       const revealProgress = progress * progress;
       const targetWidth = SCREEN_WIDTH - targetLeft - targetRight;
@@ -250,8 +244,7 @@ export const useActionTrayFrameStyles = ({
     }
 
     return {
-      // The footer is detached from the shell for keyboard handling, so it
-      // must explicitly follow the same fullscreen geometry clock.
+      // keep the detached footer on the same fullscreen geometry clock
       left: withTiming(targetLeft, {
         duration: FULL_SCREEN_LAYOUT_DURATION,
         easing: FULL_SCREEN_FRAME_EASING,
@@ -264,8 +257,7 @@ export const useActionTrayFrameStyles = ({
         duration: FULL_SCREEN_LAYOUT_DURATION,
         easing: FULL_SCREEN_FRAME_EASING,
       }),
-      // Its top edge merges into the tray body; only the shell's outer bottom
-      // corners participate in the visible 40pt radius.
+      // let the tray body own the joined top edge
       borderTopLeftRadius: 0,
       borderTopRightRadius: 0,
       borderBottomLeftRadius: targetRadius,

@@ -1,5 +1,6 @@
 import type { TrayTransitionOptions } from "../../runtime/tray-context";
 
+// share animated style contracts across frame drag and visibility hooks
 type AnimatedValue<T> = {
   value: T;
 };

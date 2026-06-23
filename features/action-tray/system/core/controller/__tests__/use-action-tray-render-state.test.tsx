@@ -3,6 +3,7 @@ import { describe, expect, it } from "@jest/globals";
 import TestRenderer, { act } from "react-test-renderer";
 import { useActionTrayRenderState } from "../use-action-tray-render-state";
 
+// probe committed render snapshots without mounting the animated shell
 describe("useActionTrayRenderState", () => {
   it("does not rerender when the latest snapshot is already committed", () => {
     const content = "content";
@@ -32,6 +33,26 @@ describe("useActionTrayRenderState", () => {
     });
 
     expect(renderCount).toBe(committedRenderCount);
+  });
+
+  it("uses a neutral fullscreen background scale when no override is set", () => {
+    let state: ReturnType<typeof useActionTrayRenderState> | null = null;
+
+    const Probe = () => {
+      state = useActionTrayRenderState({
+        content: "content",
+        trayId: "tray-step",
+        fullScreen: true,
+      });
+
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    expect(state!.state.renderedFullScreenBackgroundScale).toBe(1);
   });
 
   it("advances fullscreen generations only when presentation mode changes", () => {

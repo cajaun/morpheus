@@ -39,6 +39,7 @@ export const useActionTrayPresentationState = ({
   const originProgress = useSharedValue(1);
 
   useEffect(() => {
+    // footer presence is shared with worklets so spacer height can update off the js thread
     hasFooter.value = !!renderedFooter;
   }, [hasFooter, renderedFooter]);
 
@@ -64,6 +65,7 @@ export const useActionTrayPresentationState = ({
 
   const totalHeight = useDerivedValue(() => {
     if (presentationFullScreen) {
+      // fullscreen dismissal and drag thresholds use viewport height instead of content height
       return SCREEN_HEIGHT;
     }
 
@@ -76,6 +78,7 @@ export const useActionTrayPresentationState = ({
       nextContentHeight = contentHeight.value,
     ) => {
       if (presentationFullScreen) {
+        // fullscreen closes by leaving the whole viewport
         return SCREEN_HEIGHT;
       }
 
@@ -89,6 +92,7 @@ export const useActionTrayPresentationState = ({
       return 0;
     }
 
+    // progress remains normalized even when the user drags past the closed position
     const travel = Math.min(
       Math.max(translateY.value, 0),
       animationTravel.value,
@@ -107,6 +111,7 @@ export const useActionTrayPresentationState = ({
         return -1;
       }
 
+      // once open, content height changes should update the close travel baseline
       return totalHeight.value;
     },
     (nextTravel, previousTravel) => {

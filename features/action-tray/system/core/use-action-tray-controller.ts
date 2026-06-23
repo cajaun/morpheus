@@ -13,7 +13,7 @@ import {
 } from "react-native-reanimated";
 import { log } from "./logger";
 import { SCREEN_HEIGHT, TRAY_KEYBOARD_GAP } from "./constants";
-import { KeyboardTransitionMode } from "./action-tray-types";
+import { KeyboardTransitionMode } from "./types";
 import type { TrayTransitionOptions } from "../runtime/tray-context";
 import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
 import {
@@ -30,8 +30,7 @@ import { useActionTrayOpenCloseLifecycle } from "./controller/use-action-tray-op
 import { useActionTrayPresentationState } from "./controller/use-action-tray-presentation-state";
 import { useActionTrayRenderState } from "./controller/use-action-tray-render-state";
 
-// this hook is the boundary between tray policy and tray rendering
-// it composes measurement lifecycle rendering and presentation state
+// compose tray policy before the shell renders
 type Params = {
   assignmentId?: number;
   visible: boolean;
@@ -87,7 +86,7 @@ export const useActionTrayController = ({
     number | undefined
   >(undefined);
   const [useMeasuredSheetHeight, setUseMeasuredSheetHeight] = useState(false);
-  // rendered state is a snapshot so the shell can animate while props keep changing
+  // snapshot rendered content so prop streams cannot interrupt a morph
   const renderState = useActionTrayRenderState({
     content,
     header,
@@ -109,28 +108,25 @@ export const useActionTrayController = ({
   const isEnteringFullScreen = !!fullScreen && !presentationFullScreen;
   const renderedTrayIdRef = useRef(renderState.state.renderedTrayId);
   renderedTrayIdRef.current = renderState.state.renderedTrayId;
-  const renderedFullScreenRef = useRef(presentationFullScreen);
-  renderedFullScreenRef.current = presentationFullScreen;
-  // the frame and keyed content must enter a presentation mode in the same
-  // commit
-  // live props may prepare geometry, but the visible frame follows the
-  // rendered snapshot so neither side of the morph gets a head start
+  // keep frame mode and keyed content in the same commit
   const frameFullScreen = presentationFullScreen;
 
   useLayoutEffect(() => {
     if (!fullScreen && presentationFullScreen) {
+      // hold the measured sheet frame while the fullscreen subtree exits
       returningToSheetRef.current = true;
       setUseMeasuredSheetHeight(true);
       return;
     }
 
     if (fullScreen && returningToSheetRef.current) {
+      // cancel a pending sheet return if the flow moves back into fullscreen
       returningToSheetRef.current = false;
       setUseMeasuredSheetHeight(false);
     }
   }, [fullScreen, presentationFullScreen]);
 
-  // presentation owns the shared values read by gestures animations and layout
+  // own shared values read by gestures animations and layout
   const presentation = useActionTrayPresentationState({
     visible,
     renderedFooter: renderState.state.renderedFooter,
@@ -149,6 +145,7 @@ export const useActionTrayController = ({
         const resolvedHeight =
           presentation.helpers.resolveRenderedContentHeight(measuredHeight);
 
+        // sheet mode trusts measured content and footer policy
         log("RESOLVE CONTENT HEIGHT", {
           trayId,
           measuredHeight,
@@ -170,6 +167,7 @@ export const useActionTrayController = ({
         SCREEN_HEIGHT - presentation.shared.footerHeight.value - keyboardInset,
       );
 
+      // entering fullscreen uses viewport math before fullscreen content has settled
       log("RESOLVE CONTENT HEIGHT", {
         trayId,
         measuredHeight,
@@ -205,7 +203,7 @@ export const useActionTrayController = ({
     setPreparedSheetFrameHeight(height);
   }, []);
 
-  // measurements gate the first open spring until geometry is known
+  // gate the first open spring until geometry is known
   const measurements = useActionTrayMeasurements({
     contentHeight: presentation.shared.contentHeight,
     footerHeight: presentation.shared.footerHeight,
@@ -220,6 +218,7 @@ export const useActionTrayController = ({
       return;
     }
 
+    // ignore live prop changes until the rendered snapshot and last measurement match
     if (
       renderState.state.renderedTrayId !== trayId ||
       measurements.refs.latestMeasuredTrayIdRef.current !==
@@ -232,6 +231,7 @@ export const useActionTrayController = ({
       return;
     }
 
+    // refresh the shared content height when keyboard or presentation policy changes
     presentation.shared.contentHeight.value =
       resolveMeasuredContentHeight(measurements.shared.measuredContentHeight.value);
   }, [
@@ -248,6 +248,7 @@ export const useActionTrayController = ({
       return;
     }
 
+    // keep this trace near the state owner so fullscreen race reports have one source
     log("FULLSCREEN TRANSITION STATE", {
       trayId,
       visible,
@@ -286,11 +287,12 @@ export const useActionTrayController = ({
 
     lastResetAssignmentIdRef.current = assignmentId;
 
+    // assignment ids fence recycled native hosts from earlier close callbacks
     log("SLOT ASSIGNMENT RESET", {
       assignmentId,
     });
 
-    // host slots are recycled so stale shared values must be cleared on reassignment
+    // clear recycled host state before accepting a new assignment
     presentation.shared.closeGeneration.value += 1;
     presentation.shared.translateY.value = SCREEN_HEIGHT;
     presentation.shared.animationTravel.value = SCREEN_HEIGHT;
@@ -314,7 +316,7 @@ export const useActionTrayController = ({
     renderState.actions.clear,
   ]);
 
-  // lifecycle decides when to open close and reset the shell
+  // run the open close state machine around measured geometry
   const openCloseLifecycle = useActionTrayOpenCloseLifecycle({
     visible,
     rootTrayId,
@@ -337,7 +339,7 @@ export const useActionTrayController = ({
     transition,
   });
 
-  // content sync updates the committed snapshot without losing transition continuity
+  // publish content snapshots without breaking transition continuity
   useActionTrayContentSync({
     visible,
     interactive,
@@ -374,6 +376,7 @@ export const useActionTrayController = ({
   }, [renderState.state.renderedTrayId, rootTrayId]);
 
   const handleRequestClose = useCallback(() => {
+    // close requests blur inputs before letting runtime mutate the stack
     dismissKeyboard();
     onClose?.();
   }, [dismissKeyboard, onClose]);
@@ -404,11 +407,6 @@ export const useActionTrayController = ({
       startedAt,
     );
 
-    console.log("[tray-layout-started]", {
-      trayId: renderedTrayIdRef.current,
-      fullScreen: renderedFullScreenRef.current,
-      startedAt: Number(startedAt.toFixed(2)),
-    });
   }, [rootTrayId]);
 
   const handleLayoutTransitionComplete = useCallback((finishedAt: number) => {
@@ -418,18 +416,11 @@ export const useActionTrayController = ({
       finishedAt,
     );
 
-    if (isActionTrayInstrumentationEnabled()) {
-      console.log("[tray-layout-finished]", {
-        trayId: renderedTrayIdRef.current,
-        fullScreen: renderedFullScreenRef.current,
-        finishedAt: Number(finishedAt.toFixed(2)),
-      });
-    }
-
     if (!returningToSheetRef.current) {
       return;
     }
 
+    // after the return animation finishes auto height can own future sheet steps
     returningToSheetRef.current = false;
     setUseMeasuredSheetHeight(false);
   }, [rootTrayId]);
@@ -442,7 +433,7 @@ export const useActionTrayController = ({
       close: () => {
         handleRequestClose();
       },
-      // worklets need a shared flag instead of react state to answer this cheaply
+      // expose active state through the shared value read by worklets
       isActive: () => !!presentation.shared.active.value,
     }),
     [handleRequestClose, presentation.shared.active],

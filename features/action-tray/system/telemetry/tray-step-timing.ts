@@ -1,5 +1,6 @@
 import { isActionTrayInstrumentationEnabled } from "./config";
 
+// trace one step transition from request through layout finish
 type TrayStepTimingTrace = {
   rootTrayId: string;
   trayId?: string;

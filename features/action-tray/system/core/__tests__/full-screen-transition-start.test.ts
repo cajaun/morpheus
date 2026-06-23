@@ -11,6 +11,7 @@ import {
   withFullScreenLayoutStartSignal,
 } from "../full-screen-transition-start";
 
+// probe fullscreen layout latches without waiting for a native layout animation
 jest.mock("react-native-reanimated", () => {
   const Reanimated = jest.requireActual(
     "react-native-reanimated/mock",

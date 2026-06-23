@@ -9,6 +9,7 @@ import {
   markTrayStepSnapshotPublished,
 } from "../tray-step-timing";
 
+// verify disabled diagnostics leave globals and console untouched
 const timingGlobal = globalThis as typeof globalThis & {
   __ACTION_TRAY_OPEN_TIMINGS__?: unknown[];
   __ACTION_TRAY_STEP_TIMINGS__?: unknown[];

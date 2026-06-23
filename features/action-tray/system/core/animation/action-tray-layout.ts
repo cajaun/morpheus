@@ -47,16 +47,14 @@ export const createTrayLayoutTransition = ({
     .duration(FULL_SCREEN_LAYOUT_DURATION)
     .easing(Easing.bezier(0, 0, 0.58, 1).factory());
 
-  // linearTransition still owns every geometry value. The vertical origin is
-  // the canonical fullscreen clock: the background reaches its target exactly
-  // when the tray reaches the top edge, rather than tracking the much shorter
-  // horizontal expansion.
+  // use vertical origin progress as the canonical fullscreen clock
   const buildTransition = transition.build();
   const buildFullScreenTransition = fullScreenTransition.build();
   const synchronizedTransition: LayoutAnimationFunction = (values) => {
     "worklet";
 
     if (onConfigure) {
+      // configuration fires before native animation start so timing can split setup from motion
       scheduleOnRN(onConfigure, performance.now());
     }
 
@@ -67,6 +65,7 @@ export const createTrayLayoutTransition = ({
       isFullScreenTransition &&
       fullScreenSurfaceFillOpacityTarget === 0
     ) {
+      // exiting fullscreen must remove the viewport fill before the rounded shell returns
       fullScreenSurfaceFillOpacity.value = 0;
     }
     const animation = isFullScreenTransition
@@ -80,11 +79,13 @@ export const createTrayLayoutTransition = ({
       onStart,
       [
         {
+          // safe area shift follows the same vertical geometry clock as the tray top edge
           value: fullScreenSafeAreaTop,
           target: fullScreenSafeAreaTopTarget,
           layoutTarget: values.targetOriginY,
         },
         {
+          // background scale waits for vertical progress so it does not outrun the shell
           value: fullScreenBackgroundScale,
           target: fullScreenBackgroundScaleTarget,
           layoutTarget: values.targetOriginY,
@@ -96,9 +97,7 @@ export const createTrayLayoutTransition = ({
       ...animation,
       callback: (finished) => {
         if (finished) {
-          // The fill exists to cover the viewport only after the rounded shell
-          // has completed its expansion. It is deliberately a hard handoff,
-          // not another visual animation.
+          // reveal the fill only after the rounded shell completes expansion
           fullScreenSurfaceFillOpacity.value =
             fullScreenSurfaceFillOpacityTarget;
         }
