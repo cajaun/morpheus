@@ -62,7 +62,7 @@ export const CreatingWalletsInfoStep = ({
   return (
     <Tray.Body style={{ paddingHorizontal: 0 }}>
       <Tray.Section
-        style={{ gap: 20, paddingHorizontal: 0, paddingVertical: 0 }}
+        style={{ gap: 20, paddingTop: 0 }}
       >
         <View
           style={{
@@ -206,7 +206,7 @@ export const CreatingWalletsInfoStep = ({
             </View>
           </Tray.Section>
 
-          <View style={{ paddingHorizontal: 28, paddingBottom: 24 }}>
+          <View style={{ width: "100%", paddingHorizontal: 24   }}>
             <PrimaryButton
               label={copy.buttonLabel}
               onPress={close}

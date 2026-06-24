@@ -17,10 +17,10 @@ export const TrayHeader: React.FC<{
     <View
       className={className}
       style={[
-        styles.header,
-        !withSeparator && styles.headerWithoutSeparator,
-        style,
-      ]}
+    styles.header,
+    withSeparator && styles.headerWithSeparator,
+    style,
+  ]}
     >
       {children}
       {withSeparator ? <TraySeparator /> : null}
@@ -31,11 +31,11 @@ export const TrayHeader: React.FC<{
 const styles = StyleSheet.create({
   header: {
     paddingTop: TRAY_HEADER_PADDING_TOP,
+  },
+  headerWithSeparator: {
     gap: TRAY_HEADER_PADDING_BOTTOM,
   },
-  headerWithoutSeparator: {
-    paddingBottom: TRAY_HEADER_PADDING_BOTTOM,
-  },
+
 });
 
 TrayHeader.displayName = "TrayHeader";

@@ -51,8 +51,7 @@ const IdentityRateBoostStep = () => {
       <Tray.Section
         style={{
           gap: 0,
-          paddingHorizontal: 0,
-          paddingVertical: 0,
+          paddingTop: 0,
           backgroundColor: PANEL_BACKGROUND,
         }}
       >
@@ -212,9 +211,7 @@ const IdentityRateBoostStep = () => {
         <View
           style={{
             paddingHorizontal: 24,
-            paddingTop: 28,
-            paddingBottom: 24,
-            backgroundColor: PANEL_BACKGROUND,
+          
             width: "100%",
           }}
         >

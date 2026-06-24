@@ -14,8 +14,8 @@ const WatchingWalletsInfoStep = () => {
   const { close } = useTrayFlow();
 
   return (
-    <Tray.Body style={{ paddingHorizontal: 0 }}>
-      <Tray.Section style={{ gap: 20, paddingHorizontal: 0, paddingVertical: 0 }}>
+    <Tray.Body style={{ paddingHorizontal: 0,  }}>
+      <Tray.Section style={{ gap: 20, paddingTop: 0}}>
         <View
           style={{
             borderRadius: 34,
@@ -94,7 +94,7 @@ const WatchingWalletsInfoStep = () => {
             style={{
               paddingHorizontal: 28,
               paddingTop: 24,
-              paddingBottom: 12,
+           
             }}
           >
             <Text
@@ -111,11 +111,12 @@ const WatchingWalletsInfoStep = () => {
               particular address, such as a friend's wallet or smart contract. It
               can also be helpful for tracking wallets you own but haven't yet
               imported fully into Family.
+              
             </Text>
           </View>
         </View>
 
-        <View style={{ paddingBottom: 28, paddingHorizontal: 24, width: "100%" }}>
+        <View style={{ width: "100%", paddingHorizontal: 24 }}>
           <PrimaryButton label="Got It" onPress={close} backgroundColor="#62778A" />
         </View>
       </Tray.Section>

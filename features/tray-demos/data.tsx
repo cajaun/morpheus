@@ -27,7 +27,8 @@ const TrayExampleFrame = ({ children }: TrayExampleFrameProps) => {
     <View
       style={{
         alignItems: "center",
-        backgroundColor: theme.background,
+        // backgroundColor: theme.background,
+        backgroundColor: "#FFFFFFF",
         flex: 1,
         justifyContent: "center",
         paddingHorizontal: 24,

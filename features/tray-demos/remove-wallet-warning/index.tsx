@@ -29,7 +29,7 @@ const WarningStep = () => {
 
   return (
     <Tray.Body>
-      <Tray.Header style={{ gap: 0 }}>
+      <Tray.Header withSeparator={false} className="">
         <View style={{ alignItems: "flex-end" }}>
           <PressableScale
             onPress={() => close()}
@@ -51,8 +51,7 @@ const WarningStep = () => {
           </PressableScale>
         </View>
       </Tray.Header>
-
-      <Tray.Section style={{ gap: 20, paddingVertical: 0, paddingBottom: 24 }}>
+      <Tray.Section style={{ gap: 20, paddingTop: 0 }}>
         <View
           style={{
             alignItems: "center",
@@ -135,17 +134,14 @@ const WarningFooter = () => {
 
 const WarningTrigger = () => (
   <Tray.Trigger haptics="feedback">
-
-      <AnimatedFlowButton
-        step={0}
-        totalSteps={2}
-        layout={{ width: WARNING_BUTTON_WIDTH }}
-        primaryAction={{
-          backgroundColor: WARNING_RED,
-        }}
-     
-      />
- 
+    <AnimatedFlowButton
+      step={0}
+      totalSteps={2}
+      layout={{ width: WARNING_BUTTON_WIDTH }}
+      primaryAction={{
+        backgroundColor: WARNING_RED,
+      }}
+    />
   </Tray.Trigger>
 );
 
