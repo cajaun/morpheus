@@ -2,6 +2,7 @@ import React, {
   forwardRef,
   useCallback,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
 } from "react";
 import { StyleSheet } from "react-native";
@@ -19,6 +20,12 @@ import { styles as trayStyles } from "./animation/action-tray-styles";
 import { TrayOriginProgressProvider } from "./tray-origin-progress";
 import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
 import { FullScreenTransitionStartProvider } from "./full-screen-transition-start";
+import {
+  FORWARD_CONTENT_MOTION,
+  resolveTrayContentMotionDirection,
+  TrayContentMotionDirectionProvider,
+  type TrayContentMotionDirection,
+} from "./transition-motion-direction";
 import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animated-styles";
 import { useFullScreenMorphState } from "./animation/use-full-screen-morph-state";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
@@ -71,6 +78,16 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     },
     ref,
   ) => {
+    const contentMotionDirection =
+      useSharedValue<TrayContentMotionDirection>(FORWARD_CONTENT_MOTION);
+
+    useLayoutEffect(() => {
+      // Update before passive snapshot publication replaces the keyed subtree.
+      // The retained outgoing view and incoming view then read one transaction.
+      contentMotionDirection.value =
+        resolveTrayContentMotionDirection(transitionContract);
+    }, [contentMotionDirection, transitionContract]);
+
     // keep orchestration in one hook so the tree stays declarative
     const controller = useActionTrayController({
       assignmentId,
@@ -334,22 +351,26 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
                 ]}
                 onLayout={handleContentLayout}
               >
-                <FullScreenTransitionStartProvider
-                  value={fullScreenTransitionStart}
+                <TrayContentMotionDirectionProvider
+                  value={contentMotionDirection}
                 >
-                  {renderedHeader ? (
-                    <Animated.View
-                      style={[
-                        localStyles.headerContainer,
-                        presentationFullScreen &&
-                          localStyles.fullScreenHeaderContainer,
-                      ]}
-                    >
-                      {renderedHeader}
-                    </Animated.View>
-                  ) : null}
-                  {renderedContent}
-                </FullScreenTransitionStartProvider>
+                  <FullScreenTransitionStartProvider
+                    value={fullScreenTransitionStart}
+                  >
+                    {renderedHeader ? (
+                      <Animated.View
+                        style={[
+                          localStyles.headerContainer,
+                          presentationFullScreen &&
+                            localStyles.fullScreenHeaderContainer,
+                        ]}
+                      >
+                        {renderedHeader}
+                      </Animated.View>
+                    ) : null}
+                    {renderedContent}
+                  </FullScreenTransitionStartProvider>
+                </TrayContentMotionDirectionProvider>
               </Animated.View>
               {/* reserve detached footer space without coupling body layout to footer rendering */}
               <Animated.View style={footerSpacerStyle} />

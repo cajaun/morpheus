@@ -9,9 +9,7 @@ import {
   FULL_SCREEN_ENTERING_DURATION,
   FULL_SCREEN_EXITING_DURATION,
   MORPH_ENTERING_DURATION,
-  MORPH_ENTERING_SCALE,
   MORPH_EXITING_DURATION,
-  MORPH_EXITING_SCALE,
 } from "./core/constants";
 import {
   type FullScreenTransitionStart,
@@ -20,6 +18,13 @@ import {
   withFullScreenLayoutStart,
 } from "./core/full-screen-transition-start";
 import { log } from "./core/logger";
+import {
+  FORWARD_CONTENT_MOTION,
+  resolveMorphEnteringScale,
+  resolveMorphExitingScale,
+  type TrayContentMotionDirection,
+  useTrayContentMotionDirection,
+} from "./core/transition-motion-direction";
 import {
   ACTION_TRAY_INSTRUMENTATION_ENABLED,
   isActionTrayInstrumentationEnabled,
@@ -69,6 +74,7 @@ const createMorphEntering = (
   scale: boolean,
   stepKey: string,
   fullScreenTransition: FullScreenTransitionStart | null,
+  motionDirection: { value: TrayContentMotionDirection } | null,
 ): EntryExitAnimationFunction => {
   return () => {
     "worklet";
@@ -82,11 +88,13 @@ const createMorphEntering = (
     const easing = shouldAwaitLayout
       ? FULL_SCREEN_CONTENT_EASING
       : MORPH_EASING;
-    const initialScale = shouldAwaitLayout
-      ? 1
-      : scale
-        ? MORPH_ENTERING_SCALE
-        : 1;
+    const direction =
+      motionDirection?.value ?? FORWARD_CONTENT_MOTION;
+    const initialScale = resolveMorphEnteringScale({
+      scale,
+      synchronizedFullScreen: shouldAwaitLayout,
+      direction,
+    });
     const synchronizeWithLayout = (
       animation: number,
       logRelease = false,
@@ -173,6 +181,7 @@ const createMorphEntering = (
 const createMorphExiting = (
   scale: boolean,
   fullScreenBoundaryExit: boolean,
+  motionDirection: { value: TrayContentMotionDirection } | null,
 ): EntryExitAnimationFunction => {
   return () => {
     "worklet";
@@ -182,11 +191,13 @@ const createMorphExiting = (
     const easing = fullScreenBoundaryExit
       ? FULL_SCREEN_CONTENT_EASING
       : SHEET_EASING;
-    const targetScale = fullScreenBoundaryExit
-      ? 1
-      : scale
-        ? MORPH_EXITING_SCALE
-        : 1;
+    const direction =
+      motionDirection?.value ?? FORWARD_CONTENT_MOTION;
+    const targetScale = resolveMorphExitingScale({
+      scale,
+      fullScreenBoundaryExit,
+      direction,
+    });
 
     return {
       initialValues: {
@@ -230,6 +241,7 @@ export const TrayStepContent: React.FC<Props> = ({
   skipExiting = false,
 }) => {
   const fullScreenTransition = useFullScreenTransitionStart();
+  const motionDirection = useTrayContentMotionDirection();
 
   useEffect(() => {
     log("TrayStepContent", {
@@ -256,12 +268,17 @@ export const TrayStepContent: React.FC<Props> = ({
               scale,
               stepKey ?? "unknown-step",
               fullScreenTransition,
+              motionDirection,
             )
       }
       exiting={
         skipExiting
           ? undefined
-          : createMorphExiting(scale, fullScreenBoundaryExit)
+          : createMorphExiting(
+              scale,
+              fullScreenBoundaryExit,
+              motionDirection,
+            )
       }
     >
       {children}
