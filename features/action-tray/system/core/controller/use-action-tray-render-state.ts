@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import { RenderedTrayState } from "../types";
+import type { TrayTransitionContract } from "../../runtime/types";
 
 // render state holds the committed payload while newer props continue to stream in
 type TraySnapshot = {
@@ -16,6 +17,7 @@ type TraySnapshot = {
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
   footerClassName?: string;
+  transitionContract?: TrayTransitionContract | null;
 };
 
 type InternalRenderedTrayState = RenderedTrayState & {
@@ -35,6 +37,7 @@ const toRenderedTrayState = ({
   className,
   footerStyle,
   footerClassName,
+  transitionContract,
 }: TraySnapshot): RenderedTrayState => ({
   header: header ?? null,
   content: content ?? null,
@@ -48,6 +51,7 @@ const toRenderedTrayState = ({
   className,
   footerStyle,
   footerClassName,
+  transitionContract,
 });
 
 const areTrayStatesEqual = (
@@ -65,7 +69,8 @@ const areTrayStatesEqual = (
   current.containerStyle === next.containerStyle &&
   current.className === next.className &&
   current.footerStyle === next.footerStyle &&
-  current.footerClassName === next.footerClassName;
+  current.footerClassName === next.footerClassName &&
+  current.transitionContract === next.transitionContract;
 
 const commitTraySnapshot = (
   current: InternalRenderedTrayState,
@@ -82,8 +87,10 @@ const commitTraySnapshot = (
     ...next,
     // content enter animations use this generation to wait for matching layout start
     fullScreenTransitionGeneration:
-      current.fullScreenTransitionGeneration +
-      (fullScreenModeChanged ? 1 : 0),
+      fullScreenModeChanged
+        ? next.transitionContract?.generation ??
+          current.fullScreenTransitionGeneration + 1
+        : current.fullScreenTransitionGeneration,
   };
 };
 
@@ -100,6 +107,7 @@ export const useActionTrayRenderState = ({
   className,
   footerStyle,
   footerClassName,
+  transitionContract,
 }: TraySnapshot) => {
   const headerRef = useRef(header);
   headerRef.current = header;
@@ -137,6 +145,9 @@ export const useActionTrayRenderState = ({
   const footerClassNameRef = useRef(footerClassName);
   footerClassNameRef.current = footerClassName;
 
+  const transitionContractRef = useRef(transitionContract);
+  transitionContractRef.current = transitionContract;
+
   const [renderedTray, setRenderedTray] =
     useState<InternalRenderedTrayState>(() => ({
       ...toRenderedTrayState({
@@ -152,6 +163,7 @@ export const useActionTrayRenderState = ({
         className,
         footerStyle,
         footerClassName,
+        transitionContract,
       }),
       fullScreenTransitionGeneration: 0,
     }));
@@ -171,6 +183,7 @@ export const useActionTrayRenderState = ({
       className: classNameRef.current,
       footerStyle: footerStyleRef.current,
       footerClassName: footerClassNameRef.current,
+      transitionContract: transitionContractRef.current,
     });
 
     setRenderedTray((current) => commitTraySnapshot(current, next));
@@ -200,6 +213,7 @@ export const useActionTrayRenderState = ({
         className: classNameRef.current,
         footerStyle: footerStyleRef.current,
         footerClassName: footerClassNameRef.current,
+        transitionContract: transitionContractRef.current,
       };
 
       return commitTraySnapshot(current, next);
@@ -220,6 +234,7 @@ export const useActionTrayRenderState = ({
       className: undefined,
       footerStyle: undefined,
       footerClassName: undefined,
+      transitionContract: null,
       // keep the ui thread latch monotonic for the lifetime of this host slot
       fullScreenTransitionGeneration:
         current.fullScreenTransitionGeneration,
@@ -241,6 +256,7 @@ export const useActionTrayRenderState = ({
       renderedClassName: renderedTray.className,
       renderedFooterStyle: renderedTray.footerStyle,
       renderedFooterClassName: renderedTray.footerClassName,
+      renderedTransitionContract: renderedTray.transitionContract ?? null,
       fullScreenTransitionGeneration:
         renderedTray.fullScreenTransitionGeneration,
     },

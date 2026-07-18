@@ -167,18 +167,41 @@ describe("TrayProvider runtime", () => {
 
     expect(latestHost!.activeTrayId).toBe(latestFlow!.trayId);
     expect(latestHost!.activeIndex).toBe(0);
+    expect(latestHost!.transition).toMatchObject({
+      generation: 1,
+      reason: "open",
+      direction: "none",
+      boundary: "opening",
+      from: null,
+      to: { stepIndex: 0, stepKey: "one", mode: "sheet" },
+    });
 
     act(() => {
       latestHost!.nextStep();
     });
 
     expect(latestHost!.activeIndex).toBe(1);
+    expect(latestHost!.transition).toMatchObject({
+      generation: 2,
+      reason: "nextStep",
+      direction: "forward",
+      boundary: "sheetToSheet",
+      from: { stepIndex: 0, stepKey: "one" },
+      to: { stepIndex: 1, stepKey: "two" },
+    });
 
     act(() => {
       latestHost!.previousStep();
     });
 
     expect(latestHost!.activeIndex).toBe(0);
+    expect(latestHost!.transition).toMatchObject({
+      generation: 3,
+      reason: "previousStep",
+      direction: "backward",
+      from: { stepIndex: 1, stepKey: "two" },
+      to: { stepIndex: 0, stepKey: "one" },
+    });
   });
 
   it("returns fullscreen flows to the shell before dismissing", () => {
@@ -214,12 +237,23 @@ describe("TrayProvider runtime", () => {
 
     expect(latestHost!.activeTrayId).toBe(latestFlow!.trayId);
     expect(latestHost!.activeIndex).toBe(0);
+    expect(latestHost!.transition).toMatchObject({
+      reason: "returnToShell",
+      direction: "backward",
+      boundary: "fullScreenToSheet",
+      fullScreenChanged: true,
+    });
 
     act(() => {
       latestHost!.requestCloseActiveTray();
     });
 
     expect(latestHost!.activeTrayId).toBeNull();
+    expect(latestHost!.transition).toMatchObject({
+      reason: "dismiss",
+      boundary: "closing",
+      to: null,
+    });
   });
 
   it("updates tray definitions when step data changes without changing keys", () => {

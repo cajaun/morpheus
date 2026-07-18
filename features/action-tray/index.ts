@@ -20,9 +20,14 @@ export type {
 export {
   useTrayFlow,
   useTrayHost,
+  useTrayTransitionLifecycle,
   type TrayRegistration,
   type TrayStepDefinition,
   type TrayStepOptions,
+  type TrayTransitionContract,
+  type TrayTransitionLifecycleRecord,
+  type TrayGeometrySnapshot,
+  type TrayMeasurementOwner,
 } from "./system/runtime/tray-context";
 export { useOptionalTrayPages, useTrayPages } from "./system/pages-context";
 

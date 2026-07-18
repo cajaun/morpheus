@@ -34,6 +34,21 @@ export type {
   TrayStepDefinition,
   TrayStepOptions,
   TrayTransitionOptions,
+  TrayTransitionContract,
+  TrayTransitionBoundary,
+  TrayTransitionDirection,
+  TrayTransitionReason,
+  TrayPresentationEndpoint,
+  TrayPresentationMode,
+  TrayTransitionPhase,
+  TrayTransitionLifecycle,
+  TrayTransitionLifecycleRecord,
+  TrayTransitionParticipant,
+  TrayTransitionParticipantEvent,
+  TrayTransitionGeometry,
+  TrayGeometrySnapshot,
+  TrayMeasurementOwner,
+  TraySharedRegionContract,
 } from "./types";
 
 const TrayStoreContext = createContext<TrayRuntimeStore | null>(null);
@@ -77,6 +92,9 @@ export const useTrayHostState = () => useTrayHostSelector((state) => state);
 export const useTrayHostActions = () => {
   return useTrayRuntimeStore().actions;
 };
+
+export const useTrayTransitionLifecycle = () =>
+  useTrayRuntimeStore().transitions;
 
 export const useTrayHost = () => {
   const state = useTrayHostState();

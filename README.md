@@ -493,17 +493,20 @@ That matches the dependency set:
 
 ## Testing
 
-The current test file is [`features/action-tray/system/runtime/__tests__/tray-provider.test.tsx`](./features/action-tray/system/runtime/__tests__/tray-provider.test.tsx).
+The quality-engineering operating model lives in
+[`quality/README.md`](./quality/README.md). It defines the test strategy, risk
+register, defect spectrum, systematic test techniques, traceable test-case IDs,
+exploratory charters, release checklist, and reusable templates.
 
-It covers these runtime guarantees:
+The automated layer currently covers ActionTray contracts, runtime and presenter
+state transitions, fullscreen synchronization, rendering snapshots, geometry
+policy, measurement ownership, telemetry, and page behavior. CI runs lint,
+strict TypeScript, all Jest suites, and a coverage ratchet.
 
-- tray registration and cleanup
-- open, next, and back actions
-- full screen close behavior that returns to shell
-- step definition updates without id churn
-- the presenter host pool stays capped at two
-
-Those tests focus on state transitions because the tray system depends on a small set of strict rules. If those rules hold, the surface layer has a stable contract to animate.
+Use `npm run quality` for the complete local quality gate. Native visual timing,
+keyboard feel, safe-area behavior, accessibility, and performance still require
+the documented device checklist and exploratory charters; a passing Jest suite
+does not claim to prove those qualities.
 
 ## Boundaries
 

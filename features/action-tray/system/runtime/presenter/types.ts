@@ -2,7 +2,10 @@ import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import type { KeyboardTransitionMode } from "../../core/types";
-import type { TrayTransitionOptions } from "../types";
+import type {
+  TrayTransitionContract,
+  TrayTransitionOptions,
+} from "../types";
 
 // describe resolved payloads after runtime state becomes presentable shell props
 export type PresentedTray = {
@@ -17,6 +20,7 @@ export type PresentedTray = {
   fullScreenSafeAreaTop: boolean;
   fullScreenDraggable: boolean;
   dismissible: boolean;
+  transitionContract: TrayTransitionContract | null;
   transition?: TrayTransitionOptions;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;

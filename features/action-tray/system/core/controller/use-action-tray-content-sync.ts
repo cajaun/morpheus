@@ -59,6 +59,7 @@ type Params = {
     measuredContentHeight: number,
   ) => number | undefined;
   onSheetFramePrepared?: (height: number) => void;
+  onPrepared?: (details: Record<string, unknown>) => void;
 };
 
 export const useActionTrayContentSync = ({
@@ -83,6 +84,7 @@ export const useActionTrayContentSync = ({
   resolveIncomingContentHeight,
   restoreContentHeight,
   onSheetFramePrepared,
+  onPrepared,
 }: Params) => {
   const { layoutEnabled } = measurements.state;
   const { setLayoutAnimationEnabled } = measurements.actions;
@@ -161,9 +163,16 @@ export const useActionTrayContentSync = ({
     // footer height follows the incoming step even though visible footer is detached
     footerHeight.value = measuredFooterHeight.value;
     setLayoutAnimationEnabled(true);
+    onPrepared?.({
+      trayId,
+      fullScreen: !!fullScreen,
+      measuredContentHeight: measuredContentHeight.value,
+      measuredFooterHeight: measuredFooterHeight.value,
+      resolvedContentHeight: contentHeight.value,
+    });
     // shell level swaps key off tray identity not every prop change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trayId, visible, fullScreen]);
+  }, [trayId, visible, fullScreen, onPrepared]);
 
   // publish visual content after native layout can derive the sheet frame
   useEffect(() => {

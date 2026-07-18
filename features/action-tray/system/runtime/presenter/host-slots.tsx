@@ -22,12 +22,14 @@ import type {
   TrayHostSlot,
   TrayKeyboardHeight,
 } from "./types";
+import type { TrayTransitionContract } from "../types";
 
 // root slots keep replacement trays pending until the outgoing slot finishes
 type HostCommonProps = {
   keyboardHeight: TrayKeyboardHeight;
   requestCloseActiveTray: () => void;
   dismissKeyboardForTray: (trayId?: string | null) => void;
+  transitionContract: TrayTransitionContract | null;
 };
 
 export const RootTraySlots = ({
@@ -35,6 +37,7 @@ export const RootTraySlots = ({
   keyboardHeight,
   requestCloseActiveTray,
   dismissKeyboardForTray,
+  transitionContract,
 }: HostCommonProps & {
   activeHost: PresentedTray | null;
 }) => {
@@ -122,10 +125,17 @@ export const RootTraySlots = ({
         }
 
         const closingActiveSlot = currentActiveSlot;
+        const closingPayload = closingActiveSlot.payload as PresentedTray;
 
         next[currentActiveSlotIndex] = {
           assignmentId: closingActiveSlot.assignmentId,
-          payload: closingActiveSlot.payload,
+          payload:
+            transitionContract?.from?.trayId === closingPayload.rootTrayId
+              ? {
+                  ...closingPayload,
+                  transitionContract,
+                }
+              : closingPayload,
           visible: false,
           interactive: false,
         };
@@ -169,11 +179,17 @@ export const RootTraySlots = ({
       ) {
         // switching root trays queues the next host behind the outgoing close
         const closingActiveSlot = currentActiveSlot;
+        const closingPayload = closingActiveSlot.payload as PresentedTray;
 
         pendingPresentedHostRef.current = activeHost;
         next[currentActiveSlotIndex] = {
           assignmentId: closingActiveSlot.assignmentId,
-          payload: closingActiveSlot.payload,
+          payload: transitionContract
+              ? {
+                ...closingPayload,
+                transitionContract,
+              }
+            : closingPayload,
           visible: false,
           interactive: false,
         };
@@ -201,7 +217,7 @@ export const RootTraySlots = ({
 
       return next;
     });
-  }, [activeHost]);
+  }, [activeHost, transitionContract]);
 
   useLayoutEffect(() => {
     if (!isActionTrayInstrumentationEnabled()) {
@@ -251,6 +267,7 @@ export const NestedTrayStack = ({
   keyboardHeight,
   requestCloseActiveTray,
   dismissKeyboardForTray,
+  transitionContract,
 }: HostCommonProps & {
   hosts: PresentedTray[];
 }) => {
@@ -265,6 +282,10 @@ export const NestedTrayStack = ({
         .filter((host) => !nextByRootTrayId.has(host.rootTrayId))
         .map((host) => ({
           ...host,
+          transitionContract:
+            transitionContract?.from?.trayId === host.rootTrayId
+              ? transitionContract
+              : host.transitionContract,
           visible: false,
           interactive: false,
         }));
@@ -274,7 +295,7 @@ export const NestedTrayStack = ({
         (left, right) => left.stackIndex - right.stackIndex,
       );
     });
-  }, [hosts]);
+  }, [hosts, transitionContract]);
 
   const handleCloseComplete = useCallback((rootTrayId: string) => {
     setRenderedHosts((current) =>

@@ -2,6 +2,7 @@ import React, { useCallback } from "react";
 import { ActionTray } from "../../core/action-tray";
 import { isActionTrayInstrumentationEnabled } from "../../telemetry/config";
 import { markTrayStepReactRenderStarted } from "../../telemetry/tray-step-timing";
+import { useTrayRuntimeStore } from "../tray-context";
 import type {
   PresentedTray,
   TrayKeyboardHeight,
@@ -25,6 +26,7 @@ export const PresentedActionTray = ({
   onCloseComplete,
   dismissKeyboardForTray,
 }: PresentedActionTrayProps) => {
+  const runtime = useTrayRuntimeStore();
   const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
     (
       _id,
@@ -61,6 +63,8 @@ export const PresentedActionTray = ({
       fullScreenDraggable={payload.fullScreenDraggable}
       dismissible={payload.dismissible}
       transition={payload.transition}
+      transitionContract={payload.transitionContract}
+      transitionLifecycle={runtime.transitions}
       containerStyle={payload.containerStyle}
       className={payload.className}
       footerStyle={payload.footerStyle}
@@ -69,7 +73,6 @@ export const PresentedActionTray = ({
       dismissKeyboard={() => dismissKeyboardForTray(payload.rootTrayId)}
     />
   );
-
   if (!isActionTrayInstrumentationEnabled()) {
     return tray;
   }

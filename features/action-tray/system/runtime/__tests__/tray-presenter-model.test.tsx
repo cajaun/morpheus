@@ -35,6 +35,7 @@ const presented = (rootTrayId: string): PresentedTray => ({
   fullScreenSafeAreaTop: false,
   fullScreenDraggable: true,
   dismissible: true,
+  transitionContract: null,
   stackIndex: 0,
   visible: true,
   interactive: true,

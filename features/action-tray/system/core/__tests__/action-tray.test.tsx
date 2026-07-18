@@ -84,6 +84,7 @@ jest.mock("../use-action-tray-controller", () => ({
         handleContentLayout: jest.fn(),
         handleVisibleFooterLayout: jest.fn(),
         handleMeasureFooterLayout: jest.fn(),
+        handleShellLayout: jest.fn(),
         handleRequestClose: mockCloseHandler,
       },
       imperativeApi: {

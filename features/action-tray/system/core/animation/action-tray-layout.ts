@@ -58,6 +58,9 @@ export const createTrayLayoutTransition = ({
       scheduleOnRN(onConfigure, performance.now());
     }
 
+    // The generation is the animation-owned boundary signal. Runtime contract
+    // metadata must never choose the native animation builder because its
+    // rendered snapshot can legitimately lag the geometry handoff.
     const isFullScreenTransition =
       layoutStartedFullScreenGeneration.value <
       fullScreenTransitionGeneration;

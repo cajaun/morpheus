@@ -22,6 +22,7 @@ import {
   useTrayHostSelector,
   useTrayScope,
   useTrayHost,
+  useTrayRuntimeStore,
 } from "../../runtime/tray-context";
 import { TrayPage } from "../page";
 import {
@@ -30,6 +31,7 @@ import {
   PAGE_SPRING_CONFIG,
 } from "./model";
 import { TrayPagesScene } from "./scene";
+import { createTrayMeasurementOwner } from "../../runtime/types";
 import {
   isElementOfType,
   TrayPagesFooterSlot,
@@ -91,7 +93,8 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
 
     return state.registry[trayId]?.steps[stepIndex]?.key ?? null;
   });
-  const { registerTrayPages } = useTrayHost();
+  const { registerTrayPages, requestPageTransition } = useTrayHost();
+  const runtime = useTrayRuntimeStore();
   const resolvedInitialPage = clampPageIndex(initialPage, totalPages);
   const [pageIndex, setPageIndex] = useState(resolvedInitialPage);
   const [transitionFromIndex, setTransitionFromIndex] = useState<
@@ -100,6 +103,10 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   const [viewportWidthState, setViewportWidthState] = useState(SCREEN_WIDTH);
   const progress = useSharedValue(resolvedInitialPage);
   const transitionTargetRef = useRef<number | null>(null);
+  const transitionGenerationRef = useRef<number | null>(null);
+  const viewportFrameRef = useRef<LayoutChangeEvent["nativeEvent"]["layout"] | null>(
+    null,
+  );
   const startedTransitionTargetRef = useRef<number | null>(null);
   const pageWidth = viewportWidthState > 0 ? viewportWidthState : SCREEN_WIDTH;
 
@@ -113,10 +120,34 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
 
     transitionTargetRef.current = null;
     startedTransitionTargetRef.current = null;
+    const generation = transitionGenerationRef.current;
+    transitionGenerationRef.current = null;
+
+    if (generation !== null) {
+      runtime.transitions.mark(generation, "cancelled", {
+        owner: "Tray.Pages",
+        reason: "page-range-changed",
+      });
+    }
+
     setTransitionFromIndex(null);
     setPageIndex(nextIndex);
     progress.value = nextIndex;
-  }, [pageIndex, progress, totalPages]);
+  }, [pageIndex, progress, runtime.transitions, totalPages]);
+
+  useEffect(
+    () => () => {
+      const generation = transitionGenerationRef.current;
+
+      if (generation !== null) {
+        runtime.transitions.mark(generation, "cancelled", {
+          owner: "Tray.Pages",
+          reason: "pager-unmounted",
+        });
+      }
+    },
+    [runtime.transitions],
+  );
 
   const handleViewportLayout = useCallback(
     (event: LayoutChangeEvent) => {
@@ -124,6 +155,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
       const nextWidth = PixelRatio.roundToNearestPixel(
         event.nativeEvent.layout.width || SCREEN_WIDTH,
       );
+      viewportFrameRef.current = event.nativeEvent.layout;
 
       if (Math.abs(nextWidth - viewportWidthState) < 0.5) {
         return;
@@ -147,11 +179,53 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
       }
 
       // keep the outgoing page mounted until the spring reports completion
+      if (trayId && activeStepKey) {
+        // Publish intent before React commits the target page. The pager still
+        // owns the exact same local state and spring behavior as before.
+        const generation = requestPageTransition(
+          trayId,
+          activeStepKey,
+          pageIndex,
+          resolvedIndex,
+        );
+
+        transitionGenerationRef.current = generation;
+
+        if (generation !== null) {
+          const transition = runtime.transitions.get(generation)?.contract;
+
+          runtime.transitions.mark(generation, "prepared", {
+            owner: "Tray.Pages",
+            fromPageIndex: pageIndex,
+            toPageIndex: resolvedIndex,
+          });
+
+          if (transition?.from && viewportFrameRef.current) {
+            runtime.transitions.captureGeometry(generation, "source", {
+              owner: createTrayMeasurementOwner({
+                rootTrayId: trayId,
+                endpoint: transition.from,
+                generation,
+              }),
+              capturedAt: performance.now(),
+              bodyFrame: viewportFrameRef.current,
+            });
+          }
+        }
+      }
       transitionTargetRef.current = resolvedIndex;
       setTransitionFromIndex(pageIndex);
       setPageIndex(resolvedIndex);
     },
-    [pageIndex, totalPages, transitionFromIndex],
+    [
+      activeStepKey,
+      pageIndex,
+      requestPageTransition,
+      runtime.transitions,
+      totalPages,
+      transitionFromIndex,
+      trayId,
+    ],
   );
 
   const handlePageTransitionComplete = useCallback((targetIndex: number) => {
@@ -163,7 +237,16 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
     transitionTargetRef.current = null;
     startedTransitionTargetRef.current = null;
     setTransitionFromIndex(null);
-  }, []);
+    const generation = transitionGenerationRef.current;
+    transitionGenerationRef.current = null;
+
+    if (generation !== null) {
+      runtime.transitions.mark(generation, "completed", {
+        owner: "Tray.Pages",
+        pageIndex: targetIndex,
+      });
+    }
+  }, [runtime.transitions]);
 
   useLayoutEffect(() => {
     if (
@@ -176,6 +259,32 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
 
     // start after the target page commits so idle pages can stay unmounted
     startedTransitionTargetRef.current = pageIndex;
+    const generation = transitionGenerationRef.current;
+
+    if (generation !== null) {
+      const transition = runtime.transitions.get(generation)?.contract;
+
+      runtime.transitions.mark(generation, "committed", {
+        owner: "Tray.Pages",
+        pageIndex,
+      });
+      if (transition?.to && viewportFrameRef.current && trayId) {
+        runtime.transitions.captureGeometry(generation, "target", {
+          owner: createTrayMeasurementOwner({
+            rootTrayId: trayId,
+            endpoint: transition.to,
+            generation,
+          }),
+          capturedAt: performance.now(),
+          bodyFrame: viewportFrameRef.current,
+        });
+      }
+      runtime.transitions.mark(generation, "layoutStarted", {
+        owner: "Tray.Pages",
+        pageIndex,
+      });
+    }
+
     progress.value = withSpring(
       pageIndex,
       PAGE_SPRING_CONFIG,
@@ -190,6 +299,8 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
     handlePageTransitionComplete,
     pageIndex,
     progress,
+    runtime.transitions,
+    trayId,
     transitionFromIndex,
   ]);
 

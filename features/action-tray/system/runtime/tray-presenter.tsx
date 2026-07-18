@@ -14,6 +14,7 @@ import {
 export const TrayPresenter: React.FC = () => {
   const registry = useTrayHostSelector((state) => state.registry);
   const stack = useTrayHostSelector((state) => state.stack);
+  const transition = useTrayHostSelector((state) => state.transition);
   const keyboardHeight = useTrayHostSelector((state) => state.keyboardHeight);
   const { dismissKeyboardForTray, requestCloseActiveTray } = useTrayHostActions();
   const previousIndexByTrayRef = useRef<Record<string, number>>({});
@@ -35,10 +36,11 @@ export const TrayPresenter: React.FC = () => {
       entry,
       registration,
       previousIndex: previousIndexByTrayRef.current[entry.trayId],
+      transition,
       stackIndex: 0,
       stackLength: stack.length,
     });
-  }, [registry, stack]);
+  }, [registry, stack, transition]);
 
   const nestedHosts = useMemo<PresentedTray[]>(() => {
     return stack.slice(1).flatMap((entry, index) => {
@@ -52,13 +54,14 @@ export const TrayPresenter: React.FC = () => {
         entry,
         registration,
         previousIndex: previousIndexByTrayRef.current[entry.trayId],
+        transition,
         stackIndex: index + 1,
         stackLength: stack.length,
       });
 
       return host ? [host] : [];
     });
-  }, [registry, stack]);
+  }, [registry, stack, transition]);
 
   useEffect(() => {
     const nextIndexes: Record<string, number> = {};
@@ -77,12 +80,14 @@ export const TrayPresenter: React.FC = () => {
         keyboardHeight={keyboardHeight}
         requestCloseActiveTray={requestCloseActiveTray}
         dismissKeyboardForTray={dismissKeyboardForTray}
+        transitionContract={transition}
       />
       <NestedTrayStack
         hosts={nestedHosts}
         keyboardHeight={keyboardHeight}
         requestCloseActiveTray={requestCloseActiveTray}
         dismissKeyboardForTray={dismissKeyboardForTray}
+        transitionContract={transition}
       />
     </>
   );

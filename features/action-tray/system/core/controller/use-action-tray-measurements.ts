@@ -2,6 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutChangeEvent } from "react-native";
 import { useSharedValue, type SharedValue } from "react-native-reanimated";
 import { log } from "../logger";
+import type {
+  TrayGeometrySnapshot,
+  TrayMeasurementOwner,
+} from "../../runtime/types";
 
 // measurement owns the geometry contract that open animation depends on
 type Params = {
@@ -16,6 +20,12 @@ type Params = {
     measuredHeight: number,
     trayId?: string,
   ) => void;
+  measurementOwner?: TrayMeasurementOwner;
+  onGeometryMeasured?: (
+    geometry: Partial<
+      Omit<TrayGeometrySnapshot, "owner" | "capturedAt">
+    >,
+  ) => void;
 };
 
 export const useActionTrayMeasurements = ({
@@ -25,6 +35,8 @@ export const useActionTrayMeasurements = ({
   renderedFooter,
   resolveContentHeight,
   onContentHeightResolved,
+  measurementOwner,
+  onGeometryMeasured,
 }: Params) => {
   const [layoutEnabled, setLayoutEnabled] = useState(false);
   const [footerMeasured, setFooterMeasured] = useState(false);
@@ -136,6 +148,11 @@ export const useActionTrayMeasurements = ({
       resolvedContentHeight.value = resolvedHeight;
       contentHeight.value = resolvedHeight;
       onContentHeightResolved?.(resolvedHeight, height, renderedTrayId);
+      onGeometryMeasured?.({
+        bodyFrame: e.nativeEvent.layout,
+        measuredContentHeight: height,
+        resolvedContentHeight: resolvedHeight,
+      });
 
       if (!contentMeasured && renderedTrayId !== undefined) {
         // content is only considered ready after it belongs to a named rendered tray
@@ -157,6 +174,7 @@ export const useActionTrayMeasurements = ({
       contentMeasured,
       measuredContentHeight,
       onContentHeightResolved,
+      onGeometryMeasured,
       renderedTrayId,
       resolvedContentHeight,
       resolveContentHeight,
@@ -185,9 +203,18 @@ export const useActionTrayMeasurements = ({
       latestMeasuredFooterHeightRef.current = height;
       measuredFooterHeight.value = height;
       footerHeight.value = height;
+      onGeometryMeasured?.({
+        footerFrame: e.nativeEvent.layout,
+        measuredFooterHeight: height,
+      });
       // visible footer layouts are late updates and should not reopen measurement gates
     },
-    [footerHeight, measuredFooterHeight, renderedFooter],
+    [
+      footerHeight,
+      measuredFooterHeight,
+      onGeometryMeasured,
+      renderedFooter,
+    ],
   );
 
   const handleMeasureFooterLayout = useCallback(
@@ -200,10 +227,14 @@ export const useActionTrayMeasurements = ({
       latestMeasuredFooterHeightRef.current = height;
       measuredFooterHeight.value = height;
       footerHeight.value = height;
+      onGeometryMeasured?.({
+        footerFrame: e.nativeEvent.layout,
+        measuredFooterHeight: height,
+      });
       // offscreen footer measurement is the gate that lets first open begin
       setFooterMeasured(true);
     },
-    [footerHeight, measuredFooterHeight],
+    [footerHeight, measuredFooterHeight, onGeometryMeasured],
   );
 
   return {
@@ -217,6 +248,7 @@ export const useActionTrayMeasurements = ({
       latestResolvedContentHeightRef,
       latestMeasuredFooterHeightRef,
       latestMeasuredTrayIdRef,
+      measurementOwner,
     },
     state: {
       layoutEnabled,

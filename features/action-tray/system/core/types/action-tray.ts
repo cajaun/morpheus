@@ -1,7 +1,11 @@
 import React from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
-import type { TrayTransitionOptions } from "../../runtime/types";
+import type {
+  TrayTransitionContract,
+  TrayTransitionLifecycle,
+  TrayTransitionOptions,
+} from "../../runtime/types";
 
 // keep shell contracts separate from controller and runtime implementation
 export type KeyboardTransitionMode = "idle" | "entering" | "exiting";
@@ -26,6 +30,8 @@ export type ActionTrayProps = {
   fullScreenDraggable?: boolean;
   dismissible?: boolean;
   transition?: TrayTransitionOptions;
+  transitionContract?: TrayTransitionContract | null;
+  transitionLifecycle?: TrayTransitionLifecycle;
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
@@ -53,6 +59,7 @@ export type RenderedTrayState = {
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
   footerClassName?: string;
+  transitionContract?: TrayTransitionContract | null;
 };
 
 export type MeasurementState = {

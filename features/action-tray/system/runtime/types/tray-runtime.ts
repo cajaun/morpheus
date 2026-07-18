@@ -2,6 +2,8 @@ import type React from "react";
 import type { RefObject } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
+import type { TrayTransitionContract } from "./tray-transition";
+import type { TrayTransitionLifecycle } from "./tray-transition";
 
 // keep runtime contracts separate from context hook implementation
 export type TrayFullScreenCloseBehavior = "dismiss" | "returnToShell";
@@ -87,6 +89,8 @@ export type TrayHostStateValue = {
   activeTrayId: string | null;
   activeIndex: number;
   stack: TrayStackEntry[];
+  transitionGeneration: number;
+  transition: TrayTransitionContract | null;
   keyboardHeight: SharedValue<number>;
 };
 
@@ -103,6 +107,12 @@ export type TrayHostActionsValue = {
   requestCloseActiveTray: () => void;
   nextStep: () => void;
   previousStep: () => void;
+  requestPageTransition: (
+    trayId: string,
+    stepKey: string,
+    fromPageIndex: number,
+    toPageIndex: number,
+  ) => number | null;
   anticipateKeyboard: () => void;
   dismissKeyboardForTray: (trayId?: string | null) => void;
   registerFocusable: (
@@ -116,6 +126,7 @@ export type TrayRuntimeStore = {
   subscribe: (listener: () => void) => () => void;
   actions: TrayHostActionsValue;
   justOpenedRef: RefObject<boolean>;
+  transitions: TrayTransitionLifecycle;
   setDependencies: (params: {
     keyboardHeight: SharedValue<number>;
     anticipateKeyboard: () => void;

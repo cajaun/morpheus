@@ -7,6 +7,17 @@ import {
   type TrayRuntimeStore,
 } from "../tray-context";
 import { markTrayOpenRequested } from "../../telemetry/tray-open-timing";
+import {
+  createTrayTransitionContract,
+  resolveTrayPresentationEndpoint,
+} from "../transition-contract";
+import type {
+  TrayPresentationEndpoint,
+  TraySharedRegionContract,
+  TrayTransitionContract,
+  TrayTransitionReason,
+} from "../types";
+import { createTrayTransitionLifecycle } from "../transition-lifecycle";
 
 // the runtime store owns the only source of truth for tray identity and step index
 const clampIndex = (index: number, total: number) => {
@@ -31,6 +42,8 @@ const createInitialState = (
   activeTrayId: null,
   activeIndex: 0,
   stack: [],
+  transitionGeneration: 0,
+  transition: null,
   keyboardHeight,
 });
 
@@ -45,6 +58,108 @@ const withActiveFromStack = (state: TrayHostStateValue): TrayHostStateValue => {
   };
 };
 
+const resolveActiveEndpoint = (state: TrayHostStateValue) => {
+  const entry = state.stack[state.stack.length - 1];
+
+  return resolveTrayPresentationEndpoint({
+    entry,
+    registration: entry ? state.registry[entry.trayId] : undefined,
+  });
+};
+
+const resolveEndpointPresentation = (
+  state: TrayHostStateValue,
+  endpoint: TrayPresentationEndpoint | null,
+) => {
+  if (!endpoint) {
+    return null;
+  }
+
+  const registration = state.registry[endpoint.trayId];
+  const step = registration?.steps[endpoint.stepIndex];
+
+  return step && registration ? { registration, step } : null;
+};
+
+const resolveSharedRegions = (
+  current: TrayHostStateValue,
+  next: TrayHostStateValue,
+  from: TrayPresentationEndpoint | null,
+  to: TrayPresentationEndpoint | null,
+): TraySharedRegionContract[] => {
+  const source = resolveEndpointPresentation(current, from);
+  const target = resolveEndpointPresentation(next, to);
+  const sameRoot = from?.trayId === to?.trayId;
+  const sameStep = sameRoot && from?.stepKey === to?.stepKey;
+  const sourceHeader = source?.step.header;
+  const targetHeader = target?.step.header;
+  const sourceFooter = source?.registration.footer;
+  const targetFooter = target?.registration.footer;
+
+  return [
+    {
+      region: "surface",
+      behavior: sameRoot ? "persistent" : "replace",
+      sourceId: from ? `${from.trayId}:surface` : undefined,
+      targetId: to ? `${to.trayId}:surface` : undefined,
+    },
+    {
+      region: "header",
+      behavior:
+        sourceHeader == null && targetHeader == null
+          ? "absent"
+          : sourceHeader === targetHeader
+            ? "persistent"
+            : "keyedOverlap",
+      sourceId: sourceHeader && from
+        ? `${from.trayId}:${from.stepKey}:header`
+        : undefined,
+      targetId: targetHeader && to
+        ? `${to.trayId}:${to.stepKey}:header`
+        : undefined,
+    },
+    {
+      region: "body",
+      behavior: sameStep ? "persistent" : "replace",
+      sourceId: from ? `${from.trayId}:${from.stepKey}:body` : undefined,
+      targetId: to ? `${to.trayId}:${to.stepKey}:body` : undefined,
+    },
+    {
+      region: "footer",
+      behavior:
+        sourceFooter == null && targetFooter == null
+          ? "absent"
+          : sourceFooter === targetFooter
+            ? "persistent"
+            : "keyedOverlap",
+      sourceId: sourceFooter && from ? `${from.trayId}:footer` : undefined,
+      targetId: targetFooter && to ? `${to.trayId}:footer` : undefined,
+    },
+  ];
+};
+
+const withTransition = (
+  current: TrayHostStateValue,
+  next: TrayHostStateValue,
+  reason: TrayTransitionReason,
+  generation: number,
+): TrayHostStateValue => {
+  const from = resolveActiveEndpoint(current);
+  const to = resolveActiveEndpoint(next);
+
+  return {
+    ...next,
+    transitionGeneration: generation,
+    transition: createTrayTransitionContract({
+      generation,
+      reason,
+      from,
+      to,
+      sharedRegions: resolveSharedRegions(current, next, from, to),
+    }),
+  };
+};
+
 export const createTrayRuntimeStore = (
   initialDependencies: Dependencies,
 ): TrayRuntimeStore => {
@@ -52,6 +167,13 @@ export const createTrayRuntimeStore = (
   let state = createInitialState(initialDependencies.keyboardHeight);
   const listeners = new Set<() => void>();
   const justOpenedRef = { current: false };
+  const transitions = createTrayTransitionLifecycle();
+  let latestTransitionGeneration = 0;
+  let pendingPageTransition: TrayTransitionContract | null = null;
+  const allocateTransitionGeneration = () => {
+    latestTransitionGeneration += 1;
+    return latestTransitionGeneration;
+  };
 
   const emitChange = () => {
     // use sync external store subscribers need a single emit after each state write
@@ -69,6 +191,20 @@ export const createTrayRuntimeStore = (
     if (resolvedState === state) {
       // returning the same object skips subscriber work after no-op actions
       return;
+    }
+
+    if (
+      resolvedState.transition !== null &&
+      resolvedState.transition !== state.transition
+    ) {
+      transitions.begin(resolvedState.transition);
+
+      if (
+        pendingPageTransition !== null &&
+        pendingPageTransition.generation !== resolvedState.transition.generation
+      ) {
+        pendingPageTransition = null;
+      }
     }
 
     state = resolvedState;
@@ -146,10 +282,21 @@ export const createTrayRuntimeStore = (
         const nextRegistry = { ...current.registry };
         delete nextRegistry[id];
 
-        return resolveClampedState({
+        const next = resolveClampedState({
           ...current,
           registry: nextRegistry,
         });
+
+        if (current.stack.some((entry) => entry.trayId === id)) {
+          return withTransition(
+            current,
+            next,
+            current.stack.length > 1 ? "closeNested" : "dismiss",
+            allocateTransitionGeneration(),
+          );
+        }
+
+        return next;
       });
     },
     registerTrayPages: (id, pages) => {
@@ -161,7 +308,7 @@ export const createTrayRuntimeStore = (
         }
 
         // page registration is stored beside steps so flow navigation can delegate to pages
-        return {
+        const next = {
           ...current,
           registry: {
             ...current.registry,
@@ -171,6 +318,39 @@ export const createTrayRuntimeStore = (
             },
           },
         };
+
+        const previousPages = registration.pages;
+        const recordsPageChange =
+          pages !== null &&
+          previousPages !== undefined &&
+          previousPages.stepKey === pages.stepKey &&
+          previousPages.pageIndex !== pages.pageIndex;
+
+        if (!recordsPageChange) {
+          return next;
+        }
+
+        const pendingTransition = pendingPageTransition;
+        pendingPageTransition = null;
+
+        if (
+          pendingTransition?.to?.trayId === id &&
+          pendingTransition.to.stepKey === pages.stepKey &&
+          pendingTransition.to.pageIndex === pages.pageIndex
+        ) {
+          return {
+            ...next,
+            transitionGeneration: pendingTransition.generation,
+            transition: pendingTransition,
+          };
+        }
+
+        return withTransition(
+          current,
+          next,
+          "pageChange",
+          allocateTransitionGeneration(),
+        );
       });
     },
     openTray: (id: string) => {
@@ -179,28 +359,42 @@ export const createTrayRuntimeStore = (
       markTrayOpenRequested(id);
       void dependencies.dismissFocusedInputs(state.activeTrayId);
 
-      setState((current) => withActiveFromStack({
-        ...current,
-        stack: [{ trayId: id, index: 0 }],
-      }));
+      setState((current) =>
+        withTransition(
+          current,
+          withActiveFromStack({
+            ...current,
+            stack: [{ trayId: id, index: 0 }],
+          }),
+          "open",
+          allocateTransitionGeneration(),
+        ),
+      );
     },
     openNestedTray: (id: string, parentTrayId?: string | null) => {
       justOpenedRef.current = true;
       markTrayOpenRequested(id);
       void dependencies.dismissFocusedInputs(state.activeTrayId);
 
-      setState((current) => withActiveFromStack({
-        ...current,
-        stack: [
-          ...current.stack,
-          {
-            trayId: id,
-            index: 0,
-            // parent scope lets nested trays advance parent pages after closing
-            parentTrayId: parentTrayId ?? current.activeTrayId,
-          },
-        ],
-      }));
+      setState((current) =>
+        withTransition(
+          current,
+          withActiveFromStack({
+            ...current,
+            stack: [
+              ...current.stack,
+              {
+                trayId: id,
+                index: 0,
+                // parent scope lets nested trays advance parent pages after closing
+                parentTrayId: parentTrayId ?? current.activeTrayId,
+              },
+            ],
+          }),
+          "openNested",
+          allocateTransitionGeneration(),
+        ),
+      );
     },
     closeActiveTray: () => {
       void dependencies.dismissFocusedInputs(state.activeTrayId);
@@ -210,10 +404,17 @@ export const createTrayRuntimeStore = (
           return current;
         }
 
-        return withActiveFromStack({
+        const next = withActiveFromStack({
           ...current,
           stack: current.stack.slice(0, -1),
         });
+
+        return withTransition(
+          current,
+          next,
+          current.stack.length > 1 ? "closeNested" : "dismiss",
+          allocateTransitionGeneration(),
+        );
       });
     },
     requestCloseActiveTray: () => {
@@ -235,10 +436,15 @@ export const createTrayRuntimeStore = (
               : entry,
           );
 
-          return withActiveFromStack({
-            ...current,
-            stack: nextStack,
-          });
+          return withTransition(
+            current,
+            withActiveFromStack({
+              ...current,
+              stack: nextStack,
+            }),
+            "returnToShell",
+            allocateTransitionGeneration(),
+          );
         });
         return;
       }
@@ -250,10 +456,17 @@ export const createTrayRuntimeStore = (
           return current;
         }
 
-        return withActiveFromStack({
+        const next = withActiveFromStack({
           ...current,
           stack: current.stack.slice(0, -1),
         });
+
+        return withTransition(
+          current,
+          next,
+          current.stack.length > 1 ? "closeNested" : "dismiss",
+          allocateTransitionGeneration(),
+        );
       });
     },
     nextStep: () => {
@@ -275,10 +488,15 @@ export const createTrayRuntimeStore = (
           index === activeStackIndex ? { ...entry, index: nextIndex } : entry,
         );
 
-        return withActiveFromStack({
-          ...current,
-          stack: nextStack,
-        });
+        return withTransition(
+          current,
+          withActiveFromStack({
+            ...current,
+            stack: nextStack,
+          }),
+          "nextStep",
+          allocateTransitionGeneration(),
+        );
       });
     },
     previousStep: () => {
@@ -298,11 +516,57 @@ export const createTrayRuntimeStore = (
           index === activeStackIndex ? { ...entry, index: nextIndex } : entry,
         );
 
-        return withActiveFromStack({
-          ...current,
-          stack: nextStack,
-        });
+        return withTransition(
+          current,
+          withActiveFromStack({
+            ...current,
+            stack: nextStack,
+          }),
+          "previousStep",
+          allocateTransitionGeneration(),
+        );
       });
+    },
+    requestPageTransition: (
+      trayId,
+      stepKey,
+      fromPageIndex,
+      toPageIndex,
+    ) => {
+      const from = resolveActiveEndpoint(state);
+
+      if (
+        !from ||
+        from.trayId !== trayId ||
+        from.stepKey !== stepKey ||
+        fromPageIndex === toPageIndex
+      ) {
+        return null;
+      }
+
+      const generation = allocateTransitionGeneration();
+      const contract = createTrayTransitionContract({
+        generation,
+        reason: "pageChange",
+        from: {
+          ...from,
+          pageIndex: fromPageIndex,
+        },
+        to: {
+          ...from,
+          pageIndex: toPageIndex,
+        },
+        sharedRegions: resolveSharedRegions(
+          state,
+          state,
+          { ...from, pageIndex: fromPageIndex },
+          { ...from, pageIndex: toPageIndex },
+        ),
+      });
+
+      pendingPageTransition = contract;
+      transitions.begin(contract);
+      return generation;
     },
     anticipateKeyboard: () => {
       dependencies.anticipateKeyboard();
@@ -324,6 +588,7 @@ export const createTrayRuntimeStore = (
     },
     actions,
     justOpenedRef,
+    transitions,
     setDependencies: (nextDependencies) => {
       dependencies = nextDependencies;
 

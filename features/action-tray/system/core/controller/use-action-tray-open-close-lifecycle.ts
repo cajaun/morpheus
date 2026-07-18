@@ -80,6 +80,10 @@ type Params = {
     nextContentHeight?: number,
   ) => number;
   transition?: TrayTransitionOptions;
+  onTransitionPrepared?: (details?: Record<string, unknown>) => void;
+  onTransitionCommitted?: (details?: Record<string, unknown>) => void;
+  onTransitionStarted?: (details?: Record<string, unknown>) => void;
+  onTransitionCompleted?: (details?: Record<string, unknown>) => void;
 };
 
 export const useActionTrayOpenCloseLifecycle = ({
@@ -93,6 +97,10 @@ export const useActionTrayOpenCloseLifecycle = ({
   shared,
   resolveClosedTranslateY,
   transition,
+  onTransitionPrepared,
+  onTransitionCommitted,
+  onTransitionStarted,
+  onTransitionCompleted,
 }: Params) => {
   const justOpenedRef = useRef(false);
   const [isSurfaceReady, setIsSurfaceReady] = useState(true);
@@ -122,8 +130,13 @@ export const useActionTrayOpenCloseLifecycle = ({
     setIsSurfaceReady(true);
     clear();
     reset();
+    onTransitionCompleted?.({ owner: "tray-close" });
     onCloseComplete?.();
-  }, [clear, onCloseComplete, reset, shared]);
+  }, [clear, onCloseComplete, onTransitionCompleted, reset, shared]);
+
+  const handleOpenTransitionCompleted = useCallback(() => {
+    onTransitionCompleted?.({ owner: "tray-open" });
+  }, [onTransitionCompleted]);
 
   const doOpenSpring = useCallback(() => {
     // refs beat react state here because layout callbacks can land between renders
@@ -153,6 +166,8 @@ export const useActionTrayOpenCloseLifecycle = ({
 
     const shouldExpandFromTrigger =
       transition?.open === "expandFromTrigger";
+
+    onTransitionStarted?.({ owner: "tray-open" });
 
     // the ui thread spring owns the visible open transition from travel to zero
     runOnUI(
@@ -185,6 +200,7 @@ export const useActionTrayOpenCloseLifecycle = ({
                 );
                 scheduleOnRN(log, "EXPAND OPEN FINISHED");
                 scheduleOnRN(enableLayout);
+                scheduleOnRN(handleOpenTransitionCompleted);
               }
             },
           );
@@ -204,6 +220,7 @@ export const useActionTrayOpenCloseLifecycle = ({
               );
               scheduleOnRN(log, "OPEN SPRING FINISHED");
               scheduleOnRN(enableLayout);
+              scheduleOnRN(handleOpenTransitionCompleted);
             }
           },
         );
@@ -213,6 +230,7 @@ export const useActionTrayOpenCloseLifecycle = ({
     setIsSurfaceReady(true);
   }, [
     enableLayout,
+    handleOpenTransitionCompleted,
     latestMeasuredFooterHeightRef,
     latestResolvedContentHeightRef,
     measuredFooterHeight,
@@ -220,6 +238,7 @@ export const useActionTrayOpenCloseLifecycle = ({
     resolvedContentHeight,
     shared,
     transition?.open,
+    onTransitionStarted,
   ]);
 
   useLayoutEffect(() => {
@@ -262,6 +281,10 @@ export const useActionTrayOpenCloseLifecycle = ({
 
       const myGeneration = shared.closeGeneration.value + 1;
       shared.closeGeneration.value = myGeneration;
+
+      onTransitionPrepared?.({ owner: "tray-close", closeTravel });
+      onTransitionCommitted?.({ owner: "tray-close" });
+      onTransitionStarted?.({ owner: "tray-close" });
 
       // generation ids stop an old close callback from clearing a newer open
       prepareForClose();
@@ -345,6 +368,15 @@ export const useActionTrayOpenCloseLifecycle = ({
     });
 
     markTrayReadyToOpen(rootTrayId ?? trayId ?? "unknown", trayId);
+    onTransitionPrepared?.({
+      owner: "tray-open",
+      contentHeight:
+        latestResolvedContentHeightRef.current ||
+        resolvedContentHeight.value,
+      footerHeight:
+        latestMeasuredFooterHeightRef.current || measuredFooterHeight.value,
+    });
+    onTransitionCommitted?.({ owner: "tray-open" });
     completePendingOpen();
     doOpenSpring();
   }, [
@@ -354,6 +386,8 @@ export const useActionTrayOpenCloseLifecycle = ({
     latestResolvedContentHeightRef,
     measurements.state.isReadyToOpen,
     measuredFooterHeight,
+    onTransitionPrepared,
+    onTransitionCommitted,
     resolvedContentHeight,
     renderedFooter,
     rootTrayId,

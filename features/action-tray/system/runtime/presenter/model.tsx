@@ -6,7 +6,10 @@ import {
   TrayStepOptionsProvider,
   type TrayRegistration,
   type TrayStackEntry,
+  type TrayTransitionContract,
 } from "../tray-context";
+import { resolveTrayPresentationEndpoint } from "../transition-contract";
+import { resolveTrayAnimationContract } from "./animation-contract";
 import type { PresentedTray, TrayHostSlot } from "./types";
 
 // convert registered tray state into the payload consumed by host slots
@@ -67,12 +70,14 @@ export const createPresentedTray = ({
   entry,
   registration,
   previousIndex,
+  transition = null,
   stackIndex,
   stackLength,
 }: {
   entry: TrayStackEntry;
   registration: TrayRegistration;
   previousIndex?: number;
+  transition?: TrayTransitionContract | null;
   stackIndex: number;
   stackLength: number;
 }): PresentedTray | null => {
@@ -89,19 +94,18 @@ export const createPresentedTray = ({
     ...stepOptions,
     hasFooter: registration.footer != null,
   };
-  // entering and exiting steps need fullscreen boundary knowledge for anchored scale
-  const fullScreenBoundaryExit = [trayIndex - 1, trayIndex + 1].some(
-    (adjacentIndex) => {
-      const adjacentStep = registration.steps[adjacentIndex];
+  const endpoint = resolveTrayPresentationEndpoint({ entry, registration });
 
-      return (
-        adjacentStep !== undefined &&
-        resolveTrayStepOptions(adjacentStep.options).fullScreen !==
-          stepOptions.fullScreen
-      );
-    },
-  );
-  const isFirstRender = previousIndex === undefined;
+  if (!endpoint) {
+    return null;
+  }
+
+  const animationContract = resolveTrayAnimationContract({
+    registration,
+    endpoint,
+    previousIndex,
+    transition,
+  });
   // keyboard-aware steps preload keyboard behavior only for the entering step
   const keyboardTransitionMode = stepOptions.keyboardAware ? "entering" : "idle";
 
@@ -115,8 +119,8 @@ export const createPresentedTray = ({
           <TrayStepContent
             stepKey={`${entry.trayId}-${step.key}-header`}
             scale={false}
-            fullScreenBoundaryExit={fullScreenBoundaryExit}
-            skipEntering={isFirstRender}
+            fullScreenBoundaryExit={animationContract.fullScreenBoundaryExit}
+            skipEntering={animationContract.isFirstRender}
           >
             {step.header}
           </TrayStepContent>
@@ -130,8 +134,8 @@ export const createPresentedTray = ({
             stepKey={`${entry.trayId}-${step.key}`}
             scale={stepOptions.scale}
             anchorScaleToTop={stepOptions.fullScreen}
-            fullScreenBoundaryExit={fullScreenBoundaryExit}
-            skipEntering={isFirstRender}
+            fullScreenBoundaryExit={animationContract.fullScreenBoundaryExit}
+            skipEntering={animationContract.isFirstRender}
           >
             {step.content}
           </TrayStepContent>
@@ -150,6 +154,7 @@ export const createPresentedTray = ({
     fullScreenSafeAreaTop: stepOptions.fullScreenSafeAreaTop,
     fullScreenDraggable: stepOptions.fullScreenDraggable,
     dismissible: registration.dismissible ?? true,
+    transitionContract: animationContract.transition,
     transition: registration.transition,
     containerStyle: stepOptions.style,
     className: stepOptions.className,

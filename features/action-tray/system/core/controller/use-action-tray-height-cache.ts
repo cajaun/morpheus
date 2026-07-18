@@ -1,17 +1,22 @@
 import { useCallback, useRef } from "react";
 import type { SharedValue } from "react-native-reanimated";
+import type { TrayMeasurementOwner } from "../../runtime/types";
 
 type Params = {
   fullScreen?: boolean;
   contentHeight: SharedValue<number>;
+  measurementOwner?: TrayMeasurementOwner;
 };
 
 // cache heights so tray swaps preserve geometry between related presentations
 export const useActionTrayHeightCache = ({
   fullScreen,
   contentHeight,
+  measurementOwner,
 }: Params) => {
-  const contentHeightCacheRef = useRef<Record<string, number>>({});
+  const contentHeightCacheRef = useRef<
+    Record<string, { height: number; owner?: TrayMeasurementOwner }>
+  >({});
 
   const handleContentHeightResolved = useCallback(
     (resolvedHeight: number, _measuredHeight: number, trayId?: string) => {
@@ -20,9 +25,12 @@ export const useActionTrayHeightCache = ({
       }
 
       // cache the resolved height because fullscreen may transform the raw measurement
-      contentHeightCacheRef.current[trayId] = resolvedHeight;
+      contentHeightCacheRef.current[trayId] = {
+        height: resolvedHeight,
+        owner: measurementOwner,
+      };
     },
-    [],
+    [measurementOwner],
   );
 
   const restoreContentHeight = useCallback(
@@ -31,12 +39,12 @@ export const useActionTrayHeightCache = ({
         return undefined;
       }
 
-      const cachedHeight = contentHeightCacheRef.current[trayId];
+      const cachedMeasurement = contentHeightCacheRef.current[trayId];
 
       // fullscreen derives height from viewport constraints not prior sheet measurements
-      if (!fullScreen && cachedHeight != null) {
-        contentHeight.value = cachedHeight;
-        return cachedHeight;
+      if (!fullScreen && cachedMeasurement != null) {
+        contentHeight.value = cachedMeasurement.height;
+        return cachedMeasurement.height;
       }
 
       if (measuredContentHeight > 0) {
