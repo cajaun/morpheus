@@ -2,11 +2,12 @@
 module.exports = {
   preset: "jest-expo",
   clearMocks: true,
+  modulePathIgnorePatterns: ["<rootDir>/lib/", "<rootDir>/example/"],
   collectCoverageFrom: [
-    "features/action-tray/system/**/*.{ts,tsx}",
-    "!features/action-tray/system/**/__tests__/**",
-    "!features/action-tray/system/**/types/**",
-    "!features/action-tray/system/**/index.ts",
+    "src/**/*.{ts,tsx}",
+    "!src/**/__tests__/**",
+    "!src/**/types/**",
+    "!src/**/index.ts",
   ],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "text-summary", "lcov", "json-summary"],

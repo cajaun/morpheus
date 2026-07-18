@@ -1,0 +1,383 @@
+import React, { useMemo, useState } from "react";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
+import { Text } from "react-native";
+import TestRenderer, { act } from "react-test-renderer";
+import {
+  Tray,
+  TrayProvider,
+  useTrayFlow,
+  useTrayHost,
+  type TrayStepDefinition,
+} from "../..";
+
+// tests isolate runtime behavior by replacing the animated shell with a dumb host
+jest.mock("../../core/action-tray", () => {
+  const ReactNative = require("react-native");
+
+  return {
+    ActionTray: ({
+      visible,
+      content,
+      footer,
+      rootTrayId,
+      interactive,
+      covered,
+      onCloseComplete,
+    }: any) => (
+      <ReactNative.View
+        testID="action-tray-host"
+        rootTrayId={rootTrayId}
+        visible={visible}
+        interactive={interactive}
+        covered={covered}
+        onCloseComplete={onCloseComplete}
+      >
+        {visible ? content ?? footer ?? null : null}
+      </ReactNative.View>
+    ),
+  };
+});
+
+jest.mock("../../core/input/use-action-tray-keyboard", () => {
+  const createSharedValue = (initialValue: number) => ({
+    value: initialValue,
+    get() {
+      return this.value;
+    },
+    set(nextValue: number) {
+      this.value = nextValue;
+    },
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    modify: jest.fn((modifier: (current: number) => number) => {
+      const nextValue = modifier(initialValue);
+      initialValue = nextValue;
+      return nextValue;
+    }),
+  });
+
+  return {
+    useActionTrayKeyboard: () => ({
+      keyboardHeight: createSharedValue(0),
+      anticipateKeyboard: jest.fn(),
+      dismissKeyboard: jest.fn(),
+    }),
+  };
+});
+
+let latestHost: ReturnType<typeof useTrayHost> | null = null;
+let latestFlow: ReturnType<typeof useTrayFlow> | null = null;
+let activeRenderer: TestRenderer.ReactTestRenderer | null = null;
+
+// test spies surface hook state without coupling assertions to rendered text
+const HostSpy = () => {
+  latestHost = useTrayHost();
+  return null;
+};
+
+const FlowSpy = () => {
+  latestFlow = useTrayFlow();
+  return null;
+};
+
+const getRenderedTrayHosts = () =>
+  activeRenderer!.root.findAll(
+    (node) =>
+      typeof node.type === "string" &&
+      node.props.testID === "action-tray-host",
+  );
+
+const step = (key: string, options?: TrayStepDefinition["options"]): TrayStepDefinition => ({
+  key,
+  content: <Text>{key}</Text>,
+  options,
+});
+
+describe("TrayProvider runtime", () => {
+  beforeEach(() => {
+    latestHost = null;
+    latestFlow = null;
+    activeRenderer = null;
+  });
+
+  afterEach(() => {
+    if (activeRenderer) {
+      act(() => {
+        activeRenderer?.unmount();
+      });
+      activeRenderer = null;
+    }
+  });
+
+  it("registers and unregisters trays cleanly", () => {
+    act(() => {
+      activeRenderer = TestRenderer.create(
+        <TrayProvider>
+          <HostSpy />
+          <Tray.Root steps={[step("one")]}>
+            <FlowSpy />
+          </Tray.Root>
+        </TrayProvider>,
+      );
+    });
+
+    expect(latestHost).not.toBeNull();
+    expect(Object.keys(latestHost!.registry)).toHaveLength(1);
+
+    act(() => {
+      latestHost!.openTray(latestFlow!.trayId);
+    });
+
+    expect(latestHost!.activeTrayId).toBe(latestFlow!.trayId);
+
+    act(() => {
+      activeRenderer!.update(
+        <TrayProvider>
+          <HostSpy />
+        </TrayProvider>,
+      );
+    });
+
+    expect(Object.keys(latestHost!.registry)).toHaveLength(0);
+    expect(latestHost!.activeTrayId).toBeNull();
+  });
+
+  it("supports open, next, and back navigation", () => {
+    act(() => {
+      activeRenderer = TestRenderer.create(
+        <TrayProvider>
+          <HostSpy />
+          <Tray.Root steps={[step("one"), step("two"), step("three")]}>
+            <FlowSpy />
+          </Tray.Root>
+        </TrayProvider>,
+      );
+    });
+
+    act(() => {
+      latestHost!.openTray(latestFlow!.trayId);
+    });
+
+    expect(latestHost!.activeTrayId).toBe(latestFlow!.trayId);
+    expect(latestHost!.activeIndex).toBe(0);
+    expect(latestHost!.transition).toMatchObject({
+      generation: 1,
+      reason: "open",
+      direction: "none",
+      boundary: "opening",
+      from: null,
+      to: { stepIndex: 0, stepKey: "one", mode: "sheet" },
+    });
+
+    act(() => {
+      latestHost!.nextStep();
+    });
+
+    expect(latestHost!.activeIndex).toBe(1);
+    expect(latestHost!.transition).toMatchObject({
+      generation: 2,
+      reason: "nextStep",
+      direction: "forward",
+      boundary: "sheetToSheet",
+      from: { stepIndex: 0, stepKey: "one" },
+      to: { stepIndex: 1, stepKey: "two" },
+    });
+
+    act(() => {
+      latestHost!.previousStep();
+    });
+
+    expect(latestHost!.activeIndex).toBe(0);
+    expect(latestHost!.transition).toMatchObject({
+      generation: 3,
+      reason: "previousStep",
+      direction: "backward",
+      from: { stepIndex: 1, stepKey: "two" },
+      to: { stepIndex: 0, stepKey: "one" },
+    });
+  });
+
+  it("returns fullscreen flows to the shell before dismissing", () => {
+    act(() => {
+      activeRenderer = TestRenderer.create(
+        <TrayProvider>
+          <HostSpy />
+          <Tray.Root
+            steps={[
+              step("shell"),
+              step("fullscreen", {
+                fullScreen: true,
+                fullScreenCloseBehavior: "returnToShell",
+              }),
+            ]}
+          >
+            <FlowSpy />
+          </Tray.Root>
+        </TrayProvider>,
+      );
+    });
+
+    act(() => {
+      latestHost!.openTray(latestFlow!.trayId);
+      latestHost!.nextStep();
+    });
+
+    expect(latestHost!.activeIndex).toBe(1);
+
+    act(() => {
+      latestHost!.requestCloseActiveTray();
+    });
+
+    expect(latestHost!.activeTrayId).toBe(latestFlow!.trayId);
+    expect(latestHost!.activeIndex).toBe(0);
+    expect(latestHost!.transition).toMatchObject({
+      reason: "returnToShell",
+      direction: "backward",
+      boundary: "fullScreenToSheet",
+      fullScreenChanged: true,
+    });
+
+    act(() => {
+      latestHost!.requestCloseActiveTray();
+    });
+
+    expect(latestHost!.activeTrayId).toBeNull();
+    expect(latestHost!.transition).toMatchObject({
+      reason: "dismiss",
+      boundary: "closing",
+      to: null,
+    });
+  });
+
+  it("updates tray definitions when step data changes without changing keys", () => {
+    let setExpanded: React.Dispatch<React.SetStateAction<boolean>> = () => {};
+
+    const DynamicTray = () => {
+      const [expanded, updateExpanded] = useState(false);
+      setExpanded = updateExpanded;
+
+      const steps = useMemo<TrayStepDefinition[]>(
+        () => (expanded ? [step("stable-key"), step("second-step")] : [step("stable-key")]),
+        [expanded],
+      );
+
+      return (
+        <Tray.Root steps={steps}>
+          <FlowSpy />
+        </Tray.Root>
+      );
+    };
+
+    act(() => {
+      activeRenderer = TestRenderer.create(
+        <TrayProvider>
+          <HostSpy />
+          <DynamicTray />
+        </TrayProvider>,
+      );
+    });
+
+    expect(latestFlow!.total).toBe(1);
+
+    act(() => {
+      setExpanded(true);
+    });
+
+    expect(latestFlow!.total).toBe(2);
+
+    act(() => {
+      latestHost!.openTray(latestFlow!.trayId);
+      latestHost!.nextStep();
+    });
+
+    expect(latestHost!.activeIndex).toBe(1);
+    expect(latestHost!.registry[latestFlow!.trayId]?.steps).toHaveLength(2);
+  });
+
+  it("keeps the mounted tray host pool bounded during tray switches", () => {
+    act(() => {
+      activeRenderer = TestRenderer.create(
+        <TrayProvider>
+          <HostSpy />
+          <Tray.Root id="alpha" steps={[step("one")]}>
+            <></>
+          </Tray.Root>
+          <Tray.Root id="beta" steps={[step("one")]}>
+            <></>
+          </Tray.Root>
+          <Tray.Root id="gamma" steps={[step("one")]}>
+            <></>
+          </Tray.Root>
+        </TrayProvider>,
+      );
+    });
+
+    expect(getRenderedTrayHosts()).toHaveLength(0);
+
+    act(() => {
+      latestHost!.openTray("alpha");
+    });
+
+    expect(getRenderedTrayHosts().length).toBeLessThanOrEqual(2);
+    expect(getRenderedTrayHosts()).toHaveLength(1);
+
+    act(() => {
+      latestHost!.openTray("beta");
+    });
+
+    // beta waits in pending state while alpha owns the visible closing host
+    expect(getRenderedTrayHosts().length).toBeLessThanOrEqual(2);
+    expect(
+      getRenderedTrayHosts().some(
+        (host) => host.props.rootTrayId === "alpha",
+      ),
+    ).toBe(true);
+  });
+
+  it("waits for the outgoing tray host to finish closing before opening the replacement tray", () => {
+    act(() => {
+      activeRenderer = TestRenderer.create(
+        <TrayProvider>
+          <HostSpy />
+          <Tray.Root id="alpha" steps={[step("one")]}>
+            <></>
+          </Tray.Root>
+          <Tray.Root id="beta" steps={[step("one")]}>
+            <></>
+          </Tray.Root>
+        </TrayProvider>,
+      );
+    });
+
+    act(() => {
+      latestHost!.openTray("alpha");
+    });
+
+    act(() => {
+      latestHost!.openTray("beta");
+    });
+
+    const renderedHosts = getRenderedTrayHosts();
+
+    // replacement host should not mount until alpha reports close completion
+    expect(renderedHosts).toHaveLength(1);
+    expect(renderedHosts.find((host) => host.props.rootTrayId === "alpha")?.props.visible).toBe(false);
+    expect(renderedHosts.find((host) => host.props.rootTrayId === "beta")).toBeUndefined();
+
+    act(() => {
+      renderedHosts.find((host) => host.props.rootTrayId === "alpha")?.props.onCloseComplete();
+    });
+
+    // after close completion beta claims the freed slot and becomes interactive
+    const reopenedHosts = getRenderedTrayHosts();
+    expect(reopenedHosts.find((host) => host.props.rootTrayId === "beta")?.props.visible).toBe(true);
+    expect(reopenedHosts.find((host) => host.props.rootTrayId === "beta")?.props.interactive).toBe(true);
+  });
+});
