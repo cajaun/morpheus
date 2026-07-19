@@ -1,4 +1,3 @@
-import React, { useMemo } from "react";
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import {
@@ -230,10 +229,7 @@ export const createCreatingWalletsInfoSteps = (
 ];
 
 const CreatingWalletsInfoTray = () => {
-  const steps = useMemo<TrayStepDefinition[]>(
-    () => createCreatingWalletsInfoSteps(),
-    [],
-  );
+  const steps: TrayStepDefinition[] = createCreatingWalletsInfoSteps();
 
   return (
     <Tray.Root steps={steps}>

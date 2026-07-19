@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
 import { Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { SymbolView } from "expo-symbols";
@@ -491,8 +491,7 @@ const sharedStepOptions = {
 const WalletGroupTray = () => {
   const [selectedGroupId, setSelectedGroupId] = useState("group-2");
 
-  const steps = useMemo<TrayStepDefinition[]>(
-    () => [
+  const steps: TrayStepDefinition[] = [
       {
         key: "choose-wallet-group",
         content: (
@@ -508,14 +507,10 @@ const WalletGroupTray = () => {
         content: <CreateWalletGroupConfirmationStep />,
         options: sharedStepOptions,
       },
-    ],
-    [selectedGroupId],
-  );
-
-  const footer = useMemo(() => <WalletGroupFooter />, []);
+  ];
 
   return (
-    <Tray.Root steps={steps} footer={footer}>
+    <Tray.Root steps={steps} footer={<WalletGroupFooter />}>
       <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Wallet Group" />
       </Tray.Trigger>

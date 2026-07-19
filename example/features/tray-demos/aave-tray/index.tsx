@@ -1,5 +1,4 @@
-import React, { useMemo } from "react";
-import { Text, View } from "react-native";
+import { Text } from "react-native";
 import {
   Tray,
   useTrayFlow,
@@ -172,39 +171,35 @@ const FourthStep = () => {
 };
 
 const AaveExample = () => {
-  const steps = useMemo<TrayStepDefinition[]>(
-    () => [
-      {
-        key: "content-one",
-        content: <FirstStep />,
-        header: <AaveHeader title="Content One" />,
-        options: sharedStepOptions,
-      },
-      {
-        key: "content-two",
-        content: <SecondStep />,
-        header: <AaveHeader title="Content Two" />,
-        options: sharedStepOptions,
-      },
-      {
-        key: "content-three",
-        content: <ThirdStep />,
-        header: <AaveHeader title="Content Three" />,
-        options: sharedStepOptions,
-      },
-      {
-        key: "content-four",
-        content: <FourthStep />,
-        header: <AaveHeader title="Content Four" />,
-        options: sharedStepOptions,
-      },
-    ],
-    [],
-  );
-  const footer = useMemo(() => <AaveFooter />, []);
+  const steps: TrayStepDefinition[] = [
+    {
+      key: "content-one",
+      content: <FirstStep />,
+      header: <AaveHeader title="Content One" />,
+      options: sharedStepOptions,
+    },
+    {
+      key: "content-two",
+      content: <SecondStep />,
+      header: <AaveHeader title="Content Two" />,
+      options: sharedStepOptions,
+    },
+    {
+      key: "content-three",
+      content: <ThirdStep />,
+      header: <AaveHeader title="Content Three" />,
+      options: sharedStepOptions,
+    },
+    {
+      key: "content-four",
+      content: <FourthStep />,
+      header: <AaveHeader title="Content Four" />,
+      options: sharedStepOptions,
+    },
+  ];
 
   return (
-    <Tray.Root steps={steps} footer={footer}>
+    <Tray.Root steps={steps} footer={<AaveFooter />}>
       <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Aave" />
       </Tray.Trigger>

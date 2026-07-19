@@ -1,4 +1,3 @@
-import React, { useMemo } from "react";
 import { Text, View } from "react-native";
 import {
   Tray,
@@ -572,8 +571,7 @@ const BackgroundScalePreview = () => (
 );
 
 const OnboardingExample = () => {
-  const steps = useMemo<TrayStepDefinition[]>(
-    () => [
+  const steps: TrayStepDefinition[] = [
       {
         key: "content-one",
         content: <FirstStep />,
@@ -607,10 +605,7 @@ const OnboardingExample = () => {
         options: sharedStepOptions,
       },
 
-    ],
-    [],
-  );
-  const footer = useMemo(() => <OnboardingFooter />, []);
+  ];
 
   return (
     <View
@@ -623,7 +618,7 @@ const OnboardingExample = () => {
     >
       <BackgroundScalePreview />
 
-      <Tray.Root steps={steps} footer={footer}>
+      <Tray.Root steps={steps} footer={<OnboardingFooter />}>
         <Tray.Trigger haptics="feedback">
           <ExampleTrigger label="Onboarding" />
         </Tray.Trigger>

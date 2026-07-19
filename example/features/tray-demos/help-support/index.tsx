@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
 import { Tray, useTrayFlow, type TrayStepDefinition } from "morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { ExampleTrigger } from "../shared/example-trigger";
@@ -29,8 +29,7 @@ const SupportFlowHeader = ({ title }: { title: string }) => {
 
 const HelpSupportTray = () => {
   const [selectedFlow, setSelectedFlow] = useState<HelpKind>("bug");
-  const steps = useMemo<TrayStepDefinition[]>(
-    () => [
+  const steps: TrayStepDefinition[] = [
       {
         key: "help-entry",
         header: <SupportFlowHeader title="How can we help?" />,
@@ -71,9 +70,7 @@ const HelpSupportTray = () => {
         content: <YourDetailsStep />,
         options: { className: "bg-white", keyboardAware: true },
       },
-    ],
-    [selectedFlow],
-  );
+  ];
 
   return (
     <Tray.Root steps={steps}>

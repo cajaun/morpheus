@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
 import { Image, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import {
@@ -179,23 +179,20 @@ const InsufficientTokensStep = () => {
 
 const PayFromTray = () => {
   const [selectedId, setSelectedId] = useState("3");
-  const steps = useMemo<TrayStepDefinition[]>(
-    () => [
-      {
-        key: "wallet-selection",
-        content: (
-          <WalletSelectionStep selectedId={selectedId} onSelect={setSelectedId} />
-        ),
-        options: { className: "bg-white" },
-      },
-      {
-        key: "insufficient-tokens",
-        content: <InsufficientTokensStep />,
-        options: { className: "bg-white" },
-      },
-    ],
-    [selectedId],
-  );
+  const steps: TrayStepDefinition[] = [
+    {
+      key: "wallet-selection",
+      content: (
+        <WalletSelectionStep selectedId={selectedId} onSelect={setSelectedId} />
+      ),
+      options: { className: "bg-white" },
+    },
+    {
+      key: "insufficient-tokens",
+      content: <InsufficientTokensStep />,
+      options: { className: "bg-white" },
+    },
+  ];
 
   return (
     <Tray.Root steps={steps}>

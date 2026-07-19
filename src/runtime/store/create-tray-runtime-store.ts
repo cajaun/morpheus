@@ -17,6 +17,7 @@ import type {
   TrayTransitionContract,
   TrayTransitionReason,
 } from "../types";
+import { areTrayRegistrationsEquivalent } from "../registration-equality";
 import { createTrayTransitionLifecycle } from "../transition-lifecycle";
 
 // the runtime store owns the only source of truth for tray identity and step index
@@ -254,7 +255,7 @@ export const createTrayRuntimeStore = (
   const actions: TrayHostActionsValue = {
     registerTray: (id: string, registration: TrayRegistration) => {
       setState((current) => {
-        if (current.registry[id] === registration) {
+        if (areTrayRegistrationsEquivalent(current.registry[id], registration)) {
           return current;
         }
 

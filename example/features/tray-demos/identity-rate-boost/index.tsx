@@ -1,4 +1,3 @@
-import React, { useMemo } from "react";
 import { Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SymbolView } from "expo-symbols";
@@ -244,19 +243,16 @@ const IdentityRateBoostStep = () => {
 };
 
 const IdentityRateBoostTray = () => {
-  const steps = useMemo<TrayStepDefinition[]>(
-    () => [
-      {
-        key: "identity-rate-boost",
-        content: <IdentityRateBoostStep />,
-        options: {
-          className: "bg-[#1E1E25]",
-          style: { backgroundColor: PANEL_BACKGROUND },
-        },
+  const steps: TrayStepDefinition[] = [
+    {
+      key: "identity-rate-boost",
+      content: <IdentityRateBoostStep />,
+      options: {
+        className: "bg-[#1E1E25]",
+        style: { backgroundColor: PANEL_BACKGROUND },
       },
-    ],
-    [],
-  );
+    },
+  ];
 
   return (
     <Tray.Root steps={steps}>

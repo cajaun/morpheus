@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
 import { Tray, type TrayStepDefinition } from "morpheus";
 import { ExampleTrigger } from "../shared/example-trigger";
 import {
@@ -13,8 +13,7 @@ import type { WalletAction } from "./types";
 
 const WatchAddressTray = () => {
   const [selectedAction, setSelectedAction] = useState<WalletAction>("watch");
-  const steps = useMemo<TrayStepDefinition[]>(
-    () => [
+  const steps: TrayStepDefinition[] = [
       {
         key: "watch-address-entry",
         header: <WatchAddressHeader title="New Wallet" />,
@@ -50,9 +49,7 @@ const WatchAddressTray = () => {
             selectedAction !== "watch" ? "returnToShell" : "dismiss",
         },
       },
-    ],
-    [selectedAction],
-  );
+  ];
 
   return (
     <Tray.Root steps={steps}>

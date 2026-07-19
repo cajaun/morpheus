@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
 import { Text, View } from "react-native";
 import { Link } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -150,21 +150,16 @@ const ExpandFromTriggerDemo = ({
 }: ExpandFromTriggerDemoProps) => {
   const { bottom } = useSafeAreaInsets();
   const theme = useTrayDemoTheme();
-  const steps = useMemo<TrayStepDefinition[]>(
-    () => [
-      {
-        key: "add-address",
-        content: <AddAddressStep />,
-        options: {
-          className: "bg-white",
-          footerStyle: { backgroundColor: trayDemoColors.white },
-        },
+  const steps: TrayStepDefinition[] = [
+    {
+      key: "add-address",
+      content: <AddAddressStep />,
+      options: {
+        className: "bg-white",
+        footerStyle: { backgroundColor: trayDemoColors.white },
       },
-    ],
-    [],
-  );
-
-  const footer = useMemo(() => <AddContactFooter />, []);
+    },
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
@@ -205,7 +200,7 @@ const ExpandFromTriggerDemo = ({
 
       <Tray.Root
         steps={steps}
-        footer={footer}
+        footer={<AddContactFooter />}
         transition={{
           open: "expandFromTrigger",
           close: "collapseToTrigger",

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import {
@@ -193,16 +193,13 @@ const AboutAaveStep = () => {
 };
 
 const AboutAaveTray = () => {
-  const steps = useMemo<TrayStepDefinition[]>(
-    () => [
-      {
-        key: "about-aave",
-        content: <AboutAaveStep />,
-        options: { className: "bg-[#201F27]" },
-      },
-    ],
-    [],
-  );
+  const steps: TrayStepDefinition[] = [
+    {
+      key: "about-aave",
+      content: <AboutAaveStep />,
+      options: { className: "bg-[#201F27]" },
+    },
+  ];
 
   return (
     <Tray.Root steps={steps}>

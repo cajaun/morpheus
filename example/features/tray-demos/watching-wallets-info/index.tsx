@@ -1,4 +1,3 @@
-import React, { useMemo } from "react";
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import {
@@ -125,16 +124,13 @@ const WatchingWalletsInfoStep = () => {
 };
 
 const WatchingWalletsInfoTray = () => {
-  const steps = useMemo<TrayStepDefinition[]>(
-    () => [
-      {
-        key: "watching-wallets-info",
-        content: <WatchingWalletsInfoStep />,
-        options: { className: "bg-white" },
-      },
-    ],
-    [],
-  );
+  const steps: TrayStepDefinition[] = [
+    {
+      key: "watching-wallets-info",
+      content: <WatchingWalletsInfoStep />,
+      options: { className: "bg-white" },
+    },
+  ];
 
   return (
     <Tray.Root steps={steps}>

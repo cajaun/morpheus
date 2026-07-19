@@ -1,4 +1,3 @@
-import React, { useMemo } from "react";
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import {
@@ -148,21 +147,16 @@ const WarningTrigger = () => (
 const RemoveWalletWarningTray = () => {
   const { bottom } = useSafeAreaInsets();
   const theme = useTrayDemoTheme();
-  const steps = useMemo<TrayStepDefinition[]>(
-    () => [
-      {
-        key: "remove-wallet-warning",
-        content: <WarningStep />,
-        options: {
-          className: "bg-white",
-          footerStyle: { backgroundColor: trayDemoColors.white },
-        },
+  const steps: TrayStepDefinition[] = [
+    {
+      key: "remove-wallet-warning",
+      content: <WarningStep />,
+      options: {
+        className: "bg-white",
+        footerStyle: { backgroundColor: trayDemoColors.white },
       },
-    ],
-    [],
-  );
-
-  const footer = useMemo(() => <WarningFooter />, []);
+    },
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
@@ -188,7 +182,7 @@ const RemoveWalletWarningTray = () => {
 
       <Tray.Root
         steps={steps}
-        footer={footer}
+        footer={<WarningFooter />}
         transition={{
           open: "expandFromTrigger",
           close: "collapseToTrigger",
