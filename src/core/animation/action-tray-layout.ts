@@ -10,9 +10,11 @@ import {
   MORPH_LAYOUT_DURATION,
 } from "../constants";
 import { withFullScreenLayoutStartSignal } from "../full-screen-transition-start";
+import { withTrayLayoutProgress } from "./with-tray-layout-progress";
 
 type TrayLayoutTransitionParams = {
   fullScreenTransitionGeneration: number;
+  morphProgress: SharedValue<number>;
   layoutStartedAt: SharedValue<number>;
   layoutStartedFullScreenGeneration: SharedValue<number>;
   fullScreenBackgroundScale: SharedValue<number>;
@@ -28,6 +30,7 @@ type TrayLayoutTransitionParams = {
 
 export const createTrayLayoutTransition = ({
   fullScreenTransitionGeneration,
+  morphProgress,
   layoutStartedAt,
   layoutStartedFullScreenGeneration,
   fullScreenBackgroundScale,
@@ -95,6 +98,39 @@ export const createTrayLayoutTransition = ({
         },
       ],
     );
+
+    const geometryCandidates = [
+      {
+        key: "originY" as const,
+        source: values.currentOriginY,
+        target: values.targetOriginY,
+      },
+      {
+        key: "height" as const,
+        source: values.currentHeight,
+        target: values.targetHeight,
+      },
+      {
+        key: "width" as const,
+        source: values.currentWidth,
+        target: values.targetWidth,
+      },
+    ];
+    const geometryClock =
+      geometryCandidates.find(
+        ({ source, target }) => Math.abs(target - source) >= 0.001,
+      ) ?? geometryCandidates[0];
+    const geometryAnimation = animation.animations[geometryClock.key];
+
+    if (geometryAnimation !== undefined) {
+      // Consumers follow the same rendered geometry value used by the shell.
+      animation.animations[geometryClock.key] = withTrayLayoutProgress(
+        geometryAnimation as number,
+        morphProgress,
+        geometryClock.source,
+        geometryClock.target,
+      );
+    }
 
     return {
       ...animation,

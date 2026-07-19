@@ -20,6 +20,7 @@ import { styles as trayStyles } from "./animation/action-tray-styles";
 import { TrayOriginProgressProvider } from "./tray-origin-progress";
 import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
 import { FullScreenTransitionStartProvider } from "./full-screen-transition-start";
+import { TrayMorphProgressProvider } from "./tray-morph-progress";
 import {
   FORWARD_CONTENT_MOTION,
   resolveTrayContentMotionDirection,
@@ -127,6 +128,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         totalHeight,
         progress,
         originProgress,
+        morphProgress,
         fullScreenLayoutStartedAt,
         layoutStartedFullScreenGeneration,
       },
@@ -259,6 +261,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       () =>
         createTrayLayoutTransition({
           fullScreenTransitionGeneration,
+          morphProgress,
           layoutStartedAt: fullScreenLayoutStartedAt,
           layoutStartedFullScreenGeneration,
           fullScreenBackgroundScale: fullScreenBackgroundMorphScale,
@@ -277,6 +280,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         }),
       [
         fullScreenTransitionGeneration,
+        morphProgress,
         fullScreenBackgroundMorphScale,
         fullScreenBackgroundScaleTarget,
         fullScreenSafeAreaTopHeight,
@@ -401,7 +405,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     );
 
     return (
-      <>
+      <TrayMorphProgressProvider value={morphProgress}>
         {measureFooter && (
           <Animated.View
             style={[
@@ -454,7 +458,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             {traySurface}
           </KeyboardStickyView>
         )}
-      </>
+      </TrayMorphProgressProvider>
     );
   },
 );

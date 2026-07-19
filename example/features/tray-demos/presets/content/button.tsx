@@ -1,12 +1,12 @@
-import React from "react";
+import React, { useLayoutEffect, useRef } from "react";
 import { Dimensions, Text, View } from "react-native";
 import Animated, {
-  Easing,
   interpolate,
   useAnimatedStyle,
   useDerivedValue,
-  withTiming,
+  useSharedValue,
 } from "react-native-reanimated";
+import { useTrayMorphProgress } from "morpheus";
 import { Laminar } from "react-native-laminar";
 import { PressableScale } from "@/components/ui/utils/pressable-scale";
 import * as Haptics from "expo-haptics";
@@ -45,12 +45,35 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
   // callers can override the default onboarding rule without forking the preset
   const shouldShowSecondary =
     showSecondary !== undefined ? showSecondary : step > 0 && !isLastStep;
+  const morphProgress = useTrayMorphProgress();
+  const initialSecondaryValue = shouldShowSecondary ? 1 : 0;
+  const secondaryFrom = useSharedValue(initialSecondaryValue);
+  const secondaryTo = useSharedValue(initialSecondaryValue);
+  const previousSecondaryConfigRef = useRef({
+    step,
+    target: initialSecondaryValue,
+  });
+
+  useLayoutEffect(() => {
+    const nextTarget = shouldShowSecondary ? 1 : 0;
+    const previousConfig = previousSecondaryConfigRef.current;
+
+    if (previousConfig.step === step && previousConfig.target === nextTarget) {
+      // Incidental rerenders during one morph must not rewrite its endpoints.
+      return;
+    }
+
+    secondaryFrom.value = previousConfig.target;
+    secondaryTo.value = nextTarget;
+    previousSecondaryConfigRef.current = { step, target: nextTarget };
+  }, [secondaryFrom, secondaryTo, shouldShowSecondary, step]);
 
   const progress = useDerivedValue(() =>
-    withTiming(shouldShowSecondary ? 1 : 0, {
-      duration: 200,
-      easing: Easing.bezier(0.23, 1, 0.32, 1),
-    }),
+    interpolate(
+      morphProgress.value,
+      [0, 1],
+      [secondaryFrom.value, secondaryTo.value],
+    ),
   );
 
   const rPrimaryStyle = useAnimatedStyle(() => {

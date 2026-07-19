@@ -11,6 +11,7 @@ describe("useActionTrayContentSync", () => {
   it("does not replay fullscreen geometry when the rendered snapshot catches up", () => {
     const contentHeight = shared(240);
     const footerHeight = shared(64);
+    const morphProgress = shared(1);
     const measuredContentHeight = shared(240);
     const measuredFooterHeight = shared(64);
     const resolveIncomingContentHeight = jest.fn(() => 780);
@@ -65,6 +66,7 @@ describe("useActionTrayContentSync", () => {
         },
         contentHeight,
         footerHeight,
+        morphProgress,
         resolveIncomingContentHeight,
         restoreContentHeight,
         onSheetFramePrepared,
@@ -104,6 +106,7 @@ describe("useActionTrayContentSync", () => {
     expect(resolveIncomingContentHeight).toHaveBeenCalledTimes(1);
     expect(restoreContentHeight).not.toHaveBeenCalled();
     expect(showLatestSnapshot).toHaveBeenCalledTimes(1);
+    expect(morphProgress.value).toBe(0);
 
     act(() => {
       renderer!.update(

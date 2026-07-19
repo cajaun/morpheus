@@ -118,6 +118,7 @@ export const useActionTrayController = ({
   });
   const layoutStartedFullScreenGeneration = useSharedValue(0);
   const fullScreenLayoutStartedAt = useSharedValue(0);
+  const morphProgress = useSharedValue(1);
   const markLiveTransitionPhase = useCallback(
     (
       phase: "prepared" | "committed" | "layoutStarted" | "completed",
@@ -460,6 +461,7 @@ export const useActionTrayController = ({
     presentation.shared.translateY.value = SCREEN_HEIGHT;
     presentation.shared.animationTravel.value = SCREEN_HEIGHT;
     presentation.shared.originProgress.value = 1;
+    morphProgress.value = 1;
     presentation.shared.surfaceOpacity.value = 0;
     presentation.shared.active.value = false;
     renderState.actions.clear();
@@ -473,6 +475,7 @@ export const useActionTrayController = ({
     presentation.shared.animationTravel,
     presentation.shared.closeGeneration,
     presentation.shared.originProgress,
+    morphProgress,
     presentation.shared.surfaceOpacity,
     presentation.shared.translateY,
     measurements.actions.reset,
@@ -533,6 +536,7 @@ export const useActionTrayController = ({
     renderState,
     contentHeight: presentation.shared.contentHeight,
     footerHeight: presentation.shared.footerHeight,
+    morphProgress,
     resolveIncomingContentHeight: resolveMeasuredContentHeight,
     restoreContentHeight: heightCache.actions.restoreContentHeight,
     onSheetFramePrepared: handleSheetFramePrepared,
@@ -681,6 +685,7 @@ export const useActionTrayController = ({
       totalHeight: presentation.shared.totalHeight,
       progress: presentation.shared.progress,
       originProgress: presentation.shared.originProgress,
+      morphProgress,
       fullScreenLayoutStartedAt,
       layoutStartedFullScreenGeneration,
     },

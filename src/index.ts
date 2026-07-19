@@ -13,6 +13,7 @@ import { TrayRoot } from "./runtime/tray-root";
 // centralize exports here so screens depend on one tray surface area
 export { TrayProvider } from "./runtime/tray-provider";
 export { useTrayOriginProgress } from "./core/tray-origin-progress";
+export { useTrayMorphProgress } from "./core/tray-morph-progress";
 export type {
   TrayTriggerHaptics,
   TrayTriggerProps,

@@ -53,6 +53,7 @@ type Params = {
   };
   contentHeight: SharedValue<number>;
   footerHeight: SharedValue<number>;
+  morphProgress: SharedValue<number>;
   resolveIncomingContentHeight: (measuredContentHeight: number) => number;
   restoreContentHeight: (
     trayId: string | undefined,
@@ -81,6 +82,7 @@ export const useActionTrayContentSync = ({
   renderState,
   contentHeight,
   footerHeight,
+  morphProgress,
   resolveIncomingContentHeight,
   restoreContentHeight,
   onSheetFramePrepared,
@@ -117,6 +119,12 @@ export const useActionTrayContentSync = ({
       // first open already prepared geometry through measurement callbacks
       justOpenedRef.current = false;
       return;
+    }
+
+    if (renderedTrayId !== trayId || renderedFullScreen !== !!fullScreen) {
+      // Preserve source visuals until native geometry starts, then let the
+      // canonical layout worklet advance this same value to one.
+      morphProgress.value = 0;
     }
 
     log("TRAY CHANGE", {
@@ -172,7 +180,7 @@ export const useActionTrayContentSync = ({
     });
     // shell level swaps key off tray identity not every prop change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trayId, visible, fullScreen, onPrepared]);
+  }, [trayId, visible, fullScreen, morphProgress, onPrepared]);
 
   // publish visual content after native layout can derive the sheet frame
   useEffect(() => {
