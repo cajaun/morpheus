@@ -11,6 +11,8 @@ import { scheduleOnRN } from "react-native-worklets";
 export type FullScreenTransitionStart = {
   enabled: boolean;
   generation: number;
+  fullScreenGeneration: number;
+  pendingGeneration: SharedValue<number>;
   startedAt: SharedValue<number>;
   startedGeneration: SharedValue<number>;
 };
@@ -36,10 +38,22 @@ export const shouldAwaitFullScreenLayoutStart = (
   );
 };
 
+export const resolveRequiredLayoutGeneration = (
+  startedGeneration: number,
+  pendingGeneration: number,
+) => {
+  "worklet";
+
+  // A keyed exit always belongs to a transition after the last geometry start.
+  // max() also preserves a newer generation during rapid navigation.
+  return Math.max(pendingGeneration, startedGeneration + 1);
+};
+
 interface LayoutStartGateAnimation
   extends Animation<LayoutStartGateAnimation> {
   current: AnimatableValue;
   started: boolean;
+  waitingSince: number;
   previousAnimation: AnimationObject | null;
 }
 
@@ -78,16 +92,25 @@ export const withFullScreenLayoutStart = function <T extends AnimationObject>(
         now: number,
       ): boolean => {
         if (!animation.started) {
-          if (startedGeneration.value < requiredGeneration) {
+          const layoutHasNotStarted =
+            startedGeneration.value < requiredGeneration;
+          const fallbackElapsed = now - animation.waitingSince;
+
+          if (layoutHasNotStarted && fallbackElapsed < 34) {
             // keep the entering animation frozen until shell geometry starts
             return false;
           }
 
-          // start the held animation at the layout start timestamp for clock alignment
+          // Reanimated can elide layout animations when both steps resolve to
+          // the same frame. Release after two frames so content cannot remain
+          // permanently invisible when no geometry clock will be published.
+          const synchronizedStart = layoutHasNotStarted
+            ? now
+            : layoutStartedAt.value;
           nextAnimation.onStart(
             nextAnimation,
             animation.current,
-            layoutStartedAt.value,
+            synchronizedStart,
             animation.previousAnimation,
           );
           animation.previousAnimation = null;
@@ -111,6 +134,7 @@ export const withFullScreenLayoutStart = function <T extends AnimationObject>(
       ) => {
         animation.current = value;
         animation.started = false;
+        animation.waitingSince = _now;
         animation.previousAnimation = previousAnimation;
 
         if (nextAnimation.reduceMotion === undefined) {
@@ -131,6 +155,7 @@ export const withFullScreenLayoutStart = function <T extends AnimationObject>(
         callback,
         previousAnimation: null,
         started: false,
+        waitingSince: 0,
       };
     },
   );

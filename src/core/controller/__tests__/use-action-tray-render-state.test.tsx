@@ -86,6 +86,7 @@ describe("useActionTrayRenderState", () => {
     });
 
     expect(state!.state.fullScreenTransitionGeneration).toBe(0);
+    expect(state!.state.layoutTransitionGeneration).toBe(0);
 
     act(() => {
       renderer!.update(
@@ -98,6 +99,7 @@ describe("useActionTrayRenderState", () => {
     });
 
     expect(state!.state.fullScreenTransitionGeneration).toBe(0);
+    expect(state!.state.layoutTransitionGeneration).toBe(1);
 
     act(() => {
       renderer!.update(
@@ -114,6 +116,7 @@ describe("useActionTrayRenderState", () => {
     });
 
     expect(state!.state.fullScreenTransitionGeneration).toBe(1);
+    expect(state!.state.layoutTransitionGeneration).toBe(2);
     expect(state!.state.renderedFullScreenBackgroundScale).toBe(0.94);
 
     act(() => {
@@ -131,6 +134,7 @@ describe("useActionTrayRenderState", () => {
     });
 
     expect(state!.state.fullScreenTransitionGeneration).toBe(1);
+    expect(state!.state.layoutTransitionGeneration).toBe(2);
     expect(state!.state.renderedFullScreenBackgroundScale).toBe(0.9);
 
     act(() => {
@@ -142,11 +146,13 @@ describe("useActionTrayRenderState", () => {
     });
 
     expect(state!.state.fullScreenTransitionGeneration).toBe(2);
+    expect(state!.state.layoutTransitionGeneration).toBe(3);
 
     act(() => {
       state!.actions.clear();
     });
 
     expect(state!.state.fullScreenTransitionGeneration).toBe(2);
+    expect(state!.state.layoutTransitionGeneration).toBe(3);
   });
 });

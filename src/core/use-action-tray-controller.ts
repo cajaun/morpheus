@@ -118,6 +118,8 @@ export const useActionTrayController = ({
   });
   const layoutStartedFullScreenGeneration = useSharedValue(0);
   const fullScreenLayoutStartedAt = useSharedValue(0);
+  const layoutStartedGeneration = useSharedValue(0);
+  const layoutStartedAt = useSharedValue(0);
   const morphProgress = useSharedValue(1);
   const markLiveTransitionPhase = useCallback(
     (
@@ -688,6 +690,8 @@ export const useActionTrayController = ({
       morphProgress,
       fullScreenLayoutStartedAt,
       layoutStartedFullScreenGeneration,
+      layoutStartedAt,
+      layoutStartedGeneration,
     },
     state: {
       layoutEnabled: measurements.state.layoutEnabled,
@@ -705,6 +709,8 @@ export const useActionTrayController = ({
         renderState.state.renderedFullScreenBackgroundScale,
       fullScreenTransitionGeneration:
         renderState.state.fullScreenTransitionGeneration,
+      layoutTransitionGeneration:
+        renderState.state.layoutTransitionGeneration,
       frameFullScreen,
       renderedFullScreenDraggable:
         renderState.state.renderedFullScreenDraggable,

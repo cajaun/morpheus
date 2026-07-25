@@ -6,6 +6,7 @@ import type {
 } from "react-native-reanimated";
 import {
   publishFullScreenLayoutStart,
+  resolveRequiredLayoutGeneration,
   shouldAwaitFullScreenLayoutStart,
   withFullScreenLayoutStart,
   withFullScreenLayoutStartSignal,
@@ -40,6 +41,11 @@ jest.mock("react-native-worklets", () => {
 const shared = (value: number) => ({ value }) as SharedValue<number>;
 
 describe("fullscreen transition start synchronization", () => {
+  it("fences an outgoing view against a stale pending-generation write", () => {
+    expect(resolveRequiredLayoutGeneration(4, 4)).toBe(5);
+    expect(resolveRequiredLayoutGeneration(4, 6)).toBe(6);
+  });
+
   it("keeps generations monotonic and only waits for a pending generation", () => {
     const startedGeneration = shared(2);
     const layoutStartedAt = shared(50);
@@ -48,6 +54,8 @@ describe("fullscreen transition start synchronization", () => {
       shouldAwaitFullScreenLayoutStart({
         enabled: true,
         generation: 3,
+        fullScreenGeneration: 3,
+        pendingGeneration: shared(3),
         startedAt: layoutStartedAt,
         startedGeneration,
       }),
@@ -66,6 +74,8 @@ describe("fullscreen transition start synchronization", () => {
       shouldAwaitFullScreenLayoutStart({
         enabled: true,
         generation: 3,
+        fullScreenGeneration: 3,
+        pendingGeneration: shared(3),
         startedAt: layoutStartedAt,
         startedGeneration,
       }),
@@ -130,6 +140,31 @@ describe("fullscreen transition start synchronization", () => {
       expect.any(Number),
     );
     expect(gated.current).toBe(1);
+  });
+
+  it("releases when an equal-frame step has no layout start event", () => {
+    const startedGeneration = shared(0);
+    const layoutStartedAt = shared(0);
+    const inner: AnimationObject<number> = {
+      current: 0,
+      onStart: jest.fn(),
+      onFrame: jest.fn(() => false),
+    };
+    const gated = withFullScreenLayoutStart(
+      inner as unknown as number,
+      startedGeneration,
+      layoutStartedAt,
+      1,
+    ) as unknown as AnimationObject<number>;
+
+    gated.onStart(gated, 0, 100, null);
+
+    expect(gated.onFrame(gated, 117)).toBe(false);
+    expect(inner.onStart).not.toHaveBeenCalled();
+
+    gated.onFrame(gated, 134);
+
+    expect(inner.onStart).toHaveBeenCalledWith(inner, 0, 134, null);
   });
 
   it("publishes the real geometry onStart timestamp", () => {

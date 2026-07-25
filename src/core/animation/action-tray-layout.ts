@@ -14,9 +14,12 @@ import { withTrayLayoutProgress } from "./with-tray-layout-progress";
 
 type TrayLayoutTransitionParams = {
   fullScreenTransitionGeneration: number;
+  layoutTransitionGeneration: number;
   morphProgress: SharedValue<number>;
-  layoutStartedAt: SharedValue<number>;
+  fullScreenLayoutStartedAt: SharedValue<number>;
   layoutStartedFullScreenGeneration: SharedValue<number>;
+  layoutStartedAt: SharedValue<number>;
+  layoutStartedGeneration: SharedValue<number>;
   fullScreenBackgroundScale: SharedValue<number>;
   fullScreenBackgroundScaleTarget: number;
   fullScreenSafeAreaTop: SharedValue<number>;
@@ -30,9 +33,12 @@ type TrayLayoutTransitionParams = {
 
 export const createTrayLayoutTransition = ({
   fullScreenTransitionGeneration,
+  layoutTransitionGeneration,
   morphProgress,
-  layoutStartedAt,
+  fullScreenLayoutStartedAt,
   layoutStartedFullScreenGeneration,
+  layoutStartedAt,
+  layoutStartedGeneration,
   fullScreenBackgroundScale,
   fullScreenBackgroundScaleTarget,
   fullScreenSafeAreaTop,
@@ -77,13 +83,7 @@ export const createTrayLayoutTransition = ({
     const animation = isFullScreenTransition
       ? buildFullScreenTransition(values)
       : buildTransition(values);
-    animation.animations.originY = withFullScreenLayoutStartSignal(
-      animation.animations.originY as number,
-      layoutStartedFullScreenGeneration,
-      layoutStartedAt,
-      fullScreenTransitionGeneration,
-      onStart,
-      [
+    const linkedLayoutValues = [
         {
           // safe area shift follows the same vertical geometry clock as the tray top edge
           value: fullScreenSafeAreaTop,
@@ -96,7 +96,25 @@ export const createTrayLayoutTransition = ({
           target: fullScreenBackgroundScaleTarget,
           layoutTarget: values.targetOriginY,
         },
-      ],
+      ];
+
+    if (isFullScreenTransition) {
+      animation.animations.originY = withFullScreenLayoutStartSignal(
+        animation.animations.originY as number,
+        layoutStartedFullScreenGeneration,
+        fullScreenLayoutStartedAt,
+        fullScreenTransitionGeneration,
+        undefined,
+        linkedLayoutValues,
+      );
+    }
+    animation.animations.originY = withFullScreenLayoutStartSignal(
+      animation.animations.originY as number,
+      layoutStartedGeneration,
+      layoutStartedAt,
+      layoutTransitionGeneration,
+      onStart,
+      isFullScreenTransition ? undefined : linkedLayoutValues,
     );
 
     const geometryCandidates = [
