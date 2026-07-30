@@ -22,7 +22,6 @@ type TraySnapshot = {
 
 type InternalRenderedTrayState = RenderedTrayState & {
   fullScreenTransitionGeneration: number;
-  layoutTransitionGeneration: number;
 };
 
 const toRenderedTrayState = ({
@@ -83,10 +82,6 @@ const commitTraySnapshot = (
   }
 
   const fullScreenModeChanged = !!current.fullScreen !== !!next.fullScreen;
-  const keyedStepChanged =
-    current.trayId !== undefined &&
-    next.trayId !== undefined &&
-    current.trayId !== next.trayId;
 
   return {
     ...next,
@@ -96,13 +91,6 @@ const commitTraySnapshot = (
         ? next.transitionContract?.generation ??
           current.fullScreenTransitionGeneration + 1
         : current.fullScreenTransitionGeneration,
-    // Every keyed step swap gets an event generation. Entering content uses it
-    // to join the native layout animation's actual UI-frame start.
-    layoutTransitionGeneration:
-      keyedStepChanged
-        ? next.transitionContract?.generation ??
-          current.layoutTransitionGeneration + 1
-        : current.layoutTransitionGeneration,
   };
 };
 
@@ -178,7 +166,6 @@ export const useActionTrayRenderState = ({
         transitionContract,
       }),
       fullScreenTransitionGeneration: 0,
-      layoutTransitionGeneration: 0,
     }));
 
   const showLatestSnapshot = useCallback(() => {
@@ -251,7 +238,6 @@ export const useActionTrayRenderState = ({
       // keep the ui thread latch monotonic for the lifetime of this host slot
       fullScreenTransitionGeneration:
         current.fullScreenTransitionGeneration,
-      layoutTransitionGeneration: current.layoutTransitionGeneration,
     }));
   }, []);
 
@@ -273,8 +259,6 @@ export const useActionTrayRenderState = ({
       renderedTransitionContract: renderedTray.transitionContract ?? null,
       fullScreenTransitionGeneration:
         renderedTray.fullScreenTransitionGeneration,
-      layoutTransitionGeneration:
-        renderedTray.layoutTransitionGeneration,
     },
     actions: {
       showLatestSnapshot,

@@ -81,7 +81,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
   ) => {
     const contentMotionDirection =
       useSharedValue<TrayContentMotionDirection>(FORWARD_CONTENT_MOTION);
-    const pendingLayoutTransitionGeneration = useSharedValue(0);
 
     useLayoutEffect(() => {
       // Update before passive snapshot publication replaces the keyed subtree.
@@ -132,8 +131,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         morphProgress,
         fullScreenLayoutStartedAt,
         layoutStartedFullScreenGeneration,
-        layoutStartedAt,
-        layoutStartedGeneration,
       },
       state: {
         layoutEnabled,
@@ -146,7 +143,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         renderedFullScreen,
         renderedFullScreenBackgroundScale,
         fullScreenTransitionGeneration,
-        layoutTransitionGeneration,
         frameFullScreen,
         renderedFullScreenSafeAreaTop,
         renderedFullScreenDraggable,
@@ -169,16 +165,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       },
       imperativeApi,
     } = controller;
-
-    useLayoutEffect(() => {
-      // This shared generation is visible to retained outgoing views as well
-      // as the newly mounted incoming view.
-      pendingLayoutTransitionGeneration.value =
-        layoutTransitionGeneration;
-    }, [
-      layoutTransitionGeneration,
-      pendingLayoutTransitionGeneration,
-    ]);
 
     useImperativeHandle(ref, () => imperativeApi, [imperativeApi]);
 
@@ -275,12 +261,9 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       () =>
         createTrayLayoutTransition({
           fullScreenTransitionGeneration,
-          layoutTransitionGeneration,
           morphProgress,
-          fullScreenLayoutStartedAt,
+          layoutStartedAt: fullScreenLayoutStartedAt,
           layoutStartedFullScreenGeneration,
-          layoutStartedAt,
-          layoutStartedGeneration,
           fullScreenBackgroundScale: fullScreenBackgroundMorphScale,
           fullScreenBackgroundScaleTarget,
           fullScreenSafeAreaTop: fullScreenSafeAreaTopHeight,
@@ -297,7 +280,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         }),
       [
         fullScreenTransitionGeneration,
-        layoutTransitionGeneration,
         morphProgress,
         fullScreenBackgroundMorphScale,
         fullScreenBackgroundScaleTarget,
@@ -306,31 +288,25 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         fullScreenSurfaceFillOpacity,
         fullScreenSurfaceFillOpacityTarget,
         fullScreenLayoutStartedAt,
-        layoutStartedAt,
         handleLayoutTransitionConfigured,
         handleSynchronizedLayoutTransitionComplete,
         handleLayoutTransitionStart,
         instrumentationEnabled,
         layoutStartedFullScreenGeneration,
-        layoutStartedGeneration,
       ],
     );
     const fullScreenTransitionStart = useMemo(
       () => ({
-        // All keyed step content reads this latch and inherits the same UI clock.
+        // entering content reads this latch so it can wait for the layout clock
         enabled: shouldUseLayoutAnimation,
-        generation: layoutTransitionGeneration,
-        fullScreenGeneration: fullScreenTransitionGeneration,
-        pendingGeneration: pendingLayoutTransitionGeneration,
-        startedAt: layoutStartedAt,
-        startedGeneration: layoutStartedGeneration,
+        generation: fullScreenTransitionGeneration,
+        startedAt: fullScreenLayoutStartedAt,
+        startedGeneration: layoutStartedFullScreenGeneration,
       }),
       [
-        layoutTransitionGeneration,
         fullScreenTransitionGeneration,
-        pendingLayoutTransitionGeneration,
-        layoutStartedAt,
-        layoutStartedGeneration,
+        fullScreenLayoutStartedAt,
+        layoutStartedFullScreenGeneration,
         shouldUseLayoutAnimation,
       ],
     );
