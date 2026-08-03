@@ -3,6 +3,7 @@ import { View } from "react-native";
 import AboutAaveTray from "./about-aave";
 import type { UsageVariant } from "./component-presentation/types";
 import CreatingWalletsInfoTray from "./creating-wallets-info";
+import ColorIndexTray from "./color-index";
 import ExpandFromTriggerDemo from "./expand-from-trigger";
 import HelpSupportTray from "./help-support";
 import IdentityRateBoostTray from "./identity-rate-boost";
@@ -40,6 +41,15 @@ const TrayExampleFrame = ({ children }: TrayExampleFrameProps) => {
 };
 
 export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
+  {
+    value: "color-index",
+    label: "Color Index",
+    content: (
+      <TrayExampleFrame>
+        <ColorIndexTray />
+      </TrayExampleFrame>
+    ),
+  },
   {
     value: "aave",
     label: "Aave",
