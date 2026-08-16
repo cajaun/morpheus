@@ -6,6 +6,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import {
+  FULL_SCREEN_CONTENT_EASING_POINTS,
   FULL_SCREEN_ENTERING_DURATION,
   FULL_SCREEN_EXITING_DURATION,
   MORPH_ENTERING_DURATION,
@@ -49,7 +50,9 @@ type Props = {
 
 export const MORPH_EASING = Easing.bezier(0.25, 1.0, 0.5, 1);
 export const SHEET_EASING = Easing.bezier(0.34, 1.12, 0.64, 1);
-export const FULL_SCREEN_CONTENT_EASING = Easing.bezier(0.42, 0, 0.58, 1);
+export const FULL_SCREEN_CONTENT_EASING = Easing.bezier(
+  ...FULL_SCREEN_CONTENT_EASING_POINTS,
+);
 
 const logStepEnterFinished = (stepKey: string, finishedAt: number) => {
   if (!isActionTrayInstrumentationEnabled()) {

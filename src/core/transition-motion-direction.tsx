@@ -2,6 +2,7 @@ import { createContext, useContext } from "react";
 import type { SharedValue } from "react-native-reanimated";
 import type { TrayTransitionContract } from "../runtime/types";
 import {
+  FULL_SCREEN_BOUNDARY_CONTENT_SCALE,
   MORPH_ENTERING_SCALE,
   MORPH_EXITING_SCALE,
 } from "./constants";
@@ -31,7 +32,7 @@ export const resolveMorphEnteringScale = ({
   "worklet";
 
   if (synchronizedFullScreen || !scale) {
-    return 1;
+    return FULL_SCREEN_BOUNDARY_CONTENT_SCALE;
   }
 
   return direction === BACKWARD_CONTENT_MOTION
@@ -51,7 +52,7 @@ export const resolveMorphExitingScale = ({
   "worklet";
 
   if (fullScreenBoundaryExit || !scale) {
-    return 1;
+    return FULL_SCREEN_BOUNDARY_CONTENT_SCALE;
   }
 
   return direction === BACKWARD_CONTENT_MOTION
