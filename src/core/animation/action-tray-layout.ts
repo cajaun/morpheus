@@ -10,9 +10,15 @@ import {
   MORPH_LAYOUT_DURATION,
 } from "../constants";
 import { withFullScreenLayoutStartSignal } from "../full-screen-transition-start";
+import { withTrayTransitionStart } from "../transition-start";
 import { withTrayLayoutProgress } from "./with-tray-layout-progress";
 
 type TrayLayoutTransitionParams = {
+  transitionGeneration: number;
+  transitionStartedAt: SharedValue<number>;
+  transitionStartedGeneration: SharedValue<number>;
+  transitionLayoutStartedGeneration: SharedValue<number>;
+  transitionCompletedGeneration: SharedValue<number>;
   fullScreenTransitionGeneration: number;
   morphProgress: SharedValue<number>;
   layoutStartedAt: SharedValue<number>;
@@ -29,6 +35,11 @@ type TrayLayoutTransitionParams = {
 };
 
 export const createTrayLayoutTransition = ({
+  transitionGeneration,
+  transitionStartedAt,
+  transitionStartedGeneration,
+  transitionLayoutStartedGeneration,
+  transitionCompletedGeneration,
   fullScreenTransitionGeneration,
   morphProgress,
   layoutStartedAt,
@@ -77,7 +88,7 @@ export const createTrayLayoutTransition = ({
     const animation = isFullScreenTransition
       ? buildFullScreenTransition(values)
       : buildTransition(values);
-    animation.animations.originY = withFullScreenLayoutStartSignal(
+    const layoutOriginAnimation = withFullScreenLayoutStartSignal(
       animation.animations.originY as number,
       layoutStartedFullScreenGeneration,
       layoutStartedAt,
@@ -98,6 +109,18 @@ export const createTrayLayoutTransition = ({
         },
       ],
     );
+    animation.animations.originY =
+      transitionGeneration > 0
+        ? withTrayTransitionStart(
+            layoutOriginAnimation,
+            transitionStartedGeneration,
+            transitionStartedAt,
+            transitionLayoutStartedGeneration,
+            transitionCompletedGeneration,
+            transitionGeneration,
+            "layout",
+          )
+        : layoutOriginAnimation;
 
     const geometryCandidates = [
       {

@@ -118,6 +118,10 @@ export const useActionTrayController = ({
   });
   const layoutStartedFullScreenGeneration = useSharedValue(0);
   const fullScreenLayoutStartedAt = useSharedValue(0);
+  const transitionStartedGeneration = useSharedValue(0);
+  const transitionStartedAt = useSharedValue(0);
+  const transitionLayoutStartedGeneration = useSharedValue(0);
+  const transitionCompletedGeneration = useSharedValue(0);
   const morphProgress = useSharedValue(1);
   const markLiveTransitionPhase = useCallback(
     (
@@ -462,6 +466,10 @@ export const useActionTrayController = ({
     presentation.shared.animationTravel.value = SCREEN_HEIGHT;
     presentation.shared.originProgress.value = 1;
     morphProgress.value = 1;
+    transitionStartedGeneration.value = 0;
+    transitionStartedAt.value = 0;
+    transitionLayoutStartedGeneration.value = 0;
+    transitionCompletedGeneration.value = 0;
     presentation.shared.surfaceOpacity.value = 0;
     presentation.shared.active.value = false;
     renderState.actions.clear();
@@ -480,6 +488,10 @@ export const useActionTrayController = ({
     presentation.shared.translateY,
     measurements.actions.reset,
     renderState.actions.clear,
+    transitionStartedAt,
+    transitionStartedGeneration,
+    transitionLayoutStartedGeneration,
+    transitionCompletedGeneration,
   ]);
 
   // run the open close state machine around measured geometry
@@ -688,6 +700,10 @@ export const useActionTrayController = ({
       morphProgress,
       fullScreenLayoutStartedAt,
       layoutStartedFullScreenGeneration,
+      transitionStartedAt,
+      transitionStartedGeneration,
+      transitionLayoutStartedGeneration,
+      transitionCompletedGeneration,
     },
     state: {
       layoutEnabled: measurements.state.layoutEnabled,

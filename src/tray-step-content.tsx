@@ -17,6 +17,11 @@ import {
   useFullScreenTransitionStart,
   withFullScreenLayoutStart,
 } from "./core/full-screen-transition-start";
+import {
+  type TrayTransitionStart,
+  useTrayTransitionStart,
+  withTrayTransitionStart,
+} from "./core/transition-start";
 import { log } from "./core/logger";
 import {
   FORWARD_CONTENT_MOTION,
@@ -74,6 +79,7 @@ const createMorphEntering = (
   scale: boolean,
   stepKey: string,
   fullScreenTransition: FullScreenTransitionStart | null,
+  transitionStart: TrayTransitionStart | null,
   motionDirection: { value: TrayContentMotionDirection } | null,
 ): EntryExitAnimationFunction => {
   return () => {
@@ -95,20 +101,56 @@ const createMorphEntering = (
       synchronizedFullScreen: shouldAwaitLayout,
       direction,
     });
+    const synchronizeWithTransition = (
+      animation: number,
+      onStart?: (startedAt: number) => void,
+    ) => {
+      "worklet";
+
+      if (
+        transitionStart === null ||
+        transitionStart.generation <= 0
+      ) {
+        return animation;
+      }
+
+      return withTrayTransitionStart(
+        animation,
+        transitionStart.startedGeneration,
+        transitionStart.startedAt,
+        transitionStart.layoutStartedGeneration,
+        transitionStart.completedGeneration,
+        transitionStart.generation,
+        "incoming",
+        onStart,
+      );
+    };
     const synchronizeWithLayout = (
       animation: number,
       logRelease = false,
     ) => {
       "worklet";
 
+      const synchronizedAnimation = synchronizeWithTransition(
+        animation,
+        !shouldAwaitLayout &&
+          logRelease &&
+          __DEV__ &&
+          ACTION_TRAY_INSTRUMENTATION_ENABLED
+          ? (startedAt: number) => {
+              "worklet";
+              scheduleOnRN(logStepEnterStarted, stepKey, startedAt);
+            }
+          : undefined,
+      );
+
       if (!shouldAwaitLayout || fullScreenTransition === null) {
-        // regular step enters can start as soon as reanimated mounts the view
-        return animation;
+        return synchronizedAnimation;
       }
 
       // fullscreen enters hold until shell layout publishes the matching generation
       return withFullScreenLayoutStart(
-        animation,
+        synchronizedAnimation,
         fullScreenTransition.startedGeneration,
         fullScreenTransition.startedAt,
         fullScreenTransition.generation,
@@ -120,15 +162,6 @@ const createMorphEntering = (
         stepKey,
       );
     };
-
-    if (
-      __DEV__ &&
-      ACTION_TRAY_INSTRUMENTATION_ENABLED &&
-      !shouldAwaitLayout
-    ) {
-      // non-fullscreen enters have no layout latch so log release immediately
-      scheduleOnRN(logStepEnterStarted, stepKey, performance.now());
-    }
 
     return {
       initialValues: {
@@ -181,6 +214,7 @@ const createMorphEntering = (
 const createMorphExiting = (
   scale: boolean,
   fullScreenBoundaryExit: boolean,
+  transitionStart: TrayTransitionStart | null,
   motionDirection: { value: TrayContentMotionDirection } | null,
 ): EntryExitAnimationFunction => {
   return () => {
@@ -198,6 +232,27 @@ const createMorphExiting = (
       fullScreenBoundaryExit,
       direction,
     });
+    const synchronizeWithTransition = (animation: number) => {
+      "worklet";
+
+      if (
+        transitionStart === null ||
+        transitionStart.fullScreenChanged ||
+        transitionStart.generation <= 0
+      ) {
+        return animation;
+      }
+
+      return withTrayTransitionStart(
+        animation,
+        transitionStart.startedGeneration,
+        transitionStart.startedAt,
+        transitionStart.layoutStartedGeneration,
+        transitionStart.completedGeneration,
+        transitionStart.generation,
+        "outgoing",
+      );
+    };
 
     return {
       initialValues: {
@@ -206,24 +261,30 @@ const createMorphExiting = (
       },
       animations: {
         // fullscreen boundary exits fade without scaling so header alignment stays fixed
-        opacity: withTiming(0, {
-          duration,
-          easing,
-        }),
+        opacity: synchronizeWithTransition(
+          withTiming(0, {
+            duration,
+            easing,
+          }),
+        ),
 
         transform: [
           {
-            scale: withTiming(targetScale, {
-              duration,
-              easing,
-            }),
+            scale: synchronizeWithTransition(
+              withTiming(targetScale, {
+                duration,
+                easing,
+              }),
+            ),
           },
 
           {
-            translateY: withTiming(0, {
-              duration,
-              easing,
-            }),
+            translateY: synchronizeWithTransition(
+              withTiming(0, {
+                duration,
+                easing,
+              }),
+            ),
           },
         ],
       },
@@ -241,6 +302,7 @@ export const TrayStepContent: React.FC<Props> = ({
   skipExiting = false,
 }) => {
   const fullScreenTransition = useFullScreenTransitionStart();
+  const transitionStart = useTrayTransitionStart();
   const motionDirection = useTrayContentMotionDirection();
 
   useEffect(() => {
@@ -268,6 +330,7 @@ export const TrayStepContent: React.FC<Props> = ({
               scale,
               stepKey ?? "unknown-step",
               fullScreenTransition,
+              transitionStart,
               motionDirection,
             )
       }
@@ -277,6 +340,7 @@ export const TrayStepContent: React.FC<Props> = ({
           : createMorphExiting(
               scale,
               fullScreenBoundaryExit,
+              transitionStart,
               motionDirection,
             )
       }

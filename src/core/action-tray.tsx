@@ -21,6 +21,7 @@ import { TrayOriginProgressProvider } from "./tray-origin-progress";
 import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
 import { FullScreenTransitionStartProvider } from "./full-screen-transition-start";
 import { TrayMorphProgressProvider } from "./tray-morph-progress";
+import { TrayTransitionStartProvider } from "./transition-start";
 import {
   FORWARD_CONTENT_MOTION,
   resolveTrayContentMotionDirection,
@@ -131,6 +132,10 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         morphProgress,
         fullScreenLayoutStartedAt,
         layoutStartedFullScreenGeneration,
+        transitionStartedAt,
+        transitionStartedGeneration,
+        transitionLayoutStartedGeneration,
+        transitionCompletedGeneration,
       },
       state: {
         layoutEnabled,
@@ -260,6 +265,11 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     const layoutAnimationConfig = useMemo(
       () =>
         createTrayLayoutTransition({
+          transitionGeneration: transitionContract?.generation ?? 0,
+          transitionStartedAt,
+          transitionStartedGeneration,
+          transitionLayoutStartedGeneration,
+          transitionCompletedGeneration,
           fullScreenTransitionGeneration,
           morphProgress,
           layoutStartedAt: fullScreenLayoutStartedAt,
@@ -280,6 +290,11 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         }),
       [
         fullScreenTransitionGeneration,
+        transitionContract?.generation,
+        transitionStartedAt,
+        transitionStartedGeneration,
+        transitionLayoutStartedGeneration,
+        transitionCompletedGeneration,
         morphProgress,
         fullScreenBackgroundMorphScale,
         fullScreenBackgroundScaleTarget,
@@ -308,6 +323,24 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         fullScreenLayoutStartedAt,
         layoutStartedFullScreenGeneration,
         shouldUseLayoutAnimation,
+      ],
+    );
+    const trayTransitionStart = useMemo(
+      () => ({
+        generation: transitionContract?.generation ?? 0,
+        fullScreenChanged: transitionContract?.fullScreenChanged ?? false,
+        startedAt: transitionStartedAt,
+        startedGeneration: transitionStartedGeneration,
+        layoutStartedGeneration: transitionLayoutStartedGeneration,
+        completedGeneration: transitionCompletedGeneration,
+      }),
+      [
+        transitionContract?.generation,
+        transitionContract?.fullScreenChanged,
+        transitionStartedAt,
+        transitionStartedGeneration,
+        transitionLayoutStartedGeneration,
+        transitionCompletedGeneration,
       ],
     );
     const flattenedContainerStyle = useMemo(
@@ -358,22 +391,24 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
                 <TrayContentMotionDirectionProvider
                   value={contentMotionDirection}
                 >
-                  <FullScreenTransitionStartProvider
-                    value={fullScreenTransitionStart}
-                  >
-                    {renderedHeader ? (
-                      <Animated.View
-                        style={[
-                          localStyles.headerContainer,
-                          presentationFullScreen &&
-                            localStyles.fullScreenHeaderContainer,
-                        ]}
-                      >
-                        {renderedHeader}
-                      </Animated.View>
-                    ) : null}
-                    {renderedContent}
-                  </FullScreenTransitionStartProvider>
+                  <TrayTransitionStartProvider value={trayTransitionStart}>
+                    <FullScreenTransitionStartProvider
+                      value={fullScreenTransitionStart}
+                    >
+                      {renderedHeader ? (
+                        <Animated.View
+                          style={[
+                            localStyles.headerContainer,
+                            presentationFullScreen &&
+                              localStyles.fullScreenHeaderContainer,
+                          ]}
+                        >
+                          {renderedHeader}
+                        </Animated.View>
+                      ) : null}
+                      {renderedContent}
+                    </FullScreenTransitionStartProvider>
+                  </TrayTransitionStartProvider>
                 </TrayContentMotionDirectionProvider>
               </Animated.View>
               {/* reserve detached footer space without coupling body layout to footer rendering */}
