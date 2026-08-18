@@ -232,6 +232,44 @@ describe("tray runtime transition ownership", () => {
     expect(store.getState().transition?.generation).toBe(generation);
   });
 
+  it("reconciles a pending step boundary when registration settles after navigation", () => {
+    const store = createStore();
+
+    store.actions.registerTray("wallet", {
+      steps: [
+        { key: "chooser", content: null },
+        { key: "create", content: null },
+      ],
+    });
+    store.actions.openTray("wallet");
+    store.actions.nextStep();
+
+    const generation = store.getState().transitionGeneration;
+    expect(store.getState().transition?.boundary).toBe("sheetToSheet");
+
+    store.actions.registerTray("wallet", {
+      steps: [
+        { key: "chooser", content: null },
+        {
+          key: "create",
+          content: null,
+          options: { fullScreen: true },
+        },
+      ],
+    });
+
+    expect(store.getState().transitionGeneration).toBe(generation);
+    expect(store.getState().transition).toMatchObject({
+      boundary: "sheetToFullScreen",
+      fullScreenChanged: true,
+      to: { mode: "fullScreen", stepKey: "create" },
+    });
+    expect(store.transitions.get(generation)?.contract).toMatchObject({
+      boundary: "sheetToFullScreen",
+      fullScreenChanged: true,
+    });
+  });
+
   it("interrupts a superseded transaction and rejects its late callbacks", () => {
     const store = createStore();
 

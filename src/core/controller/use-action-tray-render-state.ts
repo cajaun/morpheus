@@ -20,9 +20,7 @@ type TraySnapshot = {
   transitionContract?: TrayTransitionContract | null;
 };
 
-type InternalRenderedTrayState = RenderedTrayState & {
-  fullScreenTransitionGeneration: number;
-};
+type InternalRenderedTrayState = RenderedTrayState;
 
 const toRenderedTrayState = ({
   header,
@@ -81,17 +79,7 @@ const commitTraySnapshot = (
     return current;
   }
 
-  const fullScreenModeChanged = !!current.fullScreen !== !!next.fullScreen;
-
-  return {
-    ...next,
-    // content enter animations use this generation to wait for matching layout start
-    fullScreenTransitionGeneration:
-      fullScreenModeChanged
-        ? next.transitionContract?.generation ??
-          current.fullScreenTransitionGeneration + 1
-        : current.fullScreenTransitionGeneration,
-  };
+  return next;
 };
 
 export const useActionTrayRenderState = ({
@@ -165,7 +153,6 @@ export const useActionTrayRenderState = ({
         footerClassName,
         transitionContract,
       }),
-      fullScreenTransitionGeneration: 0,
     }));
 
   const showLatestSnapshot = useCallback(() => {
@@ -235,9 +222,6 @@ export const useActionTrayRenderState = ({
       footerStyle: undefined,
       footerClassName: undefined,
       transitionContract: null,
-      // keep the ui thread latch monotonic for the lifetime of this host slot
-      fullScreenTransitionGeneration:
-        current.fullScreenTransitionGeneration,
     }));
   }, []);
 
@@ -257,8 +241,6 @@ export const useActionTrayRenderState = ({
       renderedFooterStyle: renderedTray.footerStyle,
       renderedFooterClassName: renderedTray.footerClassName,
       renderedTransitionContract: renderedTray.transitionContract ?? null,
-      fullScreenTransitionGeneration:
-        renderedTray.fullScreenTransitionGeneration,
     },
     actions: {
       showLatestSnapshot,

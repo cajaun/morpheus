@@ -14,6 +14,7 @@ type Params = {
 
   renderedTrayId?: string;
   renderedFooter?: React.ReactNode;
+  acceptContentMeasurement?: boolean;
   resolveContentHeight?: (measuredHeight: number) => number;
   onContentHeightResolved?: (
     resolvedHeight: number,
@@ -33,6 +34,7 @@ export const useActionTrayMeasurements = ({
   footerHeight,
   renderedTrayId,
   renderedFooter,
+  acceptContentMeasurement = true,
   resolveContentHeight,
   onContentHeightResolved,
   measurementOwner,
@@ -133,11 +135,23 @@ export const useActionTrayMeasurements = ({
 
   const handleContentLayout = useCallback(
     (e: LayoutChangeEvent) => {
+      if (!acceptContentMeasurement) {
+        // During a fullscreen boundary the old snapshot can receive one more
+        // layout after its visual viewport has changed. That frame is not a
+        // measurement of either endpoint and must not poison the height cache.
+        log("CONTENT onLayout ignored during boundary handoff", {
+          height: e.nativeEvent.layout.height,
+          trayId: renderedTrayId,
+        });
+        return;
+      }
+
       const height = e.nativeEvent.layout.height;
+      const previousMeasuredHeight = latestMeasuredContentHeightRef.current;
+
       const resolvedHeight = resolveContentHeight
         ? resolveContentHeight(height)
         : height;
-      const previousMeasuredHeight = latestMeasuredContentHeightRef.current;
       const previousResolvedHeight = latestResolvedContentHeightRef.current;
 
       // measured height is raw content size while resolved height respects tray policy
@@ -172,6 +186,7 @@ export const useActionTrayMeasurements = ({
     [
       contentHeight,
       contentMeasured,
+      acceptContentMeasurement,
       measuredContentHeight,
       onContentHeightResolved,
       onGeometryMeasured,

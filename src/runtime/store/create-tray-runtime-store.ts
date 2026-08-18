@@ -161,6 +161,59 @@ const withTransition = (
   };
 };
 
+const reconcileTransitionAfterRegistration = (
+  current: TrayHostStateValue,
+  next: TrayHostStateValue,
+  trayId: string,
+): TrayHostStateValue => {
+  const existingTransition = current.transition;
+  const activeEntry = next.stack[next.stack.length - 1];
+
+  if (
+    !existingTransition ||
+    !activeEntry ||
+    activeEntry.trayId !== trayId ||
+    existingTransition.to?.trayId !== trayId ||
+    existingTransition.to.stepIndex !== activeEntry.index
+  ) {
+    return next;
+  }
+
+  const nextTarget = resolveActiveEndpoint(next);
+
+  if (!nextTarget) {
+    return next;
+  }
+
+  const targetChanged =
+    existingTransition.to.stepKey !== nextTarget.stepKey ||
+    existingTransition.to.mode !== nextTarget.mode ||
+    existingTransition.to.pageIndex !== nextTarget.pageIndex;
+
+  if (!targetChanged) {
+    return next;
+  }
+
+  // Registration can settle after navigation when a step's authored options
+  // depend on the same event that requested next(). Keep one generation, but
+  // repair its target before the presenter commits the visual snapshot.
+  return {
+    ...next,
+    transition: createTrayTransitionContract({
+      generation: existingTransition.generation,
+      reason: existingTransition.reason,
+      from: existingTransition.from,
+      to: nextTarget,
+      sharedRegions: resolveSharedRegions(
+        current,
+        next,
+        existingTransition.from,
+        nextTarget,
+      ),
+    }),
+  };
+};
+
 export const createTrayRuntimeStore = (
   initialDependencies: Dependencies,
 ): TrayRuntimeStore => {
@@ -198,7 +251,14 @@ export const createTrayRuntimeStore = (
       resolvedState.transition !== null &&
       resolvedState.transition !== state.transition
     ) {
-      transitions.begin(resolvedState.transition);
+      if (
+        state.transition?.generation ===
+        resolvedState.transition.generation
+      ) {
+        transitions.replaceContract?.(resolvedState.transition);
+      } else {
+        transitions.begin(resolvedState.transition);
+      }
 
       if (
         pendingPageTransition !== null &&
@@ -262,7 +322,7 @@ export const createTrayRuntimeStore = (
         const existingPages = current.registry[id]?.pages;
 
         // step arrays can grow or shrink without changing tray identity
-        return resolveClampedState({
+        const next = resolveClampedState({
           ...current,
           registry: {
             ...current.registry,
@@ -272,6 +332,8 @@ export const createTrayRuntimeStore = (
             },
           },
         });
+
+        return reconcileTransitionAfterRegistration(current, next, id);
       });
     },
     unregisterTray: (id: string) => {

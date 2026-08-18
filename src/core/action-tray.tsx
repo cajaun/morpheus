@@ -1,6 +1,5 @@
 import React, {
   forwardRef,
-  useCallback,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
@@ -19,7 +18,6 @@ import { createTrayLayoutTransition } from "./animation/action-tray-layout";
 import { styles as trayStyles } from "./animation/action-tray-styles";
 import { TrayOriginProgressProvider } from "./tray-origin-progress";
 import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
-import { FullScreenTransitionStartProvider } from "./full-screen-transition-start";
 import { TrayMorphProgressProvider } from "./tray-morph-progress";
 import { TrayTransitionStartProvider } from "./transition-start";
 import {
@@ -29,12 +27,10 @@ import {
   type TrayContentMotionDirection,
 } from "./transition-motion-direction";
 import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animated-styles";
-import { useFullScreenMorphState } from "./animation/use-full-screen-morph-state";
+import { useTrayBoundaryMotionState } from "./animation/use-tray-boundary-motion-state";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayController } from "./use-action-tray-controller";
 import {
-  FULL_SCREEN_HEADER_BOTTOM_GAP,
-  FULL_SCREEN_HEADER_HORIZONTAL_PADDING,
   HORIZONTAL_MARGIN,
   TRAY_FOOTER_PADDING_BOTTOM,
   TRAY_FOOTER_PADDING_TOP,
@@ -130,8 +126,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         progress,
         originProgress,
         morphProgress,
-        fullScreenLayoutStartedAt,
-        layoutStartedFullScreenGeneration,
         transitionStartedAt,
         transitionStartedGeneration,
         transitionLayoutStartedGeneration,
@@ -141,13 +135,13 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         layoutEnabled,
         isSurfaceReady,
         preparedSheetFrameHeight,
+        preparedSheetFrameGeneration,
         renderedHeader,
         renderedFooter,
         renderedContent,
         renderedTrayId,
         renderedFullScreen,
         renderedFullScreenBackgroundScale,
-        fullScreenTransitionGeneration,
         frameFullScreen,
         renderedFullScreenSafeAreaTop,
         renderedFullScreenDraggable,
@@ -204,8 +198,15 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       onRequestClose: handleRequestClose,
     });
 
+    const isFullScreenBoundaryTransition =
+      transitionContract?.fullScreenChanged ?? false;
+    const shouldUseLayoutAnimation =
+      layoutEnabled && !isFullScreenBoundaryTransition;
+
     const {
       footerSpacerStyle,
+      contentFrameStyle,
+      headerFrameStyle,
       presentationFrameStyle,
       trayLayoutStyle,
       footerContainerStyle,
@@ -226,42 +227,55 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       frameFullScreen,
       fullScreen: presentationFullScreen,
       preparedSheetFrameHeight,
+      preparedSheetFrameGeneration,
       useMeasuredSheetHeight,
       visible,
       layoutEnabled,
       originProgress,
+      morphProgress,
+      transitionStartedGeneration,
+      transitionLayoutStartedGeneration,
+      transitionCompletedGeneration,
+      fullScreenBoundaryTransition:
+        transitionContract?.fullScreenChanged ?? false,
+      fullScreenBoundarySourceFullScreen:
+        transitionContract?.fullScreenChanged
+          ? transitionContract.from?.mode === "fullScreen"
+          : undefined,
+      fullScreenBoundaryTargetFullScreen:
+        transitionContract?.fullScreenChanged
+          ? transitionContract.to?.mode === "fullScreen"
+          : undefined,
+      transitionGeneration: transitionContract?.generation,
       transition,
     });
 
-    const shouldUseLayoutAnimation = layoutEnabled;
-    // fullscreen morph values must survive across layout callback boundaries
-    const {
-      fullScreenBackgroundMorphScale,
-      fullScreenBackgroundScaleTarget,
-      fullScreenLayoutActiveRef,
-      fullScreenSafeAreaContentStyle,
-      fullScreenSafeAreaTopHeight,
-      fullScreenSafeAreaTopTarget,
-      fullScreenSurfaceFillOpacity,
-      fullScreenSurfaceFillOpacityTarget,
-      fullScreenSurfaceFillStyle,
-    } = useFullScreenMorphState({
-      presentationFullScreen,
-      renderedFullScreenBackgroundScale,
-      renderedFullScreenSafeAreaTop,
-      safeAreaTopInset,
-      progress,
-      backgroundScale,
-      shouldUseLayoutAnimation,
-    });
-    const handleSynchronizedLayoutTransitionComplete = useCallback(
-      (finishedAt: number) => {
-        // release manual fullscreen guards only after native layout reports completion
-        fullScreenLayoutActiveRef.current = false;
-        handleLayoutTransitionComplete(finishedAt);
-      },
-      [handleLayoutTransitionComplete],
-    );
+    // The boundary frame belongs to the visual viewport wrapper. Keep the
+    // measured child intrinsic in sheet mode; measuring the absolute viewport
+    // would cache fullscreen height as sheet body height on the next round trip.
+    const contentLayoutStyle = isFullScreenBoundaryTransition
+      ? presentationFullScreen
+        ? { flex: 1 }
+        : undefined
+      : contentFrameStyle;
+
+    const { fullScreenSafeAreaContentStyle, fullScreenSurfaceFillStyle } =
+      useTrayBoundaryMotionState({
+        presentationFullScreen,
+        renderedFullScreenBackgroundScale,
+        renderedFullScreenSafeAreaTop,
+        safeAreaTopInset,
+        visibilityProgress: progress,
+        morphProgress,
+        backgroundScale,
+        transitionStartedAt,
+        transitionStartedGeneration,
+        transitionLayoutStartedGeneration,
+        transitionCompletedGeneration,
+        transitionContract: transitionContract ?? null,
+        onTransitionStart: handleLayoutTransitionStart,
+        onTransitionComplete: handleLayoutTransitionComplete,
+      });
     const layoutAnimationConfig = useMemo(
       () =>
         createTrayLayoutTransition({
@@ -270,65 +284,35 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           transitionStartedGeneration,
           transitionLayoutStartedGeneration,
           transitionCompletedGeneration,
-          fullScreenTransitionGeneration,
+          fullScreenBoundaryTransition: isFullScreenBoundaryTransition,
           morphProgress,
-          layoutStartedAt: fullScreenLayoutStartedAt,
-          layoutStartedFullScreenGeneration,
-          fullScreenBackgroundScale: fullScreenBackgroundMorphScale,
-          fullScreenBackgroundScaleTarget,
-          fullScreenSafeAreaTop: fullScreenSafeAreaTopHeight,
-          fullScreenSafeAreaTopTarget,
-          fullScreenSurfaceFillOpacity,
-          fullScreenSurfaceFillOpacityTarget,
           onConfigure: instrumentationEnabled
             ? handleLayoutTransitionConfigured
             : undefined,
           onStart: instrumentationEnabled
             ? handleLayoutTransitionStart
             : undefined,
-          onComplete: handleSynchronizedLayoutTransitionComplete,
+          onComplete: handleLayoutTransitionComplete,
         }),
       [
-        fullScreenTransitionGeneration,
         transitionContract?.generation,
+        isFullScreenBoundaryTransition,
         transitionStartedAt,
         transitionStartedGeneration,
         transitionLayoutStartedGeneration,
         transitionCompletedGeneration,
         morphProgress,
-        fullScreenBackgroundMorphScale,
-        fullScreenBackgroundScaleTarget,
-        fullScreenSafeAreaTopHeight,
-        fullScreenSafeAreaTopTarget,
-        fullScreenSurfaceFillOpacity,
-        fullScreenSurfaceFillOpacityTarget,
-        fullScreenLayoutStartedAt,
         handleLayoutTransitionConfigured,
-        handleSynchronizedLayoutTransitionComplete,
+        handleLayoutTransitionComplete,
         handleLayoutTransitionStart,
         instrumentationEnabled,
-        layoutStartedFullScreenGeneration,
-      ],
-    );
-    const fullScreenTransitionStart = useMemo(
-      () => ({
-        // entering content reads this latch so it can wait for the layout clock
-        enabled: shouldUseLayoutAnimation,
-        generation: fullScreenTransitionGeneration,
-        startedAt: fullScreenLayoutStartedAt,
-        startedGeneration: layoutStartedFullScreenGeneration,
-      }),
-      [
-        fullScreenTransitionGeneration,
-        fullScreenLayoutStartedAt,
-        layoutStartedFullScreenGeneration,
-        shouldUseLayoutAnimation,
       ],
     );
     const trayTransitionStart = useMemo(
       () => ({
         generation: transitionContract?.generation ?? 0,
         fullScreenChanged: transitionContract?.fullScreenChanged ?? false,
+        morphProgress,
         startedAt: transitionStartedAt,
         startedGeneration: transitionStartedGeneration,
         layoutStartedGeneration: transitionLayoutStartedGeneration,
@@ -341,6 +325,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         transitionStartedGeneration,
         transitionLayoutStartedGeneration,
         transitionCompletedGeneration,
+        morphProgress,
       ],
     );
     const flattenedContainerStyle = useMemo(
@@ -380,10 +365,17 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             onLayout={instrumentationEnabled ? handleShellLayout : undefined}
             layout={shouldUseLayoutAnimation ? layoutAnimationConfig : undefined}
           >
-            <Animated.View style={[trayStyles.content, contentRevealStyle]}>
+            <Animated.View
+              style={[
+                trayStyles.content,
+                contentFrameStyle,
+                contentRevealStyle,
+              ]}
+            >
               <Animated.View
                 style={[
                   contentPaddingStyle,
+                  contentLayoutStyle,
                   fullScreenSafeAreaContentStyle,
                 ]}
                 onLayout={handleContentLayout}
@@ -392,30 +384,29 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
                   value={contentMotionDirection}
                 >
                   <TrayTransitionStartProvider value={trayTransitionStart}>
-                    <FullScreenTransitionStartProvider
-                      value={fullScreenTransitionStart}
-                    >
-                      {renderedHeader ? (
-                        <Animated.View
-                          style={[
-                            localStyles.headerContainer,
-                            presentationFullScreen &&
-                              localStyles.fullScreenHeaderContainer,
-                          ]}
-                        >
-                          {renderedHeader}
-                        </Animated.View>
-                      ) : null}
-                      {renderedContent}
-                    </FullScreenTransitionStartProvider>
+                    {renderedHeader ? (
+                      <Animated.View
+                        style={[
+                          localStyles.headerContainer,
+                          headerFrameStyle,
+                        ]}
+                      >
+                        {renderedHeader}
+                      </Animated.View>
+                    ) : null}
+                    {renderedContent}
                   </TrayTransitionStartProvider>
                 </TrayContentMotionDirectionProvider>
               </Animated.View>
-              {/* reserve detached footer space without coupling body layout to footer rendering */}
+              {/* reserve footer space; the footer itself is absolute and does not
+                  participate in content measurement */}
               <Animated.View style={footerSpacerStyle} />
             </Animated.View>
           </Animated.View>
         </GestureDetector>
+        {/* Fixed footers intentionally stay outside the layout-animated shell.
+            Only a fullscreen boundary may move this layer, and then it follows
+            the shell's explicit morph clock rather than content layout. */}
         <Animated.View
           className={renderedFooterClassName}
           onLayout={handleVisibleFooterLayout}
@@ -505,10 +496,5 @@ export { ActionTray };
 const localStyles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: TRAY_HEADER_HORIZONTAL_PADDING,
-  },
-  fullScreenHeaderContainer: {
-    // fullscreen chrome owns the header to body gap
-    paddingHorizontal: FULL_SCREEN_HEADER_HORIZONTAL_PADDING,
-    paddingBottom: FULL_SCREEN_HEADER_BOTTOM_GAP,
   },
 });

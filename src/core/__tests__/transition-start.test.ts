@@ -201,4 +201,44 @@ describe("tray transition start synchronization", () => {
       null,
     );
   });
+
+  it("lets the fullscreen shell join the content clock", () => {
+    const startedGeneration = shared(0);
+    const startedAt = shared(0);
+    const layoutStartedGeneration = shared(0);
+    const completedGeneration = shared(0);
+    const content = createAnimation();
+    const layout = createAnimation();
+
+    const contentParticipant = withTrayTransitionStart(
+      content as unknown as number,
+      startedGeneration,
+      startedAt,
+      layoutStartedGeneration,
+      completedGeneration,
+      11,
+      "incoming",
+    ) as unknown as AnimationObject<number>;
+    const layoutParticipant = withTrayTransitionStart(
+      layout as unknown as number,
+      startedGeneration,
+      startedAt,
+      layoutStartedGeneration,
+      completedGeneration,
+      11,
+      "layout",
+    ) as unknown as AnimationObject<number>;
+
+    contentParticipant.onStart(contentParticipant, 0, 105, null);
+    expect(startedGeneration.value).toBe(11);
+    expect(startedAt.value).toBe(105);
+    expect(content.onStart).toHaveBeenCalledWith(content, 0, 105, null);
+
+    layoutParticipant.onStart(layoutParticipant, 0, 110, null);
+    expect(layoutStartedGeneration.value).toBe(11);
+    expect(layout.onStart).toHaveBeenCalledWith(layout, 0, 105, null);
+
+    expect(layoutParticipant.onFrame(layoutParticipant, 120)).toBe(true);
+    expect(completedGeneration.value).toBe(11);
+  });
 });

@@ -406,6 +406,7 @@ export const TrayPages = Object.assign(TrayPagesRoot, {
 
 const styles = StyleSheet.create({
   root: {
+    flex: 1,
     height: "100%",
   },
   viewport: {

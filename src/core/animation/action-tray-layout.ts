@@ -9,7 +9,6 @@ import {
   FULL_SCREEN_LAYOUT_DURATION,
   MORPH_LAYOUT_DURATION,
 } from "../constants";
-import { withFullScreenLayoutStartSignal } from "../full-screen-transition-start";
 import { withTrayTransitionStart } from "../transition-start";
 import { withTrayLayoutProgress } from "./with-tray-layout-progress";
 
@@ -19,16 +18,8 @@ type TrayLayoutTransitionParams = {
   transitionStartedGeneration: SharedValue<number>;
   transitionLayoutStartedGeneration: SharedValue<number>;
   transitionCompletedGeneration: SharedValue<number>;
-  fullScreenTransitionGeneration: number;
+  fullScreenBoundaryTransition: boolean;
   morphProgress: SharedValue<number>;
-  layoutStartedAt: SharedValue<number>;
-  layoutStartedFullScreenGeneration: SharedValue<number>;
-  fullScreenBackgroundScale: SharedValue<number>;
-  fullScreenBackgroundScaleTarget: number;
-  fullScreenSafeAreaTop: SharedValue<number>;
-  fullScreenSafeAreaTopTarget: number;
-  fullScreenSurfaceFillOpacity: SharedValue<number>;
-  fullScreenSurfaceFillOpacityTarget: number;
   onConfigure?: (configuredAt: number) => void;
   onStart?: (startedAt: number) => void;
   onComplete?: (finishedAt: number) => void;
@@ -40,16 +31,8 @@ export const createTrayLayoutTransition = ({
   transitionStartedGeneration,
   transitionLayoutStartedGeneration,
   transitionCompletedGeneration,
-  fullScreenTransitionGeneration,
+  fullScreenBoundaryTransition,
   morphProgress,
-  layoutStartedAt,
-  layoutStartedFullScreenGeneration,
-  fullScreenBackgroundScale,
-  fullScreenBackgroundScaleTarget,
-  fullScreenSafeAreaTop,
-  fullScreenSafeAreaTopTarget,
-  fullScreenSurfaceFillOpacity,
-  fullScreenSurfaceFillOpacityTarget,
   onConfigure,
   onStart,
   onComplete,
@@ -61,7 +44,6 @@ export const createTrayLayoutTransition = ({
     .duration(FULL_SCREEN_LAYOUT_DURATION)
     .easing(Easing.bezier(0, 0, 0.58, 1).factory());
 
-  // use vertical origin progress as the canonical fullscreen clock
   const buildTransition = transition.build();
   const buildFullScreenTransition = fullScreenTransition.build();
   const synchronizedTransition: LayoutAnimationFunction = (values) => {
@@ -72,55 +54,16 @@ export const createTrayLayoutTransition = ({
       scheduleOnRN(onConfigure, performance.now());
     }
 
-    // The generation is the animation-owned boundary signal. Runtime contract
-    // metadata must never choose the native animation builder because its
-    // rendered snapshot can legitimately lag the geometry handoff.
-    const isFullScreenTransition =
-      layoutStartedFullScreenGeneration.value <
-      fullScreenTransitionGeneration;
-    if (
-      isFullScreenTransition &&
-      fullScreenSurfaceFillOpacityTarget === 0
-    ) {
-      // exiting fullscreen must remove the viewport fill before the rounded shell returns
-      fullScreenSurfaceFillOpacity.value = 0;
-    }
-    const animation = isFullScreenTransition
+    // The boundary policy is consumed once per generic transition generation.
+    // After completion, later layout passes use the ordinary morph policy even
+    // though the immutable contract remains attached to the rendered snapshot.
+    const isActiveFullScreenBoundary =
+      fullScreenBoundaryTransition &&
+      transitionGeneration > 0 &&
+      transitionCompletedGeneration.value < transitionGeneration;
+    const animation = isActiveFullScreenBoundary
       ? buildFullScreenTransition(values)
       : buildTransition(values);
-    const layoutOriginAnimation = withFullScreenLayoutStartSignal(
-      animation.animations.originY as number,
-      layoutStartedFullScreenGeneration,
-      layoutStartedAt,
-      fullScreenTransitionGeneration,
-      onStart,
-      [
-        {
-          // safe area shift follows the same vertical geometry clock as the tray top edge
-          value: fullScreenSafeAreaTop,
-          target: fullScreenSafeAreaTopTarget,
-          layoutTarget: values.targetOriginY,
-        },
-        {
-          // background scale waits for vertical progress so it does not outrun the shell
-          value: fullScreenBackgroundScale,
-          target: fullScreenBackgroundScaleTarget,
-          layoutTarget: values.targetOriginY,
-        },
-      ],
-    );
-    animation.animations.originY =
-      transitionGeneration > 0
-        ? withTrayTransitionStart(
-            layoutOriginAnimation,
-            transitionStartedGeneration,
-            transitionStartedAt,
-            transitionLayoutStartedGeneration,
-            transitionCompletedGeneration,
-            transitionGeneration,
-            "layout",
-          )
-        : layoutOriginAnimation;
 
     const geometryCandidates = [
       {
@@ -146,23 +89,32 @@ export const createTrayLayoutTransition = ({
     const geometryAnimation = animation.animations[geometryClock.key];
 
     if (geometryAnimation !== undefined) {
-      // Consumers follow the same rendered geometry value used by the shell.
-      animation.animations[geometryClock.key] = withTrayLayoutProgress(
+      // Consumers follow the same geometry value the shell actually renders.
+      const progressAnimation = withTrayLayoutProgress(
         geometryAnimation as number,
         morphProgress,
         geometryClock.source,
         geometryClock.target,
       );
+
+      animation.animations[geometryClock.key] =
+        transitionGeneration > 0
+          ? withTrayTransitionStart(
+              progressAnimation,
+              transitionStartedGeneration,
+              transitionStartedAt,
+              transitionLayoutStartedGeneration,
+              transitionCompletedGeneration,
+              transitionGeneration,
+              "layout",
+              onStart,
+            )
+          : progressAnimation;
     }
 
     return {
       ...animation,
       callback: (finished) => {
-        if (finished) {
-          // reveal the fill only after the rounded shell completes expansion
-          fullScreenSurfaceFillOpacity.value =
-            fullScreenSurfaceFillOpacityTarget;
-        }
         if (finished && onComplete) {
           scheduleOnRN(onComplete, performance.now());
         }

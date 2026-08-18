@@ -158,9 +158,10 @@ export const createPresentedTray = ({
     transition: registration.transition,
     containerStyle: stepOptions.style,
     className: stepOptions.className,
-    // detached footers need mirrored surface styling unless a step overrides it
-    footerStyle: stepOptions.footerStyle ?? stepOptions.style,
-    footerClassName: stepOptions.footerClassName ?? stepOptions.className,
+    // The tray surface owns the shell background. Footer styling is opt-in so
+    // the detached fixed control layer cannot create a second shell surface.
+    footerStyle: stepOptions.footerStyle,
+    footerClassName: stepOptions.footerClassName,
     stackIndex,
     visible: true,
     interactive: stackIndex === stackLength - 1,

@@ -96,6 +96,7 @@ export type TrayTransitionParticipantEvent = {
 
 export type TrayTransitionLifecycle = {
   begin: (contract: TrayTransitionContract, at?: number) => void;
+  replaceContract?: (contract: TrayTransitionContract) => boolean;
   mark: (
     generation: number,
     phase: Exclude<TrayTransitionPhase, "requested">,

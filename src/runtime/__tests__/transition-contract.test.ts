@@ -121,4 +121,24 @@ describe("tray transition contract", () => {
     expect(animation.isFirstRender).toBe(false);
     expect(animation.fullScreenBoundaryExit).toBe(true);
   });
+
+  it("keeps a step transition when its Tray.Pages tree registers after presentation", () => {
+    const transition = createTrayTransitionContract({
+      generation: 8,
+      reason: "nextStep",
+      from: endpoint(0, "sheet"),
+      // the target page is not registered when the runtime first resolves the
+      // step boundary
+      to: endpoint(1, "fullScreen"),
+    });
+
+    const animation = resolveTrayAnimationContract({
+      registration,
+      endpoint: endpoint(1, "fullScreen", 0),
+      previousIndex: 0,
+      transition,
+    });
+
+    expect(animation.transition).toBe(transition);
+  });
 });

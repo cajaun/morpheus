@@ -11,6 +11,7 @@ import { scheduleOnRN } from "react-native-worklets";
 export type TrayTransitionStart = {
   generation: number;
   fullScreenChanged: boolean;
+  morphProgress?: SharedValue<number>;
   startedAt: SharedValue<number>;
   startedGeneration: SharedValue<number>;
   layoutStartedGeneration: SharedValue<number>;
@@ -97,6 +98,40 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
           ? nextAnimationInput()
           : nextAnimationInput;
 
+      const startInnerAnimation = (
+        animation: TransitionStartAnimation,
+        value: AnimatableValue,
+        now: number,
+      ) => {
+        const completed = completedGeneration.value >= generation;
+        const hasSameGeneration =
+          !completed && startedGeneration.value === generation;
+        const innerStartedAt = hasSameGeneration
+          ? startedAt.value
+          : now;
+
+        if (!completed && startedGeneration.value < generation) {
+          publishTrayTransitionStart(
+            startedGeneration,
+            startedAt,
+            generation,
+            now,
+          );
+        }
+
+        nextAnimation.onStart(
+          nextAnimation,
+          value,
+          innerStartedAt,
+          animation.previousAnimation,
+        );
+        animation.current = nextAnimation.current ?? value;
+
+        if (onStartSignal) {
+          scheduleOnRN(onStartSignal, innerStartedAt);
+        }
+      };
+
       const onFrame = (
         animation: TransitionStartAnimation,
         now: number,
@@ -126,38 +161,17 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
           nextAnimation.reduceMotion = animation.reduceMotion;
         }
 
-        const completed = completedGeneration.value >= generation;
-        const hasSameGeneration =
-          !completed && startedGeneration.value === generation;
-        const innerStartedAt = hasSameGeneration
-          ? startedAt.value
-          : now;
+        animation.current = value;
+        animation.previousAnimation = previousAnimation;
 
-        if (!completed && startedGeneration.value < generation) {
-          publishTrayTransitionStart(
-            startedGeneration,
-            startedAt,
-            generation,
-            now,
-          );
-        }
-
-        if (!completed && participant === "layout") {
+        if (
+          participant === "layout" &&
+          animation.completedGeneration.value < generation
+        ) {
           animation.layoutStartedGeneration.value = generation;
         }
 
-        nextAnimation.onStart(
-          nextAnimation,
-          value,
-          innerStartedAt,
-          previousAnimation,
-        );
-        animation.current = nextAnimation.current ?? value;
-        animation.previousAnimation = previousAnimation;
-
-        if (onStartSignal) {
-          scheduleOnRN(onStartSignal, innerStartedAt);
-        }
+        startInnerAnimation(animation, value, now);
       };
 
       const callback = (finished?: boolean) => {

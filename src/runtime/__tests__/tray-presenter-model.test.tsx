@@ -70,7 +70,7 @@ describe("tray presenter model", () => {
     expect(tray?.fullScreen).toBe(true);
   });
 
-  it("mirrors the active step surface onto detached footers", () => {
+  it("does not duplicate the active surface onto detached footers", () => {
     const surfaceStyle = { backgroundColor: "white" };
     const registration: TrayRegistration = {
       steps: [step("one", { style: surfaceStyle, className: "sheet" })],
@@ -84,8 +84,8 @@ describe("tray presenter model", () => {
       stackLength: 1,
     });
 
-    expect(tray?.footerStyle).toBe(surfaceStyle);
-    expect(tray?.footerClassName).toBe("sheet");
+    expect(tray?.footerStyle).toBeUndefined();
+    expect(tray?.footerClassName).toBeUndefined();
   });
 
   it("keeps explicit footer styling when a step provides it", () => {

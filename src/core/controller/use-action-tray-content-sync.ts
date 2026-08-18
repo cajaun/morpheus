@@ -140,21 +140,44 @@ export const useActionTrayContentSync = ({
       preparesFullScreen: !!fullScreen,
     });
 
+    // Footer layout is detached from the shell and can report zero for one
+    // render while the incoming step is being committed. Keep the last stable
+    // height so the shell never drops its footer spacer during a boundary.
+    const nextFooterHeight =
+      measuredFooterHeight.value > 0
+        ? measuredFooterHeight.value
+        : footerHeight.value;
+    footerHeight.value = nextFooterHeight;
+
     if (fullScreen) {
-      // fullscreen must update shared height before the keyed subtree publishes
+      if (!renderedFullScreen && contentHeight.value > 0) {
+        // Lease the current sheet frame while its intrinsic children hand off
+        // to the fullscreen boundary. This blocks transient measurement
+        // changes from shrinking the shell before the layout clock starts.
+        onSheetFramePreparedRef.current?.(
+          contentHeight.value + nextFooterHeight,
+        );
+      }
+
+      // Do not let the incoming fullscreen measurement resize the source sheet
+      // before its snapshot commits. The fullscreen snapshot will resolve this
+      // height from its own onLayout after the boundary clock starts.
       const incomingHeight = resolveIncomingContentHeightRef.current(
         measuredContentHeight.value,
       );
 
-      log("APPLY INCOMING FULLSCREEN HEIGHT", {
+      log("PREPARE INCOMING FULLSCREEN HEIGHT", {
         trayId,
         renderedTrayId,
         measuredContentHeight: measuredContentHeight.value,
         incomingHeight,
+        applied: renderedFullScreen,
         previousContentHeight: contentHeight.value,
       });
 
-      contentHeight.value = incomingHeight;
+      if (renderedFullScreen) {
+        contentHeight.value = incomingHeight;
+      }
     } else {
       const restoredContentHeight = restoreContentHeightRef.current(
         trayId,
@@ -164,12 +187,10 @@ export const useActionTrayContentSync = ({
       if (renderedFullScreen && restoredContentHeight !== undefined) {
         // sheet return leases the measured frame until the layout transition finishes
         onSheetFramePreparedRef.current?.(
-          restoredContentHeight + measuredFooterHeight.value,
+          restoredContentHeight + nextFooterHeight,
         );
       }
     }
-    // footer height follows the incoming step even though visible footer is detached
-    footerHeight.value = measuredFooterHeight.value;
     setLayoutAnimationEnabled(true);
     onPrepared?.({
       trayId,

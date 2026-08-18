@@ -17,6 +17,9 @@ export const styles = StyleSheet.create({
   },
   footer: {
     position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
     paddingHorizontal: TRAY_VERTICAL_PADDING,
     paddingTop: TRAY_FOOTER_PADDING_TOP,
     paddingBottom: TRAY_FOOTER_PADDING_BOTTOM,

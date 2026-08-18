@@ -13,12 +13,6 @@ import {
   MORPH_EXITING_DURATION,
 } from "./core/constants";
 import {
-  type FullScreenTransitionStart,
-  shouldAwaitFullScreenLayoutStart,
-  useFullScreenTransitionStart,
-  withFullScreenLayoutStart,
-} from "./core/full-screen-transition-start";
-import {
   type TrayTransitionStart,
   useTrayTransitionStart,
   withTrayTransitionStart,
@@ -81,27 +75,24 @@ const logStepEnterStarted = (stepKey: string, startedAt: number) => {
 const createMorphEntering = (
   scale: boolean,
   stepKey: string,
-  fullScreenTransition: FullScreenTransitionStart | null,
   transitionStart: TrayTransitionStart | null,
   motionDirection: { value: TrayContentMotionDirection } | null,
 ): EntryExitAnimationFunction => {
   return () => {
     "worklet";
 
-    const shouldAwaitLayout = shouldAwaitFullScreenLayoutStart(
-      fullScreenTransition,
-    );
-    const duration = shouldAwaitLayout
+    const synchronizedFullScreen = transitionStart?.fullScreenChanged ?? false;
+    const duration = synchronizedFullScreen
       ? FULL_SCREEN_ENTERING_DURATION
       : MORPH_ENTERING_DURATION;
-    const easing = shouldAwaitLayout
+    const easing = synchronizedFullScreen
       ? FULL_SCREEN_CONTENT_EASING
       : MORPH_EASING;
     const direction =
       motionDirection?.value ?? FORWARD_CONTENT_MOTION;
     const initialScale = resolveMorphEnteringScale({
       scale,
-      synchronizedFullScreen: shouldAwaitLayout,
+      synchronizedFullScreen,
       direction,
     });
     const synchronizeWithTransition = (
@@ -136,8 +127,7 @@ const createMorphEntering = (
 
       const synchronizedAnimation = synchronizeWithTransition(
         animation,
-        !shouldAwaitLayout &&
-          logRelease &&
+        logRelease &&
           __DEV__ &&
           ACTION_TRAY_INSTRUMENTATION_ENABLED
           ? (startedAt: number) => {
@@ -147,23 +137,7 @@ const createMorphEntering = (
           : undefined,
       );
 
-      if (!shouldAwaitLayout || fullScreenTransition === null) {
-        return synchronizedAnimation;
-      }
-
-      // fullscreen enters hold until shell layout publishes the matching generation
-      return withFullScreenLayoutStart(
-        synchronizedAnimation,
-        fullScreenTransition.startedGeneration,
-        fullScreenTransition.startedAt,
-        fullScreenTransition.generation,
-        logRelease &&
-          __DEV__ &&
-          ACTION_TRAY_INSTRUMENTATION_ENABLED
-          ? logStepEnterStarted
-          : undefined,
-        stepKey,
-      );
+      return synchronizedAnimation;
     };
 
     return {
@@ -238,11 +212,7 @@ const createMorphExiting = (
     const synchronizeWithTransition = (animation: number) => {
       "worklet";
 
-      if (
-        transitionStart === null ||
-        transitionStart.fullScreenChanged ||
-        transitionStart.generation <= 0
-      ) {
+      if (transitionStart === null || transitionStart.generation <= 0) {
         return animation;
       }
 
@@ -304,7 +274,6 @@ export const TrayStepContent: React.FC<Props> = ({
   skipEntering = false,
   skipExiting = false,
 }) => {
-  const fullScreenTransition = useFullScreenTransitionStart();
   const transitionStart = useTrayTransitionStart();
   const motionDirection = useTrayContentMotionDirection();
 
@@ -322,7 +291,12 @@ export const TrayStepContent: React.FC<Props> = ({
       // scale fullscreen layers from the body boundary so they stay below the header
       style={
         anchorScaleToTop
-          ? { transformOrigin: ["50%", "0%", 0] }
+          ? {
+              // The parent content frame owns boundary geometry. This layer
+              // only establishes the fullscreen viewport required by Tray.Pages.
+              flex: 1,
+              transformOrigin: ["50%", "0%", 0],
+            }
           : undefined
       }
       // first render can skip enter because shell open already provides the arrival cue
@@ -332,7 +306,6 @@ export const TrayStepContent: React.FC<Props> = ({
           : createMorphEntering(
               scale,
               stepKey ?? "unknown-step",
-              fullScreenTransition,
               transitionStart,
               motionDirection,
             )

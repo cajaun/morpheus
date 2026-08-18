@@ -168,6 +168,20 @@ export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
       });
       activeGeneration = contract.generation;
     },
+    replaceContract: (contract) => {
+      const record = records.get(contract.generation);
+
+      if (!record || terminalPhases.has(record.phase)) {
+        return false;
+      }
+
+      records.set(contract.generation, {
+        ...record,
+        contract,
+        participants: resolveContractParticipants(contract),
+      });
+      return true;
+    },
     mark,
     captureGeometry: (generation, role, snapshot) => {
       const record = records.get(generation);

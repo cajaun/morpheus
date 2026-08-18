@@ -5,6 +5,7 @@ import { ActionTray } from "../action-tray";
 
 // probe shell rendering while native animation modules are replaced by stable hosts
 const mockCloseHandler = jest.fn();
+const mockFooterLayoutHandler = jest.fn();
 
 jest.mock("react-native-gesture-handler", () => ({
   GestureDetector: ({ children }: { children: React.ReactNode }) => children,
@@ -58,17 +59,22 @@ jest.mock("../use-action-tray-controller", () => ({
         contentHeight: { value: 0 },
         footerHeight: { value: 0 },
         context: { value: 0 },
-        hasFooter: { value: false },
+        hasFooter: { value: true },
         surfaceOpacity: { value: 1 },
         totalHeight: { value: 0 },
         progress: { value: 1 },
         originProgress: { value: 1 },
+        morphProgress: { value: 1 },
+        transitionStartedAt: { value: 0 },
+        transitionStartedGeneration: { value: 0 },
+        transitionLayoutStartedGeneration: { value: 0 },
+        transitionCompletedGeneration: { value: 0 },
       },
       state: {
         layoutEnabled: false,
         isSurfaceReady: true,
         renderedHeader: null,
-        renderedFooter: null,
+        renderedFooter: "Tray footer",
         renderedContent: <ReactNative.Text>Tray content</ReactNative.Text>,
         renderedTrayId: "tray",
         renderedFullScreen: false,
@@ -82,7 +88,7 @@ jest.mock("../use-action-tray-controller", () => ({
       },
       handlers: {
         handleContentLayout: jest.fn(),
-        handleVisibleFooterLayout: jest.fn(),
+        handleVisibleFooterLayout: mockFooterLayoutHandler,
         handleMeasureFooterLayout: jest.fn(),
         handleShellLayout: jest.fn(),
         handleRequestClose: mockCloseHandler,
@@ -97,6 +103,28 @@ jest.mock("../use-action-tray-controller", () => ({
 }));
 
 describe("ActionTray", () => {
+  it("keeps the fixed footer layer mounted outside the animated shell", () => {
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <ActionTray
+          visible
+          onClose={jest.fn()}
+          keyboardHeight={{ value: 0 } as never}
+          dismissKeyboard={jest.fn()}
+        />,
+      );
+    });
+
+    const footer = renderer!.root.find(
+      (node) => node.props.onLayout === mockFooterLayoutHandler,
+    );
+
+    expect(footer).toBeDefined();
+    expect(footer.props.pointerEvents).toBe("auto");
+  });
+
   it("keeps the backdrop interactive when visible and not dismissible", () => {
     let renderer: TestRenderer.ReactTestRenderer;
 

@@ -99,6 +99,8 @@ export const useActionTrayController = ({
   const [preparedSheetFrameHeight, setPreparedSheetFrameHeight] = useState<
     number | undefined
   >(undefined);
+  const [preparedSheetFrameGeneration, setPreparedSheetFrameGeneration] =
+    useState<number | undefined>(undefined);
   const [useMeasuredSheetHeight, setUseMeasuredSheetHeight] = useState(false);
   // snapshot rendered content so prop streams cannot interrupt a morph
   const renderState = useActionTrayRenderState({
@@ -116,8 +118,6 @@ export const useActionTrayController = ({
     footerClassName,
     transitionContract,
   });
-  const layoutStartedFullScreenGeneration = useSharedValue(0);
-  const fullScreenLayoutStartedAt = useSharedValue(0);
   const transitionStartedGeneration = useSharedValue(0);
   const transitionStartedAt = useSharedValue(0);
   const transitionLayoutStartedGeneration = useSharedValue(0);
@@ -365,9 +365,17 @@ export const useActionTrayController = ({
     contentHeight: presentation.shared.contentHeight,
     measurementOwner,
   });
-  const handleSheetFramePrepared = useCallback((height: number) => {
-    setPreparedSheetFrameHeight(height);
-  }, []);
+  const boundarySnapshotPending =
+    transitionContract?.fullScreenChanged === true &&
+    (renderState.state.renderedTrayId !== trayId ||
+      renderState.state.renderedFullScreen !== !!fullScreen);
+  const handleSheetFramePrepared = useCallback(
+    (height: number) => {
+      setPreparedSheetFrameHeight(height);
+      setPreparedSheetFrameGeneration(transitionContract?.generation);
+    },
+    [transitionContract?.generation],
+  );
 
   // gate the first open spring until geometry is known
   const measurements = useActionTrayMeasurements({
@@ -375,6 +383,7 @@ export const useActionTrayController = ({
     footerHeight: presentation.shared.footerHeight,
     renderedTrayId: renderState.state.renderedTrayId,
     renderedFooter: renderState.state.renderedFooter,
+    acceptContentMeasurement: !boundarySnapshotPending,
     resolveContentHeight: resolveMeasuredContentHeight,
     onContentHeightResolved: heightCache.actions.handleContentHeightResolved,
     measurementOwner,
@@ -475,6 +484,7 @@ export const useActionTrayController = ({
     renderState.actions.clear();
     measurements.actions.reset();
     setPreparedSheetFrameHeight(undefined);
+    setPreparedSheetFrameGeneration(undefined);
     returningToSheetRef.current = false;
     setUseMeasuredSheetHeight(false);
   }, [
@@ -698,8 +708,6 @@ export const useActionTrayController = ({
       progress: presentation.shared.progress,
       originProgress: presentation.shared.originProgress,
       morphProgress,
-      fullScreenLayoutStartedAt,
-      layoutStartedFullScreenGeneration,
       transitionStartedAt,
       transitionStartedGeneration,
       transitionLayoutStartedGeneration,
@@ -711,6 +719,7 @@ export const useActionTrayController = ({
       contentMeasured: measurements.state.contentMeasured,
       pendingOpen: measurements.state.pendingOpen,
       preparedSheetFrameHeight,
+      preparedSheetFrameGeneration,
       isSurfaceReady: openCloseLifecycle.state.isSurfaceReady,
       renderedFooter: renderState.state.renderedFooter,
       renderedHeader: renderState.state.renderedHeader,
@@ -719,8 +728,6 @@ export const useActionTrayController = ({
       renderedFullScreen: renderState.state.renderedFullScreen,
       renderedFullScreenBackgroundScale:
         renderState.state.renderedFullScreenBackgroundScale,
-      fullScreenTransitionGeneration:
-        renderState.state.fullScreenTransitionGeneration,
       frameFullScreen,
       renderedFullScreenDraggable:
         renderState.state.renderedFullScreenDraggable,

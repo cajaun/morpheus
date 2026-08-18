@@ -14,10 +14,27 @@ export type TrayAnimationContract = {
 const transitionTargetsPresentation = (
   transition: TrayTransitionContract | null,
   endpoint: TrayPresentationEndpoint,
-) =>
-  transition?.to?.trayId === endpoint.trayId &&
-  transition.to.stepIndex === endpoint.stepIndex &&
-  transition.to.pageIndex === endpoint.pageIndex;
+) => {
+  if (
+    transition?.to?.trayId !== endpoint.trayId ||
+    transition.to.stepIndex !== endpoint.stepIndex
+  ) {
+    return false;
+  }
+
+  // A step transition can be resolved before a Tray.Pages tree registers its
+  // initial page. In that window the contract has no page index yet, while the
+  // presented endpoint soon does. Treat the missing index as provisional, but
+  // keep page-to-page transitions exact.
+  if (
+    transition.reason !== "pageChange" &&
+    transition.to.pageIndex === undefined
+  ) {
+    return true;
+  }
+
+  return transition.to.pageIndex === endpoint.pageIndex;
+};
 
 // Preserve the current animation policy while making its topology dependency
 // explicit. This intentionally checks both neighboring definitions because that
