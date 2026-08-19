@@ -334,16 +334,8 @@ const SecondStep = () => {
   return (
     <Tray.Body>
       <Tray.Section>
-        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+       <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
           Different heading
-        </Text>
-
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Reprehenderit
-          earum
         </Text>
 
         <Text

@@ -12,6 +12,19 @@ export type TrayContentMotionDirection = -1 | 1;
 export const FORWARD_CONTENT_MOTION: TrayContentMotionDirection = 1;
 export const BACKWARD_CONTENT_MOTION: TrayContentMotionDirection = -1;
 
+// A neighboring fullscreen step only tells us that a step can participate in
+// a boundary. The active transition decides whether this exit is actually a
+// fullscreen boundary, so ordinary sheet-to-sheet reversals keep their normal
+// motion even inside a tray that also contains fullscreen steps.
+export const resolveActiveFullScreenBoundaryExit = (
+  configuredBoundaryExit: boolean,
+  fullScreenChanged: boolean,
+) => {
+  "worklet";
+
+  return configuredBoundaryExit && fullScreenChanged;
+};
+
 export const resolveTrayContentMotionDirection = (
   transition: TrayTransitionContract | null | undefined,
 ): TrayContentMotionDirection =>

@@ -237,13 +237,15 @@ describe("useActionTrayFrameStyles", () => {
     expect(target.trayLayoutStyle.top).toBe(SCREEN_HEIGHT - 20 - 400);
   });
 
-  it("keeps boundary content layout at the source frame until morph begins", () => {
+  it("keeps boundary content bounded to the source viewport until morph begins", () => {
     const source = renderFrameStyles({
       fullScreen: true,
       fullScreenBoundaryTransition: true,
       fullScreenBoundarySourceFullScreen: false,
       fullScreenBoundaryTargetFullScreen: true,
       morphProgress: 0,
+      transitionGeneration: 7,
+      transitionStartedGeneration: 0,
     });
     const target = renderFrameStyles({
       fullScreen: true,
@@ -251,17 +253,24 @@ describe("useActionTrayFrameStyles", () => {
       fullScreenBoundarySourceFullScreen: false,
       fullScreenBoundaryTargetFullScreen: true,
       morphProgress: 1,
+      transitionGeneration: 7,
+      transitionStartedGeneration: 7,
     });
 
     expect(source.contentFrameStyle.position).toBe("absolute");
+    expect(source.contentBoundarySourceStyle?.position).toBe("absolute");
+    expect(source.contentBoundarySourceStyle?.width).toBe(
+      SCREEN_WIDTH - HORIZONTAL_MARGIN * 2,
+    );
+    expect(source.contentFrameStyle.width).toBe(
+      SCREEN_WIDTH - HORIZONTAL_MARGIN * 2,
+    );
     expect(target.contentFrameStyle.position).toBe("absolute");
-    expect(source.contentFrameStyle.top).toBe(0);
-    expect(source.contentFrameStyle.bottom).toBe(0);
+    expect(target.contentBoundarySourceStyle?.width).toBe(
+      SCREEN_WIDTH - HORIZONTAL_MARGIN * 2,
+    );
     expect(target.contentFrameStyle.top).toBe(0);
     expect(target.contentFrameStyle.bottom).toBe(0);
-    expect(
-      (source.contentFrameStyle as { width?: number }).width,
-    ).toBe(SCREEN_WIDTH);
     expect(
       (target.contentFrameStyle as { width?: number }).width,
     ).toBe(SCREEN_WIDTH);
@@ -283,6 +292,41 @@ describe("useActionTrayFrameStyles", () => {
 
     expect(styles.trayLayoutStyle.left).toBe(0);
     expect(styles.footerContainerStyle.left).toBe(0);
+  });
+
+  it("keeps the incoming fullscreen root inside the bounded source viewport", () => {
+    const source = renderFrameStyles({
+      fullScreen: true,
+      fullScreenBoundaryTransition: true,
+      transitionGeneration: 7,
+      transitionStartedGeneration: 0,
+    });
+    const target = renderFrameStyles({
+      fullScreen: true,
+      fullScreenBoundaryTransition: true,
+      transitionGeneration: 7,
+      transitionStartedGeneration: 7,
+    });
+
+    expect(source.contentViewportStyle).toEqual({ flex: 1 });
+    expect(target.contentViewportStyle).toEqual({ flex: 1 });
+  });
+
+  it("leases a nonzero source content frame before fullscreen clock start", () => {
+    const styles = renderFrameStyles({
+      fullScreen: true,
+      fullScreenBoundaryTransition: true,
+      fullScreenBoundarySourceFullScreen: false,
+      fullScreenBoundaryTargetFullScreen: true,
+      preparedSheetFrameHeight: 500,
+      preparedSheetFrameGeneration: 7,
+      transitionGeneration: 7,
+      transitionStartedGeneration: 0,
+      morphProgress: 0,
+    });
+
+    expect(styles.contentBoundarySourceStyle?.height).toBe(500);
+    expect(styles.contentFrameStyle.height).toBe(500);
   });
 
   it("clears fullscreen-only animated content geometry when returning to a sheet", () => {

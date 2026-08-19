@@ -205,7 +205,9 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
 
     const {
       footerSpacerStyle,
+      contentBoundarySourceStyle,
       contentFrameStyle,
+      contentViewportStyle,
       headerFrameStyle,
       presentationFrameStyle,
       trayLayoutStyle,
@@ -254,6 +256,9 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     // intrinsic measurement and must never receive the boundary's absolute
     // viewport style; otherwise a fullscreen pass can leave the next sheet
     // body's layout constrained to the old viewport frame and report zero.
+    // The fullscreen root needs a bounded flex parent on the snapshot commit;
+    // the source viewport style above keeps that parent sheet-sized until the
+    // animated boundary frame takes over.
     const contentLayoutStyle = presentationFullScreen
       ? { flex: 1 }
       : undefined;
@@ -367,7 +372,14 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             <Animated.View
               style={[
                 trayStyles.content,
-                contentFrameStyle,
+                // Before a fullscreen snapshot commits, the animated style
+                // can still contain the previous sheet topology. Let the
+                // synchronous source frame win that one native layout pass;
+                // once the rendered mode is fullscreen, the animated frame
+                // owns the source-to-target handoff.
+                ...(isFullScreenBoundaryTransition && !frameFullScreen
+                  ? [contentFrameStyle, contentBoundarySourceStyle]
+                  : [contentBoundarySourceStyle, contentFrameStyle]),
                 contentRevealStyle,
               ]}
             >
@@ -375,6 +387,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
                 style={[
                   contentPaddingStyle,
                   contentLayoutStyle,
+                  contentViewportStyle,
                   fullScreenSafeAreaContentStyle,
                 ]}
                 onLayout={handleContentLayout}

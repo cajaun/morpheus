@@ -1,6 +1,7 @@
 import {
   BACKWARD_CONTENT_MOTION,
   FORWARD_CONTENT_MOTION,
+  resolveActiveFullScreenBoundaryExit,
   resolveMorphEnteringScale,
   resolveMorphExitingScale,
   resolveTrayContentMotionDirection,
@@ -28,6 +29,11 @@ const transition = (
 });
 
 describe("resolveTrayContentMotionDirection", () => {
+  it("only enables fullscreen exit policy for an active mode boundary", () => {
+    expect(resolveActiveFullScreenBoundaryExit(true, false)).toBe(false);
+    expect(resolveActiveFullScreenBoundaryExit(true, true)).toBe(true);
+  });
+
   it("inverts regular content motion for a backward sheet transition", () => {
     expect(
       resolveTrayContentMotionDirection(

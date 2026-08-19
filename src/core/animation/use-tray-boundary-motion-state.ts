@@ -149,13 +149,13 @@ export const useTrayBoundaryMotionState = ({
       completedGeneration: transitionCompletedGeneration.value,
     }),
     (state) => {
-      // Incoming TrayStepContent establishes the shared clock. The shell then
-      // joins that same clock, so a late entering worklet is not backdated and
-      // rendered halfway through its opacity animation on the first frame.
+      // The shell is the clock owner for a fullscreen boundary. Starting here
+      // makes the frame, footer, and incoming content join one timestamp. If
+      // incoming content publishes first, its React/native topology can be
+      // visible for a frame before the shell has started moving.
       if (
         !state.active ||
         transitionGeneration <= 0 ||
-        state.startedGeneration !== transitionGeneration ||
         state.completedGeneration >= transitionGeneration ||
         morphStartedGeneration.value === transitionGeneration
       ) {

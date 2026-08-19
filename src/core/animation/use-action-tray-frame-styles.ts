@@ -72,14 +72,31 @@ const resolveBoundaryProgress = (
     return 1;
   }
 
-  // The incoming content publishes this clock first. Boundary geometry is
-  // driven by morphProgress, not native layout animation, so waiting for the
-  // later native layout callback creates a visible content-before-shell gap.
+  // The shell publishes this clock before incoming content joins it. Boundary
+  // geometry is driven by morphProgress, not native layout animation, so the
+  // source frame remains authoritative until the shell has claimed the clock.
   if ((transitionStartedGeneration ?? 0) < transitionGeneration) {
     return 0;
   }
 
   return progress;
+};
+
+const isBoundaryClockStarted = (
+  transitionGeneration: number | undefined,
+  transitionStartedGeneration: number | undefined,
+  transitionCompletedGeneration: number | undefined,
+) => {
+  "worklet";
+
+  if (transitionGeneration === undefined || transitionGeneration <= 0) {
+    return true;
+  }
+
+  return (
+    (transitionStartedGeneration ?? 0) >= transitionGeneration ||
+    (transitionCompletedGeneration ?? 0) >= transitionGeneration
+  );
 };
 
 export const useActionTrayFrameStyles = ({
@@ -139,6 +156,34 @@ export const useActionTrayFrameStyles = ({
           height: preparedSheetFrameHeight,
         }
       : undefined;
+
+  // React must establish the source content viewport in the same commit that
+  // publishes the fullscreen snapshot. The animated content frame takes over
+  // after the UI clock starts, but relying on that worklet for the first
+  // native layout pass allows a flex fullscreen root to measure at 68px.
+  const contentBoundarySourceStyle = fullScreenBoundaryTransition
+    ? {
+        position: "absolute" as const,
+        top: 0,
+        bottom: 0,
+        left: 0,
+        width:
+          (fullScreenBoundarySourceFullScreen ?? !fullScreen)
+            ? SCREEN_WIDTH
+            : SCREEN_WIDTH - HORIZONTAL_MARGIN * 2,
+        // The first fullscreen snapshot can still carry the previous
+        // intrinsic animated frame. A concrete source height keeps the
+        // incoming flex tree bounded until the UI worklet publishes its
+        // boundary frame.
+        height:
+          (fullScreenBoundarySourceFullScreen ?? !fullScreen)
+            ? SCREEN_HEIGHT
+            : hasPreparedSheetFrame
+              ? preparedSheetFrameHeight
+              : undefined,
+        alignSelf: "flex-start" as const,
+      }
+    : undefined;
 
   const footerSpacerStyle = useAnimatedStyle(() => ({
     // The absolute footer does not participate in layout, so the body still
@@ -337,28 +382,102 @@ export const useActionTrayFrameStyles = ({
       };
     }
 
+    // The rendered fullscreen snapshot can commit before the shell's UI
+    // participant has published the transition clock. The source topology
+    // must still be a bounded viewport: a relative, auto-sized parent lets a
+    // fullscreen flex/body tree collapse to its header for one frame.
+    const boundaryClockStarted = isBoundaryClockStarted(
+      transitionGeneration,
+      transitionStartedGeneration?.value,
+      transitionCompletedGeneration?.value,
+    );
+
+    const sourceFullScreen =
+      fullScreenBoundarySourceFullScreen ?? !fullScreen;
     const targetFullScreen =
       fullScreenBoundaryTargetFullScreen ?? fullScreen;
+    const progress = resolveBoundaryProgress(
+      morphProgress.value,
+      transitionGeneration,
+      transitionStartedGeneration?.value,
+      transitionLayoutStartedGeneration?.value,
+      transitionCompletedGeneration?.value,
+      fullScreenBoundaryTransition,
+    );
+    const contentFullScreen = boundaryClockStarted
+      ? targetFullScreen
+      : sourceFullScreen;
+    const resolvedFooterHeight = hasFooter.value
+      ? shouldUseOriginTransition
+        ? EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT
+        : footerHeight.value
+      : 0;
+    const resolvedSheetHeight =
+      contentHeight.value > 0
+        ? contentHeight.value + resolvedFooterHeight
+        : 0;
+    const sourceHeight = sourceFullScreen
+      ? SCREEN_HEIGHT
+      : hasPreparedSheetFrame
+        ? preparedSheetFrameHeight
+        : resolvedSheetHeight;
+    const targetHeight = targetFullScreen
+      ? SCREEN_HEIGHT
+      : hasPreparedSheetFrame
+        ? preparedSheetFrameHeight
+        : resolvedSheetHeight;
+    const frameHeight = interpolate(
+      progress,
+      [0, 1],
+      [sourceHeight ?? 0, targetHeight ?? 0],
+    );
 
     return {
-      // Boundary content is a viewport layer, not shell layout input. The
-      // shell owns the interpolated frame and clips this stable target-width
-      // layer while it morphs. This prevents a fullscreen flex body from
-      // collapsing the source sheet when the outgoing body exits.
+      // Boundary content is a viewport layer, not shell layout input. Before
+      // the clock starts it is bounded to the source frame; after the clock
+      // starts it switches to the target viewport while the shell morphs.
       position: "absolute",
       top: 0,
       bottom: 0,
       left: 0,
-      width: targetFullScreen
+      width: contentFullScreen
         ? SCREEN_WIDTH
         : SCREEN_WIDTH - HORIZONTAL_MARGIN * 2,
+      height: frameHeight,
       alignSelf: "flex-start",
     };
   }, [
+    contentHeight,
+    footerHeight,
     fullScreen,
+    fullScreenBoundarySourceFullScreen,
     fullScreenBoundaryTargetFullScreen,
     fullScreenBoundaryTransition,
+    hasFooter,
     morphProgress,
+    preparedSheetFrameHeight,
+    preparedSheetFrameGeneration,
+    shouldUseOriginTransition,
+    transitionGeneration,
+    transitionStartedGeneration,
+    transitionCompletedGeneration,
+  ]);
+
+  const contentViewportStyle = useAnimatedStyle(() => {
+    if (!fullScreen || !fullScreenBoundaryTransition) {
+      return {};
+    }
+
+    // The content frame is bounded to either the source or target viewport by
+    // contentFrameStyle. Keep its inner fullscreen root filling that bounded
+    // viewport throughout the handoff; removing flex here recreates the
+    // header-only intrinsic measurement.
+    return {
+      flex: 1,
+    };
+  }, [
+    fullScreen,
+    fullScreenBoundaryTransition,
   ]);
 
   const headerFrameStyle = useAnimatedStyle(() => {
@@ -558,7 +677,9 @@ export const useActionTrayFrameStyles = ({
   ]);
 
   return {
+    contentBoundarySourceStyle,
     contentFrameStyle,
+    contentViewportStyle,
     headerFrameStyle,
     presentationFrameStyle,
     footerSpacerStyle,

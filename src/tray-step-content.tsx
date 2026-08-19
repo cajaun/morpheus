@@ -22,6 +22,7 @@ import {
   FORWARD_CONTENT_MOTION,
   resolveMorphEnteringScale,
   resolveMorphExitingScale,
+  resolveActiveFullScreenBoundaryExit,
   type TrayContentMotionDirection,
   useTrayContentMotionDirection,
 } from "./core/transition-motion-direction";
@@ -117,6 +118,7 @@ const createMorphEntering = (
         transitionStart.generation,
         "incoming",
         onStart,
+        synchronizedFullScreen,
       );
     };
     const synchronizeWithLayout = (
@@ -196,17 +198,22 @@ const createMorphExiting = (
 ): EntryExitAnimationFunction => {
   return () => {
     "worklet";
-    const duration = fullScreenBoundaryExit
+    const activeFullScreenBoundaryExit =
+      resolveActiveFullScreenBoundaryExit(
+        fullScreenBoundaryExit,
+        transitionStart?.fullScreenChanged ?? false,
+      );
+    const duration = activeFullScreenBoundaryExit
       ? FULL_SCREEN_EXITING_DURATION
       : MORPH_EXITING_DURATION;
-    const easing = fullScreenBoundaryExit
+    const easing = activeFullScreenBoundaryExit
       ? FULL_SCREEN_CONTENT_EASING
       : SHEET_EASING;
     const direction =
       motionDirection?.value ?? FORWARD_CONTENT_MOTION;
     const targetScale = resolveMorphExitingScale({
       scale,
-      fullScreenBoundaryExit,
+      fullScreenBoundaryExit: activeFullScreenBoundaryExit,
       direction,
     });
     const synchronizeWithTransition = (animation: number) => {
@@ -224,6 +231,8 @@ const createMorphExiting = (
         transitionStart.completedGeneration,
         transitionStart.generation,
         "outgoing",
+        undefined,
+        transitionStart.fullScreenChanged,
       );
     };
 

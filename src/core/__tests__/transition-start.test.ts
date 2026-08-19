@@ -93,6 +93,34 @@ describe("tray transition start synchronization", () => {
     expect(second.onStart).toHaveBeenCalledWith(second, 0, 100, null);
   });
 
+  it("waits for the shell clock when a boundary content participant is gated", () => {
+    const startedGeneration = shared(0);
+    const startedAt = shared(0);
+    const layoutStartedGeneration = shared(0);
+    const completedGeneration = shared(0);
+    const content = createAnimation();
+    const participant = withTrayTransitionStart(
+      content as unknown as number,
+      startedGeneration,
+      startedAt,
+      layoutStartedGeneration,
+      completedGeneration,
+      12,
+      "incoming",
+      undefined,
+      true,
+    ) as unknown as AnimationObject<number>;
+
+    participant.onStart(participant, 0, 100, null);
+    expect(content.onStart).not.toHaveBeenCalled();
+    expect(participant.onFrame(participant, 116)).toBe(false);
+
+    startedAt.value = 120;
+    startedGeneration.value = 12;
+    expect(participant.onFrame(participant, 120)).toBe(true);
+    expect(content.onStart).toHaveBeenCalledWith(content, 0, 120, null);
+  });
+
   it("does not wait for a layout event when content is the first participant", () => {
     const startedGeneration = shared(0);
     const startedAt = shared(0);
