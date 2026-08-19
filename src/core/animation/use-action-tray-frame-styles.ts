@@ -67,15 +67,15 @@ const resolveBoundaryProgress = (
   }
 
   // morphProgress survives a completed fullscreen pass. A new generation
-  // must use its source frame until that generation's layout clock starts.
+  // must use its source frame until the shared transition clock starts.
   if ((transitionCompletedGeneration ?? 0) >= transitionGeneration) {
     return 1;
   }
 
-  if (
-    (transitionStartedGeneration ?? 0) < transitionGeneration ||
-    (transitionLayoutStartedGeneration ?? 0) < transitionGeneration
-  ) {
+  // The incoming content publishes this clock first. Boundary geometry is
+  // driven by morphProgress, not native layout animation, so waiting for the
+  // later native layout callback creates a visible content-before-shell gap.
+  if ((transitionStartedGeneration ?? 0) < transitionGeneration) {
     return 0;
   }
 
@@ -281,6 +281,10 @@ export const useActionTrayFrameStyles = ({
     return {
       left: targetLeft,
       right: targetRight,
+      // Boundary and origin branches animate an explicit width. Clear it when
+      // the sheet returns to left/right ownership so a recycled host cannot
+      // retain a fullscreen-sized frame on the next step.
+      width: "auto",
       // Keep the sheet bottom-anchored while its intrinsic height is leased.
       // Switching from bottom+height to top+height creates a visible vertical
       // snap before the native fullscreen layout clock can take over.
@@ -317,7 +321,20 @@ export const useActionTrayFrameStyles = ({
 
   const contentFrameStyle = useAnimatedStyle(() => {
     if (!fullScreenBoundaryTransition) {
-      return fullScreen ? { flex: 1 } : {};
+      // Reanimated can retain boundary properties on a recycled native view.
+      // Return the complete neutral sheet frame instead of relying on
+      // `undefined` to remove position/width values. Otherwise the outer frame
+      // stays absolute and the footer spacer becomes the only shell layout.
+      return {
+        position: "relative",
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        width: "auto",
+        alignSelf: "stretch",
+        flex: fullScreen ? 1 : 0,
+      };
     }
 
     const targetFullScreen =
@@ -346,7 +363,9 @@ export const useActionTrayFrameStyles = ({
 
   const headerFrameStyle = useAnimatedStyle(() => {
     if (!fullScreenBoundaryTransition) {
-      return fullScreen ? { paddingBottom: FULL_SCREEN_HEADER_BOTTOM_GAP } : {};
+      return {
+        paddingBottom: fullScreen ? FULL_SCREEN_HEADER_BOTTOM_GAP : 0,
+      };
     }
 
     const sourceFullScreen =

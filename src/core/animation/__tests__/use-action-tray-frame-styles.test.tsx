@@ -269,6 +269,35 @@ describe("useActionTrayFrameStyles", () => {
     expect(target.trayLayoutStyle.left).toBe(0);
   });
 
+  it("joins shell geometry when the shared content clock starts", () => {
+    const styles = renderFrameStyles({
+      fullScreen: true,
+      fullScreenBoundaryTransition: true,
+      fullScreenBoundarySourceFullScreen: false,
+      fullScreenBoundaryTargetFullScreen: true,
+      morphProgress: 1,
+      transitionGeneration: 7,
+      transitionStartedGeneration: 7,
+      transitionLayoutStartedGeneration: 0,
+    });
+
+    expect(styles.trayLayoutStyle.left).toBe(0);
+    expect(styles.footerContainerStyle.left).toBe(0);
+  });
+
+  it("clears fullscreen-only animated content geometry when returning to a sheet", () => {
+    const styles = renderFrameStyles({
+      fullScreen: false,
+      fullScreenBoundaryTransition: false,
+    });
+
+    expect(styles.contentFrameStyle.position).toBe("relative");
+    expect(styles.contentFrameStyle.top).toBe(0);
+    expect(styles.contentFrameStyle.bottom).toBe(0);
+    expect(styles.contentFrameStyle.width).toBe("auto");
+    expect(styles.trayLayoutStyle.width).toBe("auto");
+  });
+
   it("keeps a sheet-boundary content layer at its target width", () => {
     const styles = renderFrameStyles({
       fullScreen: false,

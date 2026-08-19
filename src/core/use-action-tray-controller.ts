@@ -168,6 +168,23 @@ export const useActionTrayController = ({
   const isEnteringFullScreen = !!fullScreen && !presentationFullScreen;
   const renderedTrayIdRef = useRef(renderState.state.renderedTrayId);
   renderedTrayIdRef.current = renderState.state.renderedTrayId;
+  const activeTrayIdRef = useRef(trayId);
+  activeTrayIdRef.current = trayId;
+  const activeTransitionGenerationRef = useRef(transitionContract?.generation);
+  activeTransitionGenerationRef.current = transitionContract?.generation;
+  const activeTransitionRef = useRef(transitionContract);
+  activeTransitionRef.current = transitionContract;
+  const renderedTransitionGenerationRef = useRef(
+    renderState.state.renderedTransitionContract?.generation,
+  );
+  const renderedTransitionRef = useRef(
+    renderState.state.renderedTransitionContract,
+  );
+  renderedTransitionRef.current =
+    renderState.state.renderedTransitionContract;
+  renderedTransitionGenerationRef.current =
+    renderedTransitionRef.current?.generation;
+  const lastHandledLayoutCompletionGenerationRef = useRef(0);
   // keep frame mode and keyed content in the same commit
   const frameFullScreen = presentationFullScreen;
 
@@ -192,6 +209,15 @@ export const useActionTrayController = ({
     renderedFooter: renderState.state.renderedFooter,
     presentationFullScreen,
     keyboardHeight,
+  });
+  const renderedFullScreenRef = useRef(presentationFullScreen);
+  renderedFullScreenRef.current = presentationFullScreen;
+  // Diagnostic frame data is updated from layout callbacks, never by reading
+  // shared values during React render. Reanimated strict mode treats render
+  // phase `.value` reads as an unsafe JS/UI synchronization point.
+  const latestLayoutFrameRef = useRef({
+    contentHeight: 0,
+    footerHeight: 0,
   });
 
   const resolveMeasuredContentHeight = useCallback(
@@ -292,6 +318,14 @@ export const useActionTrayController = ({
         capturedAt: performance.now(),
       };
       latestGeometryRef.current = snapshot;
+      if (geometry.resolvedContentHeight !== undefined) {
+        latestLayoutFrameRef.current.contentHeight =
+          geometry.resolvedContentHeight;
+      }
+      if (geometry.measuredFooterHeight !== undefined) {
+        latestLayoutFrameRef.current.footerHeight =
+          geometry.measuredFooterHeight;
+      }
 
       const role = renderedTransitionContract.to ? "target" : "source";
       transitionLifecycle?.captureGeometry(
@@ -383,6 +417,9 @@ export const useActionTrayController = ({
     footerHeight: presentation.shared.footerHeight,
     renderedTrayId: renderState.state.renderedTrayId,
     renderedFooter: renderState.state.renderedFooter,
+    hasRenderedBody:
+      renderState.state.renderedHeader !== null ||
+      renderState.state.renderedContent !== null,
     acceptContentMeasurement: !boundarySnapshotPending,
     resolveContentHeight: resolveMeasuredContentHeight,
     onContentHeightResolved: heightCache.actions.handleContentHeightResolved,
@@ -479,6 +516,7 @@ export const useActionTrayController = ({
     transitionStartedAt.value = 0;
     transitionLayoutStartedGeneration.value = 0;
     transitionCompletedGeneration.value = 0;
+    lastHandledLayoutCompletionGenerationRef.current = 0;
     presentation.shared.surfaceOpacity.value = 0;
     presentation.shared.active.value = false;
     renderState.actions.clear();
@@ -613,73 +651,186 @@ export const useActionTrayController = ({
   );
 
   const handleLayoutTransitionConfigured = useCallback(
-    (configuredAt: number) => {
+    (configuredAt: number, callbackGeneration?: number) => {
+      const activeGeneration =
+        activeTransitionGenerationRef.current ??
+        renderedTransitionGenerationRef.current;
+
+      if (
+        callbackGeneration !== undefined &&
+        callbackGeneration > 0 &&
+        callbackGeneration !== activeGeneration
+      ) {
+        log("LAYOUT TRANSITION CONFIGURED IGNORED — stale generation", {
+          configuredAt,
+          callbackGeneration,
+          activeGeneration,
+          trayId: activeTrayIdRef.current,
+        });
+        return;
+      }
+
+      log("LAYOUT TRANSITION CONFIGURED", {
+        configuredAt,
+        trayId: activeTrayIdRef.current,
+        transitionGeneration:
+          callbackGeneration ??
+          activeTransitionRef.current?.generation ??
+          renderedTransitionRef.current?.generation,
+        fullScreenBoundary:
+          activeTransitionRef.current?.fullScreenChanged ??
+          renderedTransitionRef.current?.fullScreenChanged,
+      });
       markTrayStepLayoutConfigured(
         rootTrayId,
-        renderedTrayIdRef.current,
+        activeTrayIdRef.current,
         configuredAt,
       );
     },
     [rootTrayId],
   );
 
-  const handleLayoutTransitionStart = useCallback((startedAt: number) => {
-    const renderedTransition = renderState.state.renderedTransitionContract;
+  const handleLayoutTransitionStart = useCallback(
+    (startedAt: number, callbackGeneration?: number) => {
+      const activeTransition =
+        activeTransitionRef.current ?? renderedTransitionRef.current;
+      const activeGeneration =
+        activeTransitionGenerationRef.current ??
+        renderedTransitionGenerationRef.current;
 
-    if (renderedTransition) {
-      transitionLifecycle?.mark(
-        renderedTransition.generation,
-        "layoutStarted",
-        { trayId: renderedTrayIdRef.current },
+      if (
+        callbackGeneration !== undefined &&
+        callbackGeneration > 0 &&
+        callbackGeneration !== activeGeneration
+      ) {
+        log("LAYOUT TRANSITION START IGNORED — stale generation", {
+          startedAt,
+          callbackGeneration,
+          activeGeneration,
+          trayId: activeTrayIdRef.current,
+        });
+        return;
+      }
+
+      log("LAYOUT TRANSITION START", {
+        startedAt,
+        trayId: activeTrayIdRef.current,
+        transitionGeneration:
+          callbackGeneration ?? activeTransition?.generation,
+        fullScreenBoundary: activeTransition?.fullScreenChanged,
+        renderedFullScreen: renderedFullScreenRef.current,
+        contentHeight: latestLayoutFrameRef.current.contentHeight,
+        footerHeight: latestLayoutFrameRef.current.footerHeight,
+      });
+
+      if (activeTransition) {
+        transitionLifecycle?.mark(
+          callbackGeneration ?? activeTransition.generation,
+          "layoutStarted",
+          { trayId: activeTrayIdRef.current },
+          startedAt,
+        );
+      }
+
+      if (!isActionTrayInstrumentationEnabled()) {
+        return;
+      }
+
+      markTrayStepLayoutStarted(
+        rootTrayId,
+        activeTrayIdRef.current,
         startedAt,
       );
-    }
-
-    if (!isActionTrayInstrumentationEnabled()) {
-      return;
-    }
-
-    markTrayStepLayoutStarted(
+    },
+    [
       rootTrayId,
-      renderedTrayIdRef.current,
-      startedAt,
-    );
-  }, [
-    renderState.state.renderedTransitionContract,
-    rootTrayId,
-    transitionLifecycle,
-  ]);
+      transitionLifecycle,
+    ],
+  );
 
-  const handleLayoutTransitionComplete = useCallback((finishedAt: number) => {
-    const renderedTransition = renderState.state.renderedTransitionContract;
+  const handleLayoutTransitionComplete = useCallback(
+    (finishedAt: number, callbackGeneration?: number) => {
+      const activeTransition =
+        activeTransitionRef.current ?? renderedTransitionRef.current;
+      const activeGeneration =
+        activeTransitionGenerationRef.current ??
+        renderedTransitionGenerationRef.current;
+      const hasCallbackGeneration =
+        callbackGeneration !== undefined && callbackGeneration > 0;
 
-    if (renderedTransition) {
-      transitionLifecycle?.mark(
-        renderedTransition.generation,
-        "completed",
-        { trayId: renderedTrayIdRef.current },
+      if (
+        hasCallbackGeneration &&
+        callbackGeneration !== activeGeneration
+      ) {
+        log("LAYOUT TRANSITION COMPLETE IGNORED — stale generation", {
+          finishedAt,
+          callbackGeneration,
+          activeGeneration,
+          trayId: activeTrayIdRef.current,
+        });
+        return;
+      }
+
+      if (
+        hasCallbackGeneration &&
+        callbackGeneration <=
+          lastHandledLayoutCompletionGenerationRef.current
+      ) {
+        log("LAYOUT TRANSITION COMPLETE IGNORED — duplicate generation", {
+          finishedAt,
+          callbackGeneration,
+          lastHandledGeneration:
+            lastHandledLayoutCompletionGenerationRef.current,
+          trayId: activeTrayIdRef.current,
+        });
+        return;
+      }
+
+      if (hasCallbackGeneration) {
+        lastHandledLayoutCompletionGenerationRef.current =
+          callbackGeneration;
+      }
+
+      log("LAYOUT TRANSITION COMPLETE", {
+        finishedAt,
+        trayId: activeTrayIdRef.current,
+        transitionGeneration:
+          callbackGeneration ?? activeTransition?.generation,
+        fullScreenBoundary: activeTransition?.fullScreenChanged,
+        renderedFullScreen: renderedFullScreenRef.current,
+        contentHeight: latestLayoutFrameRef.current.contentHeight,
+        footerHeight: latestLayoutFrameRef.current.footerHeight,
+        returningToSheet: returningToSheetRef.current,
+      });
+
+      if (activeTransition) {
+        transitionLifecycle?.mark(
+          callbackGeneration ?? activeTransition.generation,
+          "completed",
+          { trayId: activeTrayIdRef.current },
+          finishedAt,
+        );
+      }
+
+      markTrayStepLayoutFinished(
+        rootTrayId,
+        activeTrayIdRef.current,
         finishedAt,
       );
-    }
 
-    markTrayStepLayoutFinished(
+      if (!returningToSheetRef.current) {
+        return;
+      }
+
+      // after the return animation finishes auto height can own future sheet steps
+      returningToSheetRef.current = false;
+      setUseMeasuredSheetHeight(false);
+    },
+    [
       rootTrayId,
-      renderedTrayIdRef.current,
-      finishedAt,
-    );
-
-    if (!returningToSheetRef.current) {
-      return;
-    }
-
-    // after the return animation finishes auto height can own future sheet steps
-    returningToSheetRef.current = false;
-    setUseMeasuredSheetHeight(false);
-  }, [
-    renderState.state.renderedTransitionContract,
-    rootTrayId,
-    transitionLifecycle,
-  ]);
+      transitionLifecycle,
+    ],
+  );
 
   const imperativeApi = useMemo(
     () => ({

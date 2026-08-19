@@ -20,9 +20,9 @@ type TrayLayoutTransitionParams = {
   transitionCompletedGeneration: SharedValue<number>;
   fullScreenBoundaryTransition: boolean;
   morphProgress: SharedValue<number>;
-  onConfigure?: (configuredAt: number) => void;
-  onStart?: (startedAt: number) => void;
-  onComplete?: (finishedAt: number) => void;
+  onConfigure?: (configuredAt: number, transitionGeneration: number) => void;
+  onStart?: (startedAt: number, transitionGeneration: number) => void;
+  onComplete?: (finishedAt: number, transitionGeneration: number) => void;
 };
 
 export const createTrayLayoutTransition = ({
@@ -51,7 +51,7 @@ export const createTrayLayoutTransition = ({
 
     if (onConfigure) {
       // configuration fires before native animation start so timing can split setup from motion
-      scheduleOnRN(onConfigure, performance.now());
+      scheduleOnRN(onConfigure, performance.now(), transitionGeneration);
     }
 
     // The boundary policy is consumed once per generic transition generation.
@@ -116,7 +116,11 @@ export const createTrayLayoutTransition = ({
       ...animation,
       callback: (finished) => {
         if (finished && onComplete) {
-          scheduleOnRN(onComplete, performance.now());
+          scheduleOnRN(
+            onComplete,
+            performance.now(),
+            transitionGeneration,
+          );
         }
       },
     };

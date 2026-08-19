@@ -14,6 +14,7 @@ type Params = {
 
   renderedTrayId?: string;
   renderedFooter?: React.ReactNode;
+  hasRenderedBody?: boolean;
   acceptContentMeasurement?: boolean;
   resolveContentHeight?: (measuredHeight: number) => number;
   onContentHeightResolved?: (
@@ -34,6 +35,7 @@ export const useActionTrayMeasurements = ({
   footerHeight,
   renderedTrayId,
   renderedFooter,
+  hasRenderedBody = false,
   acceptContentMeasurement = true,
   resolveContentHeight,
   onContentHeightResolved,
@@ -53,6 +55,8 @@ export const useActionTrayMeasurements = ({
   const measuredContentHeight = useSharedValue(0);
   const resolvedContentHeight = useSharedValue(0);
   const measuredFooterHeight = useSharedValue(0);
+  const latestMeasurementOwnerRef = useRef(measurementOwner);
+  latestMeasurementOwnerRef.current = measurementOwner;
 
   useEffect(() => {
     if (renderedFooter) {
@@ -149,6 +153,37 @@ export const useActionTrayMeasurements = ({
       const height = e.nativeEvent.layout.height;
       const previousMeasuredHeight = latestMeasuredContentHeightRef.current;
 
+      const callbackOwnerKey = measurementOwner?.presentationKey;
+      const currentOwnerKey =
+        latestMeasurementOwnerRef.current?.presentationKey;
+
+      if (callbackOwnerKey !== currentOwnerKey) {
+        log("CONTENT onLayout ignored — stale measurement owner", {
+          height,
+          trayId: renderedTrayId,
+          callbackOwnerKey,
+          currentOwnerKey,
+        });
+        return;
+      }
+
+      // A body that is present cannot have a zero-sized intrinsic frame. A
+      // zero frame here is an outgoing native layout pass, not a valid sheet
+      // endpoint, and must not replace the last stable body measurement.
+      if (
+        hasRenderedBody &&
+        (!Number.isFinite(height) || height <= 1)
+      ) {
+        log("CONTENT onLayout ignored — invalid body endpoint", {
+          height,
+          trayId: renderedTrayId,
+          previousMeasuredHeight,
+          currentContentHeight: contentHeight.value,
+          measurementOwner: currentOwnerKey,
+        });
+        return;
+      }
+
       const resolvedHeight = resolveContentHeight
         ? resolveContentHeight(height)
         : height;
@@ -187,9 +222,11 @@ export const useActionTrayMeasurements = ({
       contentHeight,
       contentMeasured,
       acceptContentMeasurement,
+      hasRenderedBody,
       measuredContentHeight,
       onContentHeightResolved,
       onGeometryMeasured,
+      measurementOwner,
       renderedTrayId,
       resolvedContentHeight,
       resolveContentHeight,

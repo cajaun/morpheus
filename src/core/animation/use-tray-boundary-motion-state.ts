@@ -25,8 +25,14 @@ type Params = {
   transitionLayoutStartedGeneration: SharedValue<number>;
   transitionCompletedGeneration: SharedValue<number>;
   transitionContract: TrayTransitionContract | null;
-  onTransitionStart?: (startedAt: number) => void;
-  onTransitionComplete?: (finishedAt: number) => void;
+  onTransitionStart?: (
+    startedAt: number,
+    transitionGeneration: number,
+  ) => void;
+  onTransitionComplete?: (
+    finishedAt: number,
+    transitionGeneration: number,
+  ) => void;
 };
 
 // Boundary motion is a geometry concern, not a second transition system.
@@ -168,7 +174,11 @@ export const useTrayBoundaryMotionState = ({
             "worklet";
 
             if (finished && onTransitionComplete) {
-              scheduleOnRN(onTransitionComplete, performance.now());
+              scheduleOnRN(
+                onTransitionComplete,
+                performance.now(),
+                transitionGeneration,
+              );
             }
           },
         ),

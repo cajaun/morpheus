@@ -47,6 +47,88 @@ describe("useActionTrayContentSync", () => {
     expect(onGeometryMeasured).not.toHaveBeenCalled();
   });
 
+  it("keeps the last body frame when a rendered step reports zero height", () => {
+    const contentHeight = shared(255);
+    const footerHeight = shared(64);
+    const onContentHeightResolved = jest.fn();
+    let handleContentLayout: ((event: never) => void) | null = null;
+
+    const Probe = () => {
+      const measurements = useActionTrayMeasurements({
+        contentHeight,
+        footerHeight,
+        renderedTrayId: "sheet-step",
+        hasRenderedBody: true,
+        onContentHeightResolved,
+      });
+
+      handleContentLayout = measurements.handlers.handleContentLayout as (
+        event: never,
+      ) => void;
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    act(() => {
+      handleContentLayout?.({
+        nativeEvent: { layout: { height: 0 } },
+      } as never);
+    });
+
+    expect(contentHeight.value).toBe(255);
+    expect(onContentHeightResolved).not.toHaveBeenCalled();
+  });
+
+  it("ignores a late layout callback from an older measurement owner", () => {
+    const contentHeight = shared(255);
+    const footerHeight = shared(64);
+    const onContentHeightResolved = jest.fn();
+    let firstHandleContentLayout: ((event: never) => void) | null = null;
+
+    const Probe = ({ ownerKey }: { ownerKey: string }) => {
+      const measurements = useActionTrayMeasurements({
+        contentHeight,
+        footerHeight,
+        renderedTrayId: "sheet-step",
+        hasRenderedBody: true,
+        measurementOwner: {
+          presentationKey: ownerKey,
+        } as never,
+        onContentHeightResolved,
+      });
+
+      if (firstHandleContentLayout === null) {
+        firstHandleContentLayout = measurements.handlers.handleContentLayout as (
+          event: never,
+        ) => void;
+      }
+
+      return null;
+    };
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(<Probe ownerKey="generation-four" />);
+    });
+
+    act(() => {
+      renderer!.update(<Probe ownerKey="generation-five" />);
+    });
+
+    act(() => {
+      firstHandleContentLayout?.({
+        nativeEvent: { layout: { height: 0 } },
+      } as never);
+    });
+
+    expect(contentHeight.value).toBe(255);
+    expect(onContentHeightResolved).not.toHaveBeenCalled();
+  });
+
   it("does not replay fullscreen geometry when the rendered snapshot catches up", () => {
     const contentHeight = shared(240);
     const footerHeight = shared(64);

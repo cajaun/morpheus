@@ -71,7 +71,7 @@ type WithTrayTransitionStart = <T extends AnimatableValue>(
   completedGeneration: SharedValue<number>,
   generation: number,
   participant: TrayTransitionParticipant,
-  onStartSignal?: (startedAt: number) => void,
+  onStartSignal?: (startedAt: number, generation: number) => void,
 ) => T;
 
 // Every participant joins one UI-thread clock. The first participant publishes
@@ -84,7 +84,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
   completedGeneration: SharedValue<number>,
   generation: number,
   participant: TrayTransitionParticipant,
-  onStartSignal?: (startedAt: number) => void,
+  onStartSignal?: (startedAt: number, generation: number) => void,
 ): Animation<TransitionStartAnimation> {
   "worklet";
 
@@ -128,7 +128,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         animation.current = nextAnimation.current ?? value;
 
         if (onStartSignal) {
-          scheduleOnRN(onStartSignal, innerStartedAt);
+          scheduleOnRN(onStartSignal, innerStartedAt, generation);
         }
       };
 

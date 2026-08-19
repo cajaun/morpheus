@@ -44,6 +44,7 @@ const AaveHeader = ({ title }: { title: string }) => {
 
 const sharedStepOptions = {
   className: "bg-white",
+  footerStyle: { backgroundColor: "#FFFFFF" },
 } as const;
 
 const FirstStep = () => {

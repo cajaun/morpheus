@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import { RenderedTrayState } from "../types";
 import type { TrayTransitionContract } from "../../runtime/types";
+import { log } from "../logger";
 
 // render state holds the committed payload while newer props continue to stream in
 type TraySnapshot = {
@@ -81,6 +82,16 @@ const commitTraySnapshot = (
 
   return next;
 };
+
+const describeTrayState = (state: RenderedTrayState) => ({
+  trayId: state.trayId,
+  fullScreen: state.fullScreen ?? false,
+  hasHeader: state.header != null,
+  hasContent: state.content != null,
+  hasFooter: state.footer != null,
+  transitionGeneration: state.transitionContract?.generation,
+  transitionBoundary: state.transitionContract?.boundary,
+});
 
 export const useActionTrayRenderState = ({
   header,
@@ -173,7 +184,13 @@ export const useActionTrayRenderState = ({
       transitionContract: transitionContractRef.current,
     });
 
-    setRenderedTray((current) => commitTraySnapshot(current, next));
+    setRenderedTray((current) => {
+      log("RENDER SNAPSHOT PUBLISH", {
+        current: describeTrayState(current),
+        next: describeTrayState(next),
+      });
+      return commitTraySnapshot(current, next);
+    });
   }, []);
 
   const syncRenderedNodes = useCallback((activeTrayId?: string) => {
@@ -183,6 +200,10 @@ export const useActionTrayRenderState = ({
 
     setRenderedTray((current) => {
       if (current.trayId !== activeTrayId) {
+        log("RENDER SNAPSHOT SYNC IGNORED", {
+          activeTrayId,
+          current: describeTrayState(current),
+        });
         // same-host node sync must not steal a transition owned by another tray id
         return current;
       }
@@ -203,26 +224,35 @@ export const useActionTrayRenderState = ({
         transitionContract: transitionContractRef.current,
       };
 
+      log("RENDER SNAPSHOT NODE SYNC", {
+        current: describeTrayState(current),
+        next: describeTrayState(next),
+      });
       return commitTraySnapshot(current, next);
     });
   }, []);
 
   const clear = useCallback(() => {
-    setRenderedTray((current) => ({
-      content: null,
-      header: null,
-      footer: null,
-      trayId: undefined,
-      fullScreen: undefined,
-      fullScreenBackgroundScale: undefined,
-      fullScreenSafeAreaTop: undefined,
-      fullScreenDraggable: undefined,
-      containerStyle: undefined,
-      className: undefined,
-      footerStyle: undefined,
-      footerClassName: undefined,
-      transitionContract: null,
-    }));
+    setRenderedTray((current) => {
+      log("RENDER SNAPSHOT CLEAR", {
+        current: describeTrayState(current),
+      });
+      return {
+        content: null,
+        header: null,
+        footer: null,
+        trayId: undefined,
+        fullScreen: undefined,
+        fullScreenBackgroundScale: undefined,
+        fullScreenSafeAreaTop: undefined,
+        fullScreenDraggable: undefined,
+        containerStyle: undefined,
+        className: undefined,
+        footerStyle: undefined,
+        footerClassName: undefined,
+        transitionContract: null,
+      };
+    });
   }, []);
 
   return {

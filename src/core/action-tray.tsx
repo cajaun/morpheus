@@ -250,14 +250,13 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       transition,
     });
 
-    // The boundary frame belongs to the visual viewport wrapper. Keep the
-    // measured child intrinsic in sheet mode; measuring the absolute viewport
-    // would cache fullscreen height as sheet body height on the next round trip.
-    const contentLayoutStyle = isFullScreenBoundaryTransition
-      ? presentationFullScreen
-        ? { flex: 1 }
-        : undefined
-      : contentFrameStyle;
+    // The outer content frame owns presentation geometry. The inner frame owns
+    // intrinsic measurement and must never receive the boundary's absolute
+    // viewport style; otherwise a fullscreen pass can leave the next sheet
+    // body's layout constrained to the old viewport frame and report zero.
+    const contentLayoutStyle = presentationFullScreen
+      ? { flex: 1 }
+      : undefined;
 
     const { fullScreenSafeAreaContentStyle, fullScreenSurfaceFillStyle } =
       useTrayBoundaryMotionState({
