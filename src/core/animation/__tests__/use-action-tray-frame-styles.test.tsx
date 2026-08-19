@@ -36,12 +36,14 @@ const renderFrameStyles = ({
   morphProgress = 1,
   preparedSheetFrameHeight,
   preparedSheetFrameGeneration,
+  preparedSheetFrameEndpoint = "source",
   shouldUseOriginTransition = false,
   transitionGeneration,
+  transitionSourceKey = "source",
+  transitionTargetKey = "target",
   transitionStartedGeneration,
   transitionLayoutStartedGeneration,
   transitionCompletedGeneration,
-  useMeasuredSheetHeight = false,
 }: {
   fullScreen?: boolean;
   fullScreenBoundaryTransition?: boolean;
@@ -50,12 +52,14 @@ const renderFrameStyles = ({
   morphProgress?: number;
   preparedSheetFrameHeight?: number;
   preparedSheetFrameGeneration?: number;
+  preparedSheetFrameEndpoint?: string;
   shouldUseOriginTransition?: boolean;
   transitionGeneration?: number;
+  transitionSourceKey?: string;
+  transitionTargetKey?: string;
   transitionStartedGeneration?: number;
   transitionLayoutStartedGeneration?: number;
   transitionCompletedGeneration?: number;
-  useMeasuredSheetHeight?: boolean;
 }) => {
   let styles: FrameStyles | null = null;
 
@@ -79,14 +83,22 @@ const renderFrameStyles = ({
       transitionCompletedGeneration: shared(
         transitionCompletedGeneration ?? 0,
       ),
-      preparedSheetFrameHeight,
-      preparedSheetFrameGeneration,
+      preparedSheetFrame:
+        preparedSheetFrameHeight !== undefined
+          ? {
+              endpointKey: preparedSheetFrameEndpoint,
+              generation:
+                preparedSheetFrameGeneration ?? transitionGeneration ?? 1,
+              totalHeight: preparedSheetFrameHeight,
+            }
+          : undefined,
       shouldUseOriginTransition,
       transition: shouldUseOriginTransition
         ? { open: "expandFromTrigger" }
         : undefined,
       transitionGeneration,
-      useMeasuredSheetHeight,
+      transitionSourceKey,
+      transitionTargetKey,
     });
 
     return null;
@@ -109,11 +121,7 @@ describe("useActionTrayFrameStyles", () => {
   it("releases a concrete return height after fullscreen cleanup", () => {
     let styles: FrameStyles | null = null;
 
-    const Probe = ({
-      useMeasuredSheetHeight,
-    }: {
-      useMeasuredSheetHeight: boolean;
-    }) => {
+    const Probe = ({ prepared }: { prepared: boolean }) => {
       styles = useActionTrayFrameStyles({
         bottom: 20,
         contentHeight: shared(320),
@@ -124,10 +132,13 @@ describe("useActionTrayFrameStyles", () => {
         keyboardHeight: shared(0),
         morphProgress: shared(1),
         originProgress: shared(1),
-        preparedSheetFrameHeight: 400,
+        preparedSheetFrame: prepared
+          ? { endpointKey: "target", generation: 7, totalHeight: 400 }
+          : undefined,
         shouldUseOriginTransition: false,
         transition: undefined,
-        useMeasuredSheetHeight,
+        transitionGeneration: prepared ? 7 : undefined,
+        transitionTargetKey: "target",
       });
 
       return null;
@@ -137,7 +148,7 @@ describe("useActionTrayFrameStyles", () => {
 
     act(() => {
       renderer = TestRenderer.create(
-        <Probe useMeasuredSheetHeight={true} />,
+        <Probe prepared />,
       );
     });
 
@@ -145,7 +156,7 @@ describe("useActionTrayFrameStyles", () => {
     expect(styles!.trayLayoutStyle.height).toBe(400);
 
     act(() => {
-      renderer!.update(<Probe useMeasuredSheetHeight={false} />);
+      renderer!.update(<Probe prepared={false} />);
     });
 
     // cleanup must release that frame so later sheets use intrinsic height
@@ -320,6 +331,7 @@ describe("useActionTrayFrameStyles", () => {
       fullScreenBoundaryTargetFullScreen: true,
       preparedSheetFrameHeight: 500,
       preparedSheetFrameGeneration: 7,
+      preparedSheetFrameEndpoint: "source",
       transitionGeneration: 7,
       transitionStartedGeneration: 0,
       morphProgress: 0,
@@ -369,9 +381,9 @@ describe("useActionTrayFrameStyles", () => {
       fullScreenBoundaryTargetFullScreen: true,
       preparedSheetFrameHeight: 500,
       preparedSheetFrameGeneration: 7,
+      preparedSheetFrameEndpoint: "source",
       transitionGeneration: 7,
       morphProgress: 0,
-      useMeasuredSheetHeight: false,
     });
 
     expect(styles.trayLayoutStyle.height).toBe(500);
@@ -385,11 +397,29 @@ describe("useActionTrayFrameStyles", () => {
       fullScreenBoundaryTransition: true,
       preparedSheetFrameHeight: 500,
       preparedSheetFrameGeneration: 6,
+      preparedSheetFrameEndpoint: "source",
       transitionGeneration: 7,
       transitionStartedGeneration: 7,
       transitionLayoutStartedGeneration: 7,
       transitionCompletedGeneration: 7,
-      useMeasuredSheetHeight: false,
+    });
+
+    expect(styles.trayLayoutStyle.height).toBe(400);
+  });
+
+  it("ignores a current-generation frame for an unrelated endpoint", () => {
+    const styles = renderFrameStyles({
+      fullScreen: false,
+      fullScreenBoundaryTransition: true,
+      preparedSheetFrameHeight: 500,
+      preparedSheetFrameGeneration: 7,
+      preparedSheetFrameEndpoint: "unrelated",
+      transitionGeneration: 7,
+      transitionSourceKey: "source",
+      transitionTargetKey: "target",
+      transitionStartedGeneration: 7,
+      transitionLayoutStartedGeneration: 7,
+      transitionCompletedGeneration: 7,
     });
 
     expect(styles.trayLayoutStyle.height).toBe(400);
@@ -425,7 +455,10 @@ describe("useActionTrayFrameStyles", () => {
   it("uses measured sheet geometry while returning from fullscreen", () => {
     const styles = renderFrameStyles({
       preparedSheetFrameHeight: 400,
-      useMeasuredSheetHeight: true,
+      preparedSheetFrameEndpoint: "target",
+      preparedSheetFrameGeneration: 7,
+      transitionGeneration: 7,
+      transitionTargetKey: "target",
     });
 
     expect(styles.trayLayoutStyle.height).toBe(400);

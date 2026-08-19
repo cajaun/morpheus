@@ -5,6 +5,7 @@ import { log } from "../logger";
 import type {
   TrayGeometrySnapshot,
   TrayMeasurementOwner,
+  TrayPresentationMode,
 } from "../../runtime/types";
 
 // measurement owns the geometry contract that open animation depends on
@@ -13,14 +14,18 @@ type Params = {
   footerHeight: SharedValue<number>;
 
   renderedTrayId?: string;
+  renderedFullScreen?: boolean;
   renderedFooter?: React.ReactNode;
   hasRenderedBody?: boolean;
   acceptContentMeasurement?: boolean;
+  contentMeasurementLeaseActive?: boolean;
+  contentMeasurementLeaseRef?: { current: boolean };
   resolveContentHeight?: (measuredHeight: number) => number;
   onContentHeightResolved?: (
     resolvedHeight: number,
     measuredHeight: number,
     trayId?: string,
+    mode?: TrayPresentationMode,
   ) => void;
   measurementOwner?: TrayMeasurementOwner;
   onGeometryMeasured?: (
@@ -34,9 +39,12 @@ export const useActionTrayMeasurements = ({
   contentHeight,
   footerHeight,
   renderedTrayId,
+  renderedFullScreen = false,
   renderedFooter,
   hasRenderedBody = false,
   acceptContentMeasurement = true,
+  contentMeasurementLeaseActive = false,
+  contentMeasurementLeaseRef,
   resolveContentHeight,
   onContentHeightResolved,
   measurementOwner,
@@ -137,6 +145,41 @@ export const useActionTrayMeasurements = ({
     resolvedContentHeight,
   ]);
 
+  const commitContentHeight = useCallback(
+    (height: number, trayId?: string, mode: TrayPresentationMode = "sheet") => {
+      if (!Number.isFinite(height) || height <= 1) {
+        return false;
+      }
+
+      latestMeasuredContentHeightRef.current = height;
+      latestResolvedContentHeightRef.current = height;
+      latestMeasuredTrayIdRef.current = trayId;
+      measuredContentHeight.value = height;
+      resolvedContentHeight.value = height;
+      contentHeight.value = height;
+      onContentHeightResolved?.(height, height, trayId, mode);
+
+      if (!contentMeasured && trayId !== undefined) {
+        setContentMeasured(true);
+      }
+
+      log("CONTENT HEIGHT COMMITTED FROM SHEET FRAME", {
+        height,
+        mode,
+        trayId,
+      });
+
+      return true;
+    },
+    [
+      contentHeight,
+      contentMeasured,
+      measuredContentHeight,
+      onContentHeightResolved,
+      resolvedContentHeight,
+    ],
+  );
+
   const handleContentLayout = useCallback(
     (e: LayoutChangeEvent) => {
       if (!acceptContentMeasurement) {
@@ -144,6 +187,21 @@ export const useActionTrayMeasurements = ({
         // layout after its visual viewport has changed. That frame is not a
         // measurement of either endpoint and must not poison the height cache.
         log("CONTENT onLayout ignored during boundary handoff", {
+          height: e.nativeEvent.layout.height,
+          trayId: renderedTrayId,
+        });
+        return;
+      }
+
+      if (
+        contentMeasurementLeaseActive ||
+        contentMeasurementLeaseRef?.current === true
+      ) {
+        // A fullscreen boundary owns the shell frame until its transition
+        // completes. Native onLayout callbacks during that morph describe the
+        // animated viewport, not the intrinsic sheet endpoint. Accepting them
+        // here would turn an intermediate frame into the next sheet height.
+        log("CONTENT onLayout ignored during sheet frame lease", {
           height: e.nativeEvent.layout.height,
           trayId: renderedTrayId,
         });
@@ -196,7 +254,12 @@ export const useActionTrayMeasurements = ({
       measuredContentHeight.value = height;
       resolvedContentHeight.value = resolvedHeight;
       contentHeight.value = resolvedHeight;
-      onContentHeightResolved?.(resolvedHeight, height, renderedTrayId);
+      onContentHeightResolved?.(
+        resolvedHeight,
+        height,
+        renderedTrayId,
+        renderedFullScreen ? "fullScreen" : "sheet",
+      );
       onGeometryMeasured?.({
         bodyFrame: e.nativeEvent.layout,
         measuredContentHeight: height,
@@ -222,12 +285,15 @@ export const useActionTrayMeasurements = ({
       contentHeight,
       contentMeasured,
       acceptContentMeasurement,
+      contentMeasurementLeaseActive,
+      contentMeasurementLeaseRef,
       hasRenderedBody,
       measuredContentHeight,
       onContentHeightResolved,
       onGeometryMeasured,
       measurementOwner,
       renderedTrayId,
+      renderedFullScreen,
       resolvedContentHeight,
       resolveContentHeight,
     ],
@@ -312,6 +378,7 @@ export const useActionTrayMeasurements = ({
     },
     actions: {
       beginOpenMeasurement,
+      commitContentHeight,
       enableLayout,
       setLayoutAnimationEnabled,
       completePendingOpen,

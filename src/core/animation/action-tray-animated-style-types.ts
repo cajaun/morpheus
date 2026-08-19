@@ -1,4 +1,5 @@
 import type { TrayTransitionOptions } from "../../runtime/tray-context";
+import type { ActionTraySheetFrame } from "../types/action-tray";
 
 // share animated style contracts across frame drag and visibility hooks
 type AnimatedValue<T> = {
@@ -14,10 +15,10 @@ export type ActionTrayAnimatedStyleParams = {
   keyboardHeight: AnimatedValue<number>;
   frameFullScreen: boolean;
   fullScreen: boolean;
-  preparedSheetFrameHeight?: number;
-  preparedSheetFrameGeneration?: number;
+  preparedSheetFrame?: ActionTraySheetFrame;
   transitionGeneration?: number;
-  useMeasuredSheetHeight: boolean;
+  transitionSourceKey?: string;
+  transitionTargetKey?: string;
   visible: boolean;
   layoutEnabled: boolean;
   originProgress: AnimatedValue<number>;
@@ -36,9 +37,9 @@ export type ActionTrayAnimationState = {
   fullScreen: boolean;
   morphProgress: AnimatedValue<number>;
   originProgress: AnimatedValue<number>;
-  preparedSheetFrameHeight?: number;
-  preparedSheetFrameGeneration?: number;
+  preparedSheetFrame?: ActionTraySheetFrame;
   transitionGeneration?: number;
+  transitionSourceKey?: string;
+  transitionTargetKey?: string;
   shouldUseOriginTransition: boolean;
-  useMeasuredSheetHeight: boolean;
 };

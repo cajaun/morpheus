@@ -8,6 +8,7 @@ import {
 import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import { markTrayStepSnapshotPublished } from "../../telemetry/tray-step-timing";
+import type { TrayTransitionContract } from "../../runtime/types";
 import { log } from "../logger";
 
 // this hook decides when new props should update the committed shell snapshot
@@ -45,6 +46,7 @@ type Params = {
       renderedHeader: ReactNode;
       renderedFooter: ReactNode;
       renderedFullScreen: boolean;
+      renderedTransitionContract: TrayTransitionContract | null;
     };
     actions: {
       showLatestSnapshot: () => void;
@@ -59,7 +61,12 @@ type Params = {
     trayId: string | undefined,
     measuredContentHeight: number,
   ) => number | undefined;
-  onSheetFramePrepared?: (height: number) => void;
+  readCachedSheetContentHeight?: (trayId?: string) => number | undefined;
+  onSheetFramePrepared?: (
+    height: number,
+    role: "source" | "target",
+    trayId?: string,
+  ) => void;
   onPrepared?: (details: Record<string, unknown>) => void;
 };
 
@@ -85,6 +92,7 @@ export const useActionTrayContentSync = ({
   morphProgress,
   resolveIncomingContentHeight,
   restoreContentHeight,
+  readCachedSheetContentHeight,
   onSheetFramePrepared,
   onPrepared,
 }: Params) => {
@@ -97,6 +105,7 @@ export const useActionTrayContentSync = ({
     renderedHeader,
     renderedFooter,
     renderedFullScreen,
+    renderedTransitionContract,
   } =
     renderState.state;
   const { showLatestSnapshot, syncRenderedNodes } = renderState.actions;
@@ -105,6 +114,11 @@ export const useActionTrayContentSync = ({
 
   const restoreContentHeightRef = useRef(restoreContentHeight);
   restoreContentHeightRef.current = restoreContentHeight;
+
+  const readCachedSheetContentHeightRef = useRef(
+    readCachedSheetContentHeight,
+  );
+  readCachedSheetContentHeightRef.current = readCachedSheetContentHeight;
 
   const onSheetFramePreparedRef = useRef(onSheetFramePrepared);
   onSheetFramePreparedRef.current = onSheetFramePrepared;
@@ -156,6 +170,8 @@ export const useActionTrayContentSync = ({
         // changes from shrinking the shell before the layout clock starts.
         onSheetFramePreparedRef.current?.(
           contentHeight.value + nextFooterHeight,
+          "source",
+          renderedTrayId,
         );
       }
 
@@ -188,7 +204,28 @@ export const useActionTrayContentSync = ({
         // sheet return leases the measured frame until the layout transition finishes
         onSheetFramePreparedRef.current?.(
           restoredContentHeight + nextFooterHeight,
+          "target",
+          trayId,
         );
+      } else if (
+        !renderedFullScreen &&
+        renderedTransitionContract?.fullScreenChanged === true &&
+        renderedTrayId !== trayId
+      ) {
+        // The first sheet step after a fullscreen return can arrive before the
+        // native layout callback for that step. Lease its intrinsic cached body
+        // frame for this generation so the old fullscreen frame cannot win the
+        // first render. Ordinary sheet-to-sheet transitions never enter here.
+        const cachedContentHeight =
+          readCachedSheetContentHeightRef.current?.(trayId);
+
+        if (cachedContentHeight !== undefined) {
+          onSheetFramePreparedRef.current?.(
+            cachedContentHeight + nextFooterHeight,
+            "target",
+            trayId,
+          );
+        }
       }
     }
     setLayoutAnimationEnabled(true);

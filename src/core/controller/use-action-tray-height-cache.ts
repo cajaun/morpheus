@@ -1,6 +1,9 @@
 import { useCallback, useRef } from "react";
 import type { SharedValue } from "react-native-reanimated";
-import type { TrayMeasurementOwner } from "../../runtime/types";
+import type {
+  TrayMeasurementOwner,
+  TrayPresentationMode,
+} from "../../runtime/types";
 
 type Params = {
   fullScreen?: boolean;
@@ -19,12 +22,24 @@ export const useActionTrayHeightCache = ({
   >({});
 
   const handleContentHeightResolved = useCallback(
-    (resolvedHeight: number, _measuredHeight: number, trayId?: string) => {
-      if (!trayId) {
+    (
+      resolvedHeight: number,
+      _measuredHeight: number,
+      trayId?: string,
+      mode: TrayPresentationMode = "sheet",
+    ) => {
+      if (
+        !trayId ||
+        mode !== "sheet" ||
+        !Number.isFinite(resolvedHeight) ||
+        resolvedHeight <= 0 ||
+        measurementOwner?.mode === "fullScreen"
+      ) {
         return;
       }
 
-      // cache the resolved height because fullscreen may transform the raw measurement
+      // Only intrinsic sheet geometry is reusable. Fullscreen measurements are
+      // viewport endpoints, not body endpoints for a later sheet.
       contentHeightCacheRef.current[trayId] = {
         height: resolvedHeight,
         owner: measurementOwner,
@@ -34,15 +49,30 @@ export const useActionTrayHeightCache = ({
   );
 
   const restoreContentHeight = useCallback(
-    (trayId: string | undefined, measuredContentHeight: number) => {
+    (
+      trayId: string | undefined,
+      measuredContentHeight: number,
+      mode: TrayPresentationMode = fullScreen ? "fullScreen" : "sheet",
+    ) => {
       if (!trayId) {
         return undefined;
       }
 
       const cachedMeasurement = contentHeightCacheRef.current[trayId];
 
-      // fullscreen derives height from viewport constraints not prior sheet measurements
-      if (!fullScreen && cachedMeasurement != null) {
+      if (mode === "fullScreen") {
+        if (measuredContentHeight > 0) {
+          contentHeight.value = measuredContentHeight;
+          return measuredContentHeight;
+        }
+
+        return undefined;
+      }
+
+      if (
+        cachedMeasurement != null &&
+        cachedMeasurement.owner?.mode !== "fullScreen"
+      ) {
         contentHeight.value = cachedMeasurement.height;
         return cachedMeasurement.height;
       }
@@ -57,10 +87,23 @@ export const useActionTrayHeightCache = ({
     [contentHeight, fullScreen],
   );
 
+  const readCachedSheetContentHeight = useCallback((trayId?: string) => {
+    if (!trayId) {
+      return undefined;
+    }
+
+    const cachedMeasurement = contentHeightCacheRef.current[trayId];
+
+    return cachedMeasurement?.owner?.mode === "fullScreen"
+      ? undefined
+      : cachedMeasurement?.height;
+  }, []);
+
   return {
     actions: {
       handleContentHeightResolved,
       restoreContentHeight,
+      readCachedSheetContentHeight,
     },
   };
 };

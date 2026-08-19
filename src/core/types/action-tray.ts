@@ -46,6 +46,15 @@ export type ActionTrayRef = {
   isActive: () => boolean;
 };
 
+// A concrete sheet endpoint leased for one transition generation. The lease is
+// deliberately separate from live measurement so fullscreen geometry cannot
+// silently become the next sheet's layout authority.
+export type ActionTraySheetFrame = {
+  endpointKey: string;
+  generation: number;
+  totalHeight: number;
+};
+
 export type RenderedTrayState = {
   header: React.ReactNode;
   content: React.ReactNode;

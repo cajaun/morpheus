@@ -47,6 +47,41 @@ describe("useActionTrayContentSync", () => {
     expect(onGeometryMeasured).not.toHaveBeenCalled();
   });
 
+  it("does not accept viewport measurements while a sheet frame is leased", () => {
+    const contentHeight = shared(240);
+    const footerHeight = shared(64);
+    const onContentHeightResolved = jest.fn();
+    let handleContentLayout: ((event: never) => void) | null = null;
+
+    const Probe = () => {
+      const measurements = useActionTrayMeasurements({
+        contentHeight,
+        footerHeight,
+        renderedTrayId: "sheet-step",
+        contentMeasurementLeaseRef: { current: true },
+        onContentHeightResolved,
+      });
+
+      handleContentLayout = measurements.handlers.handleContentLayout as (
+        event: never,
+      ) => void;
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    act(() => {
+      handleContentLayout?.({
+        nativeEvent: { layout: { height: 760 } },
+      } as never);
+    });
+
+    expect(contentHeight.value).toBe(240);
+    expect(onContentHeightResolved).not.toHaveBeenCalled();
+  });
+
   it("keeps the last body frame when a rendered step reports zero height", () => {
     const contentHeight = shared(255);
     const footerHeight = shared(64);
@@ -182,6 +217,7 @@ describe("useActionTrayContentSync", () => {
             renderedHeader: null,
             renderedFooter: null,
             renderedFullScreen,
+            renderedTransitionContract: null,
           },
           actions: { showLatestSnapshot, syncRenderedNodes },
         },
@@ -227,7 +263,11 @@ describe("useActionTrayContentSync", () => {
     expect(resolveIncomingContentHeight).toHaveBeenCalledTimes(1);
     expect(restoreContentHeight).not.toHaveBeenCalled();
     expect(showLatestSnapshot).toHaveBeenCalledTimes(1);
-    expect(onSheetFramePrepared).toHaveBeenCalledWith(304);
+    expect(onSheetFramePrepared).toHaveBeenCalledWith(
+      304,
+      "source",
+      "tray-sheet",
+    );
     expect(morphProgress.value).toBe(0);
 
     act(() => {
@@ -261,7 +301,11 @@ describe("useActionTrayContentSync", () => {
     });
 
     // returning to sheet leases the measured frame through the layout animation
-    expect(onSheetFramePrepared).toHaveBeenCalledWith(304);
+    expect(onSheetFramePrepared).toHaveBeenCalledWith(
+      304,
+      "target",
+      "tray-sheet",
+    );
     expect(showLatestSnapshot).toHaveBeenCalledTimes(2);
   });
 
@@ -303,6 +347,7 @@ describe("useActionTrayContentSync", () => {
             renderedHeader: null,
             renderedFooter: null,
             renderedFullScreen,
+            renderedTransitionContract: null,
           },
           actions: { showLatestSnapshot, syncRenderedNodes },
         },
@@ -322,6 +367,96 @@ describe("useActionTrayContentSync", () => {
     });
 
     expect(footerHeight.value).toBe(64);
-    expect(onSheetFramePrepared).toHaveBeenCalledWith(304);
+    expect(onSheetFramePrepared).toHaveBeenCalledWith(
+      304,
+      "target",
+      "tray-sheet",
+    );
+  });
+
+  it("leases the next sheet frame after a fullscreen return", () => {
+    const contentHeight = shared(240);
+    const footerHeight = shared(64);
+    const morphProgress = shared(1);
+    const measuredContentHeight = shared(240);
+    const measuredFooterHeight = shared(64);
+    const showLatestSnapshot = jest.fn();
+    const syncRenderedNodes = jest.fn();
+    const setLayoutAnimationEnabled = jest.fn();
+    const onSheetFramePrepared = jest.fn();
+    const readCachedSheetContentHeight = jest.fn(() => 255);
+    const justOpenedRef = { current: false };
+
+    const Probe = () => {
+      useActionTrayContentSync({
+        visible: true,
+        interactive: true,
+        trayId: "tray-step-two",
+        fullScreen: false,
+        content: "step two",
+        header: "header two",
+        footer: "footer",
+        justOpenedRef,
+        measurements: {
+          state: { layoutEnabled: true },
+          actions: { setLayoutAnimationEnabled },
+          shared: { measuredContentHeight, measuredFooterHeight },
+        },
+        renderState: {
+          state: {
+            renderedTrayId: "tray-step-one",
+            renderedContent: "step one",
+            renderedHeader: "header one",
+            renderedFooter: "footer",
+            renderedFullScreen: false,
+            renderedTransitionContract: {
+              generation: 4,
+              reason: "returnToShell",
+              direction: "backward",
+              boundary: "fullScreenToSheet",
+              from: {
+                trayId: "tray-step-one",
+                stepIndex: 1,
+                stepKey: "step-one",
+                mode: "fullScreen",
+              },
+              to: {
+                trayId: "tray-step-one",
+                stepIndex: 1,
+                stepKey: "step-one",
+                mode: "sheet",
+              },
+              stepChanged: false,
+              pageChanged: false,
+              fullScreenChanged: true,
+              sharedRegions: [],
+            },
+          },
+          actions: { showLatestSnapshot, syncRenderedNodes },
+        },
+        contentHeight,
+        footerHeight,
+        morphProgress,
+        resolveIncomingContentHeight: jest.fn(() => 780),
+        restoreContentHeight: jest.fn(() => undefined),
+        readCachedSheetContentHeight,
+        onSheetFramePrepared,
+      });
+
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    expect(readCachedSheetContentHeight).toHaveBeenCalledWith(
+      "tray-step-two",
+    );
+    expect(onSheetFramePrepared).toHaveBeenCalledWith(
+      319,
+      "target",
+      "tray-step-two",
+    );
   });
 });

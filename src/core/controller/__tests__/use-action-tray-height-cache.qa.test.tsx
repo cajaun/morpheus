@@ -78,6 +78,24 @@ describe("useActionTrayHeightCache QA coverage", () => {
     expect(harness.contentHeight.value).toBe(760);
   });
 
+  it("AT-HEIGHT-EP-003 does not cache a fullscreen viewport endpoint", () => {
+    const harness = renderHeightCache();
+
+    harness.cache.actions.handleContentHeightResolved(
+      760,
+      760,
+      "content-one",
+      "fullScreen",
+    );
+
+    expect(
+      harness.cache.actions.restoreContentHeight("content-one", 0),
+    ).toBeUndefined();
+    expect(
+      harness.cache.actions.readCachedSheetContentHeight("content-one"),
+    ).toBeUndefined();
+  });
+
   it.each([
     ["AT-HEIGHT-BVA-001", undefined, 300],
     ["AT-HEIGHT-BVA-002", "unknown", 0],

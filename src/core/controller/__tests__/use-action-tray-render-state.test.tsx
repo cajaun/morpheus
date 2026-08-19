@@ -55,4 +55,45 @@ describe("useActionTrayRenderState", () => {
     expect(state!.state.renderedFullScreenBackgroundScale).toBe(1);
   });
 
+  it("keeps committed body regions through a transient same-mode prop gap", () => {
+    let state: ReturnType<typeof useActionTrayRenderState> | null = null;
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+
+    const Probe = ({
+      content,
+      header,
+      footer,
+    }: {
+      content?: React.ReactNode;
+      header?: React.ReactNode;
+      footer?: React.ReactNode;
+    }) => {
+      state = useActionTrayRenderState({
+        content,
+        header,
+        footer,
+        trayId: "tray-step",
+        fullScreen: false,
+      });
+
+      return null;
+    };
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <Probe content="body" header="header" footer="footer" />,
+      );
+    });
+
+    act(() => {
+      renderer!.update(<Probe />);
+      state!.actions.showLatestSnapshot();
+      state!.actions.syncRenderedNodes("tray-step");
+    });
+
+    expect(state!.state.renderedHeader).toBe("header");
+    expect(state!.state.renderedContent).toBe("body");
+    expect(state!.state.renderedFooter).toBe("footer");
+  });
+
 });

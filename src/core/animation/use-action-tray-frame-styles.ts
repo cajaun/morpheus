@@ -20,6 +20,7 @@ import type {
   ActionTrayAnimatedStyleParams,
   ActionTrayAnimationState,
 } from "./action-tray-animated-style-types";
+import { isSheetFrameForTransition } from "../controller/action-tray-sheet-frame";
 
 const EXPAND_FROM_TRIGGER_COLLAPSED_RADIUS =
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT / 2;
@@ -111,15 +112,15 @@ export const useActionTrayFrameStyles = ({
   keyboardHeight,
   morphProgress,
   originProgress,
-  preparedSheetFrameHeight,
-  preparedSheetFrameGeneration,
+  preparedSheetFrame,
   shouldUseOriginTransition,
   transition,
   transitionGeneration,
+  transitionSourceKey,
+  transitionTargetKey,
   transitionStartedGeneration,
   transitionLayoutStartedGeneration,
   transitionCompletedGeneration,
-  useMeasuredSheetHeight,
 }: Params) => {
   // footer-origin transitions begin at the footer edge instead of screen bottom
   const collapsedBottomInset =
@@ -128,10 +129,13 @@ export const useActionTrayFrameStyles = ({
       : EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET;
   const targetBottomInset =
     transition?.origin === "fullScreenFooter" ? collapsedBottomInset : 0;
-  const hasPreparedSheetFrame =
-    preparedSheetFrameHeight !== undefined &&
-    (transitionGeneration === undefined ||
-      preparedSheetFrameGeneration === transitionGeneration);
+  const hasPreparedSheetFrame = isSheetFrameForTransition(
+    preparedSheetFrame,
+    transitionGeneration,
+    transitionSourceKey,
+    transitionTargetKey,
+  );
+  const preparedSheetHeight = preparedSheetFrame?.totalHeight;
   // Concrete frame props are useful for stable snapshots, but they would
   // override the native layout clock during a fullscreen boundary. Let the
   // boundary layout own the shell frame and let its absolute footer child
@@ -146,14 +150,13 @@ export const useActionTrayFrameStyles = ({
         height: SCREEN_HEIGHT,
       }
     : !fullScreenBoundaryTransition &&
-        useMeasuredSheetHeight &&
         hasPreparedSheetFrame
       ? {
           left: HORIZONTAL_MARGIN,
           right: HORIZONTAL_MARGIN,
           top: "auto" as const,
           bottom: bottom + targetBottomInset,
-          height: preparedSheetFrameHeight,
+          height: preparedSheetHeight,
         }
       : undefined;
 
@@ -179,7 +182,7 @@ export const useActionTrayFrameStyles = ({
           (fullScreenBoundarySourceFullScreen ?? !fullScreen)
             ? SCREEN_HEIGHT
             : hasPreparedSheetFrame
-              ? preparedSheetFrameHeight
+              ? preparedSheetHeight
               : undefined,
         alignSelf: "flex-start" as const,
       }
@@ -209,7 +212,7 @@ export const useActionTrayFrameStyles = ({
       fullScreenBoundaryTransition &&
       !fullScreen &&
       hasPreparedSheetFrame
-        ? preparedSheetFrameHeight
+        ? preparedSheetHeight
         : resolvedSheetHeight;
     const targetLeft = fullScreen ? 0 : HORIZONTAL_MARGIN;
     const targetRight = fullScreen ? 0 : HORIZONTAL_MARGIN;
@@ -243,12 +246,12 @@ export const useActionTrayFrameStyles = ({
       const sourceHeight = sourceFullScreen
         ? SCREEN_HEIGHT
         : hasPreparedSheetFrame
-          ? preparedSheetFrameHeight
+          ? preparedSheetHeight ?? 0
           : resolvedSheetHeight ?? 0;
       const targetHeight = targetFullScreen
         ? SCREEN_HEIGHT
         : hasPreparedSheetFrame
-          ? preparedSheetFrameHeight
+          ? preparedSheetHeight ?? 0
           : resolvedSheetHeight ?? 0;
       const sourceLeft = sourceFullScreen ? 0 : HORIZONTAL_MARGIN;
       const targetBoundaryLeft = targetFullScreen ? 0 : HORIZONTAL_MARGIN;
@@ -338,7 +341,7 @@ export const useActionTrayFrameStyles = ({
       // let regular sheets derive geometry from children
       height: fullScreen
         ? SCREEN_HEIGHT
-        : shouldLeaseBoundarySheetFrame || useMeasuredSheetHeight
+        : shouldLeaseBoundarySheetFrame || hasPreparedSheetFrame
           ? boundarySheetFrameHeight
           // restore yoga height ownership after concrete fullscreen heights
           : "auto",
@@ -353,15 +356,15 @@ export const useActionTrayFrameStyles = ({
     fullScreenBoundarySourceFullScreen,
     fullScreenBoundaryTargetFullScreen,
     originProgress,
-    preparedSheetFrameHeight,
-    preparedSheetFrameGeneration,
+    preparedSheetFrame,
     shouldUseOriginTransition,
     targetBottomInset,
     transitionGeneration,
+    transitionSourceKey,
+    transitionTargetKey,
     transitionStartedGeneration,
     transitionLayoutStartedGeneration,
     transitionCompletedGeneration,
-    useMeasuredSheetHeight,
   ]);
 
   const contentFrameStyle = useAnimatedStyle(() => {
@@ -419,12 +422,12 @@ export const useActionTrayFrameStyles = ({
     const sourceHeight = sourceFullScreen
       ? SCREEN_HEIGHT
       : hasPreparedSheetFrame
-        ? preparedSheetFrameHeight
+        ? preparedSheetHeight
         : resolvedSheetHeight;
     const targetHeight = targetFullScreen
       ? SCREEN_HEIGHT
       : hasPreparedSheetFrame
-        ? preparedSheetFrameHeight
+        ? preparedSheetHeight
         : resolvedSheetHeight;
     const frameHeight = interpolate(
       progress,
@@ -455,10 +458,11 @@ export const useActionTrayFrameStyles = ({
     fullScreenBoundaryTransition,
     hasFooter,
     morphProgress,
-    preparedSheetFrameHeight,
-    preparedSheetFrameGeneration,
+    preparedSheetFrame,
     shouldUseOriginTransition,
     transitionGeneration,
+    transitionSourceKey,
+    transitionTargetKey,
     transitionStartedGeneration,
     transitionCompletedGeneration,
   ]);

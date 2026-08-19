@@ -30,6 +30,7 @@ import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animate
 import { useTrayBoundaryMotionState } from "./animation/use-tray-boundary-motion-state";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayController } from "./use-action-tray-controller";
+import { resolveTransitionEndpointKey } from "./controller/action-tray-sheet-frame";
 import {
   HORIZONTAL_MARGIN,
   TRAY_FOOTER_PADDING_BOTTOM,
@@ -134,8 +135,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       state: {
         layoutEnabled,
         isSurfaceReady,
-        preparedSheetFrameHeight,
-        preparedSheetFrameGeneration,
+        preparedSheetFrame,
         renderedHeader,
         renderedFooter,
         renderedContent,
@@ -150,7 +150,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         renderedFooterStyle,
         renderedFooterClassName,
         measureFooter,
-        useMeasuredSheetHeight,
       },
       handlers: {
         handleContentLayout,
@@ -228,9 +227,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       keyboardHeight: trayKeyboardHeight,
       frameFullScreen,
       fullScreen: presentationFullScreen,
-      preparedSheetFrameHeight,
-      preparedSheetFrameGeneration,
-      useMeasuredSheetHeight,
+      preparedSheetFrame,
       visible,
       layoutEnabled,
       originProgress,
@@ -249,6 +246,12 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           ? transitionContract.to?.mode === "fullScreen"
           : undefined,
       transitionGeneration: transitionContract?.generation,
+      transitionSourceKey: resolveTransitionEndpointKey(
+        transitionContract?.from,
+      ),
+      transitionTargetKey: resolveTransitionEndpointKey(
+        transitionContract?.to,
+      ),
       transition,
     });
 

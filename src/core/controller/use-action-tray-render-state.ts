@@ -75,6 +75,23 @@ const commitTraySnapshot = (
   current: InternalRenderedTrayState,
   next: RenderedTrayState,
 ): InternalRenderedTrayState => {
+  const isTransientEmptyPayload =
+    current.trayId !== undefined &&
+    next.trayId !== undefined &&
+    current.trayId === next.trayId &&
+    current.fullScreen === next.fullScreen &&
+    next.header == null &&
+    next.content == null &&
+    (current.header != null || current.content != null);
+
+  if (isTransientEmptyPayload) {
+    log("RENDER SNAPSHOT PUBLISH IGNORED — transient empty payload", {
+      current: describeTrayState(current),
+      next: describeTrayState(next),
+    });
+    return current;
+  }
+
   if (areTrayStatesEqual(current, next)) {
     // returning current avoids a render when passive sync repeats the same snapshot
     return current;
@@ -209,8 +226,19 @@ export const useActionTrayRenderState = ({
       }
 
       const next = {
-        content: contentRef.current ?? null,
-        header: headerRef.current ?? null,
+        // Native host recycling can expose a one-render prop gap. Preserve
+        // committed body regions for same-mode updates; an actual step/mode
+        // change publishes through showLatestSnapshot instead.
+        content:
+          contentRef.current ??
+          (fullScreenRef.current === current.fullScreen
+            ? current.content
+            : null),
+        header:
+          headerRef.current ??
+          (fullScreenRef.current === current.fullScreen
+            ? current.header
+            : null),
         footer: footerRef.current ?? null,
         trayId: current.trayId,
         fullScreen: fullScreenRef.current,
