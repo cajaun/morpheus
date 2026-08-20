@@ -11,6 +11,8 @@ import {
   markTrayStepPresenterResolved,
   markTrayStepSlotCommitted,
 } from "../../telemetry/tray-step-timing";
+import { describeTrayTransition } from "../../core/diagnostics/action-tray-transition-diagnostics";
+import { log } from "../../core/logger";
 import {
   createIdleSlot,
   resolveNextActiveSlotIndex,
@@ -218,6 +220,37 @@ export const RootTraySlots = ({
       return next;
     });
   }, [activeHost, transitionContract]);
+
+  useLayoutEffect(() => {
+    log("HOST SLOT STATE", {
+      activeHost: activeHost
+        ? {
+            rootTrayId: activeHost.rootTrayId,
+            trayId: activeHost.trayId,
+            fullScreen: activeHost.fullScreen,
+            visible: activeHost.visible,
+            interactive: activeHost.interactive,
+          }
+        : null,
+      transition: describeTrayTransition(transitionContract),
+      activeSlotIndex: activeSlotIndexRef.current,
+      pendingHost: pendingPresentedHostRef.current
+        ? {
+            rootTrayId: pendingPresentedHostRef.current.rootTrayId,
+            trayId: pendingPresentedHostRef.current.trayId,
+            fullScreen: pendingPresentedHostRef.current.fullScreen,
+          }
+        : null,
+      slots: hostSlots.map((slot) => ({
+        assignmentId: slot.assignmentId,
+        visible: slot.visible,
+        interactive: slot.interactive,
+        rootTrayId: slot.payload?.rootTrayId,
+        trayId: slot.payload?.trayId,
+        fullScreen: slot.payload?.fullScreen,
+      })),
+    });
+  }, [activeHost, hostSlots, transitionContract]);
 
   useLayoutEffect(() => {
     if (!isActionTrayInstrumentationEnabled()) {

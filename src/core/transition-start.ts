@@ -7,6 +7,7 @@ import {
   type SharedValue,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
+import { log } from "./logger";
 
 export type TrayTransitionStart = {
   generation: number;
@@ -87,6 +88,8 @@ interface TransitionStartAnimation
   completedGeneration: SharedValue<number>;
   waitingForClock: boolean;
   started: boolean;
+  diagnosticStarted: boolean;
+  diagnosticCompleted: boolean;
 }
 
 type WithTrayTransitionStart = <T extends AnimatableValue>(
@@ -146,7 +149,9 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
           ? startedAt.value
           : now;
 
-        if (!completed && startedGeneration.value < generation) {
+        const publishedClock = !completed && startedGeneration.value < generation;
+
+        if (publishedClock) {
           publishTrayTransitionStart(
             startedGeneration,
             startedAt,
@@ -164,6 +169,21 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         animation.current = nextAnimation.current ?? value;
         animation.waitingForClock = false;
         animation.started = true;
+
+        if (!animation.diagnosticStarted) {
+          animation.diagnosticStarted = true;
+          scheduleOnRN(log, "TRANSITION PARTICIPANT START", {
+            generation,
+            participant,
+            waitForClock,
+            publishedClock,
+            completed,
+            clockStartedGeneration: startedGeneration.value,
+            clockStartedAt: startedAt.value,
+            innerStartedAt,
+            now,
+          });
+        }
 
         if (onStartSignal) {
           scheduleOnRN(onStartSignal, innerStartedAt, generation);
@@ -196,6 +216,19 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
             (participant === "incoming" &&
               animation.layoutStartedGeneration.value < generation))
         ) {
+          if (!animation.diagnosticCompleted) {
+            animation.diagnosticCompleted = true;
+            scheduleOnRN(log, "TRANSITION PARTICIPANT COMPLETE", {
+              generation,
+              participant,
+              clockStartedGeneration: startedGeneration.value,
+              clockStartedAt: startedAt.value,
+              layoutStartedGeneration:
+                animation.layoutStartedGeneration.value,
+              completedGeneration: animation.completedGeneration.value,
+              now,
+            });
+          }
           completeTrayTransition(animation.completedGeneration, generation);
         }
 
@@ -240,6 +273,8 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         completedGeneration,
         waitingForClock: false,
         started: false,
+        diagnosticStarted: false,
+        diagnosticCompleted: false,
       };
     },
   );

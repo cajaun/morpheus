@@ -9,6 +9,8 @@ import {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { FULL_SCREEN_LAYOUT_DURATION } from "../constants";
+import { describeTrayTransition } from "../diagnostics/action-tray-transition-diagnostics";
+import { log } from "../logger";
 import { withTrayTransitionStart } from "../transition-start";
 import type { TrayTransitionContract } from "../../runtime/types";
 
@@ -82,6 +84,22 @@ export const useTrayBoundaryMotionState = ({
 
     previousModeRef.current = presentationFullScreen;
 
+    log("BOUNDARY CONFIG", {
+      modeChanged,
+      hasBoundaryContract,
+      boundaryActive: boundaryActive.value,
+      morphProgress: morphProgress.value,
+      transitionStartedAt: transitionStartedAt.value,
+      transitionStartedGeneration: transitionStartedGeneration.value,
+      transitionLayoutStartedGeneration:
+        transitionLayoutStartedGeneration.value,
+      transitionCompletedGeneration: transitionCompletedGeneration.value,
+      presentationFullScreen,
+      targetBackgroundScale,
+      targetSafeAreaTop,
+      transition: describeTrayTransition(transitionContract),
+    });
+
     if (isBoundaryTransition) {
       // use the last rendered mode values as the source frame for this generation
       sourceBackgroundScale.value = currentBackgroundScale.value;
@@ -130,6 +148,7 @@ export const useTrayBoundaryMotionState = ({
     targetBackgroundScale,
     targetSafeAreaTop,
     transitionCompletedGeneration,
+    transitionContract,
     transitionContract?.fullScreenChanged,
     transitionContract?.generation,
     transitionLayoutStartedGeneration,
@@ -157,6 +176,14 @@ export const useTrayBoundaryMotionState = ({
       }
 
       morphStartedGeneration.value = transitionGeneration;
+      scheduleOnRN(log, "BOUNDARY CLOCK START", {
+        generation: transitionGeneration,
+        startedAt: transitionStartedAt.value,
+        startedGeneration: state.startedGeneration,
+        layoutStartedGeneration: transitionLayoutStartedGeneration.value,
+        completedGeneration: state.completedGeneration,
+        morphProgress: morphProgress.value,
+      });
       morphProgress.value = withTrayTransitionStart(
         withTiming(
           1,
@@ -209,8 +236,38 @@ export const useTrayBoundaryMotionState = ({
       destinationSafeAreaTop: destinationSafeAreaTop.value,
       visibility: visibilityProgress.value,
     }),
-    (state) => {
+    (state, previous) => {
       const progress = Math.min(1, Math.max(0, state.progress));
+
+      if (
+        state.active &&
+        progress >= 1 &&
+        (!previous || previous.progress < 1)
+      ) {
+        scheduleOnRN(log, "BOUNDARY CLOCK REACHED END", {
+          generation: transitionGeneration,
+          progress,
+          presentationFullScreen,
+          transitionStartedAt: transitionStartedAt.value,
+          transitionStartedGeneration: transitionStartedGeneration.value,
+          transitionLayoutStartedGeneration:
+            transitionLayoutStartedGeneration.value,
+          transitionCompletedGeneration: transitionCompletedGeneration.value,
+        });
+      }
+
+      if (previous?.active && !state.active) {
+        scheduleOnRN(log, "BOUNDARY CLOCK INACTIVE", {
+          generation: transitionGeneration,
+          progress,
+          presentationFullScreen,
+          transitionStartedAt: transitionStartedAt.value,
+          transitionStartedGeneration: transitionStartedGeneration.value,
+          transitionLayoutStartedGeneration:
+            transitionLayoutStartedGeneration.value,
+          transitionCompletedGeneration: transitionCompletedGeneration.value,
+        });
+      }
 
       if (state.active) {
         const nextBackgroundScale =

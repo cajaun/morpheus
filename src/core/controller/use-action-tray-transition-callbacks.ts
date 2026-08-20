@@ -12,6 +12,7 @@ import type {
   TrayTransitionLifecycle,
 } from "../../runtime/types";
 import { log } from "../logger";
+import { describeTrayTransition } from "../diagnostics/action-tray-transition-diagnostics";
 import type { ActionTraySheetFrame } from "../types/action-tray";
 
 type Ref<T> = { current: T };
@@ -97,6 +98,18 @@ export const useActionTrayTransitionCallbacks = ({
         fullScreenBoundary:
           activeTransitionRef.current?.fullScreenChanged ??
           renderedTransitionRef.current?.fullScreenChanged,
+        activeTransition: describeTrayTransition(activeTransitionRef.current),
+        renderedTransition: describeTrayTransition(
+          renderedTransitionRef.current,
+        ),
+        preparedSheetFrame: preparedSheetFrameRef.current
+          ? {
+              endpointKey: preparedSheetFrameRef.current.endpointKey,
+              generation: preparedSheetFrameRef.current.generation,
+              totalHeight: preparedSheetFrameRef.current.totalHeight,
+            }
+          : null,
+        leaseActive: contentMeasurementLeaseRef.current,
       });
       markTrayStepLayoutConfigured(
         rootTrayId,
@@ -107,6 +120,8 @@ export const useActionTrayTransitionCallbacks = ({
       activeTrayIdRef,
       activeTransitionGenerationRef,
       activeTransitionRef,
+      contentMeasurementLeaseRef,
+      preparedSheetFrameRef,
       renderedTransitionGenerationRef,
       renderedTransitionRef,
       rootTrayId,
@@ -147,6 +162,18 @@ export const useActionTrayTransitionCallbacks = ({
         renderedFullScreen: renderedFullScreenRef.current,
         contentHeight: latestLayoutFrameRef.current.contentHeight,
         footerHeight: latestLayoutFrameRef.current.footerHeight,
+        activeTransition: describeTrayTransition(activeTransitionRef.current),
+        renderedTransition: describeTrayTransition(
+          renderedTransitionRef.current,
+        ),
+        preparedSheetFrame: preparedSheetFrameRef.current
+          ? {
+              endpointKey: preparedSheetFrameRef.current.endpointKey,
+              generation: preparedSheetFrameRef.current.generation,
+              totalHeight: preparedSheetFrameRef.current.totalHeight,
+            }
+          : null,
+        leaseActive: contentMeasurementLeaseRef.current,
       });
 
       if (activeTransition) {
@@ -170,6 +197,8 @@ export const useActionTrayTransitionCallbacks = ({
       activeTransitionGenerationRef,
       activeTransitionRef,
       latestLayoutFrameRef,
+      contentMeasurementLeaseRef,
+      preparedSheetFrameRef,
       renderedFullScreenRef,
       renderedTransitionGenerationRef,
       renderedTransitionRef,
@@ -234,6 +263,18 @@ export const useActionTrayTransitionCallbacks = ({
         contentHeight: latestLayoutFrameRef.current.contentHeight,
         footerHeight: latestLayoutFrameRef.current.footerHeight,
         returningToSheet: returningToSheetRef.current,
+        activeTransition: describeTrayTransition(activeTransitionRef.current),
+        renderedTransition: describeTrayTransition(
+          renderedTransitionRef.current,
+        ),
+        preparedSheetFrame: preparedSheetFrameRef.current
+          ? {
+              endpointKey: preparedSheetFrameRef.current.endpointKey,
+              generation: preparedSheetFrameRef.current.generation,
+              totalHeight: preparedSheetFrameRef.current.totalHeight,
+            }
+          : null,
+        leaseActive: contentMeasurementLeaseRef.current,
       });
 
       if (activeTransition) {
@@ -261,6 +302,21 @@ export const useActionTrayTransitionCallbacks = ({
         const completedToSheet =
           activeTransition?.fullScreenChanged === true &&
           activeTransition.to?.mode === "sheet";
+
+        log("SHEET FRAME COMPLETION DECISION", {
+          completedGeneration,
+          frameGeneration: completedSheetFrame.generation,
+          completedToSheet,
+          activeTransition: describeTrayTransition(activeTransition),
+          renderedTransition: describeTrayTransition(
+            renderedTransitionRef.current,
+          ),
+          frameEndpointKey: completedSheetFrame.endpointKey,
+          frameTotalHeight: completedSheetFrame.totalHeight,
+          measuredFooterHeight: measuredFooterHeightRef.current,
+          footerHeight: footerHeight.value,
+          leaseActive: contentMeasurementLeaseRef.current,
+        });
 
         if (completedToSheet) {
           const footerEndpointHeight =

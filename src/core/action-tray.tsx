@@ -1,5 +1,6 @@
 import React, {
   forwardRef,
+  useEffect,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
@@ -31,6 +32,8 @@ import { useTrayBoundaryMotionState } from "./animation/use-tray-boundary-motion
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayController } from "./use-action-tray-controller";
 import { resolveTransitionEndpointKey } from "./controller/action-tray-sheet-frame";
+import { describeTrayTransition } from "./diagnostics/action-tray-transition-diagnostics";
+import { log } from "./logger";
 import {
   HORIZONTAL_MARGIN,
   TRAY_FOOTER_PADDING_BOTTOM,
@@ -202,6 +205,40 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       transitionContract?.fullScreenChanged ?? false;
     const shouldUseLayoutAnimation =
       layoutEnabled && !isFullScreenBoundaryTransition;
+
+    useEffect(() => {
+      log("SHELL LAYOUT POLICY", {
+        trayId,
+        renderedTrayId,
+        assignmentId,
+        layoutEnabled,
+        nativeLayoutAnimationEnabled: shouldUseLayoutAnimation,
+        fullScreenBoundaryTransition: isFullScreenBoundaryTransition,
+        incomingFullScreen: !!fullScreen,
+        frameFullScreen,
+        presentationFullScreen,
+        preparedSheetFrame: preparedSheetFrame
+          ? {
+              endpointKey: preparedSheetFrame.endpointKey,
+              generation: preparedSheetFrame.generation,
+              totalHeight: preparedSheetFrame.totalHeight,
+            }
+          : null,
+        transition: describeTrayTransition(transitionContract),
+      });
+    }, [
+      assignmentId,
+      frameFullScreen,
+      fullScreen,
+      isFullScreenBoundaryTransition,
+      layoutEnabled,
+      preparedSheetFrame,
+      presentationFullScreen,
+      renderedTrayId,
+      shouldUseLayoutAnimation,
+      trayId,
+      transitionContract,
+    ]);
 
     const {
       footerSpacerStyle,

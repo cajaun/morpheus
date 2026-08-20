@@ -12,6 +12,7 @@ import type {
 } from "../../runtime/types";
 import { createTrayMeasurementOwner } from "../../runtime/types";
 import { log } from "../logger";
+import { describeTrayTransition } from "../diagnostics/action-tray-transition-diagnostics";
 import { createTrayEndpointKey } from "./action-tray-sheet-frame";
 import type { ActionTraySheetFrame } from "../types/action-tray";
 
@@ -84,6 +85,43 @@ export const useActionTrayGeometryOwnership = ({
       generation: renderedTransitionContract.generation,
     });
   }, [measurementEndpoint, renderedTransitionContract, rootTrayId]);
+
+  useLayoutEffect(() => {
+    log("GEOMETRY OWNERSHIP", {
+      visible,
+      rootTrayId,
+      activeTrayId: trayId,
+      renderedTrayId,
+      incomingFullScreen: !!fullScreen,
+      presentationFullScreen,
+      leaseActive: contentMeasurementLeaseRef.current,
+      preparedSheetFrame: preparedSheetFrameRef.current
+        ? {
+            endpointKey: preparedSheetFrameRef.current.endpointKey,
+            generation: preparedSheetFrameRef.current.generation,
+            totalHeight: preparedSheetFrameRef.current.totalHeight,
+          }
+        : null,
+      measurementOwner: measurementOwner
+        ? {
+            presentationKey: measurementOwner.presentationKey,
+            generation: measurementOwner.generation,
+          }
+        : null,
+      activeTransition: describeTrayTransition(transitionContract),
+      renderedTransition: describeTrayTransition(renderedTransitionContract),
+    });
+  }, [
+    fullScreen,
+    measurementOwner,
+    presentationFullScreen,
+    renderedTransitionContract,
+    renderedTrayId,
+    rootTrayId,
+    transitionContract,
+    trayId,
+    visible,
+  ]);
 
   useLayoutEffect(() => {
     if (!fullScreen && presentationFullScreen) {
@@ -227,11 +265,14 @@ export const useActionTrayGeometryOwnership = ({
       setPreparedSheetFrame(frame);
       log("SHEET FRAME PREPARED", {
         activeGeneration: activeTransition.generation,
+        activeTransition: describeTrayTransition(activeTransition),
         endpointKey: frame.endpointKey,
         frameTrayId,
         generation: frame.generation,
         role,
         totalHeight: frame.totalHeight,
+        renderedTransition: describeTrayTransition(renderedTransitionRef.current),
+        leaseActive: contentMeasurementLeaseRef.current,
       });
     },
     [],

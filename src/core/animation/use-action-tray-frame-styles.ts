@@ -1,7 +1,10 @@
+import { useEffect } from "react";
 import {
   interpolate,
+  useAnimatedReaction,
   useAnimatedStyle,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import {
   BORDER_RADIUS,
   EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
@@ -21,6 +24,7 @@ import type {
   ActionTrayAnimationState,
 } from "./action-tray-animated-style-types";
 import { isSheetFrameForTransition } from "../controller/action-tray-sheet-frame";
+import { log } from "../logger";
 import {
   isBoundaryClockStarted,
   resolveBoundaryContentStyle,
@@ -92,6 +96,94 @@ export const useActionTrayFrameStyles = ({
     transitionTargetKey,
   );
   const preparedSheetHeight = preparedSheetFrame?.totalHeight;
+  const preparedFrameGeneration = preparedSheetFrame?.generation ?? 0;
+  const preparedFrameHeight = preparedSheetFrame?.totalHeight ?? 0;
+
+  useEffect(() => {
+    log("FRAME STYLE POLICY", {
+      fullScreen,
+      fullScreenBoundaryTransition,
+      fullScreenBoundarySourceFullScreen,
+      fullScreenBoundaryTargetFullScreen,
+      transitionGeneration,
+      transitionSourceKey,
+      transitionTargetKey,
+      hasPreparedSheetFrame,
+      preparedFrameGeneration,
+      preparedFrameHeight,
+      morphProgress: morphProgress.value,
+      transitionStartedGeneration: transitionStartedGeneration?.value,
+      transitionLayoutStartedGeneration:
+        transitionLayoutStartedGeneration?.value,
+      transitionCompletedGeneration: transitionCompletedGeneration?.value,
+    });
+  }, [
+    fullScreen,
+    fullScreenBoundarySourceFullScreen,
+    fullScreenBoundaryTargetFullScreen,
+    fullScreenBoundaryTransition,
+    hasPreparedSheetFrame,
+    morphProgress,
+    preparedFrameGeneration,
+    preparedFrameHeight,
+    transitionCompletedGeneration,
+    transitionGeneration,
+    transitionLayoutStartedGeneration,
+    transitionSourceKey,
+    transitionStartedGeneration,
+    transitionTargetKey,
+  ]);
+
+  useAnimatedReaction(
+    () => ({
+      fullScreen: fullScreen ? 1 : 0,
+      boundary: fullScreenBoundaryTransition ? 1 : 0,
+      transitionGeneration: transitionGeneration ?? 0,
+      hasPreparedSheetFrame: hasPreparedSheetFrame ? 1 : 0,
+      preparedFrameGeneration,
+      preparedFrameHeight,
+      morphProgress: morphProgress.value,
+      transitionStartedGeneration:
+        transitionStartedGeneration?.value ?? 0,
+      transitionLayoutStartedGeneration:
+        transitionLayoutStartedGeneration?.value ?? 0,
+      transitionCompletedGeneration:
+        transitionCompletedGeneration?.value ?? 0,
+    }),
+    (state, previous) => {
+      if (
+        previous &&
+        state.fullScreen === previous.fullScreen &&
+        state.boundary === previous.boundary &&
+        state.transitionGeneration === previous.transitionGeneration &&
+        state.hasPreparedSheetFrame === previous.hasPreparedSheetFrame &&
+        state.preparedFrameGeneration === previous.preparedFrameGeneration &&
+        state.preparedFrameHeight === previous.preparedFrameHeight &&
+        state.transitionStartedGeneration ===
+          previous.transitionStartedGeneration &&
+        state.transitionLayoutStartedGeneration ===
+          previous.transitionLayoutStartedGeneration &&
+        state.transitionCompletedGeneration ===
+          previous.transitionCompletedGeneration
+      ) {
+        return;
+      }
+
+      scheduleOnRN(log, "FRAME STYLE UI STATE", state);
+    },
+    [
+      fullScreen,
+      fullScreenBoundaryTransition,
+      hasPreparedSheetFrame,
+      morphProgress,
+      preparedFrameGeneration,
+      preparedFrameHeight,
+      transitionCompletedGeneration,
+      transitionGeneration,
+      transitionLayoutStartedGeneration,
+      transitionStartedGeneration,
+    ],
+  );
   // let boundary layout own the shell frame while the absolute footer follows it
   const presentationFrameStyle =
     !fullScreenBoundaryTransition && fullScreen

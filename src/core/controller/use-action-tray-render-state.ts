@@ -3,6 +3,7 @@ import { StyleProp, ViewStyle } from "react-native";
 import { RenderedTrayState } from "../types";
 import type { TrayTransitionContract } from "../../runtime/types";
 import { log } from "../logger";
+import { describeTrayTransition } from "../diagnostics/action-tray-transition-diagnostics";
 
 // render state holds the committed payload while newer props continue to stream in
 type TraySnapshot = {
@@ -108,6 +109,7 @@ const describeTrayState = (state: RenderedTrayState) => ({
   hasFooter: state.footer != null,
   transitionGeneration: state.transitionContract?.generation,
   transitionBoundary: state.transitionContract?.boundary,
+  transition: describeTrayTransition(state.transitionContract),
 });
 
 export const useActionTrayRenderState = ({

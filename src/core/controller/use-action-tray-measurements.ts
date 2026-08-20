@@ -77,6 +77,40 @@ export const useActionTrayMeasurements = ({
     footerHeight.value = 0;
   }, [footerHeight, measuredFooterHeight, renderedFooter]);
 
+  useEffect(() => {
+    log("MEASUREMENT GATE", {
+      renderedTrayId,
+      renderedFullScreen,
+      hasRenderedBody,
+      renderedFooter: renderedFooter != null,
+      acceptContentMeasurement,
+      contentMeasurementLeaseActive,
+      contentMeasurementLeaseRef: contentMeasurementLeaseRef?.current ?? false,
+      measurementOwner: measurementOwner
+        ? {
+            presentationKey: measurementOwner.presentationKey,
+            generation: measurementOwner.generation,
+          }
+        : null,
+      latestMeasuredContentHeight: latestMeasuredContentHeightRef.current,
+      latestResolvedContentHeight: latestResolvedContentHeightRef.current,
+      latestMeasuredTrayId: latestMeasuredTrayIdRef.current,
+      contentHeight: contentHeight.value,
+      footerHeight: footerHeight.value,
+    });
+  }, [
+    acceptContentMeasurement,
+    contentHeight,
+    contentMeasurementLeaseActive,
+    contentMeasurementLeaseRef,
+    footerHeight,
+    hasRenderedBody,
+    measurementOwner,
+    renderedFooter,
+    renderedFullScreen,
+    renderedTrayId,
+  ]);
+
   const beginOpenMeasurement = useCallback(
     (hasFooter: boolean) => {
       // zeroing measurements avoids animating from stale geometry left by a prior step
@@ -186,6 +220,11 @@ export const useActionTrayMeasurements = ({
         log("CONTENT onLayout ignored during boundary handoff", {
           height: e.nativeEvent.layout.height,
           trayId: renderedTrayId,
+          acceptContentMeasurement,
+          contentMeasurementLeaseActive,
+          contentMeasurementLeaseRef: contentMeasurementLeaseRef?.current ?? false,
+          renderedFullScreen,
+          measurementOwner: measurementOwner?.presentationKey,
         });
         return;
       }
@@ -198,6 +237,13 @@ export const useActionTrayMeasurements = ({
         log("CONTENT onLayout ignored during sheet frame lease", {
           height: e.nativeEvent.layout.height,
           trayId: renderedTrayId,
+          acceptContentMeasurement,
+          contentMeasurementLeaseActive,
+          contentMeasurementLeaseRef: contentMeasurementLeaseRef?.current ?? false,
+          renderedFullScreen,
+          measurementOwner: measurementOwner?.presentationKey,
+          latestMeasuredContentHeight: latestMeasuredContentHeightRef.current,
+          latestResolvedContentHeight: latestResolvedContentHeightRef.current,
         });
         return;
       }
@@ -210,11 +256,14 @@ export const useActionTrayMeasurements = ({
         latestMeasurementOwnerRef.current?.presentationKey;
 
       if (callbackOwnerKey !== currentOwnerKey) {
-        log("CONTENT onLayout ignored — stale measurement owner", {
+      log("CONTENT onLayout ignored — stale measurement owner", {
           height,
           trayId: renderedTrayId,
           callbackOwnerKey,
           currentOwnerKey,
+          renderedFullScreen,
+          contentMeasurementLeaseActive,
+          contentMeasurementLeaseRef: contentMeasurementLeaseRef?.current ?? false,
         });
         return;
       }
@@ -230,6 +279,9 @@ export const useActionTrayMeasurements = ({
           previousMeasuredHeight,
           currentContentHeight: contentHeight.value,
           measurementOwner: currentOwnerKey,
+          renderedFullScreen,
+          contentMeasurementLeaseActive,
+          contentMeasurementLeaseRef: contentMeasurementLeaseRef?.current ?? false,
         });
         return;
       }
@@ -271,6 +323,11 @@ export const useActionTrayMeasurements = ({
         previousResolvedHeight,
         currentContentHeight: contentHeight.value,
         currentFooterHeight: footerHeight.value,
+        renderedFullScreen,
+        acceptContentMeasurement,
+        contentMeasurementLeaseActive,
+        contentMeasurementLeaseRef: contentMeasurementLeaseRef?.current ?? false,
+        measurementOwner: currentOwnerKey,
       });
     },
     [

@@ -10,6 +10,7 @@ import type { SharedValue } from "react-native-reanimated";
 import { markTrayStepSnapshotPublished } from "../../telemetry/tray-step-timing";
 import type { TrayTransitionContract } from "../../runtime/types";
 import { log } from "../logger";
+import { describeTrayTransition } from "../diagnostics/action-tray-transition-diagnostics";
 
 // this hook decides when new props should update the committed shell snapshot
 type Params = {
@@ -151,6 +152,8 @@ export const useActionTrayContentSync = ({
       footerHeight: footerHeight.value,
       layoutEnabled,
       preparesFullScreen: !!fullScreen,
+      morphProgress: morphProgress.value,
+      renderedTransition: describeTrayTransition(renderedTransitionContract),
     });
 
     // retain the last footer height when detached layout briefly reports zero during a boundary
@@ -182,6 +185,8 @@ export const useActionTrayContentSync = ({
         incomingHeight,
         applied: renderedFullScreen,
         previousContentHeight: contentHeight.value,
+        morphProgress: morphProgress.value,
+        renderedTransition: describeTrayTransition(renderedTransitionContract),
       });
 
       if (renderedFullScreen) {
@@ -225,6 +230,8 @@ export const useActionTrayContentSync = ({
       measuredContentHeight: measuredContentHeight.value,
       measuredFooterHeight: measuredFooterHeight.value,
       resolvedContentHeight: contentHeight.value,
+      morphProgress: morphProgress.value,
+      renderedTransition: describeTrayTransition(renderedTransitionContract),
     });
     // shell level swaps key off tray identity not every prop change
     // eslint-disable-next-line react-hooks/exhaustive-deps
