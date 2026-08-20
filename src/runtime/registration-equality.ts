@@ -30,9 +30,7 @@ const areRecordsEquivalent = (
   );
 };
 
-// React already reconciles equivalent elements by type, key, and props. The
-// registry applies the same authored-value rule before element identity reaches
-// the external store, so inline JSX does not become a false tray-definition update.
+// compare authored values before inline jsx reaches the external store as a false definition update
 export const areAuthoredValuesEquivalent = (
   left: unknown,
   right: unknown,
@@ -77,8 +75,7 @@ export const areAuthoredValuesEquivalent = (
     );
   }
 
-  // Functions and non-plain objects are meaningful references. Consumers only
-  // need useCallback/useMemo when those references intentionally form the API.
+  // functions and non plain objects are meaningful references consumers only need usecallback usememo when those references intentionally form the api
   return false;
 };
 

@@ -1,33 +1,26 @@
 import type { SharedValue } from "react-native-reanimated";
 import {
-  resolveTrayStepOptions,
   type TrayHostActionsValue,
   type TrayHostStateValue,
   type TrayRegistration,
   type TrayRuntimeStore,
-} from "../tray-context";
-import { markTrayOpenRequested } from "../../telemetry/tray-open-timing";
-import {
-  createTrayTransitionContract,
-  resolveTrayPresentationEndpoint,
-} from "../transition-contract";
-import type {
-  TrayPresentationEndpoint,
-  TraySharedRegionContract,
-  TrayTransitionContract,
-  TrayTransitionReason,
+  type TrayTransitionContract,
 } from "../types";
+import { markTrayOpenRequested } from "../../telemetry/tray-open-timing";
 import { areTrayRegistrationsEquivalent } from "../registration-equality";
+import { createTrayTransitionContract } from "../transition-contract";
 import { createTrayTransitionLifecycle } from "../transition-lifecycle";
-
-// the runtime store owns the only source of truth for tray identity and step index
-const clampIndex = (index: number, total: number) => {
-  if (total <= 0) {
-    return 0;
-  }
-
-  return Math.max(0, Math.min(index, total - 1));
-};
+import {
+  clampTrayRuntimeState,
+  clampTrayStepIndex,
+  createInitialTrayHostState,
+  reconcileTransitionAfterRegistration,
+  resolveActiveStepOptions,
+  resolveActiveTrayEndpoint,
+  resolveSharedRegions,
+  withActiveTrayFromStack,
+  withTrayTransition,
+} from "./tray-runtime-state";
 
 type Dependencies = {
   keyboardHeight: SharedValue<number>;
@@ -36,189 +29,11 @@ type Dependencies = {
   registerFocusable: TrayHostActionsValue["registerFocusable"];
 };
 
-const createInitialState = (
-  keyboardHeight: SharedValue<number>,
-): TrayHostStateValue => ({
-  registry: {},
-  activeTrayId: null,
-  activeIndex: 0,
-  stack: [],
-  transitionGeneration: 0,
-  transition: null,
-  keyboardHeight,
-});
-
-const withActiveFromStack = (state: TrayHostStateValue): TrayHostStateValue => {
-  const activeEntry = state.stack[state.stack.length - 1];
-
-  // active tray mirrors the stack top so nested trays can take focus
-  return {
-    ...state,
-    activeTrayId: activeEntry?.trayId ?? null,
-    activeIndex: activeEntry?.index ?? 0,
-  };
-};
-
-const resolveActiveEndpoint = (state: TrayHostStateValue) => {
-  const entry = state.stack[state.stack.length - 1];
-
-  return resolveTrayPresentationEndpoint({
-    entry,
-    registration: entry ? state.registry[entry.trayId] : undefined,
-  });
-};
-
-const resolveEndpointPresentation = (
-  state: TrayHostStateValue,
-  endpoint: TrayPresentationEndpoint | null,
-) => {
-  if (!endpoint) {
-    return null;
-  }
-
-  const registration = state.registry[endpoint.trayId];
-  const step = registration?.steps[endpoint.stepIndex];
-
-  return step && registration ? { registration, step } : null;
-};
-
-const resolveSharedRegions = (
-  current: TrayHostStateValue,
-  next: TrayHostStateValue,
-  from: TrayPresentationEndpoint | null,
-  to: TrayPresentationEndpoint | null,
-): TraySharedRegionContract[] => {
-  const source = resolveEndpointPresentation(current, from);
-  const target = resolveEndpointPresentation(next, to);
-  const sameRoot = from?.trayId === to?.trayId;
-  const sameStep = sameRoot && from?.stepKey === to?.stepKey;
-  const sourceHeader = source?.step.header;
-  const targetHeader = target?.step.header;
-  const sourceFooter = source?.registration.footer;
-  const targetFooter = target?.registration.footer;
-
-  return [
-    {
-      region: "surface",
-      behavior: sameRoot ? "persistent" : "replace",
-      sourceId: from ? `${from.trayId}:surface` : undefined,
-      targetId: to ? `${to.trayId}:surface` : undefined,
-    },
-    {
-      region: "header",
-      behavior:
-        sourceHeader == null && targetHeader == null
-          ? "absent"
-          : sourceHeader === targetHeader
-            ? "persistent"
-            : "keyedOverlap",
-      sourceId: sourceHeader && from
-        ? `${from.trayId}:${from.stepKey}:header`
-        : undefined,
-      targetId: targetHeader && to
-        ? `${to.trayId}:${to.stepKey}:header`
-        : undefined,
-    },
-    {
-      region: "body",
-      behavior: sameStep ? "persistent" : "replace",
-      sourceId: from ? `${from.trayId}:${from.stepKey}:body` : undefined,
-      targetId: to ? `${to.trayId}:${to.stepKey}:body` : undefined,
-    },
-    {
-      region: "footer",
-      behavior:
-        sourceFooter == null && targetFooter == null
-          ? "absent"
-          : sourceFooter === targetFooter
-            ? "persistent"
-            : "keyedOverlap",
-      sourceId: sourceFooter && from ? `${from.trayId}:footer` : undefined,
-      targetId: targetFooter && to ? `${to.trayId}:footer` : undefined,
-    },
-  ];
-};
-
-const withTransition = (
-  current: TrayHostStateValue,
-  next: TrayHostStateValue,
-  reason: TrayTransitionReason,
-  generation: number,
-): TrayHostStateValue => {
-  const from = resolveActiveEndpoint(current);
-  const to = resolveActiveEndpoint(next);
-
-  return {
-    ...next,
-    transitionGeneration: generation,
-    transition: createTrayTransitionContract({
-      generation,
-      reason,
-      from,
-      to,
-      sharedRegions: resolveSharedRegions(current, next, from, to),
-    }),
-  };
-};
-
-const reconcileTransitionAfterRegistration = (
-  current: TrayHostStateValue,
-  next: TrayHostStateValue,
-  trayId: string,
-): TrayHostStateValue => {
-  const existingTransition = current.transition;
-  const activeEntry = next.stack[next.stack.length - 1];
-
-  if (
-    !existingTransition ||
-    !activeEntry ||
-    activeEntry.trayId !== trayId ||
-    existingTransition.to?.trayId !== trayId ||
-    existingTransition.to.stepIndex !== activeEntry.index
-  ) {
-    return next;
-  }
-
-  const nextTarget = resolveActiveEndpoint(next);
-
-  if (!nextTarget) {
-    return next;
-  }
-
-  const targetChanged =
-    existingTransition.to.stepKey !== nextTarget.stepKey ||
-    existingTransition.to.mode !== nextTarget.mode ||
-    existingTransition.to.pageIndex !== nextTarget.pageIndex;
-
-  if (!targetChanged) {
-    return next;
-  }
-
-  // Registration can settle after navigation when a step's authored options
-  // depend on the same event that requested next(). Keep one generation, but
-  // repair its target before the presenter commits the visual snapshot.
-  return {
-    ...next,
-    transition: createTrayTransitionContract({
-      generation: existingTransition.generation,
-      reason: existingTransition.reason,
-      from: existingTransition.from,
-      to: nextTarget,
-      sharedRegions: resolveSharedRegions(
-        current,
-        next,
-        existingTransition.from,
-        nextTarget,
-      ),
-    }),
-  };
-};
-
 export const createTrayRuntimeStore = (
   initialDependencies: Dependencies,
 ): TrayRuntimeStore => {
   let dependencies = initialDependencies;
-  let state = createInitialState(initialDependencies.keyboardHeight);
+  let state = createInitialTrayHostState(initialDependencies.keyboardHeight);
   const listeners = new Set<() => void>();
   const justOpenedRef = { current: false };
   const transitions = createTrayTransitionLifecycle();
@@ -243,7 +58,7 @@ export const createTrayRuntimeStore = (
       typeof nextState === "function" ? nextState(state) : nextState;
 
     if (resolvedState === state) {
-      // returning the same object skips subscriber work after no-op actions
+      // returning the same object skips subscriber work after no op actions
       return;
     }
 
@@ -272,46 +87,6 @@ export const createTrayRuntimeStore = (
     emitChange();
   };
 
-  const resolveClampedState = (current: TrayHostStateValue) => {
-    // registration can change under the active tray so the index must be clamped after every write
-    if (current.stack.length === 0) {
-      return withActiveFromStack(current);
-    }
-
-    const nextStack = current.stack
-      .filter((entry) => current.registry[entry.trayId])
-      .map((entry) => {
-        const tray = current.registry[entry.trayId];
-
-        return {
-          ...entry,
-          index: clampIndex(entry.index, tray?.steps.length ?? 0),
-        };
-      });
-
-    if (nextStack === current.stack) {
-      return current;
-    }
-
-    return withActiveFromStack({
-      ...current,
-      stack: nextStack,
-    });
-  };
-
-  const getActiveStepOptions = () => {
-    // close semantics live on the active step so we resolve options on demand
-    if (!state.activeTrayId) {
-      return resolveTrayStepOptions();
-    }
-
-    const activeTray = state.registry[state.activeTrayId];
-    const safeIndex = clampIndex(state.activeIndex, activeTray?.steps.length ?? 0);
-    const activeStep = activeTray?.steps[safeIndex];
-
-    return resolveTrayStepOptions(activeStep?.options);
-  };
-
   const actions: TrayHostActionsValue = {
     registerTray: (id: string, registration: TrayRegistration) => {
       setState((current) => {
@@ -322,7 +97,7 @@ export const createTrayRuntimeStore = (
         const existingPages = current.registry[id]?.pages;
 
         // step arrays can grow or shrink without changing tray identity
-        const next = resolveClampedState({
+        const next = clampTrayRuntimeState({
           ...current,
           registry: {
             ...current.registry,
@@ -345,13 +120,13 @@ export const createTrayRuntimeStore = (
         const nextRegistry = { ...current.registry };
         delete nextRegistry[id];
 
-        const next = resolveClampedState({
+        const next = clampTrayRuntimeState({
           ...current,
           registry: nextRegistry,
         });
 
         if (current.stack.some((entry) => entry.trayId === id)) {
-          return withTransition(
+          return withTrayTransition(
             current,
             next,
             current.stack.length > 1 ? "closeNested" : "dismiss",
@@ -408,7 +183,7 @@ export const createTrayRuntimeStore = (
           };
         }
 
-        return withTransition(
+        return withTrayTransition(
           current,
           next,
           "pageChange",
@@ -423,9 +198,9 @@ export const createTrayRuntimeStore = (
       void dependencies.dismissFocusedInputs(state.activeTrayId);
 
       setState((current) =>
-        withTransition(
+        withTrayTransition(
           current,
-          withActiveFromStack({
+          withActiveTrayFromStack({
             ...current,
             stack: [{ trayId: id, index: 0 }],
           }),
@@ -440,9 +215,9 @@ export const createTrayRuntimeStore = (
       void dependencies.dismissFocusedInputs(state.activeTrayId);
 
       setState((current) =>
-        withTransition(
+        withTrayTransition(
           current,
-          withActiveFromStack({
+          withActiveTrayFromStack({
             ...current,
             stack: [
               ...current.stack,
@@ -467,12 +242,12 @@ export const createTrayRuntimeStore = (
           return current;
         }
 
-        const next = withActiveFromStack({
+        const next = withActiveTrayFromStack({
           ...current,
           stack: current.stack.slice(0, -1),
         });
 
-        return withTransition(
+        return withTrayTransition(
           current,
           next,
           current.stack.length > 1 ? "closeNested" : "dismiss",
@@ -481,10 +256,10 @@ export const createTrayRuntimeStore = (
       });
     },
     requestCloseActiveTray: () => {
-      const activeStepOptions = getActiveStepOptions();
+      const activeStepOptions = resolveActiveStepOptions(state);
       const activeEntry = state.stack[state.stack.length - 1];
       const activeTray = activeEntry ? state.registry[activeEntry.trayId] : undefined;
-      const safeIndex = clampIndex(activeEntry?.index ?? 0, activeTray?.steps.length ?? 0);
+      const safeIndex = clampTrayStepIndex(activeEntry?.index ?? 0, activeTray?.steps.length ?? 0);
 
       if (
         activeStepOptions.fullScreen &&
@@ -499,9 +274,9 @@ export const createTrayRuntimeStore = (
               : entry,
           );
 
-          return withTransition(
+          return withTrayTransition(
             current,
-            withActiveFromStack({
+            withActiveTrayFromStack({
               ...current,
               stack: nextStack,
             }),
@@ -519,12 +294,12 @@ export const createTrayRuntimeStore = (
           return current;
         }
 
-        const next = withActiveFromStack({
+        const next = withActiveTrayFromStack({
           ...current,
           stack: current.stack.slice(0, -1),
         });
 
-        return withTransition(
+        return withTrayTransition(
           current,
           next,
           current.stack.length > 1 ? "closeNested" : "dismiss",
@@ -543,7 +318,7 @@ export const createTrayRuntimeStore = (
         const currentEntry = current.stack[activeStackIndex];
 
         if (!currentEntry || nextIndex === currentEntry.index) {
-          // no-op navigation should not wake presenter subscribers
+          // no op navigation should not wake presenter subscribers
           return current;
         }
 
@@ -551,9 +326,9 @@ export const createTrayRuntimeStore = (
           index === activeStackIndex ? { ...entry, index: nextIndex } : entry,
         );
 
-        return withTransition(
+        return withTrayTransition(
           current,
-          withActiveFromStack({
+          withActiveTrayFromStack({
             ...current,
             stack: nextStack,
           }),
@@ -579,9 +354,9 @@ export const createTrayRuntimeStore = (
           index === activeStackIndex ? { ...entry, index: nextIndex } : entry,
         );
 
-        return withTransition(
+        return withTrayTransition(
           current,
-          withActiveFromStack({
+          withActiveTrayFromStack({
             ...current,
             stack: nextStack,
           }),
@@ -596,7 +371,7 @@ export const createTrayRuntimeStore = (
       fromPageIndex,
       toPageIndex,
     ) => {
-      const from = resolveActiveEndpoint(state);
+      const from = resolveActiveTrayEndpoint(state);
 
       if (
         !from ||

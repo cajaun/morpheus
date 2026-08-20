@@ -31,8 +31,7 @@ const resolveProgress = (current: number, source: number, target: number) => {
   return Math.min(1, Math.max(0, (current - source) / distance));
 };
 
-// Follow the value Reanimated actually rendered instead of starting a parallel
-// timing animation that could drift from native layout scheduling.
+// follow the value reanimated actually rendered instead of starting a parallel timing animation that could drift from native layout scheduling
 export const withTrayLayoutProgress = function <T extends AnimationObject>(
   nextAnimationInput: T | (() => T),
   progress: SharedValue<number>,

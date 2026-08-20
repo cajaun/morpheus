@@ -127,8 +127,7 @@ describe("tray transition contract", () => {
       generation: 8,
       reason: "nextStep",
       from: endpoint(0, "sheet"),
-      // the target page is not registered when the runtime first resolves the
-      // step boundary
+      // the target page is not registered when the runtime first resolves the step boundary
       to: endpoint(1, "fullScreen"),
     });
 

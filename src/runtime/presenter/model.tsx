@@ -106,7 +106,7 @@ export const createPresentedTray = ({
     previousIndex,
     transition,
   });
-  // keyboard-aware steps preload keyboard behavior only for the entering step
+  // keyboard aware steps preload keyboard behavior only for the entering step
   const keyboardTransitionMode = stepOptions.keyboardAware ? "entering" : "idle";
 
   return {
@@ -158,8 +158,7 @@ export const createPresentedTray = ({
     transition: registration.transition,
     containerStyle: stepOptions.style,
     className: stepOptions.className,
-    // The tray surface owns the shell background. Footer styling is opt-in so
-    // the detached fixed control layer cannot create a second shell surface.
+    // the tray surface owns the shell background footer styling is opt in so the detached fixed control layer cannot create a second shell surface
     footerStyle: stepOptions.footerStyle,
     footerClassName: stepOptions.footerClassName,
     stackIndex,

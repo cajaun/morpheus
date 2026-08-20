@@ -18,18 +18,15 @@ import {
 import { log } from "./logger";
 import { SCREEN_HEIGHT, TRAY_KEYBOARD_GAP } from "./constants";
 import { KeyboardTransitionMode } from "./types";
-import type { TrayTransitionOptions } from "../runtime/tray-context";
 import type {
   TrayTransitionContract,
   TrayTransitionLifecycle,
   TrayGeometrySnapshot,
+  TrayTransitionOptions,
 } from "../runtime/types";
 import { createTrayMeasurementOwner } from "../runtime/types";
 import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
 import {
-  markTrayStepLayoutConfigured,
-  markTrayStepLayoutFinished,
-  markTrayStepLayoutStarted,
   markTrayStepRenderedCommit,
   markTrayStepShellLayout,
 } from "../telemetry/tray-step-timing";
@@ -39,6 +36,7 @@ import { useActionTrayMeasurements } from "./controller/use-action-tray-measurem
 import { useActionTrayOpenCloseLifecycle } from "./controller/use-action-tray-open-close-lifecycle";
 import { useActionTrayPresentationState } from "./controller/use-action-tray-presentation-state";
 import { useActionTrayRenderState } from "./controller/use-action-tray-render-state";
+import { useActionTrayTransitionCallbacks } from "./controller/use-action-tray-transition-callbacks";
 import { createTrayEndpointKey } from "./controller/action-tray-sheet-frame";
 import type { ActionTraySheetFrame } from "./types/action-tray";
 
@@ -193,8 +191,7 @@ export const useActionTrayController = ({
 
   useLayoutEffect(() => {
     if (!fullScreen && presentationFullScreen) {
-      // The frame lease is published by content sync. This marker only tells
-      // the layout completion callback when the return boundary is finished.
+      // the frame lease is published by content sync this marker only tells the layout completion callback when the return boundary is finished
       returningToSheetRef.current = true;
       return;
     }
@@ -214,13 +211,13 @@ export const useActionTrayController = ({
   });
   const renderedFullScreenRef = useRef(presentationFullScreen);
   renderedFullScreenRef.current = presentationFullScreen;
-  // Diagnostic frame data is updated from layout callbacks, never by reading
-  // shared values during React render. Reanimated strict mode treats render
-  // phase `.value` reads as an unsafe JS/UI synchronization point.
+  // collect diagnostic frames from layout callbacks so render never reads shared values
   const latestLayoutFrameRef = useRef({
     contentHeight: 0,
     footerHeight: 0,
   });
+  const resolveRenderedContentHeight =
+    presentation.helpers.resolveRenderedContentHeight;
 
   const resolveMeasuredContentHeight = useCallback(
     (measuredHeight: number) => {
@@ -230,8 +227,7 @@ export const useActionTrayController = ({
           : 0;
 
       if (!isEnteringFullScreen) {
-        const resolvedHeight =
-          presentation.helpers.resolveRenderedContentHeight(measuredHeight);
+        const resolvedHeight = resolveRenderedContentHeight(measuredHeight);
 
         // sheet mode trusts measured content and footer policy
         log("RESOLVE CONTENT HEIGHT", {
@@ -275,7 +271,7 @@ export const useActionTrayController = ({
       isEnteringFullScreen,
       keyboardHeight,
       fullScreen,
-      presentation.helpers.resolveRenderedContentHeight,
+      resolveRenderedContentHeight,
       presentationFullScreen,
       presentation.shared.footerHeight,
       trayId,
@@ -478,6 +474,32 @@ export const useActionTrayController = ({
     measurements.actions.commitContentHeight;
   const measuredFooterHeightRef =
     measurements.refs.latestMeasuredFooterHeightRef;
+  const clearPreparedSheetFrame = useCallback(() => {
+    setPreparedSheetFrame(undefined);
+  }, []);
+  const {
+    handleLayoutTransitionConfigured,
+    handleLayoutTransitionStart,
+    handleLayoutTransitionComplete,
+  } = useActionTrayTransitionCallbacks({
+    rootTrayId,
+    transitionLifecycle,
+    activeTrayIdRef,
+    activeTransitionGenerationRef,
+    activeTransitionRef,
+    renderedTransitionGenerationRef,
+    renderedTransitionRef,
+    renderedFullScreenRef,
+    lastHandledLayoutCompletionGenerationRef,
+    returningToSheetRef,
+    latestLayoutFrameRef,
+    preparedSheetFrameRef,
+    contentMeasurementLeaseRef,
+    measuredFooterHeightRef,
+    footerHeight: presentation.shared.footerHeight,
+    commitStableContentHeight,
+    clearPreparedSheetFrame,
+  });
 
   useEffect(() => {
     if (!visible) {
@@ -502,12 +524,16 @@ export const useActionTrayController = ({
       resolveMeasuredContentHeight(measurements.shared.measuredContentHeight.value);
   }, [
     measurements.shared.measuredContentHeight,
+    measurements.refs.latestMeasuredTrayIdRef,
     resolveMeasuredContentHeight,
     presentation.shared.contentHeight,
     renderState.state.renderedTrayId,
     trayId,
     visible,
   ]);
+
+  const clearRenderState = renderState.actions.clear;
+  const resetMeasurements = measurements.actions.reset;
 
   useEffect(() => {
     if (!visible) {
@@ -571,8 +597,8 @@ export const useActionTrayController = ({
     lastHandledLayoutCompletionGenerationRef.current = 0;
     presentation.shared.surfaceOpacity.value = 0;
     presentation.shared.active.value = false;
-    renderState.actions.clear();
-    measurements.actions.reset();
+    clearRenderState();
+    resetMeasurements();
     preparedSheetFrameRef.current = undefined;
     contentMeasurementLeaseRef.current = false;
     setPreparedSheetFrame(undefined);
@@ -586,8 +612,8 @@ export const useActionTrayController = ({
     morphProgress,
     presentation.shared.surfaceOpacity,
     presentation.shared.translateY,
-    measurements.actions.reset,
-    renderState.actions.clear,
+    resetMeasurements,
+    clearRenderState,
     transitionStartedAt,
     transitionStartedGeneration,
     transitionLayoutStartedGeneration,
@@ -702,252 +728,6 @@ export const useActionTrayController = ({
       }
     },
     [handleGeometryMeasured, rootTrayId],
-  );
-
-  const handleLayoutTransitionConfigured = useCallback(
-    (configuredAt: number, callbackGeneration?: number) => {
-      // Reanimated worklets and the JS runtime can expose different
-      // performance origins. The callback argument is useful for diagnosing
-      // the UI participant, but lifecycle/telemetry timestamps must be taken
-      // here so configured/start/finish share the JS performance clock.
-      const observedAt = performance.now();
-      const activeGeneration =
-        activeTransitionGenerationRef.current ??
-        renderedTransitionGenerationRef.current;
-
-      if (
-        callbackGeneration !== undefined &&
-        callbackGeneration > 0 &&
-        callbackGeneration !== activeGeneration
-      ) {
-        log("LAYOUT TRANSITION CONFIGURED IGNORED — stale generation", {
-          configuredAt: observedAt,
-          reportedConfiguredAt: configuredAt,
-          callbackGeneration,
-          activeGeneration,
-          trayId: activeTrayIdRef.current,
-        });
-        return;
-      }
-
-      log("LAYOUT TRANSITION CONFIGURED", {
-        configuredAt: observedAt,
-        reportedConfiguredAt: configuredAt,
-        trayId: activeTrayIdRef.current,
-        transitionGeneration:
-          callbackGeneration ??
-          activeTransitionRef.current?.generation ??
-          renderedTransitionRef.current?.generation,
-        fullScreenBoundary:
-          activeTransitionRef.current?.fullScreenChanged ??
-          renderedTransitionRef.current?.fullScreenChanged,
-      });
-      markTrayStepLayoutConfigured(
-        rootTrayId,
-        activeTrayIdRef.current,
-        observedAt,
-      );
-    },
-    [rootTrayId],
-  );
-
-  const handleLayoutTransitionStart = useCallback(
-    (startedAt: number, callbackGeneration?: number) => {
-      const observedAt = performance.now();
-      const activeTransition =
-        activeTransitionRef.current ?? renderedTransitionRef.current;
-      const activeGeneration =
-        activeTransitionGenerationRef.current ??
-        renderedTransitionGenerationRef.current;
-
-      if (
-        callbackGeneration !== undefined &&
-        callbackGeneration > 0 &&
-        callbackGeneration !== activeGeneration
-      ) {
-        log("LAYOUT TRANSITION START IGNORED — stale generation", {
-          startedAt: observedAt,
-          reportedStartedAt: startedAt,
-          callbackGeneration,
-          activeGeneration,
-          trayId: activeTrayIdRef.current,
-        });
-        return;
-      }
-
-      log("LAYOUT TRANSITION START", {
-        startedAt: observedAt,
-        reportedStartedAt: startedAt,
-        trayId: activeTrayIdRef.current,
-        transitionGeneration:
-          callbackGeneration ?? activeTransition?.generation,
-        fullScreenBoundary: activeTransition?.fullScreenChanged,
-        renderedFullScreen: renderedFullScreenRef.current,
-        contentHeight: latestLayoutFrameRef.current.contentHeight,
-        footerHeight: latestLayoutFrameRef.current.footerHeight,
-      });
-
-      if (activeTransition) {
-        transitionLifecycle?.mark(
-          callbackGeneration ?? activeTransition.generation,
-          "layoutStarted",
-          { trayId: activeTrayIdRef.current },
-          observedAt,
-        );
-      }
-
-      if (!isActionTrayInstrumentationEnabled()) {
-        return;
-      }
-
-      markTrayStepLayoutStarted(
-        rootTrayId,
-        activeTrayIdRef.current,
-        observedAt,
-      );
-    },
-    [
-      rootTrayId,
-      transitionLifecycle,
-    ],
-  );
-
-  const handleLayoutTransitionComplete = useCallback(
-    (finishedAt: number, callbackGeneration?: number) => {
-      const observedAt = performance.now();
-      const activeTransition =
-        activeTransitionRef.current ?? renderedTransitionRef.current;
-      const activeGeneration =
-        activeTransitionGenerationRef.current ??
-        renderedTransitionGenerationRef.current;
-      const hasCallbackGeneration =
-        callbackGeneration !== undefined && callbackGeneration > 0;
-
-      if (
-        hasCallbackGeneration &&
-        callbackGeneration !== activeGeneration
-      ) {
-        log("LAYOUT TRANSITION COMPLETE IGNORED — stale generation", {
-          finishedAt: observedAt,
-          reportedFinishedAt: finishedAt,
-          callbackGeneration,
-          activeGeneration,
-          trayId: activeTrayIdRef.current,
-        });
-        return;
-      }
-
-      if (
-        hasCallbackGeneration &&
-        callbackGeneration <=
-          lastHandledLayoutCompletionGenerationRef.current
-      ) {
-        log("LAYOUT TRANSITION COMPLETE IGNORED — duplicate generation", {
-          finishedAt: observedAt,
-          reportedFinishedAt: finishedAt,
-          callbackGeneration,
-          lastHandledGeneration:
-            lastHandledLayoutCompletionGenerationRef.current,
-          trayId: activeTrayIdRef.current,
-        });
-        return;
-      }
-
-      if (hasCallbackGeneration) {
-        lastHandledLayoutCompletionGenerationRef.current =
-          callbackGeneration;
-      }
-
-      log("LAYOUT TRANSITION COMPLETE", {
-        finishedAt: observedAt,
-        reportedFinishedAt: finishedAt,
-        trayId: activeTrayIdRef.current,
-        transitionGeneration:
-          callbackGeneration ?? activeTransition?.generation,
-        fullScreenBoundary: activeTransition?.fullScreenChanged,
-        renderedFullScreen: renderedFullScreenRef.current,
-        contentHeight: latestLayoutFrameRef.current.contentHeight,
-        footerHeight: latestLayoutFrameRef.current.footerHeight,
-        returningToSheet: returningToSheetRef.current,
-      });
-
-      if (activeTransition) {
-        transitionLifecycle?.mark(
-          callbackGeneration ?? activeTransition.generation,
-          "completed",
-          { trayId: activeTrayIdRef.current },
-          observedAt,
-        );
-      }
-
-      markTrayStepLayoutFinished(
-        rootTrayId,
-        activeTrayIdRef.current,
-        observedAt,
-      );
-
-      const completedGeneration =
-        callbackGeneration ?? activeTransition?.generation;
-      if (
-        preparedSheetFrameRef.current &&
-        completedGeneration === preparedSheetFrameRef.current.generation
-      ) {
-        const completedSheetFrame = preparedSheetFrameRef.current;
-        const completedToSheet =
-          activeTransition?.fullScreenChanged === true &&
-          activeTransition.to?.mode === "sheet";
-
-        if (completedToSheet) {
-          const footerEndpointHeight =
-            measuredFooterHeightRef.current > 0
-              ? measuredFooterHeightRef.current
-              : presentation.shared.footerHeight.value;
-          const stableContentHeight =
-            completedSheetFrame.totalHeight - footerEndpointHeight;
-
-          if (
-            commitStableContentHeight(
-              stableContentHeight,
-              activeTrayIdRef.current,
-              "sheet",
-            )
-          ) {
-            latestLayoutFrameRef.current.contentHeight = stableContentHeight;
-            latestLayoutFrameRef.current.footerHeight = footerEndpointHeight;
-          }
-        }
-
-        contentMeasurementLeaseRef.current = false;
-        preparedSheetFrameRef.current = undefined;
-        setPreparedSheetFrame(undefined);
-        log("SHEET FRAME RELEASED", {
-          completedGeneration,
-          trayId: activeTrayIdRef.current,
-          stableContentHeight: completedToSheet
-            ? completedSheetFrame.totalHeight -
-              (measuredFooterHeightRef.current > 0
-                ? measuredFooterHeightRef.current
-                : presentation.shared.footerHeight.value)
-            : undefined,
-        });
-      }
-
-      if (!returningToSheetRef.current) {
-        return;
-      }
-
-      // After the boundary completes, ordinary sheet steps return to Yoga's
-      // intrinsic height ownership. The concrete frame was only a transition
-      // lease, never a persistent layout mode.
-      returningToSheetRef.current = false;
-    },
-    [
-      commitStableContentHeight,
-      measuredFooterHeightRef,
-      presentation.shared.footerHeight,
-      rootTrayId,
-      transitionLifecycle,
-    ],
   );
 
   const imperativeApi = useMemo(

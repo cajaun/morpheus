@@ -26,7 +26,7 @@ import {
   markTrayOpenStarted,
   markTrayReadyToOpen,
 } from "../../telemetry/tray-open-timing";
-import type { TrayTransitionOptions } from "../../runtime/tray-context";
+import type { TrayTransitionOptions } from "../../runtime/types";
 
 // lifecycle owns the tray state machine around measurement springing and teardown
 type Params = {
@@ -187,7 +187,7 @@ export const useActionTrayOpenCloseLifecycle = ({
         shared.active.value = true;
 
         if (expandFromTrigger) {
-          // trigger-origin open enables layout only after the pill reaches full sheet geometry
+          // trigger origin open enables layout only after the pill reaches full sheet geometry
           shared.originProgress.value = withTiming(
             1,
             { duration: EXPAND_FROM_TRIGGER_OPEN_DURATION },
@@ -234,9 +234,11 @@ export const useActionTrayOpenCloseLifecycle = ({
     latestMeasuredFooterHeightRef,
     latestResolvedContentHeightRef,
     measuredFooterHeight,
+    rootTrayId,
     resolveClosedTranslateY,
     resolvedContentHeight,
     shared,
+    trayId,
     transition?.open,
     onTransitionStarted,
   ]);

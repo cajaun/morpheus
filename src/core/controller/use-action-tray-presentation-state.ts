@@ -6,10 +6,7 @@ import {
   type SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  SCREEN_HEIGHT,
-  TRAY_KEYBOARD_GAP,
-} from "../constants";
+import { SCREEN_HEIGHT } from "../constants";
 
 // presentation state owns the shared values read across gesture layout and lifecycle code
 type Params = {
@@ -84,7 +81,7 @@ export const useActionTrayPresentationState = ({
 
       return nextContentHeight + nextFooterHeight + bottom;
     },
-    [bottom, contentHeight, footerHeight, keyboardHeight, presentationFullScreen],
+    [bottom, contentHeight, footerHeight, presentationFullScreen],
   );
 
   const progress = useDerivedValue(() => {
@@ -111,7 +108,7 @@ export const useActionTrayPresentationState = ({
         return -1;
       }
 
-      // once open, content height changes should update the close travel baseline
+      // once open content height changes should update the close travel baseline
       return totalHeight.value;
     },
     (nextTravel, previousTravel) => {

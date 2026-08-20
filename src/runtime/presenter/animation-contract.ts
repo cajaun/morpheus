@@ -22,10 +22,7 @@ const transitionTargetsPresentation = (
     return false;
   }
 
-  // A step transition can be resolved before a Tray.Pages tree registers its
-  // initial page. In that window the contract has no page index yet, while the
-  // presented endpoint soon does. Treat the missing index as provisional, but
-  // keep page-to-page transitions exact.
+  // keep a missing page index provisional while tray pages registration catches up
   if (
     transition.reason !== "pageChange" &&
     transition.to.pageIndex === undefined
@@ -36,9 +33,7 @@ const transitionTargetsPresentation = (
   return transition.to.pageIndex === endpoint.pageIndex;
 };
 
-// Preserve the current animation policy while making its topology dependency
-// explicit. This intentionally checks both neighboring definitions because that
-// is how existing tray boundary exits behave today.
+// preserve adjacent fullscreen boundary behavior while the active transition owns direction
 export const hasAdjacentFullScreenBoundary = (
   registration: TrayRegistration,
   stepIndex: number,
@@ -76,8 +71,7 @@ export const resolveTrayAnimationContract = ({
     ? transition
     : null,
   isFirstRender: previousIndex === undefined,
-  // Keep the established visual policy exact while the real navigation edge is
-  // now also available through transition.
+  // keep the established visual policy exact while the real navigation edge is now also available through transition
   fullScreenBoundaryExit: hasAdjacentFullScreenBoundary(
     registration,
     endpoint.stepIndex,

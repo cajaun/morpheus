@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from "react";
+import { createContext, useContext } from "react";
 import { useSharedValue, type SharedValue } from "react-native-reanimated";
 import { useTrayHostSelector, useTrayScope } from "./runtime/tray-context";
 

@@ -5,10 +5,7 @@ import {
   type SharedValue,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import {
-  FULL_SCREEN_LAYOUT_DURATION,
-  MORPH_LAYOUT_DURATION,
-} from "../constants";
+import { MORPH_LAYOUT_DURATION } from "../constants";
 import { withTrayTransitionStart } from "../transition-start";
 import { withTrayLayoutProgress } from "./with-tray-layout-progress";
 
@@ -18,7 +15,6 @@ type TrayLayoutTransitionParams = {
   transitionStartedGeneration: SharedValue<number>;
   transitionLayoutStartedGeneration: SharedValue<number>;
   transitionCompletedGeneration: SharedValue<number>;
-  fullScreenBoundaryTransition: boolean;
   morphProgress: SharedValue<number>;
   onConfigure?: (configuredAt: number, transitionGeneration: number) => void;
   onStart?: (startedAt: number, transitionGeneration: number) => void;
@@ -31,7 +27,6 @@ export const createTrayLayoutTransition = ({
   transitionStartedGeneration,
   transitionLayoutStartedGeneration,
   transitionCompletedGeneration,
-  fullScreenBoundaryTransition,
   morphProgress,
   onConfigure,
   onStart,
@@ -40,12 +35,8 @@ export const createTrayLayoutTransition = ({
   const transition = LinearTransition
     .duration(MORPH_LAYOUT_DURATION)
     .easing(Easing.bezier(0.34, 1.12, 0.64, 1).factory());
-  const fullScreenTransition = LinearTransition
-    .duration(FULL_SCREEN_LAYOUT_DURATION)
-    .easing(Easing.bezier(0, 0, 0.58, 1).factory());
 
   const buildTransition = transition.build();
-  const buildFullScreenTransition = fullScreenTransition.build();
   const synchronizedTransition: LayoutAnimationFunction = (values) => {
     "worklet";
 
@@ -54,16 +45,9 @@ export const createTrayLayoutTransition = ({
       scheduleOnRN(onConfigure, performance.now(), transitionGeneration);
     }
 
-    // The boundary policy is consumed once per generic transition generation.
-    // After completion, later layout passes use the ordinary morph policy even
-    // though the immutable contract remains attached to the rendered snapshot.
-    const isActiveFullScreenBoundary =
-      fullScreenBoundaryTransition &&
-      transitionGeneration > 0 &&
-      transitionCompletedGeneration.value < transitionGeneration;
-    const animation = isActiveFullScreenBoundary
-      ? buildFullScreenTransition(values)
-      : buildTransition(values);
+    // fullscreen boundaries are owned by usetrayboundarymotionstate
+    // native layout animation is intentionally reserved for ordinary sheet changes
+    const animation = buildTransition(values);
 
     const geometryCandidates = [
       {
@@ -89,7 +73,7 @@ export const createTrayLayoutTransition = ({
     const geometryAnimation = animation.animations[geometryClock.key];
 
     if (geometryAnimation !== undefined) {
-      // Consumers follow the same geometry value the shell actually renders.
+      // consumers follow the same geometry value the shell actually renders
       const progressAnimation = withTrayLayoutProgress(
         geometryAnimation as number,
         morphProgress,

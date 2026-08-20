@@ -53,4 +53,6 @@ const Backdrop: React.FC<BackdropProps> = React.memo(
   },
 );
 
+Backdrop.displayName = "Backdrop";
+
 export { Backdrop };

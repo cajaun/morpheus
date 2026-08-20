@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { SharedValue } from "react-native-reanimated";
-import type { TrayHostActionsValue, TrayRuntimeStore } from "./tray-context";
+import type { TrayHostActionsValue, TrayRuntimeStore } from "./types";
 import { createTrayRuntimeStore } from "./store/create-tray-runtime-store";
 
 // the store instance must outlive provider rerenders or subscriptions break

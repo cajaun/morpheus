@@ -5,8 +5,7 @@ import type {
   TrayTransitionParticipant,
 } from "./tray-geometry";
 
-// Transition contracts describe navigation knowledge without depending on
-// presenter, measurement, or animation implementations.
+// transition contracts describe navigation knowledge without depending on presenter measurement or animation implementations
 export type TrayPresentationMode = "sheet" | "fullScreen";
 
 export type TrayTransitionReason =

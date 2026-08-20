@@ -236,10 +236,7 @@ describe("useActionTrayFrameStyles", () => {
     });
 
     expect(settledFullscreen.footerContainerStyle.bottom).toBe(20);
-    // fullscreen's shell reaches viewport bottom, but the detached footer's
-    // settled frame remains safe-area anchored. The boundary must start from
-    // that exact footer frame or it will visibly drop on the first return
-    // frame.
+    // fullscreen and sheet footer frames share the safe area anchor to prevent a return drop
     expect(source.footerContainerStyle.bottom).toBe(
       settledFullscreen.footerContainerStyle.bottom,
     );

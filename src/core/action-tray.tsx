@@ -81,8 +81,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       useSharedValue<TrayContentMotionDirection>(FORWARD_CONTENT_MOTION);
 
     useLayoutEffect(() => {
-      // Update before passive snapshot publication replaces the keyed subtree.
-      // The retained outgoing view and incoming view then read one transaction.
+      // update before passive snapshot publication replaces the keyed subtree the retained outgoing view and incoming view then read one transaction
       contentMotionDirection.value =
         resolveTrayContentMotionDirection(transitionContract);
     }, [contentMotionDirection, transitionContract]);
@@ -255,13 +254,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       transition,
     });
 
-    // The outer content frame owns presentation geometry. The inner frame owns
-    // intrinsic measurement and must never receive the boundary's absolute
-    // viewport style; otherwise a fullscreen pass can leave the next sheet
-    // body's layout constrained to the old viewport frame and report zero.
-    // The fullscreen root needs a bounded flex parent on the snapshot commit;
-    // the source viewport style above keeps that parent sheet-sized until the
-    // animated boundary frame takes over.
+    // keep the inner frame intrinsic and bound the fullscreen root to the source viewport during snapshot handoff
     const contentLayoutStyle = presentationFullScreen
       ? { flex: 1 }
       : undefined;
@@ -291,7 +284,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           transitionStartedGeneration,
           transitionLayoutStartedGeneration,
           transitionCompletedGeneration,
-          fullScreenBoundaryTransition: isFullScreenBoundaryTransition,
           morphProgress,
           onConfigure: instrumentationEnabled
             ? handleLayoutTransitionConfigured
@@ -303,7 +295,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         }),
       [
         transitionContract?.generation,
-        isFullScreenBoundaryTransition,
         transitionStartedAt,
         transitionStartedGeneration,
         transitionLayoutStartedGeneration,
@@ -375,11 +366,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             <Animated.View
               style={[
                 trayStyles.content,
-                // Before a fullscreen snapshot commits, the animated style
-                // can still contain the previous sheet topology. Let the
-                // synchronous source frame win that one native layout pass;
-                // once the rendered mode is fullscreen, the animated frame
-                // owns the source-to-target handoff.
+                // let the source frame win the first native pass then let the fullscreen animation own the handoff
                 ...(isFullScreenBoundaryTransition && !frameFullScreen
                   ? [contentFrameStyle, contentBoundarySourceStyle]
                   : [contentBoundarySourceStyle, contentFrameStyle]),
@@ -413,15 +400,12 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
                   </TrayTransitionStartProvider>
                 </TrayContentMotionDirectionProvider>
               </Animated.View>
-              {/* reserve footer space; the footer itself is absolute and does not
-                  participate in content measurement */}
+              {/* reserve footer space the footer itself is absolute and does not participate in content measurement */}
               <Animated.View style={footerSpacerStyle} />
             </Animated.View>
           </Animated.View>
         </GestureDetector>
-        {/* Fixed footers intentionally stay outside the layout-animated shell.
-            Only a fullscreen boundary may move this layer, and then it follows
-            the shell's explicit morph clock rather than content layout. */}
+        {/* fixed footers stay outside the layout animated shell only a fullscreen boundary may move this layer and then it follows the shell s explicit morph clock rather than content layout */}
         <Animated.View
           className={renderedFooterClassName}
           onLayout={handleVisibleFooterLayout}

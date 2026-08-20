@@ -35,8 +35,7 @@ type Params = {
   ) => void;
 };
 
-// Boundary motion is a geometry concern, not a second transition system.
-// These values are all derived from the shell's rendered morph progress.
+// derive boundary geometry from shell morph progress instead of a second transition system
 export const useTrayBoundaryMotionState = ({
   presentationFullScreen,
   renderedFullScreenBackgroundScale,
@@ -84,8 +83,7 @@ export const useTrayBoundaryMotionState = ({
     previousModeRef.current = presentationFullScreen;
 
     if (isBoundaryTransition) {
-      // The shared current values are the last frame actually rendered by the
-      // previous mode. They become the source of this generation.
+      // use the last rendered mode values as the source frame for this generation
       sourceBackgroundScale.value = currentBackgroundScale.value;
       destinationBackgroundScale.value = targetBackgroundScale;
       sourceSafeAreaTop.value = currentSafeAreaTop.value;
@@ -95,8 +93,7 @@ export const useTrayBoundaryMotionState = ({
       morphProgress.value = 0;
 
       if (!presentationFullScreen) {
-        // Rounded sheet corners must reveal the app behind the surface before
-        // the shell begins returning from the viewport.
+        // rounded sheet corners must reveal the app behind the surface before the shell begins returning from the viewport
         surfaceFillOpacity.value = 0;
       }
 
@@ -149,10 +146,7 @@ export const useTrayBoundaryMotionState = ({
       completedGeneration: transitionCompletedGeneration.value,
     }),
     (state) => {
-      // The shell is the clock owner for a fullscreen boundary. Starting here
-      // makes the frame, footer, and incoming content join one timestamp. If
-      // incoming content publishes first, its React/native topology can be
-      // visible for a frame before the shell has started moving.
+      // let the shell own the clock so frame footer and content join one timestamp
       if (
         !state.active ||
         transitionGeneration <= 0 ||

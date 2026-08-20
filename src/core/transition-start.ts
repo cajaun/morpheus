@@ -37,8 +37,7 @@ export const publishTrayTransitionStart = (
   "worklet";
 
   if (generation > startedGeneration.value) {
-    // Publish the timestamp before the generation so joining participants see a
-    // complete clock record when they observe the generation.
+    // publish the timestamp before the generation so joining participants see a complete clock record when they observe the generation
     startedAt.value = at;
     startedGeneration.value = generation;
   }
@@ -77,8 +76,7 @@ type WithTrayTransitionStart = <T extends AnimatableValue>(
   waitForClock?: boolean,
 ) => T;
 
-// Every participant joins one UI-thread clock. The first participant publishes
-// the clock; later participants backdate their inner animation to that start.
+// every participant joins one ui thread clock the first participant publishes the clock later participants backdate their inner animation to that start
 export const withTrayTransitionStart = function <T extends AnimationObject>(
   nextAnimationInput: T | (() => T),
   startedGeneration: SharedValue<number>,

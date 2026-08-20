@@ -1,6 +1,4 @@
-// Temporary diagnostic switch for the fullscreen-return investigation.
-// Keep the gate here so we can capture the sequence without changing any
-// animation, measurement, or footer behavior.
+// keep diagnostic logging isolated so investigation does not change animation behavior
 const DEBUG = true;
 
 let sequence = 0;

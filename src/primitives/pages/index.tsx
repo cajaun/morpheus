@@ -180,8 +180,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
 
       // keep the outgoing page mounted until the spring reports completion
       if (trayId && activeStepKey) {
-        // Publish intent before React commits the target page. The pager still
-        // owns the exact same local state and spring behavior as before.
+        // publish intent before react commits the target page the pager still owns the exact same local state and spring behavior as before
         const generation = requestPageTransition(
           trayId,
           activeStepKey,

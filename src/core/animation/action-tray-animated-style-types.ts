@@ -1,4 +1,4 @@
-import type { TrayTransitionOptions } from "../../runtime/tray-context";
+import type { TrayTransitionOptions } from "../../runtime/types";
 import type { ActionTraySheetFrame } from "../types/action-tray";
 
 // share animated style contracts across frame drag and visibility hooks

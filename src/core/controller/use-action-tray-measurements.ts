@@ -97,7 +97,6 @@ export const useActionTrayMeasurements = ({
       contentHeight,
       footerHeight,
       measuredContentHeight,
-      measuredFooterHeight,
       resolvedContentHeight,
     ],
   );
@@ -183,9 +182,7 @@ export const useActionTrayMeasurements = ({
   const handleContentLayout = useCallback(
     (e: LayoutChangeEvent) => {
       if (!acceptContentMeasurement) {
-        // During a fullscreen boundary the old snapshot can receive one more
-        // layout after its visual viewport has changed. That frame is not a
-        // measurement of either endpoint and must not poison the height cache.
+        // ignore old snapshot layout frames after the fullscreen viewport changes
         log("CONTENT onLayout ignored during boundary handoff", {
           height: e.nativeEvent.layout.height,
           trayId: renderedTrayId,
@@ -197,10 +194,7 @@ export const useActionTrayMeasurements = ({
         contentMeasurementLeaseActive ||
         contentMeasurementLeaseRef?.current === true
       ) {
-        // A fullscreen boundary owns the shell frame until its transition
-        // completes. Native onLayout callbacks during that morph describe the
-        // animated viewport, not the intrinsic sheet endpoint. Accepting them
-        // here would turn an intermediate frame into the next sheet height.
+        // ignore animated viewport measurements so intermediate frames cannot become sheet heights
         log("CONTENT onLayout ignored during sheet frame lease", {
           height: e.nativeEvent.layout.height,
           trayId: renderedTrayId,
@@ -225,9 +219,7 @@ export const useActionTrayMeasurements = ({
         return;
       }
 
-      // A body that is present cannot have a zero-sized intrinsic frame. A
-      // zero frame here is an outgoing native layout pass, not a valid sheet
-      // endpoint, and must not replace the last stable body measurement.
+      // reject zero body frames because outgoing native layout is not a valid sheet endpoint
       if (
         hasRenderedBody &&
         (!Number.isFinite(height) || height <= 1)
@@ -287,6 +279,7 @@ export const useActionTrayMeasurements = ({
       acceptContentMeasurement,
       contentMeasurementLeaseActive,
       contentMeasurementLeaseRef,
+      footerHeight,
       hasRenderedBody,
       measuredContentHeight,
       onContentHeightResolved,

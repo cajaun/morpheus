@@ -6,10 +6,7 @@ const TrayMorphProgressContext =
 
 export const TrayMorphProgressProvider = TrayMorphProgressContext.Provider;
 
-/**
- * Returns the UI-thread progress of the active tray geometry morph.
- * The value resets to 0 when layout motion starts and reaches 1 on completion.
- */
+// returns the ui thread progress of the active tray geometry morph the value resets to 0 when layout motion starts and reaches 1 on completion
 export const useTrayMorphProgress = () => {
   const progress = useContext(TrayMorphProgressContext);
 

@@ -301,8 +301,7 @@ export const TrayStepContent: React.FC<Props> = ({
       style={
         anchorScaleToTop
           ? {
-              // The parent content frame owns boundary geometry. This layer
-              // only establishes the fullscreen viewport required by Tray.Pages.
+              // the parent content frame owns boundary geometry this layer only establishes the fullscreen viewport required by tray pages
               flex: 1,
               transformOrigin: ["50%", "0%", 0],
             }

@@ -136,8 +136,7 @@ export const useActionTrayContentSync = ({
     }
 
     if (renderedTrayId !== trayId || renderedFullScreen !== !!fullScreen) {
-      // Preserve source visuals until native geometry starts, then let the
-      // canonical layout worklet advance this same value to one.
+      // preserve source visuals until native geometry starts then let the canonical layout worklet advance this same value to one
       morphProgress.value = 0;
     }
 
@@ -154,9 +153,7 @@ export const useActionTrayContentSync = ({
       preparesFullScreen: !!fullScreen,
     });
 
-    // Footer layout is detached from the shell and can report zero for one
-    // render while the incoming step is being committed. Keep the last stable
-    // height so the shell never drops its footer spacer during a boundary.
+    // retain the last footer height when detached layout briefly reports zero during a boundary
     const nextFooterHeight =
       measuredFooterHeight.value > 0
         ? measuredFooterHeight.value
@@ -165,9 +162,7 @@ export const useActionTrayContentSync = ({
 
     if (fullScreen) {
       if (!renderedFullScreen && contentHeight.value > 0) {
-        // Lease the current sheet frame while its intrinsic children hand off
-        // to the fullscreen boundary. This blocks transient measurement
-        // changes from shrinking the shell before the layout clock starts.
+        // lease the sheet frame while children hand off so transient measurements cannot shrink the shell
         onSheetFramePreparedRef.current?.(
           contentHeight.value + nextFooterHeight,
           "source",
@@ -175,9 +170,7 @@ export const useActionTrayContentSync = ({
         );
       }
 
-      // Do not let the incoming fullscreen measurement resize the source sheet
-      // before its snapshot commits. The fullscreen snapshot will resolve this
-      // height from its own onLayout after the boundary clock starts.
+      // defer fullscreen measurement until its snapshot commits and the boundary clock starts
       const incomingHeight = resolveIncomingContentHeightRef.current(
         measuredContentHeight.value,
       );
@@ -212,10 +205,7 @@ export const useActionTrayContentSync = ({
         renderedTransitionContract?.fullScreenChanged === true &&
         renderedTrayId !== trayId
       ) {
-        // The first sheet step after a fullscreen return can arrive before the
-        // native layout callback for that step. Lease its intrinsic cached body
-        // frame for this generation so the old fullscreen frame cannot win the
-        // first render. Ordinary sheet-to-sheet transitions never enter here.
+        // lease the cached sheet frame after fullscreen return until the incoming step measures
         const cachedContentHeight =
           readCachedSheetContentHeightRef.current?.(trayId);
 
@@ -247,12 +237,12 @@ export const useActionTrayContentSync = ({
     }
 
     if (renderedTrayId === trayId) {
-      // same-key updates can sync nodes without replaying snapshot publication
+      // same key updates can sync nodes without replaying snapshot publication
       syncRenderedNodes(trayId);
       return;
     }
 
-    // key changes publish a new snapshot after pre-paint geometry preparation
+    // key changes publish a new snapshot after pre paint geometry preparation
     markTrayStepSnapshotPublished(rootTrayId, trayId);
     showLatestSnapshot();
   }, [

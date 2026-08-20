@@ -38,8 +38,7 @@ export const useActionTrayHeightCache = ({
         return;
       }
 
-      // Only intrinsic sheet geometry is reusable. Fullscreen measurements are
-      // viewport endpoints, not body endpoints for a later sheet.
+      // only intrinsic sheet geometry is reusable fullscreen measurements are viewport endpoints not body endpoints for a later sheet
       contentHeightCacheRef.current[trayId] = {
         height: resolvedHeight,
         owner: measurementOwner,

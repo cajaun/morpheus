@@ -221,14 +221,12 @@ export const useActionTrayRenderState = ({
           activeTrayId,
           current: describeTrayState(current),
         });
-        // same-host node sync must not steal a transition owned by another tray id
+        // same host node sync must not steal a transition owned by another tray id
         return current;
       }
 
       const next = {
-        // Native host recycling can expose a one-render prop gap. Preserve
-        // committed body regions for same-mode updates; an actual step/mode
-        // change publishes through showLatestSnapshot instead.
+        // preserve committed regions across native prop gaps real step changes publish a new snapshot
         content:
           contentRef.current ??
           (fullScreenRef.current === current.fullScreen

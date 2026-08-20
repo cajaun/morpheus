@@ -107,7 +107,7 @@ export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
     }
 
     if (record.phase === phase) {
-      // Native and React callbacks can repeat; phase publication is idempotent.
+      // native and react callbacks can repeat phase publication is idempotent
       return true;
     }
 
@@ -119,7 +119,7 @@ export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
       nextOrder !== undefined &&
       nextOrder < currentOrder
     ) {
-      // Late React and native callbacks cannot move a transaction backwards.
+      // late react and native callbacks cannot move a transaction backwards
       return false;
     }
 

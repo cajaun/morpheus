@@ -67,15 +67,12 @@ const resolveBoundaryProgress = (
     return progress;
   }
 
-  // morphProgress survives a completed fullscreen pass. A new generation
-  // must use its source frame until the shared transition clock starts.
+  // morphprogress survives a completed fullscreen pass a new generation must use its source frame until the shared transition clock starts
   if ((transitionCompletedGeneration ?? 0) >= transitionGeneration) {
     return 1;
   }
 
-  // The shell publishes this clock before incoming content joins it. Boundary
-  // geometry is driven by morphProgress, not native layout animation, so the
-  // source frame remains authoritative until the shell has claimed the clock.
+  // let the shell publish the clock before content joins it so the source frame stays authoritative
   if ((transitionStartedGeneration ?? 0) < transitionGeneration) {
     return 0;
   }
@@ -122,7 +119,7 @@ export const useActionTrayFrameStyles = ({
   transitionLayoutStartedGeneration,
   transitionCompletedGeneration,
 }: Params) => {
-  // footer-origin transitions begin at the footer edge instead of screen bottom
+  // footer origin transitions begin at the footer edge instead of screen bottom
   const collapsedBottomInset =
     transition?.origin === "fullScreenFooter"
       ? TRAY_FOOTER_PADDING_BOTTOM
@@ -136,10 +133,7 @@ export const useActionTrayFrameStyles = ({
     transitionTargetKey,
   );
   const preparedSheetHeight = preparedSheetFrame?.totalHeight;
-  // Concrete frame props are useful for stable snapshots, but they would
-  // override the native layout clock during a fullscreen boundary. Let the
-  // boundary layout own the shell frame and let its absolute footer child
-  // follow that frame naturally.
+  // let boundary layout own the shell frame while the absolute footer follows it
   const presentationFrameStyle =
     !fullScreenBoundaryTransition && fullScreen
     ? {
@@ -160,10 +154,7 @@ export const useActionTrayFrameStyles = ({
         }
       : undefined;
 
-  // React must establish the source content viewport in the same commit that
-  // publishes the fullscreen snapshot. The animated content frame takes over
-  // after the UI clock starts, but relying on that worklet for the first
-  // native layout pass allows a flex fullscreen root to measure at 68px.
+  // establish the source viewport with the fullscreen snapshot so flex content cannot measure at header height
   const contentBoundarySourceStyle = fullScreenBoundaryTransition
     ? {
         position: "absolute" as const,
@@ -174,10 +165,7 @@ export const useActionTrayFrameStyles = ({
           (fullScreenBoundarySourceFullScreen ?? !fullScreen)
             ? SCREEN_WIDTH
             : SCREEN_WIDTH - HORIZONTAL_MARGIN * 2,
-        // The first fullscreen snapshot can still carry the previous
-        // intrinsic animated frame. A concrete source height keeps the
-        // incoming flex tree bounded until the UI worklet publishes its
-        // boundary frame.
+        // bound the incoming flex tree to the source height until the ui boundary frame publishes
         height:
           (fullScreenBoundarySourceFullScreen ?? !fullScreen)
             ? SCREEN_HEIGHT
@@ -189,8 +177,7 @@ export const useActionTrayFrameStyles = ({
     : undefined;
 
   const footerSpacerStyle = useAnimatedStyle(() => ({
-    // The absolute footer does not participate in layout, so the body still
-    // reserves its measured space when the shell derives its sheet height.
+    // the absolute footer does not participate in layout so the body still reserves its measured space when the shell derives its sheet height
     height: hasFooter.value
       ? shouldUseOriginTransition
         ? EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT
@@ -234,9 +221,7 @@ export const useActionTrayFrameStyles = ({
         fullScreenBoundarySourceFullScreen ?? !fullScreen;
       const targetFullScreen =
         fullScreenBoundaryTargetFullScreen ?? fullScreen;
-      // The shell owns the full presentation geometry and reaches viewport
-      // bottom in fullscreen; the detached footer has its own fixed vertical
-      // policy below.
+      // the shell owns the full presentation geometry and reaches viewport bottom in fullscreen the detached footer has its own fixed vertical policy below
       const sourceBottom = sourceFullScreen
         ? 0
         : bottom + targetBottomInset;
@@ -270,9 +255,7 @@ export const useActionTrayFrameStyles = ({
         fullScreenBoundaryTransition,
       );
 
-      // Fullscreen boundaries use one explicit clock. This keeps the shell's
-      // visible frame from waiting on native layout while content and footer
-      // have already begun reacting to the new presentation mode.
+      // use one clock so shell content and footer begin the boundary together
       return {
         left: interpolate(
           progress,
@@ -329,13 +312,9 @@ export const useActionTrayFrameStyles = ({
     return {
       left: targetLeft,
       right: targetRight,
-      // Boundary and origin branches animate an explicit width. Clear it when
-      // the sheet returns to left/right ownership so a recycled host cannot
-      // retain a fullscreen-sized frame on the next step.
+      // clear boundary width when sheet ownership returns so recycled hosts cannot retain fullscreen geometry
       width: "auto",
-      // Keep the sheet bottom-anchored while its intrinsic height is leased.
-      // Switching from bottom+height to top+height creates a visible vertical
-      // snap before the native fullscreen layout clock can take over.
+      // keep the leased sheet bottom anchored to avoid a bottom to top snap before the fullscreen clock starts
       bottom: targetBottom,
       top: fullScreen ? 0 : "auto",
       // let regular sheets derive geometry from children
@@ -369,10 +348,7 @@ export const useActionTrayFrameStyles = ({
 
   const contentFrameStyle = useAnimatedStyle(() => {
     if (!fullScreenBoundaryTransition) {
-      // Reanimated can retain boundary properties on a recycled native view.
-      // Return the complete neutral sheet frame instead of relying on
-      // `undefined` to remove position/width values. Otherwise the outer frame
-      // stays absolute and the footer spacer becomes the only shell layout.
+      // return a complete neutral sheet frame so recycled native views release boundary position and width
       return {
         position: "relative",
         top: 0,
@@ -385,10 +361,7 @@ export const useActionTrayFrameStyles = ({
       };
     }
 
-    // The rendered fullscreen snapshot can commit before the shell's UI
-    // participant has published the transition clock. The source topology
-    // must still be a bounded viewport: a relative, auto-sized parent lets a
-    // fullscreen flex/body tree collapse to its header for one frame.
+    // bound the source topology until the shell participant publishes the fullscreen clock
     const boundaryClockStarted = isBoundaryClockStarted(
       transitionGeneration,
       transitionStartedGeneration?.value,
@@ -436,9 +409,7 @@ export const useActionTrayFrameStyles = ({
     );
 
     return {
-      // Boundary content is a viewport layer, not shell layout input. Before
-      // the clock starts it is bounded to the source frame; after the clock
-      // starts it switches to the target viewport while the shell morphs.
+      // bound boundary content to the source frame before the clock then switch to the target viewport
       position: "absolute",
       top: 0,
       bottom: 0,
@@ -472,10 +443,7 @@ export const useActionTrayFrameStyles = ({
       return {};
     }
 
-    // The content frame is bounded to either the source or target viewport by
-    // contentFrameStyle. Keep its inner fullscreen root filling that bounded
-    // viewport throughout the handoff; removing flex here recreates the
-    // header-only intrinsic measurement.
+    // keep the inner fullscreen root filling the bounded content frame throughout the handoff
     return {
       flex: 1,
     };
@@ -505,8 +473,7 @@ export const useActionTrayFrameStyles = ({
     );
 
     return {
-      // Header spacing is content geometry, so it must use the same clock as
-      // the shell instead of switching when the React snapshot commits.
+      // header spacing is content geometry so it must use the same clock as the shell instead of switching when the react snapshot commits
       paddingBottom: interpolate(
         progress,
         [0, 1],
@@ -538,8 +505,7 @@ export const useActionTrayFrameStyles = ({
     const targetRadius = BORDER_RADIUS;
 
     if (shouldUseOriginTransition) {
-      // Origin expansion is the footer's own presentation transition; regular
-      // step changes never enter this branch.
+      // origin expansion is the footer s own presentation transition regular step changes never enter this branch
       const progress = originProgress.value;
       const revealProgress = progress * progress;
       const currentHorizontalInset = interpolate(revealProgress, [0, 1], [
@@ -618,16 +584,12 @@ export const useActionTrayFrameStyles = ({
         transitionCompletedGeneration?.value,
         fullScreenBoundaryTransition,
       );
-      // The shell reaches viewport bottom in fullscreen, but this footer is a
-      // detached fixed layer. Its fullscreen frame is still anchored at the
-      // safe-area bottom, which is also the sheet frame's settled anchor.
-      // Using the shell's bottom (0) here creates a one-frame drop on return.
+      // anchor the detached footer to safe area bottom so its fullscreen and sheet frames share an edge
       const sourceBottom = resolvedFooterBottom;
       const targetBoundaryBottom = resolvedFooterBottom;
 
       return {
-        // The footer is detached from ordinary content layout, but follows the
-        // same explicit shell clock when the presentation mode changes.
+        // the footer is detached from ordinary content layout but follows the same explicit shell clock when the presentation mode changes
         left: interpolate(
           progress,
           [0, 1],
@@ -651,8 +613,7 @@ export const useActionTrayFrameStyles = ({
     }
 
     return {
-      // Fixed footers stay at the same screen position during ordinary step
-      // changes even when the content shell changes height.
+      // fixed footers stay at the same screen position during ordinary step changes even when the content shell changes height
       left: targetLeft,
       right: targetRight,
       bottom: resolvedFooterBottom,

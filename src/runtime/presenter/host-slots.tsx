@@ -198,7 +198,7 @@ export const RootTraySlots = ({
       }
 
       if (closingSlotIndex >= 0) {
-        // do not mount a replacement while any non-active slot is still closing
+        // do not mount a replacement while any non active slot is still closing
         pendingPresentedHostRef.current = activeHost;
         return current;
       }
