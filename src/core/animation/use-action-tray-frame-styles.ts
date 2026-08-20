@@ -21,6 +21,13 @@ import type {
   ActionTrayAnimationState,
 } from "./action-tray-animated-style-types";
 import { isSheetFrameForTransition } from "../controller/action-tray-sheet-frame";
+import {
+  isBoundaryClockStarted,
+  resolveBoundaryContentStyle,
+  resolveBoundaryHeaderPadding,
+  resolveBoundaryProgress,
+  resolveBoundaryShellStyle,
+} from "./frame-style-math";
 
 const EXPAND_FROM_TRIGGER_COLLAPSED_RADIUS =
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT / 2;
@@ -48,54 +55,6 @@ type Params = Pick<
   | "transition"
 > &
   ActionTrayAnimationState;
-
-const resolveBoundaryProgress = (
-  progress: number,
-  transitionGeneration: number | undefined,
-  transitionStartedGeneration: number | undefined,
-  transitionLayoutStartedGeneration: number | undefined,
-  transitionCompletedGeneration: number | undefined,
-  fullScreenBoundaryTransition: boolean,
-) => {
-  "worklet";
-
-  if (
-    !fullScreenBoundaryTransition ||
-    transitionGeneration === undefined ||
-    transitionGeneration <= 0
-  ) {
-    return progress;
-  }
-
-  // morphprogress survives a completed fullscreen pass a new generation must use its source frame until the shared transition clock starts
-  if ((transitionCompletedGeneration ?? 0) >= transitionGeneration) {
-    return 1;
-  }
-
-  // let the shell publish the clock before content joins it so the source frame stays authoritative
-  if ((transitionStartedGeneration ?? 0) < transitionGeneration) {
-    return 0;
-  }
-
-  return progress;
-};
-
-const isBoundaryClockStarted = (
-  transitionGeneration: number | undefined,
-  transitionStartedGeneration: number | undefined,
-  transitionCompletedGeneration: number | undefined,
-) => {
-  "worklet";
-
-  if (transitionGeneration === undefined || transitionGeneration <= 0) {
-    return true;
-  }
-
-  return (
-    (transitionStartedGeneration ?? 0) >= transitionGeneration ||
-    (transitionCompletedGeneration ?? 0) >= transitionGeneration
-  );
-};
 
 export const useActionTrayFrameStyles = ({
   bottom,
@@ -221,13 +180,6 @@ export const useActionTrayFrameStyles = ({
         fullScreenBoundarySourceFullScreen ?? !fullScreen;
       const targetFullScreen =
         fullScreenBoundaryTargetFullScreen ?? fullScreen;
-      // the shell owns the full presentation geometry and reaches viewport bottom in fullscreen the detached footer has its own fixed vertical policy below
-      const sourceBottom = sourceFullScreen
-        ? 0
-        : bottom + targetBottomInset;
-      const targetBoundaryBottom = targetFullScreen
-        ? 0
-        : bottom + targetBottomInset;
       const sourceHeight = sourceFullScreen
         ? SCREEN_HEIGHT
         : hasPreparedSheetFrame
@@ -238,14 +190,6 @@ export const useActionTrayFrameStyles = ({
         : hasPreparedSheetFrame
           ? preparedSheetHeight ?? 0
           : resolvedSheetHeight ?? 0;
-      const sourceLeft = sourceFullScreen ? 0 : HORIZONTAL_MARGIN;
-      const targetBoundaryLeft = targetFullScreen ? 0 : HORIZONTAL_MARGIN;
-      const sourceTop = sourceFullScreen
-        ? 0
-        : SCREEN_HEIGHT - sourceBottom - sourceHeight;
-      const targetBoundaryTop = targetFullScreen
-        ? 0
-        : SCREEN_HEIGHT - targetBoundaryBottom - targetHeight;
       const progress = resolveBoundaryProgress(
         morphProgress.value,
         transitionGeneration,
@@ -255,24 +199,15 @@ export const useActionTrayFrameStyles = ({
         fullScreenBoundaryTransition,
       );
 
-      // use one clock so shell content and footer begin the boundary together
-      return {
-        left: interpolate(
-          progress,
-          [0, 1],
-          [sourceLeft, targetBoundaryLeft],
-        ),
-        width: interpolate(
-          progress,
-          [0, 1],
-          [SCREEN_WIDTH - sourceLeft * 2, SCREEN_WIDTH - targetBoundaryLeft * 2],
-        ),
-        top: interpolate(progress, [0, 1], [sourceTop, targetBoundaryTop]),
-        height: interpolate(progress, [0, 1], [sourceHeight, targetHeight]),
-        bottom: "auto",
-        right: "auto",
-        borderRadius: targetRadius,
-      };
+      return resolveBoundaryShellStyle({
+        progress,
+        sourceFullScreen,
+        targetFullScreen,
+        sourceHeight,
+        targetHeight,
+        bottom,
+        bottomInset: targetBottomInset,
+      });
     }
 
     if (shouldUseOriginTransition && targetTop !== undefined) {
@@ -356,6 +291,7 @@ export const useActionTrayFrameStyles = ({
         left: 0,
         right: 0,
         width: "auto",
+        height: undefined,
         alignSelf: "stretch",
         flex: fullScreen ? 1 : 0,
       };
@@ -380,9 +316,6 @@ export const useActionTrayFrameStyles = ({
       transitionCompletedGeneration?.value,
       fullScreenBoundaryTransition,
     );
-    const contentFullScreen = boundaryClockStarted
-      ? targetFullScreen
-      : sourceFullScreen;
     const resolvedFooterHeight = hasFooter.value
       ? shouldUseOriginTransition
         ? EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT
@@ -402,24 +335,14 @@ export const useActionTrayFrameStyles = ({
       : hasPreparedSheetFrame
         ? preparedSheetHeight
         : resolvedSheetHeight;
-    const frameHeight = interpolate(
+    return resolveBoundaryContentStyle({
       progress,
-      [0, 1],
-      [sourceHeight ?? 0, targetHeight ?? 0],
-    );
-
-    return {
-      // bound boundary content to the source frame before the clock then switch to the target viewport
-      position: "absolute",
-      top: 0,
-      bottom: 0,
-      left: 0,
-      width: contentFullScreen
-        ? SCREEN_WIDTH
-        : SCREEN_WIDTH - HORIZONTAL_MARGIN * 2,
-      height: frameHeight,
-      alignSelf: "flex-start",
-    };
+      boundaryClockStarted,
+      sourceFullScreen,
+      targetFullScreen,
+      sourceHeight: sourceHeight ?? 0,
+      targetHeight: targetHeight ?? 0,
+    });
   }, [
     contentHeight,
     footerHeight,
@@ -473,15 +396,12 @@ export const useActionTrayFrameStyles = ({
     );
 
     return {
-      // header spacing is content geometry so it must use the same clock as the shell instead of switching when the react snapshot commits
-      paddingBottom: interpolate(
+      paddingBottom: resolveBoundaryHeaderPadding({
         progress,
-        [0, 1],
-        [
-          sourceFullScreen ? FULL_SCREEN_HEADER_BOTTOM_GAP : 0,
-          targetFullScreen ? FULL_SCREEN_HEADER_BOTTOM_GAP : 0,
-        ],
-      ),
+        sourceFullScreen,
+        targetFullScreen,
+        fullScreenHeaderBottomGap: FULL_SCREEN_HEADER_BOTTOM_GAP,
+      }),
     };
   }, [
     fullScreen,

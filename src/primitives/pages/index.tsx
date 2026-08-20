@@ -1,42 +1,25 @@
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useMemo } from "react";
 import {
-  LayoutChangeEvent,
-  PixelRatio,
   StyleProp,
   StyleSheet,
   View,
   ViewStyle,
 } from "react-native";
-import { useSharedValue, withSpring } from "react-native-reanimated";
-import { scheduleOnRN } from "react-native-worklets";
-import { SCREEN_WIDTH } from "../../core/constants";
 import { TrayPagesProvider } from "../../pages-context";
 import {
-  useTrayHostSelector,
-  useTrayScope,
   useTrayHost,
+  useTrayHostSelector,
   useTrayRuntimeStore,
+  useTrayScope,
 } from "../../runtime/tray-context";
-import { TrayPage } from "../page";
 import {
-  clampPageIndex,
   isTrayPageInRenderWindow,
-  PAGE_SPRING_CONFIG,
+  parseTrayPagesChildren,
 } from "./model";
 import { TrayPagesScene } from "./scene";
-import { createTrayMeasurementOwner } from "../../runtime/types";
-import {
-  isElementOfType,
-  TrayPagesFooterSlot,
-  TrayPagesHeaderSlot,
-} from "./slots";
+import { TrayPagesFooterSlot, TrayPagesHeaderSlot } from "./slots";
+import { useTrayPagesRegistration } from "./use-tray-pages-registration";
+import { useTrayPagesTransition } from "./use-tray-pages-transition";
 
 export { isTrayPageInRenderWindow } from "./model";
 
@@ -53,32 +36,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   style,
   className,
 }) => {
-  // parse named children once so page order does not depend on prop position
-  const parsed = useMemo(() => {
-    const pages: React.ReactElement[] = [];
-    let header: React.ReactNode = null;
-    let footer: React.ReactNode = null;
-
-    React.Children.forEach(children, (child) => {
-      if (isElementOfType(child, TrayPagesHeaderSlot)) {
-        // shell headers opt out because the parent tray already renders header chrome
-        header = child.props.shell ? null : child.props.children;
-        return;
-      }
-
-      if (isElementOfType(child, TrayPagesFooterSlot)) {
-        footer = child;
-        return;
-      }
-
-      if (isElementOfType(child, TrayPage)) {
-        pages.push(child);
-      }
-    });
-
-    return { header, footer, pages };
-  }, [children]);
-
+  const parsed = useMemo(() => parseTrayPagesChildren(children), [children]);
   const totalPages = parsed.pages.length;
   const trayId = useTrayScope();
   const activeIndex = useTrayHostSelector((state) => state.activeIndex);
@@ -87,7 +45,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
       return null;
     }
 
-    // page registration follows the active step key instead of global active index alone
+    // page registration follows the active step key instead of global index
     const stackEntry = state.stack.find((entry) => entry.trayId === trayId);
     const stepIndex = stackEntry?.index ?? state.activeIndex;
 
@@ -95,284 +53,54 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   });
   const { registerTrayPages, requestPageTransition } = useTrayHost();
   const runtime = useTrayRuntimeStore();
-  const resolvedInitialPage = clampPageIndex(initialPage, totalPages);
-  const [pageIndex, setPageIndex] = useState(resolvedInitialPage);
-  const [transitionFromIndex, setTransitionFromIndex] = useState<
-    number | null
-  >(null);
-  const [viewportWidthState, setViewportWidthState] = useState(SCREEN_WIDTH);
-  const progress = useSharedValue(resolvedInitialPage);
-  const transitionTargetRef = useRef<number | null>(null);
-  const transitionGenerationRef = useRef<number | null>(null);
-  const viewportFrameRef = useRef<LayoutChangeEvent["nativeEvent"]["layout"] | null>(
-    null,
-  );
-  const startedTransitionTargetRef = useRef<number | null>(null);
-  const pageWidth = viewportWidthState > 0 ? viewportWidthState : SCREEN_WIDTH;
-
-  useEffect(() => {
-    // clamp after children change so removed pages cannot leave a stale index
-    const nextIndex = clampPageIndex(pageIndex, totalPages);
-
-    if (nextIndex === pageIndex) {
-      return;
-    }
-
-    transitionTargetRef.current = null;
-    startedTransitionTargetRef.current = null;
-    const generation = transitionGenerationRef.current;
-    transitionGenerationRef.current = null;
-
-    if (generation !== null) {
-      runtime.transitions.mark(generation, "cancelled", {
-        owner: "Tray.Pages",
-        reason: "page-range-changed",
-      });
-    }
-
-    setTransitionFromIndex(null);
-    setPageIndex(nextIndex);
-    progress.value = nextIndex;
-  }, [pageIndex, progress, runtime.transitions, totalPages]);
-
-  useEffect(
-    () => () => {
-      const generation = transitionGenerationRef.current;
-
-      if (generation !== null) {
-        runtime.transitions.mark(generation, "cancelled", {
-          owner: "Tray.Pages",
-          reason: "pager-unmounted",
-        });
-      }
-    },
-    [runtime.transitions],
-  );
-
-  const handleViewportLayout = useCallback(
-    (event: LayoutChangeEvent) => {
-      // measure the rendered tray because sheets and fullscreen use different widths
-      const nextWidth = PixelRatio.roundToNearestPixel(
-        event.nativeEvent.layout.width || SCREEN_WIDTH,
-      );
-      viewportFrameRef.current = event.nativeEvent.layout;
-
-      if (Math.abs(nextWidth - viewportWidthState) < 0.5) {
-        return;
-      }
-
-      setViewportWidthState(nextWidth);
-    },
-    [viewportWidthState],
-  );
-
-  const setPage = useCallback(
-    (nextIndex: number) => {
-      const resolvedIndex = clampPageIndex(nextIndex, totalPages);
-
-      if (
-        resolvedIndex === pageIndex ||
-        transitionFromIndex !== null
-      ) {
-        // one page transition at a time keeps outgoing and incoming windows bounded
-        return;
-      }
-
-      // keep the outgoing page mounted until the spring reports completion
-      if (trayId && activeStepKey) {
-        // publish intent before react commits the target page the pager still owns the exact same local state and spring behavior as before
-        const generation = requestPageTransition(
-          trayId,
-          activeStepKey,
-          pageIndex,
-          resolvedIndex,
-        );
-
-        transitionGenerationRef.current = generation;
-
-        if (generation !== null) {
-          const transition = runtime.transitions.get(generation)?.contract;
-
-          runtime.transitions.mark(generation, "prepared", {
-            owner: "Tray.Pages",
-            fromPageIndex: pageIndex,
-            toPageIndex: resolvedIndex,
-          });
-
-          if (transition?.from && viewportFrameRef.current) {
-            runtime.transitions.captureGeometry(generation, "source", {
-              owner: createTrayMeasurementOwner({
-                rootTrayId: trayId,
-                endpoint: transition.from,
-                generation,
-              }),
-              capturedAt: performance.now(),
-              bodyFrame: viewportFrameRef.current,
-            });
-          }
-        }
-      }
-      transitionTargetRef.current = resolvedIndex;
-      setTransitionFromIndex(pageIndex);
-      setPageIndex(resolvedIndex);
-    },
-    [
-      activeStepKey,
-      pageIndex,
-      requestPageTransition,
-      runtime.transitions,
-      totalPages,
-      transitionFromIndex,
-      trayId,
-    ],
-  );
-
-  const handlePageTransitionComplete = useCallback((targetIndex: number) => {
-    if (transitionTargetRef.current !== targetIndex) {
-      // stale spring callbacks cannot clear a newer transition window
-      return;
-    }
-
-    transitionTargetRef.current = null;
-    startedTransitionTargetRef.current = null;
-    setTransitionFromIndex(null);
-    const generation = transitionGenerationRef.current;
-    transitionGenerationRef.current = null;
-
-    if (generation !== null) {
-      runtime.transitions.mark(generation, "completed", {
-        owner: "Tray.Pages",
-        pageIndex: targetIndex,
-      });
-    }
-  }, [runtime.transitions]);
-
-  useLayoutEffect(() => {
-    if (
-      transitionFromIndex === null ||
-      transitionTargetRef.current !== pageIndex ||
-      startedTransitionTargetRef.current === pageIndex
-    ) {
-      return;
-    }
-
-    // start after the target page commits so idle pages can stay unmounted
-    startedTransitionTargetRef.current = pageIndex;
-    const generation = transitionGenerationRef.current;
-
-    if (generation !== null) {
-      const transition = runtime.transitions.get(generation)?.contract;
-
-      runtime.transitions.mark(generation, "committed", {
-        owner: "Tray.Pages",
-        pageIndex,
-      });
-      if (transition?.to && viewportFrameRef.current && trayId) {
-        runtime.transitions.captureGeometry(generation, "target", {
-          owner: createTrayMeasurementOwner({
-            rootTrayId: trayId,
-            endpoint: transition.to,
-            generation,
-          }),
-          capturedAt: performance.now(),
-          bodyFrame: viewportFrameRef.current,
-        });
-      }
-      runtime.transitions.mark(generation, "layoutStarted", {
-        owner: "Tray.Pages",
-        pageIndex,
-      });
-    }
-
-    progress.value = withSpring(
-      pageIndex,
-      PAGE_SPRING_CONFIG,
-      (finished) => {
-        if (finished) {
-          progress.value = pageIndex;
-          scheduleOnRN(handlePageTransitionComplete, pageIndex);
-        }
-      },
-    );
-  }, [
-    handlePageTransitionComplete,
-    pageIndex,
-    progress,
-    runtime.transitions,
-    trayId,
-    transitionFromIndex,
-  ]);
-
-  const nextPage = useCallback(() => {
-    setPage(pageIndex + 1);
-  }, [pageIndex, setPage]);
-
-  const backPage = useCallback(() => {
-    setPage(pageIndex - 1);
-  }, [pageIndex, setPage]);
-
-  useEffect(() => {
-    if (!trayId || !activeStepKey) {
-      return;
-    }
-
-    registerTrayPages(trayId, {
-      stepKey: activeStepKey,
-      pageIndex,
-      totalPages,
-      // footer pages keep controls local instead of delegating flow next back
-      hasFooter: parsed.footer != null,
-      canGoNext: pageIndex < totalPages - 1,
-      canGoBack: pageIndex > 0,
-      nextPage,
-      backPage,
-      setPage,
-      progress,
-    });
-
-    return () => {
-      registerTrayPages(trayId, null);
-    };
-  }, [
-    activeIndex,
-    activeStepKey,
-    backPage,
-    nextPage,
-    pageIndex,
-    parsed.footer,
-    progress,
-    registerTrayPages,
-    setPage,
+  const pager = useTrayPagesTransition({
+    initialPage,
     totalPages,
     trayId,
-  ]);
+    activeStepKey,
+    requestPageTransition,
+    transitions: runtime.transitions,
+  });
+
+  useTrayPagesRegistration({
+    activeIndex,
+    activeStepKey,
+    backPage: pager.backPage,
+    hasFooter: parsed.footer != null,
+    nextPage: pager.nextPage,
+    pageIndex: pager.pageIndex,
+    progress: pager.progress,
+    registerTrayPages,
+    setPage: pager.setPage,
+    totalPages,
+    trayId,
+  });
 
   return (
     <TrayPagesProvider
       value={{
-        pageIndex,
+        pageIndex: pager.pageIndex,
         totalPages,
-        canGoNext: pageIndex < totalPages - 1,
-        canGoBack: pageIndex > 0,
-        nextPage,
-        backPage,
-        setPage,
-        progress,
+        canGoNext: pager.pageIndex < totalPages - 1,
+        canGoBack: pager.pageIndex > 0,
+        nextPage: pager.nextPage,
+        backPage: pager.backPage,
+        setPage: pager.setPage,
+        progress: pager.progress,
       }}
     >
       <View className={className} style={[styles.root, style]}>
         {parsed.header}
 
-        <View style={styles.viewport} onLayout={handleViewportLayout}>
+        <View style={styles.viewport} onLayout={pager.handleViewportLayout}>
           {parsed.pages.map((page, index) => {
             if (
               !isTrayPageInRenderWindow(
                 index,
-                pageIndex,
-                transitionFromIndex,
+                pager.pageIndex,
+                pager.transitionFromIndex,
               )
             ) {
-              // idle pager keeps offscreen pages unmounted to avoid hidden layout work
               return null;
             }
 
@@ -380,9 +108,9 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
               <TrayPagesScene
                 key={(page.key as string | null) ?? `tray-page-${index}`}
                 index={index}
-                pageIndex={pageIndex}
-                pageWidth={pageWidth}
-                progress={progress}
+                pageIndex={pager.pageIndex}
+                pageWidth={pager.pageWidth}
+                progress={pager.progress}
               >
                 {page}
               </TrayPagesScene>
