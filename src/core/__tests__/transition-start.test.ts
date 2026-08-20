@@ -6,6 +6,8 @@ import type {
 } from "react-native-reanimated";
 import {
   publishTrayTransitionStart,
+  resolveTrayTransitionFullScreenChanged,
+  resolveTrayTransitionGeneration,
   withTrayTransitionStart,
 } from "../transition-start";
 
@@ -268,5 +270,23 @@ describe("tray transition start synchronization", () => {
 
     expect(layoutParticipant.onFrame(layoutParticipant, 120)).toBe(true);
     expect(completedGeneration.value).toBe(11);
+  });
+
+  it("reads the current descriptor for retained outgoing content", () => {
+    const transitionStart = {
+      generation: 4,
+      fullScreenChanged: false,
+      generationValue: shared(5),
+      fullScreenChangedValue: shared(1),
+      startedAt: shared(0),
+      startedGeneration: shared(0),
+      layoutStartedGeneration: shared(0),
+      completedGeneration: shared(0),
+    };
+
+    expect(resolveTrayTransitionGeneration(transitionStart)).toBe(5);
+    expect(resolveTrayTransitionFullScreenChanged(transitionStart)).toBe(
+      true,
+    );
   });
 });

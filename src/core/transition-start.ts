@@ -11,6 +11,8 @@ import { scheduleOnRN } from "react-native-worklets";
 export type TrayTransitionStart = {
   generation: number;
   fullScreenChanged: boolean;
+  generationValue: SharedValue<number>;
+  fullScreenChangedValue: SharedValue<number>;
   morphProgress?: SharedValue<number>;
   startedAt: SharedValue<number>;
   startedGeneration: SharedValue<number>;
@@ -27,6 +29,29 @@ export const TrayTransitionStartProvider = TrayTransitionStartContext.Provider;
 
 export const useTrayTransitionStart = () =>
   useContext(TrayTransitionStartContext);
+
+export const resolveTrayTransitionGeneration = (
+  transitionStart: TrayTransitionStart | null,
+) => {
+  "worklet";
+
+  return (
+    transitionStart?.generationValue.value ??
+    transitionStart?.generation ??
+    0
+  );
+};
+
+export const resolveTrayTransitionFullScreenChanged = (
+  transitionStart: TrayTransitionStart | null,
+) => {
+  "worklet";
+
+  return (
+    transitionStart?.fullScreenChangedValue.value ??
+    (transitionStart?.fullScreenChanged ? 1 : 0)
+  ) > 0;
+};
 
 export const publishTrayTransitionStart = (
   startedGeneration: SharedValue<number>,

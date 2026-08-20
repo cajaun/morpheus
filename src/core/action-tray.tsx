@@ -126,6 +126,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         progress,
         originProgress,
         morphProgress,
+        transitionGenerationValue,
+        fullScreenChangedValue,
         transitionStartedAt,
         transitionStartedGeneration,
         transitionLayoutStartedGeneration,
@@ -310,6 +312,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       () => ({
         generation: transitionContract?.generation ?? 0,
         fullScreenChanged: transitionContract?.fullScreenChanged ?? false,
+        generationValue: transitionGenerationValue,
+        fullScreenChangedValue,
         morphProgress,
         startedAt: transitionStartedAt,
         startedGeneration: transitionStartedGeneration,
@@ -319,6 +323,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       [
         transitionContract?.generation,
         transitionContract?.fullScreenChanged,
+        transitionGenerationValue,
+        fullScreenChangedValue,
         transitionStartedAt,
         transitionStartedGeneration,
         transitionLayoutStartedGeneration,

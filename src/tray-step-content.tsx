@@ -14,6 +14,8 @@ import {
 } from "./core/constants";
 import {
   type TrayTransitionStart,
+  resolveTrayTransitionFullScreenChanged,
+  resolveTrayTransitionGeneration,
   useTrayTransitionStart,
   withTrayTransitionStart,
 } from "./core/transition-start";
@@ -82,7 +84,10 @@ const createMorphEntering = (
   return () => {
     "worklet";
 
-    const synchronizedFullScreen = transitionStart?.fullScreenChanged ?? false;
+    const synchronizedFullScreen =
+      resolveTrayTransitionFullScreenChanged(transitionStart);
+    const transitionGeneration =
+      resolveTrayTransitionGeneration(transitionStart);
     const duration = synchronizedFullScreen
       ? FULL_SCREEN_ENTERING_DURATION
       : MORPH_ENTERING_DURATION;
@@ -104,7 +109,7 @@ const createMorphEntering = (
 
       if (
         transitionStart === null ||
-        transitionStart.generation <= 0
+        transitionGeneration <= 0
       ) {
         return animation;
       }
@@ -115,7 +120,7 @@ const createMorphEntering = (
         transitionStart.startedAt,
         transitionStart.layoutStartedGeneration,
         transitionStart.completedGeneration,
-        transitionStart.generation,
+        transitionGeneration,
         "incoming",
         onStart,
         synchronizedFullScreen,
@@ -198,10 +203,14 @@ const createMorphExiting = (
 ): EntryExitAnimationFunction => {
   return () => {
     "worklet";
+    const synchronizedFullScreen =
+      resolveTrayTransitionFullScreenChanged(transitionStart);
+    const transitionGeneration =
+      resolveTrayTransitionGeneration(transitionStart);
     const activeFullScreenBoundaryExit =
       resolveActiveFullScreenBoundaryExit(
         fullScreenBoundaryExit,
-        transitionStart?.fullScreenChanged ?? false,
+        synchronizedFullScreen,
       );
     const duration = activeFullScreenBoundaryExit
       ? FULL_SCREEN_EXITING_DURATION
@@ -219,7 +228,7 @@ const createMorphExiting = (
     const synchronizeWithTransition = (animation: number) => {
       "worklet";
 
-      if (transitionStart === null || transitionStart.generation <= 0) {
+      if (transitionStart === null || transitionGeneration <= 0) {
         return animation;
       }
 
@@ -229,10 +238,10 @@ const createMorphExiting = (
         transitionStart.startedAt,
         transitionStart.layoutStartedGeneration,
         transitionStart.completedGeneration,
-        transitionStart.generation,
+        transitionGeneration,
         "outgoing",
         undefined,
-        transitionStart.fullScreenChanged,
+        synchronizedFullScreen,
       );
     };
 

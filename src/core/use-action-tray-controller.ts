@@ -1,6 +1,7 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
 } from "react";
 import {
@@ -109,7 +110,26 @@ export const useActionTrayController = ({
   const transitionStartedAt = useSharedValue(0);
   const transitionLayoutStartedGeneration = useSharedValue(0);
   const transitionCompletedGeneration = useSharedValue(0);
+  const transitionGenerationValue = useSharedValue(
+    transitionContract?.generation ?? 0,
+  );
+  const fullScreenChangedValue = useSharedValue(
+    transitionContract?.fullScreenChanged ? 1 : 0,
+  );
   const morphProgress = useSharedValue(1);
+
+  useLayoutEffect(() => {
+    // keep exiting content on the current transition descriptor
+    transitionGenerationValue.value = transitionContract?.generation ?? 0;
+    fullScreenChangedValue.value = transitionContract?.fullScreenChanged
+      ? 1
+      : 0;
+  }, [
+    fullScreenChangedValue,
+    transitionContract?.fullScreenChanged,
+    transitionContract?.generation,
+    transitionGenerationValue,
+  ]);
 
   const presentationFullScreen = renderState.state.renderedFullScreen;
   const isEnteringFullScreen = !!fullScreen && !presentationFullScreen;
@@ -456,6 +476,8 @@ export const useActionTrayController = ({
       progress: presentation.shared.progress,
       originProgress: presentation.shared.originProgress,
       morphProgress,
+      transitionGenerationValue,
+      fullScreenChangedValue,
       transitionStartedAt,
       transitionStartedGeneration,
       transitionLayoutStartedGeneration,
