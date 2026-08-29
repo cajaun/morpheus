@@ -11,6 +11,7 @@ type Params = {
   contentMeasurementLeaseRef: MutableRefObject<boolean>;
   morphProgress: SharedValue<number>;
   preparedSheetFrameRef: MutableRefObject<ActionTraySheetFrame | undefined>;
+  committedSheetFrameRef: MutableRefObject<ActionTraySheetFrame | undefined>;
   resetMeasurements: () => void;
   returningToSheetRef: MutableRefObject<boolean>;
   shared: {
@@ -38,6 +39,7 @@ export const useActionTrayAssignmentReset = ({
   contentMeasurementLeaseRef,
   morphProgress,
   preparedSheetFrameRef,
+  committedSheetFrameRef,
   resetMeasurements,
   returningToSheetRef,
   shared,
@@ -86,6 +88,7 @@ export const useActionTrayAssignmentReset = ({
     clearRenderState();
     resetMeasurements();
     preparedSheetFrameRef.current = undefined;
+    committedSheetFrameRef.current = undefined;
     contentMeasurementLeaseRef.current = false;
     clearPreparedSheetFrame();
     returningToSheetRef.current = false;
@@ -96,6 +99,7 @@ export const useActionTrayAssignmentReset = ({
     contentMeasurementLeaseRef,
     morphProgress,
     preparedSheetFrameRef,
+    committedSheetFrameRef,
     resetMeasurements,
     returningToSheetRef,
     active,

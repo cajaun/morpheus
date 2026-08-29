@@ -37,6 +37,7 @@ type Params = {
     footerHeight: number;
   }>;
   preparedSheetFrameRef: Ref<ActionTraySheetFrame | undefined>;
+  committedSheetFrameRef: Ref<ActionTraySheetFrame | undefined>;
   contentMeasurementLeaseRef: Ref<boolean>;
   measuredFooterHeightRef: Ref<number>;
   footerHeight: SharedValue<number>;
@@ -62,6 +63,7 @@ export const useActionTrayTransitionCallbacks = ({
   returningToSheetRef,
   latestLayoutFrameRef,
   preparedSheetFrameRef,
+  committedSheetFrameRef,
   contentMeasurementLeaseRef,
   measuredFooterHeightRef,
   footerHeight,
@@ -349,6 +351,10 @@ export const useActionTrayTransitionCallbacks = ({
             latestLayoutFrameRef.current.contentHeight = stableContentHeight;
             latestLayoutFrameRef.current.footerHeight = footerEndpointHeight;
           }
+
+          committedSheetFrameRef.current = completedSheetFrame;
+        } else {
+          committedSheetFrameRef.current = undefined;
         }
 
         contentMeasurementLeaseRef.current = false;
@@ -379,6 +385,7 @@ export const useActionTrayTransitionCallbacks = ({
       latestLayoutFrameRef,
       measuredFooterHeightRef,
       preparedSheetFrameRef,
+      committedSheetFrameRef,
       renderedFullScreenRef,
       renderedTransitionGenerationRef,
       renderedTransitionRef,

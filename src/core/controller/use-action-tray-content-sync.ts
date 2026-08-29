@@ -61,6 +61,8 @@ type Params = {
   restoreContentHeight: (
     trayId: string | undefined,
     measuredContentHeight: number,
+    mode?: "sheet" | "fullScreen",
+    allowMeasuredFallback?: boolean,
   ) => number | undefined;
   readCachedSheetContentHeight?: (trayId?: string) => number | undefined;
   onSheetFramePrepared?: (
@@ -198,6 +200,10 @@ export const useActionTrayContentSync = ({
       const restoredContentHeight = restoreContentHeightRef.current(
         trayId,
         measuredContentHeight.value,
+        "sheet",
+        // A fullscreen source measurement is a viewport constraint, never a
+        // valid fallback for a new sheet endpoint.
+        !renderedFullScreen,
       );
 
       if (renderedFullScreen && restoredContentHeight !== undefined) {
@@ -208,16 +214,16 @@ export const useActionTrayContentSync = ({
           restoredContentHeight,
           trayId,
         );
-      } else if (
-        !renderedFullScreen &&
-        renderedTransitionContract?.fullScreenChanged === true &&
-        renderedTrayId !== trayId
-      ) {
-        // lease the cached sheet frame after fullscreen return until the incoming step measures
+      } else if (!renderedFullScreen && renderedTrayId !== trayId) {
+        // A sheet-to-sheet handoff must not let the incoming content's first
+        // native layout report the outgoing shell height. The cached target
+        // measurement is the intrinsic endpoint, so promote it before the
+        // snapshot is published and hold the lease until layout completes.
         const cachedContentHeight =
           readCachedSheetContentHeightRef.current?.(trayId);
 
         if (cachedContentHeight !== undefined) {
+          contentHeight.value = cachedContentHeight;
           onSheetFramePreparedRef.current?.(
             cachedContentHeight + nextFooterHeight,
             "target",

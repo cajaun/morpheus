@@ -7,6 +7,7 @@ import type {
   TrayMeasurementOwner,
   TrayPresentationMode,
 } from "../../runtime/types";
+import type { ActionTraySheetFrame } from "../types/action-tray";
 
 // measurement owns the geometry contract that open animation depends on
 type Params = {
@@ -20,12 +21,17 @@ type Params = {
   acceptContentMeasurement?: boolean;
   contentMeasurementLeaseActive?: boolean;
   contentMeasurementLeaseRef?: { current: boolean };
+  committedSheetFrameRef?: { current: ActionTraySheetFrame | undefined };
   resolveContentHeight?: (measuredHeight: number) => number;
   onContentHeightResolved?: (
     resolvedHeight: number,
     measuredHeight: number,
     trayId?: string,
     mode?: TrayPresentationMode,
+  ) => void;
+  onSheetContentHeightMeasured?: (
+    resolvedHeight: number,
+    trayId?: string,
   ) => void;
   measurementOwner?: TrayMeasurementOwner;
   onGeometryMeasured?: (
@@ -45,8 +51,10 @@ export const useActionTrayMeasurements = ({
   acceptContentMeasurement = true,
   contentMeasurementLeaseActive = false,
   contentMeasurementLeaseRef,
+  committedSheetFrameRef,
   resolveContentHeight,
   onContentHeightResolved,
+  onSheetContentHeightMeasured,
   measurementOwner,
   onGeometryMeasured,
 }: Params) => {
@@ -291,6 +299,37 @@ export const useActionTrayMeasurements = ({
         : height;
       const previousResolvedHeight = latestResolvedContentHeightRef.current;
 
+      const committedSheetFrame = committedSheetFrameRef?.current;
+      const committedFrameMatchesOwner =
+        committedSheetFrame !== undefined &&
+        measurementOwner !== undefined &&
+        committedSheetFrame.generation === measurementOwner.generation &&
+        committedSheetFrame.endpointKey ===
+          [
+            measurementOwner.trayId,
+            measurementOwner.stepKey,
+            measurementOwner.pageIndex ?? "step",
+            measurementOwner.mode,
+          ].join("::");
+
+      if (
+        committedFrameMatchesOwner &&
+        Math.abs(resolvedHeight - committedSheetFrame.contentHeight) >= 0.001
+      ) {
+        log("CONTENT onLayout ignored — completed sheet frame owns geometry", {
+          height,
+          resolvedHeight,
+          committedContentHeight: committedSheetFrame.contentHeight,
+          committedTotalHeight: committedSheetFrame.totalHeight,
+          committedGeneration: committedSheetFrame.generation,
+          committedEndpointKey: committedSheetFrame.endpointKey,
+          measurementOwner: measurementOwner?.presentationKey,
+          renderedTrayId,
+          renderedFullScreen,
+        });
+        return;
+      }
+
       // measured height is raw content size while resolved height respects tray policy
       latestMeasuredContentHeightRef.current = height;
       latestResolvedContentHeightRef.current = resolvedHeight;
@@ -309,6 +348,9 @@ export const useActionTrayMeasurements = ({
         measuredContentHeight: height,
         resolvedContentHeight: resolvedHeight,
       });
+      if (!renderedFullScreen) {
+        onSheetContentHeightMeasured?.(resolvedHeight, renderedTrayId);
+      }
 
       if (!contentMeasured && renderedTrayId !== undefined) {
         // content is only considered ready after it belongs to a named rendered tray
@@ -336,10 +378,12 @@ export const useActionTrayMeasurements = ({
       acceptContentMeasurement,
       contentMeasurementLeaseActive,
       contentMeasurementLeaseRef,
+      committedSheetFrameRef,
       footerHeight,
       hasRenderedBody,
       measuredContentHeight,
       onContentHeightResolved,
+      onSheetContentHeightMeasured,
       onGeometryMeasured,
       measurementOwner,
       renderedTrayId,

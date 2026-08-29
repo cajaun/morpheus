@@ -31,7 +31,10 @@ import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animate
 import { useTrayBoundaryMotionState } from "./animation/use-tray-boundary-motion-state";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayController } from "./use-action-tray-controller";
-import { resolveTransitionEndpointKey } from "./controller/action-tray-sheet-frame";
+import {
+  isSheetFrameForTransition,
+  resolveTransitionEndpointKey,
+} from "./controller/action-tray-sheet-frame";
 import { describeTrayTransition } from "./diagnostics/action-tray-transition-diagnostics";
 import { log } from "./logger";
 import {
@@ -204,6 +207,16 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
 
     const isFullScreenBoundaryTransition =
       transitionContract?.fullScreenChanged ?? false;
+    const hasValidBoundarySheetFrame = isSheetFrameForTransition(
+      preparedSheetFrame,
+      transitionContract?.generation,
+      undefined,
+      resolveTransitionEndpointKey(transitionContract?.to),
+    );
+    const boundaryGeometryReady =
+      !isFullScreenBoundaryTransition ||
+      transitionContract?.to?.mode === "fullScreen" ||
+      hasValidBoundarySheetFrame;
     const shouldUseLayoutAnimation =
       layoutEnabled && !isFullScreenBoundaryTransition;
 
@@ -311,6 +324,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         transitionLayoutStartedGeneration,
         transitionCompletedGeneration,
         transitionContract: transitionContract ?? null,
+        boundaryGeometryReady,
         onTransitionStart: handleLayoutTransitionStart,
         onTransitionComplete: handleLayoutTransitionComplete,
       });

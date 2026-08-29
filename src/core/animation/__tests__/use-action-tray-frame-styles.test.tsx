@@ -499,6 +499,43 @@ describe("useActionTrayFrameStyles", () => {
     expect(styles.presentationFrameStyle?.height).toBe(400);
   });
 
+  it("holds the fullscreen source frame while an uncached sheet target measures", () => {
+    const styles = renderFrameStyles({
+      fullScreen: false,
+      fullScreenBoundaryTransition: true,
+      fullScreenBoundarySourceFullScreen: true,
+      fullScreenBoundaryTargetFullScreen: false,
+      morphProgress: 1,
+      transitionGeneration: 9,
+      transitionStartedGeneration: 9,
+      transitionLayoutStartedGeneration: 9,
+      transitionCompletedGeneration: 0,
+      transitionTargetKey: "target",
+    });
+
+    expect(styles.trayLayoutStyle.height).toBe(SCREEN_HEIGHT);
+    expect(styles.contentViewportStyle.flex).toBe(0);
+  });
+
+  it("does not re-enter the measurement hold after the boundary completes", () => {
+    const styles = renderFrameStyles({
+      fullScreen: false,
+      fullScreenBoundaryTransition: true,
+      fullScreenBoundarySourceFullScreen: true,
+      fullScreenBoundaryTargetFullScreen: false,
+      morphProgress: 1,
+      transitionGeneration: 9,
+      transitionStartedGeneration: 9,
+      transitionLayoutStartedGeneration: 9,
+      transitionCompletedGeneration: 9,
+      transitionTargetKey: "target",
+      contentHeight: 411,
+    });
+
+    expect(styles.trayLayoutStyle.height).toBe(491);
+    expect(styles.contentViewportStyle).toEqual({});
+  });
+
   it("keeps an explicit interpolated height during origin expansion", () => {
     const styles = renderFrameStyles({ shouldUseOriginTransition: true });
 

@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { SharedValue } from "react-native-reanimated";
 import type {
   TrayGeometrySnapshot,
   TrayTransitionContract,
@@ -26,6 +27,7 @@ type Params = {
   renderedTransitionContract?: TrayTransitionContract | null;
   transitionContract?: TrayTransitionContract | null;
   transitionLifecycle?: TrayTransitionLifecycle;
+  transitionCompletedGeneration: SharedValue<number>;
 };
 
 // geometry ownership keeps measurement identity and boundary leases together
@@ -39,12 +41,18 @@ export const useActionTrayGeometryOwnership = ({
   renderedTransitionContract,
   transitionContract,
   transitionLifecycle,
+  transitionCompletedGeneration,
 }: Params) => {
   const returningToSheetRef = useRef(false);
   const [preparedSheetFrame, setPreparedSheetFrame] = useState<
     ActionTraySheetFrame | undefined
   >(undefined);
   const preparedSheetFrameRef = useRef<ActionTraySheetFrame | undefined>(
+    undefined,
+  );
+  // keeps the completed target authoritative while queued native onLayout
+  // events from the transition drain
+  const committedSheetFrameRef = useRef<ActionTraySheetFrame | undefined>(
     undefined,
   );
   const contentMeasurementLeaseRef = useRef(false);
@@ -56,6 +64,10 @@ export const useActionTrayGeometryOwnership = ({
   activeTransitionGenerationRef.current = transitionContract?.generation;
   const activeTransitionRef = useRef(transitionContract);
   activeTransitionRef.current = transitionContract;
+  const transitionCompletedGenerationRef = useRef(
+    transitionCompletedGeneration,
+  );
+  transitionCompletedGenerationRef.current = transitionCompletedGeneration;
   const renderedTransitionGenerationRef = useRef(
     renderedTransitionContract?.generation,
   );
@@ -237,11 +249,16 @@ export const useActionTrayGeometryOwnership = ({
       const activeTransition = activeTransitionRef.current;
       const endpoint =
         role === "source" ? activeTransition?.from : activeTransition?.to;
+      const transitionCompleted =
+        activeTransition != null &&
+        transitionCompletedGenerationRef.current.value >=
+          activeTransition.generation;
 
       if (
         !activeTransition ||
         !endpoint ||
         endpoint.mode !== "sheet" ||
+        transitionCompleted ||
         !Number.isFinite(height) ||
         height <= 0 ||
         !Number.isFinite(contentHeight) ||
@@ -255,6 +272,9 @@ export const useActionTrayGeometryOwnership = ({
           contentHeight,
           endpointKey: endpoint ? createTrayEndpointKey(endpoint) : undefined,
           endpointMode: endpoint?.mode,
+          transitionCompleted,
+          transitionCompletedGeneration:
+            transitionCompletedGenerationRef.current.value,
         });
         return;
       }
@@ -266,6 +286,13 @@ export const useActionTrayGeometryOwnership = ({
         contentHeight,
       };
 
+      if (
+        committedSheetFrameRef.current &&
+        (committedSheetFrameRef.current.generation !== frame.generation ||
+          committedSheetFrameRef.current.endpointKey !== frame.endpointKey)
+      ) {
+        committedSheetFrameRef.current = undefined;
+      }
       contentMeasurementLeaseRef.current = true;
       preparedSheetFrameRef.current = frame;
       setPreparedSheetFrame(frame);
@@ -310,6 +337,7 @@ export const useActionTrayGeometryOwnership = ({
       returningToSheetRef,
       latestLayoutFrameRef,
       preparedSheetFrameRef,
+      committedSheetFrameRef,
       contentMeasurementLeaseRef,
     },
     handlers: {

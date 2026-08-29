@@ -66,6 +66,20 @@ describe("useActionTrayHeightCache QA coverage", () => {
     expect(harness.contentHeight.value).toBe(275);
   });
 
+  it("does not use a source fullscreen measurement as a sheet fallback", () => {
+    const harness = renderHeightCache();
+
+    expect(
+      harness.cache.actions.restoreContentHeight(
+        "content-four",
+        866,
+        "sheet",
+        false,
+      ),
+    ).toBeUndefined();
+    expect(harness.contentHeight.value).toBe(0);
+  });
+
   it("AT-HEIGHT-EP-002 does not restore a sheet cache while fullscreen owns geometry", () => {
     const harness = renderHeightCache();
 

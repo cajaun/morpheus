@@ -27,6 +27,7 @@ import { isSheetFrameForTransition } from "../controller/action-tray-sheet-frame
 import { log } from "../logger";
 import {
   isBoundaryClockStarted,
+  isTargetSheetMeasurementPending,
   resolveBoundaryContentStyle,
   resolveBoundaryContentSourceViewportStyle,
   resolveBoundaryContentViewportStyle,
@@ -101,6 +102,13 @@ export const useActionTrayFrameStyles = ({
   const preparedSheetHeight = preparedSheetFrame?.totalHeight;
   const preparedFrameGeneration = preparedSheetFrame?.generation ?? 0;
   const preparedFrameHeight = preparedSheetFrame?.totalHeight ?? 0;
+  const targetSheetMeasurementCandidate =
+    fullScreenBoundaryTransition &&
+    transitionGeneration !== undefined &&
+    transitionGeneration > 0 &&
+    fullScreenBoundarySourceFullScreen === true &&
+    fullScreenBoundaryTargetFullScreen === false &&
+    !hasPreparedSheetFrame;
 
   useEffect(() => {
     log("FRAME STYLE POLICY", {
@@ -114,6 +122,7 @@ export const useActionTrayFrameStyles = ({
       hasPreparedSheetFrame,
       preparedFrameGeneration,
       preparedFrameHeight,
+      targetSheetMeasurementCandidate,
       morphProgress: morphProgress.value,
       transitionStartedGeneration: transitionStartedGeneration?.value,
       transitionLayoutStartedGeneration:
@@ -135,6 +144,7 @@ export const useActionTrayFrameStyles = ({
     transitionSourceKey,
     transitionStartedGeneration,
     transitionTargetKey,
+    targetSheetMeasurementCandidate,
   ]);
 
   useAnimatedReaction(
@@ -146,6 +156,17 @@ export const useActionTrayFrameStyles = ({
       preparedFrameGeneration,
       preparedFrameHeight,
       morphProgress: morphProgress.value,
+      targetSheetMeasurementPending: isTargetSheetMeasurementPending({
+        fullScreenBoundaryTransition,
+        sourceFullScreen: fullScreenBoundarySourceFullScreen === true,
+        targetFullScreen: fullScreenBoundaryTargetFullScreen === true,
+        transitionGeneration,
+        transitionCompletedGeneration:
+          transitionCompletedGeneration?.value ?? 0,
+        hasPreparedSheetFrame,
+      })
+        ? 1
+        : 0,
       transitionStartedGeneration:
         transitionStartedGeneration?.value ?? 0,
       transitionLayoutStartedGeneration:
@@ -162,6 +183,8 @@ export const useActionTrayFrameStyles = ({
         state.hasPreparedSheetFrame === previous.hasPreparedSheetFrame &&
         state.preparedFrameGeneration === previous.preparedFrameGeneration &&
         state.preparedFrameHeight === previous.preparedFrameHeight &&
+        state.targetSheetMeasurementPending ===
+          previous.targetSheetMeasurementPending &&
         state.transitionStartedGeneration ===
           previous.transitionStartedGeneration &&
         state.transitionLayoutStartedGeneration ===
@@ -177,6 +200,8 @@ export const useActionTrayFrameStyles = ({
     [
       fullScreen,
       fullScreenBoundaryTransition,
+      fullScreenBoundarySourceFullScreen,
+      fullScreenBoundaryTargetFullScreen,
       hasPreparedSheetFrame,
       morphProgress,
       preparedFrameGeneration,
@@ -267,12 +292,23 @@ export const useActionTrayFrameStyles = ({
       contentHeight.value > 0
         ? Math.max(0, contentHeight.value + resolvedFooterHeight)
         : undefined;
+    const targetSheetMeasurementPending = isTargetSheetMeasurementPending({
+      fullScreenBoundaryTransition,
+      sourceFullScreen: fullScreenBoundarySourceFullScreen === true,
+      targetFullScreen: fullScreenBoundaryTargetFullScreen === true,
+      transitionGeneration,
+      transitionCompletedGeneration:
+        transitionCompletedGeneration?.value ?? 0,
+      hasPreparedSheetFrame,
+    });
     const boundarySheetFrameHeight =
       fullScreenBoundaryTransition &&
       !fullScreen &&
       hasPreparedSheetFrame
         ? preparedSheetHeight
-        : resolvedSheetHeight;
+        : targetSheetMeasurementPending
+          ? SCREEN_HEIGHT
+          : resolvedSheetHeight;
     const targetLeft = fullScreen ? 0 : HORIZONTAL_MARGIN;
     const targetRight = fullScreen ? 0 : HORIZONTAL_MARGIN;
     const targetBottom = fullScreen ? 0 : bottom + targetBottomInset;
@@ -302,7 +338,9 @@ export const useActionTrayFrameStyles = ({
         ? SCREEN_HEIGHT
         : hasPreparedSheetFrame
           ? preparedSheetHeight ?? 0
-          : resolvedSheetHeight ?? 0;
+          : targetSheetMeasurementPending
+            ? SCREEN_HEIGHT
+            : resolvedSheetHeight ?? 0;
       const progress = resolveBoundaryProgress(
         morphProgress.value,
         transitionGeneration,
@@ -492,6 +530,15 @@ export const useActionTrayFrameStyles = ({
         : hasPreparedSheetFrame
           ? preparedSheetFrame?.contentHeight
           : contentHeightSnapshot;
+    const targetSheetMeasurementPending = isTargetSheetMeasurementPending({
+      fullScreenBoundaryTransition,
+      sourceFullScreen: fullScreenBoundarySourceFullScreen === true,
+      targetFullScreen: fullScreenBoundaryTargetFullScreen === true,
+      transitionGeneration,
+      transitionCompletedGeneration:
+        transitionCompletedGeneration?.value ?? 0,
+      hasPreparedSheetFrame,
+    });
 
     return resolveBoundaryContentViewportStyle({
       boundaryClockStarted,
@@ -502,6 +549,7 @@ export const useActionTrayFrameStyles = ({
         sourceContentHeight !== undefined && sourceContentHeight > 0
           ? sourceContentHeight
           : undefined,
+      targetSheetMeasurementPending,
     });
   }, [
     contentHeightSnapshot,

@@ -52,6 +52,34 @@ export const isBoundaryClockStarted = (
   );
 };
 
+export const isTargetSheetMeasurementPending = ({
+  fullScreenBoundaryTransition,
+  sourceFullScreen,
+  targetFullScreen,
+  transitionGeneration,
+  transitionCompletedGeneration,
+  hasPreparedSheetFrame,
+}: {
+  fullScreenBoundaryTransition: boolean;
+  sourceFullScreen: boolean;
+  targetFullScreen: boolean;
+  transitionGeneration: number | undefined;
+  transitionCompletedGeneration: number | undefined;
+  hasPreparedSheetFrame: boolean;
+}) => {
+  "worklet";
+
+  return (
+    fullScreenBoundaryTransition &&
+    transitionGeneration !== undefined &&
+    transitionGeneration > 0 &&
+    sourceFullScreen &&
+    !targetFullScreen &&
+    (transitionCompletedGeneration ?? 0) < transitionGeneration &&
+    !hasPreparedSheetFrame
+  );
+};
+
 export const resolveBoundaryShellStyle = ({
   progress,
   sourceFullScreen,
@@ -142,17 +170,29 @@ export const resolveBoundaryContentViewportStyle = ({
   sourceFullScreen,
   targetFullScreen,
   sourceContentHeight,
+  targetSheetMeasurementPending = false,
 }: {
   boundaryClockStarted: boolean;
   fullScreenBoundaryTransition: boolean;
   sourceFullScreen: boolean;
   targetFullScreen: boolean;
   sourceContentHeight?: number;
+  targetSheetMeasurementPending?: boolean;
 }) => {
   "worklet";
 
   if (!fullScreenBoundaryTransition) {
     return targetFullScreen ? { flex: 1 } : {};
+  }
+
+  // A first-time sheet target must measure intrinsically before the boundary
+  // clock starts. The shell remains on its source frame until that measurement
+  // supplies the existing prepared-frame lease.
+  if (targetSheetMeasurementPending) {
+    return {
+      flex: 0,
+      height: undefined,
+    };
   }
 
   // The content tree must use the same phase as the boundary frame. Before

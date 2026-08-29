@@ -53,6 +53,9 @@ const renderCallbacks = (transition: TrayTransitionContract) => {
       contentHeight: 255,
     },
   };
+  const committedSheetFrameRef: {
+    current: ActionTraySheetFrame | undefined;
+  } = { current: undefined };
   const contentMeasurementLeaseRef = { current: true };
   const measuredFooterHeightRef = { current: 90 };
   const footerHeight = shared(90);
@@ -74,6 +77,7 @@ const renderCallbacks = (transition: TrayTransitionContract) => {
       returningToSheetRef,
       latestLayoutFrameRef,
       preparedSheetFrameRef,
+      committedSheetFrameRef,
       contentMeasurementLeaseRef,
       measuredFooterHeightRef,
       footerHeight,
@@ -95,6 +99,7 @@ const renderCallbacks = (transition: TrayTransitionContract) => {
     contentMeasurementLeaseRef,
     latestLayoutFrameRef,
     preparedSheetFrameRef,
+    committedSheetFrameRef,
   };
 };
 
@@ -114,6 +119,11 @@ describe("useActionTrayTransitionCallbacks", () => {
     expect(harness.latestLayoutFrameRef.current.contentHeight).toBe(255);
     expect(harness.contentMeasurementLeaseRef.current).toBe(false);
     expect(harness.preparedSheetFrameRef.current).toBeUndefined();
+    expect(harness.committedSheetFrameRef.current).toMatchObject({
+      generation: 5,
+      totalHeight: 345,
+      contentHeight: 255,
+    });
     expect(harness.clearPreparedSheetFrame).toHaveBeenCalledTimes(1);
   });
 
@@ -135,5 +145,6 @@ describe("useActionTrayTransitionCallbacks", () => {
     expect(harness.commitStableContentHeight).not.toHaveBeenCalled();
     expect(harness.contentMeasurementLeaseRef.current).toBe(false);
     expect(harness.preparedSheetFrameRef.current).toBeUndefined();
+    expect(harness.committedSheetFrameRef.current).toBeUndefined();
   });
 });

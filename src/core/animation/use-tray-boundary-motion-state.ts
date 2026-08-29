@@ -27,6 +27,7 @@ type Params = {
   transitionLayoutStartedGeneration: SharedValue<number>;
   transitionCompletedGeneration: SharedValue<number>;
   transitionContract: TrayTransitionContract | null;
+  boundaryGeometryReady?: boolean;
   onTransitionStart?: (
     startedAt: number,
     transitionGeneration: number,
@@ -51,6 +52,7 @@ export const useTrayBoundaryMotionState = ({
   transitionLayoutStartedGeneration,
   transitionCompletedGeneration,
   transitionContract,
+  boundaryGeometryReady = true,
   onTransitionStart,
   onTransitionComplete,
 }: Params) => {
@@ -81,6 +83,21 @@ export const useTrayBoundaryMotionState = ({
     const hasBoundaryContract =
       transitionContract?.fullScreenChanged === true;
     const isBoundaryTransition = modeChanged && hasBoundaryContract;
+
+    const waitingForSheetGeometry =
+      isBoundaryTransition &&
+      transitionContract?.to?.mode === "sheet" &&
+      !boundaryGeometryReady;
+
+    if (waitingForSheetGeometry) {
+      // Keep the previous mode latched until the target sheet owns a valid
+      // frame. This preserves the existing boundary clock start contract.
+      log("BOUNDARY CONFIG WAITING FOR SHEET GEOMETRY", {
+        boundaryGeometryReady,
+        transition: describeTrayTransition(transitionContract),
+      });
+      return;
+    }
 
     previousModeRef.current = presentationFullScreen;
 
@@ -151,6 +168,7 @@ export const useTrayBoundaryMotionState = ({
     transitionContract,
     transitionContract?.fullScreenChanged,
     transitionContract?.generation,
+    boundaryGeometryReady,
     transitionLayoutStartedGeneration,
     transitionStartedAt,
     transitionStartedGeneration,

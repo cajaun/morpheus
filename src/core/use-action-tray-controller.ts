@@ -155,6 +155,7 @@ export const useActionTrayController = ({
     renderedTransitionContract,
     transitionContract,
     transitionLifecycle,
+    transitionCompletedGeneration,
   });
   const { measurementOwner, boundarySnapshotPending } = geometry.state;
   const {
@@ -168,6 +169,7 @@ export const useActionTrayController = ({
     returningToSheetRef,
     latestLayoutFrameRef,
     preparedSheetFrameRef,
+    committedSheetFrameRef,
     contentMeasurementLeaseRef,
     renderedTrayIdRef,
   } = geometry.refs;
@@ -178,6 +180,39 @@ export const useActionTrayController = ({
   } = geometry.handlers;
   const resolveRenderedContentHeight =
     presentation.helpers.resolveRenderedContentHeight;
+
+  const handleSheetContentHeightMeasured = useCallback(
+    (resolvedHeight: number, measuredTrayId?: string) => {
+      const activeTransition = activeTransitionRef.current;
+
+      if (
+        !activeTransition ||
+        !activeTransition.fullScreenChanged ||
+        activeTransition.to?.mode !== "sheet" ||
+        renderedFullScreenRef.current ||
+        activeTrayIdRef.current !== measuredTrayId ||
+        !Number.isFinite(resolvedHeight) ||
+        resolvedHeight <= 1
+      ) {
+        return;
+      }
+
+      const footer = presentation.shared.footerHeight.value;
+      handleSheetFramePrepared(
+        resolvedHeight + footer,
+        "target",
+        resolvedHeight,
+        measuredTrayId,
+      );
+    },
+    [
+      activeTrayIdRef,
+      activeTransitionRef,
+      handleSheetFramePrepared,
+      presentation.shared.footerHeight,
+      renderedFullScreenRef,
+    ],
+  );
 
   const resolveMeasuredContentHeight = useCallback(
     (measuredHeight: number) => {
@@ -256,11 +291,12 @@ export const useActionTrayController = ({
       renderState.state.renderedContent !== null,
     acceptContentMeasurement: !boundarySnapshotPending,
     contentMeasurementLeaseActive:
-      geometry.state.preparedSheetFrame !== undefined &&
-      renderedTransitionContract?.fullScreenChanged === true,
+      geometry.state.preparedSheetFrame !== undefined,
     contentMeasurementLeaseRef,
+    committedSheetFrameRef,
     resolveContentHeight: resolveMeasuredContentHeight,
     onContentHeightResolved: heightCache.actions.handleContentHeightResolved,
+    onSheetContentHeightMeasured: handleSheetContentHeightMeasured,
     measurementOwner,
     onGeometryMeasured: handleGeometryMeasured,
   });
@@ -307,6 +343,7 @@ export const useActionTrayController = ({
     returningToSheetRef,
     latestLayoutFrameRef,
     preparedSheetFrameRef,
+    committedSheetFrameRef,
     contentMeasurementLeaseRef,
     measuredFooterHeightRef,
     footerHeight: presentation.shared.footerHeight,
@@ -355,6 +392,7 @@ export const useActionTrayController = ({
     contentMeasurementLeaseRef,
     morphProgress,
     preparedSheetFrameRef,
+    committedSheetFrameRef,
     resetMeasurements,
     returningToSheetRef,
     shared: {

@@ -52,6 +52,7 @@ export const useActionTrayHeightCache = ({
       trayId: string | undefined,
       measuredContentHeight: number,
       mode: TrayPresentationMode = fullScreen ? "fullScreen" : "sheet",
+      allowMeasuredFallback = true,
     ) => {
       if (!trayId) {
         return undefined;
@@ -76,7 +77,7 @@ export const useActionTrayHeightCache = ({
         return cachedMeasurement.height;
       }
 
-      if (measuredContentHeight > 0) {
+      if (allowMeasuredFallback && measuredContentHeight > 0) {
         contentHeight.value = measuredContentHeight;
         return measuredContentHeight;
       }
