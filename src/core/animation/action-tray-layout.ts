@@ -1,6 +1,7 @@
 import {
   Easing,
   LinearTransition,
+  type AnimationObject,
   type LayoutAnimationFunction,
   type SharedValue,
 } from "react-native-reanimated";
@@ -20,6 +21,9 @@ type TrayLayoutTransitionParams = {
   onStart?: (startedAt: number, transitionGeneration: number) => void;
   onComplete?: (finishedAt: number, transitionGeneration: number) => void;
 };
+
+type GeometryKey = "originY" | "height" | "width";
+type GeometryAnimationMap = Partial<Record<GeometryKey, AnimationObject>>;
 
 export const createTrayLayoutTransition = ({
   transitionGeneration,
@@ -48,6 +52,8 @@ export const createTrayLayoutTransition = ({
     // fullscreen boundaries are owned by usetrayboundarymotionstate
     // native layout animation is intentionally reserved for ordinary sheet changes
     const animation = buildTransition(values);
+    const geometryAnimations = animation.animations as unknown as
+      GeometryAnimationMap;
 
     const geometryCandidates = [
       {
@@ -70,30 +76,48 @@ export const createTrayLayoutTransition = ({
       geometryCandidates.find(
         ({ source, target }) => Math.abs(target - source) >= 0.001,
       ) ?? geometryCandidates[0];
-    const geometryAnimation = animation.animations[geometryClock.key];
+    const geometryAnimation = geometryAnimations[geometryClock.key];
 
     if (geometryAnimation !== undefined) {
-      // consumers follow the same geometry value the shell actually renders
-      const progressAnimation = withTrayLayoutProgress(
-        geometryAnimation as number,
-        morphProgress,
-        geometryClock.source,
-        geometryClock.target,
-      );
+      // originY and height jointly determine the shell bottom. Join every
+      // changing geometry property to one native start so that their sum
+      // cannot drift while the fixed footer remains stationary.
+      for (const candidate of geometryCandidates) {
+        const candidateAnimation = geometryAnimations[candidate.key];
+        const isGeometryClock = candidate.key === geometryClock.key;
+        const hasGeometryChange =
+          Math.abs(candidate.target - candidate.source) >= 0.001;
 
-      animation.animations[geometryClock.key] =
-        transitionGeneration > 0
-          ? withTrayTransitionStart(
-              progressAnimation,
-              transitionStartedGeneration,
-              transitionStartedAt,
-              transitionLayoutStartedGeneration,
-              transitionCompletedGeneration,
-              transitionGeneration,
-              "layout",
-              onStart,
+        if (
+          candidateAnimation === undefined ||
+          (!isGeometryClock && !hasGeometryChange)
+        ) {
+          continue;
+        }
+
+        const progressAnimation = isGeometryClock
+          ? withTrayLayoutProgress(
+              candidateAnimation as unknown as number,
+              morphProgress,
+              geometryClock.source,
+              geometryClock.target,
             )
-          : progressAnimation;
+          : candidateAnimation;
+
+        geometryAnimations[candidate.key] =
+          transitionGeneration > 0
+            ? (withTrayTransitionStart(
+                progressAnimation as unknown as AnimationObject,
+                transitionStartedGeneration,
+                transitionStartedAt,
+                transitionLayoutStartedGeneration,
+                transitionCompletedGeneration,
+                transitionGeneration,
+                "layout",
+                isGeometryClock ? onStart : undefined,
+              ) as unknown as AnimationObject)
+            : (progressAnimation as unknown as AnimationObject);
+      }
     }
 
     return {
