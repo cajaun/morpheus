@@ -422,10 +422,13 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             <Animated.View
               style={[
                 trayStyles.content,
-                // let the source frame win the first native pass then let the fullscreen animation own the handoff
-                ...(isFullScreenBoundaryTransition && !frameFullScreen
-                  ? [contentFrameStyle, contentBoundarySourceStyle]
-                  : [contentBoundarySourceStyle, contentFrameStyle]),
+                // The source frame is only a synchronous fallback. The
+                // clock-aware animated frame must be applied last so it can
+                // switch from source topology to target topology when the
+                // existing boundary clock starts.
+                ...(isFullScreenBoundaryTransition
+                  ? [contentBoundarySourceStyle, contentFrameStyle]
+                  : [contentFrameStyle]),
                 contentRevealStyle,
               ]}
             >

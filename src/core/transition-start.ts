@@ -36,10 +36,19 @@ export const resolveTrayTransitionGeneration = (
 ) => {
   "worklet";
 
-  return (
-    transitionStart?.generationValue.value ??
-    transitionStart?.generation ??
-    0
+  const descriptorGeneration = transitionStart?.generation ?? 0;
+
+  // A descriptor is created during the React handoff, while the shared
+  // value is updated in the following UI-thread lifecycle pass. The shared
+  // value may therefore still describe the previous generation. A newer
+  // descriptor must never be hidden by that stale value.
+  if (descriptorGeneration <= 0) {
+    return 0;
+  }
+
+  return Math.max(
+    descriptorGeneration,
+    transitionStart?.generationValue.value ?? 0,
   );
 };
 
@@ -48,10 +57,26 @@ export const resolveTrayTransitionFullScreenChanged = (
 ) => {
   "worklet";
 
+  const descriptorGeneration = transitionStart?.generation ?? 0;
+
+  if (descriptorGeneration <= 0) {
+    return false;
+  }
+
+  const sharedGeneration = transitionStart?.generationValue.value ?? 0;
+  const sharedFullScreenChanged =
+    transitionStart?.fullScreenChangedValue.value ?? 0;
+
+  // Until the shared generation catches up, the descriptor is authoritative.
+  // Once a retained participant observes a newer generation, use that newer
+  // shared descriptor instead.
   return (
-    transitionStart?.fullScreenChangedValue.value ??
-    (transitionStart?.fullScreenChanged ? 1 : 0)
-  ) > 0;
+    (sharedGeneration > descriptorGeneration
+      ? sharedFullScreenChanged
+      : transitionStart?.fullScreenChanged
+        ? 1
+        : 0) > 0
+  );
 };
 
 export const publishTrayTransitionStart = (
@@ -86,7 +111,7 @@ interface TransitionStartAnimation
   previousAnimation: AnimationObject | null;
   layoutStartedGeneration: SharedValue<number>;
   completedGeneration: SharedValue<number>;
-  waitingForClock: boolean;
+  waitingForStart: boolean;
   started: boolean;
   diagnosticStarted: boolean;
   diagnosticCompleted: boolean;
@@ -102,6 +127,7 @@ type WithTrayTransitionStart = <T extends AnimatableValue>(
   participant: TrayTransitionParticipant,
   onStartSignal?: (startedAt: number, generation: number) => void,
   waitForClock?: boolean,
+  waitForLayoutStart?: boolean,
 ) => T;
 
 // every participant joins one ui thread clock the first participant publishes the clock later participants backdate their inner animation to that start
@@ -115,6 +141,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
   participant: TrayTransitionParticipant,
   onStartSignal?: (startedAt: number, generation: number) => void,
   waitForClock = false,
+  waitForLayoutStart = false,
 ): Animation<TransitionStartAnimation> {
   "worklet";
 
@@ -134,12 +161,15 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         now: number,
       ) => {
         const completed = completedGeneration.value >= generation;
+        const clockNotStarted = startedGeneration.value < generation;
+        const layoutNotStarted =
+          layoutStartedGeneration.value < generation;
         if (
-          waitForClock &&
           !completed &&
-          startedGeneration.value < generation
+          ((waitForClock && clockNotStarted) ||
+            (waitForLayoutStart && layoutNotStarted))
         ) {
-          animation.waitingForClock = true;
+          animation.waitingForStart = true;
           return;
         }
 
@@ -167,7 +197,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
           animation.previousAnimation,
         );
         animation.current = nextAnimation.current ?? value;
-        animation.waitingForClock = false;
+        animation.waitingForStart = false;
         animation.started = true;
 
         if (!animation.diagnosticStarted) {
@@ -176,6 +206,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
             generation,
             participant,
             waitForClock,
+            waitForLayoutStart,
             publishedClock,
             completed,
             clockStartedGeneration: startedGeneration.value,
@@ -196,8 +227,10 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
       ): boolean => {
         if (!animation.started) {
           if (
-            animation.waitingForClock &&
-            startedGeneration.value >= generation
+            animation.waitingForStart &&
+            (!waitForClock || startedGeneration.value >= generation) &&
+            (!waitForLayoutStart ||
+              layoutStartedGeneration.value >= generation)
           ) {
             startInnerAnimation(animation, animation.current, now);
           }
@@ -271,7 +304,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         previousAnimation: null,
         layoutStartedGeneration,
         completedGeneration,
-        waitingForClock: false,
+        waitingForStart: false,
         started: false,
         diagnosticStarted: false,
         diagnosticCompleted: false,

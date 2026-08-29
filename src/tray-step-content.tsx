@@ -88,6 +88,10 @@ const createMorphEntering = (
       resolveTrayTransitionFullScreenChanged(transitionStart);
     const transitionGeneration =
       resolveTrayTransitionGeneration(transitionStart);
+    // content must not become the transition clock owner; the shell layout
+    // participant establishes the existing clock for every real transition
+    const waitForLayoutStart =
+      transitionStart !== null && transitionGeneration > 0;
     const duration = synchronizedFullScreen
       ? FULL_SCREEN_ENTERING_DURATION
       : MORPH_ENTERING_DURATION;
@@ -124,6 +128,7 @@ const createMorphEntering = (
         "incoming",
         onStart,
         synchronizedFullScreen,
+        waitForLayoutStart,
       );
     };
     const synchronizeWithLayout = (
@@ -207,6 +212,8 @@ const createMorphExiting = (
       resolveTrayTransitionFullScreenChanged(transitionStart);
     const transitionGeneration =
       resolveTrayTransitionGeneration(transitionStart);
+    const waitForLayoutStart =
+      transitionStart !== null && transitionGeneration > 0;
     const activeFullScreenBoundaryExit =
       resolveActiveFullScreenBoundaryExit(
         fullScreenBoundaryExit,
@@ -242,6 +249,7 @@ const createMorphExiting = (
         "outgoing",
         undefined,
         synchronizedFullScreen,
+        waitForLayoutStart,
       );
     };
 

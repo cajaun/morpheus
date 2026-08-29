@@ -123,6 +123,68 @@ describe("tray transition start synchronization", () => {
     expect(content.onStart).toHaveBeenCalledWith(content, 0, 120, null);
   });
 
+  it("does not let sheet content publish the clock before layout starts", () => {
+    const startedGeneration = shared(0);
+    const startedAt = shared(0);
+    const layoutStartedGeneration = shared(0);
+    const completedGeneration = shared(0);
+    const outgoing = createAnimation();
+    const content = createAnimation();
+    const layout = createAnimation();
+    const outgoingParticipant = withTrayTransitionStart(
+      outgoing as unknown as number,
+      startedGeneration,
+      startedAt,
+      layoutStartedGeneration,
+      completedGeneration,
+      18,
+      "outgoing",
+      undefined,
+      false,
+      true,
+    ) as unknown as AnimationObject<number>;
+    const contentParticipant = withTrayTransitionStart(
+      content as unknown as number,
+      startedGeneration,
+      startedAt,
+      layoutStartedGeneration,
+      completedGeneration,
+      18,
+      "incoming",
+      undefined,
+      false,
+      true,
+    ) as unknown as AnimationObject<number>;
+    const layoutParticipant = withTrayTransitionStart(
+      layout as unknown as number,
+      startedGeneration,
+      startedAt,
+      layoutStartedGeneration,
+      completedGeneration,
+      18,
+      "layout",
+    ) as unknown as AnimationObject<number>;
+
+    outgoingParticipant.onStart(outgoingParticipant, 0, 100, null);
+    contentParticipant.onStart(contentParticipant, 0, 100, null);
+
+    expect(outgoing.onStart).not.toHaveBeenCalled();
+    expect(content.onStart).not.toHaveBeenCalled();
+    expect(startedGeneration.value).toBe(0);
+    expect(layoutStartedGeneration.value).toBe(0);
+    expect(outgoingParticipant.onFrame(outgoingParticipant, 116)).toBe(false);
+    expect(contentParticipant.onFrame(contentParticipant, 116)).toBe(false);
+
+    layoutParticipant.onStart(layoutParticipant, 0, 120, null);
+
+    expect(layoutStartedGeneration.value).toBe(18);
+    expect(startedGeneration.value).toBe(18);
+    expect(outgoingParticipant.onFrame(outgoingParticipant, 120)).toBe(true);
+    expect(contentParticipant.onFrame(contentParticipant, 120)).toBe(true);
+    expect(outgoing.onStart).toHaveBeenCalledWith(outgoing, 0, 120, null);
+    expect(content.onStart).toHaveBeenCalledWith(content, 0, 120, null);
+  });
+
   it("does not wait for a layout event when content is the first participant", () => {
     const startedGeneration = shared(0);
     const startedAt = shared(0);
@@ -285,6 +347,24 @@ describe("tray transition start synchronization", () => {
     };
 
     expect(resolveTrayTransitionGeneration(transitionStart)).toBe(5);
+    expect(resolveTrayTransitionFullScreenChanged(transitionStart)).toBe(
+      true,
+    );
+  });
+
+  it("does not let a stale shared generation mask a newer transition descriptor", () => {
+    const transitionStart = {
+      generation: 15,
+      fullScreenChanged: true,
+      generationValue: shared(9),
+      fullScreenChangedValue: shared(0),
+      startedAt: shared(0),
+      startedGeneration: shared(9),
+      layoutStartedGeneration: shared(9),
+      completedGeneration: shared(9),
+    };
+
+    expect(resolveTrayTransitionGeneration(transitionStart)).toBe(15);
     expect(resolveTrayTransitionFullScreenChanged(transitionStart)).toBe(
       true,
     );
