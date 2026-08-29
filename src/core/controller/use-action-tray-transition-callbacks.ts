@@ -13,6 +13,10 @@ import type {
 } from "../../runtime/types";
 import { log } from "../logger";
 import { describeTrayTransition } from "../diagnostics/action-tray-transition-diagnostics";
+import {
+  createTrayEndpointKey,
+  isSheetFrameForTransition,
+} from "./action-tray-sheet-frame";
 import type { ActionTraySheetFrame } from "../types/action-tray";
 
 type Ref<T> = { current: T };
@@ -302,9 +306,16 @@ export const useActionTrayTransitionCallbacks = ({
         completedGeneration === preparedSheetFrameRef.current.generation
       ) {
         const completedSheetFrame = preparedSheetFrameRef.current;
+        const targetEndpoint = activeTransition?.to;
         const completedToSheet =
-          activeTransition?.fullScreenChanged === true &&
-          activeTransition.to?.mode === "sheet";
+          targetEndpoint?.mode === "sheet" &&
+          isSheetFrameForTransition(
+            completedSheetFrame,
+            completedGeneration,
+            undefined,
+            createTrayEndpointKey(targetEndpoint),
+          );
+        let stableContentHeight: number | undefined;
 
         log("SHEET FRAME COMPLETION DECISION", {
           completedGeneration,
@@ -326,8 +337,7 @@ export const useActionTrayTransitionCallbacks = ({
             measuredFooterHeightRef.current > 0
               ? measuredFooterHeightRef.current
               : footerHeight.value;
-          const stableContentHeight =
-            completedSheetFrame.totalHeight - footerEndpointHeight;
+          stableContentHeight = completedSheetFrame.contentHeight;
 
           if (
             commitStableContentHeight(
@@ -348,10 +358,7 @@ export const useActionTrayTransitionCallbacks = ({
           completedGeneration,
           trayId: activeTrayIdRef.current,
           stableContentHeight: completedToSheet
-            ? completedSheetFrame.totalHeight -
-              (measuredFooterHeightRef.current > 0
-                ? measuredFooterHeightRef.current
-                : footerHeight.value)
+            ? stableContentHeight
             : undefined,
         });
       }

@@ -29,6 +29,8 @@ type FrameStyles = ReturnType<typeof useActionTrayFrameStyles>;
 const shared = <T,>(value: T) => ({ value });
 
 const renderFrameStyles = ({
+  contentHeight = 320,
+  contentHeightSnapshot = contentHeight,
   fullScreen = false,
   fullScreenBoundaryTransition = false,
   fullScreenBoundarySourceFullScreen,
@@ -45,6 +47,8 @@ const renderFrameStyles = ({
   transitionLayoutStartedGeneration,
   transitionCompletedGeneration,
 }: {
+  contentHeight?: number;
+  contentHeightSnapshot?: number;
   fullScreen?: boolean;
   fullScreenBoundaryTransition?: boolean;
   fullScreenBoundarySourceFullScreen?: boolean;
@@ -66,8 +70,8 @@ const renderFrameStyles = ({
   const Probe = () => {
     styles = useActionTrayFrameStyles({
       bottom: 20,
-      contentHeight: shared(320),
-      contentHeightSnapshot: 320,
+      contentHeight: shared(contentHeight),
+      contentHeightSnapshot,
       footerHeight: shared(80),
       fullScreen,
       fullScreenBoundaryTransition,
@@ -116,6 +120,15 @@ const renderFrameStyles = ({
 describe("useActionTrayFrameStyles", () => {
   it("lets an opened sheet derive height from its children", () => {
     const styles = renderFrameStyles({});
+
+    expect(styles.trayLayoutStyle.height).toBe(400);
+  });
+
+  it("keeps the shell intrinsic before the first content measurement", () => {
+    const styles = renderFrameStyles({
+      contentHeight: 0,
+      contentHeightSnapshot: 0,
+    });
 
     expect(styles.trayLayoutStyle.height).toBe("auto");
   });
@@ -167,8 +180,9 @@ describe("useActionTrayFrameStyles", () => {
       renderer!.update(<Probe prepared={false} />);
     });
 
-    // cleanup must release that frame so later sheets use intrinsic height
-    expect(styles!.trayLayoutStyle.height).toBe("auto");
+    // cleanup must leave the promoted endpoint in place so releasing the
+    // temporary frame does not trigger a second intrinsic-layout pass
+    expect(styles!.trayLayoutStyle.height).toBe(400);
   });
 
   it("keeps fullscreen geometry explicit", () => {

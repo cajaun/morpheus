@@ -370,8 +370,10 @@ export const useActionTrayFrameStyles = ({
         ? SCREEN_HEIGHT
         : shouldLeaseBoundarySheetFrame || hasPreparedSheetFrame
           ? boundarySheetFrameHeight
-          // restore yoga height ownership after concrete fullscreen heights
-          : "auto",
+          // keep the measured sheet endpoint owned by the shell after a
+          // temporary boundary frame is released; auto is only valid before
+          // the first content measurement exists
+          : resolvedSheetHeight ?? "auto",
       borderRadius: targetRadius,
     };
   }, [
