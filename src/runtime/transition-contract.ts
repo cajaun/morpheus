@@ -79,6 +79,7 @@ const resolveDirection = (
 };
 
 const resolveBoundary = (
+  reason: TrayTransitionReason,
   from: TrayPresentationEndpoint | null,
   to: TrayPresentationEndpoint | null,
 ): TrayTransitionBoundary => {
@@ -88,6 +89,12 @@ const resolveBoundary = (
 
   if (!to) {
     return "closing";
+  }
+
+  // nested/root entries are separate host surfaces; their mode values must
+  // not be interpreted as one shell morphing between sheet and fullscreen
+  if (from.trayId !== to.trayId) {
+    return reason === "closeNested" ? "closing" : "opening";
   }
 
   if (from.mode === "sheet" && to.mode === "fullScreen") {
@@ -119,7 +126,7 @@ export const createTrayTransitionContract = ({
   generation,
   reason,
   direction: resolveDirection(reason, from, to),
-  boundary: resolveBoundary(from, to),
+  boundary: resolveBoundary(reason, from, to),
   from,
   to,
   stepChanged:
@@ -129,7 +136,10 @@ export const createTrayTransitionContract = ({
     from?.stepKey === to?.stepKey &&
     from?.pageIndex !== to?.pageIndex,
   fullScreenChanged:
-    from !== null && to !== null && from.mode !== to.mode,
+    from !== null &&
+    to !== null &&
+    from.trayId === to.trayId &&
+    from.mode !== to.mode,
   sharedRegions:
     sharedRegions ??
     [

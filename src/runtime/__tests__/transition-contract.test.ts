@@ -68,6 +68,43 @@ describe("tray transition contract", () => {
     });
   });
 
+  it("keeps nested host edges out of fullscreen shell morphing", () => {
+    const parentFullscreen: TrayPresentationEndpoint = {
+      trayId: "onboarding",
+      stepIndex: 1,
+      stepKey: "fullscreen-step",
+      mode: "fullScreen",
+    };
+    const nestedSheet: TrayPresentationEndpoint = {
+      trayId: "help",
+      stepIndex: 0,
+      stepKey: "info",
+      mode: "sheet",
+    };
+
+    const opening = createTrayTransitionContract({
+      generation: 6,
+      reason: "openNested",
+      from: parentFullscreen,
+      to: nestedSheet,
+    });
+    const closing = createTrayTransitionContract({
+      generation: 7,
+      reason: "closeNested",
+      from: nestedSheet,
+      to: parentFullscreen,
+    });
+
+    expect(opening).toMatchObject({
+      boundary: "opening",
+      fullScreenChanged: false,
+    });
+    expect(closing).toMatchObject({
+      boundary: "closing",
+      fullScreenChanged: false,
+    });
+  });
+
   it("includes a registered page only when it belongs to the active step", () => {
     const withPages: TrayRegistration = {
       ...registration,

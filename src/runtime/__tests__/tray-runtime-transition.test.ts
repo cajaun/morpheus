@@ -161,6 +161,8 @@ describe("tray runtime transition ownership", () => {
     expect(store.getState().activeTrayId).toBe("nested");
     expect(store.getState().transition).toMatchObject({
       reason: "openNested",
+      boundary: "opening",
+      fullScreenChanged: false,
       from: { trayId: "root", stepKey: "fullscreen", pageIndex: 1 },
       to: { trayId: "nested", stepKey: "info" },
     });
@@ -171,6 +173,8 @@ describe("tray runtime transition ownership", () => {
     expect(store.getState().activeIndex).toBe(1);
     expect(store.getState().transition).toMatchObject({
       reason: "closeNested",
+      boundary: "closing",
+      fullScreenChanged: false,
       from: { trayId: "nested", stepKey: "info" },
       to: { trayId: "root", stepKey: "fullscreen", pageIndex: 1 },
     });
