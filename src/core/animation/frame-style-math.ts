@@ -136,6 +136,78 @@ export const resolveBoundaryContentStyle = ({
   };
 };
 
+export const resolveBoundaryContentViewportStyle = ({
+  boundaryClockStarted,
+  fullScreenBoundaryTransition,
+  sourceFullScreen,
+  targetFullScreen,
+  sourceContentHeight,
+}: {
+  boundaryClockStarted: boolean;
+  fullScreenBoundaryTransition: boolean;
+  sourceFullScreen: boolean;
+  targetFullScreen: boolean;
+  sourceContentHeight?: number;
+}) => {
+  "worklet";
+
+  if (!fullScreenBoundaryTransition) {
+    return targetFullScreen ? { flex: 1 } : {};
+  }
+
+  // The content tree must use the same phase as the boundary frame. Before
+  // the clock starts, a sheet source needs a concrete body height; after the
+  // clock starts, the target presentation owns the viewport topology.
+  const contentFullScreen = boundaryClockStarted
+    ? targetFullScreen
+    : sourceFullScreen;
+
+  if (contentFullScreen) {
+    return {
+      flex: 1,
+      height: undefined,
+    };
+  }
+
+  if (!boundaryClockStarted && sourceContentHeight !== undefined) {
+    return {
+      flex: 0,
+      height: sourceContentHeight,
+    };
+  }
+
+  return {};
+};
+
+export const resolveBoundaryContentSourceViewportStyle = ({
+  fullScreenBoundaryTransition,
+  sourceFullScreen,
+  sourceContentHeight,
+}: {
+  fullScreenBoundaryTransition: boolean;
+  sourceFullScreen: boolean;
+  sourceContentHeight?: number;
+}) => {
+  "worklet";
+
+  if (
+    !fullScreenBoundaryTransition ||
+    sourceFullScreen ||
+    sourceContentHeight === undefined
+  ) {
+    return undefined;
+  }
+
+  // This is intentionally a synchronous minimum constraint. The inner
+  // viewport must not collapse to its header-only intrinsic height on the
+  // React/native commit before an animated style can publish the boundary
+  // clock phase. minHeight remains compatible with the later fullscreen
+  // flex layout, so it does not need a second timing or latch path.
+  return {
+    minHeight: sourceContentHeight,
+  };
+};
+
 export const resolveBoundaryHeaderPadding = ({
   progress,
   sourceFullScreen,

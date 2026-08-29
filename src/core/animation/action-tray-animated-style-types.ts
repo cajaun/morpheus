@@ -9,6 +9,7 @@ type AnimatedValue<T> = {
 export type ActionTrayAnimatedStyleParams = {
   translateY: AnimatedValue<number>;
   contentHeight: AnimatedValue<number>;
+  contentHeightSnapshot?: number;
   hasFooter: AnimatedValue<boolean>;
   surfaceOpacity: AnimatedValue<number>;
   footerHeight: AnimatedValue<number>;
@@ -35,6 +36,7 @@ export type ActionTrayAnimatedStyleParams = {
 export type ActionTrayAnimationState = {
   bottom: number;
   fullScreen: boolean;
+  contentHeightSnapshot?: number;
   morphProgress: AnimatedValue<number>;
   originProgress: AnimatedValue<number>;
   preparedSheetFrame?: ActionTraySheetFrame;

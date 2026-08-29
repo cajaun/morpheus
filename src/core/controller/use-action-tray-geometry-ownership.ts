@@ -100,6 +100,7 @@ export const useActionTrayGeometryOwnership = ({
             endpointKey: preparedSheetFrameRef.current.endpointKey,
             generation: preparedSheetFrameRef.current.generation,
             totalHeight: preparedSheetFrameRef.current.totalHeight,
+            contentHeight: preparedSheetFrameRef.current.contentHeight,
           }
         : null,
       measurementOwner: measurementOwner
@@ -230,6 +231,7 @@ export const useActionTrayGeometryOwnership = ({
     (
       height: number,
       role: "source" | "target",
+      contentHeight: number,
       frameTrayId?: string,
     ) => {
       const activeTransition = activeTransitionRef.current;
@@ -241,13 +243,16 @@ export const useActionTrayGeometryOwnership = ({
         !endpoint ||
         endpoint.mode !== "sheet" ||
         !Number.isFinite(height) ||
-        height <= 0
+        height <= 0 ||
+        !Number.isFinite(contentHeight) ||
+        contentHeight < 0
       ) {
         log("SHEET FRAME IGNORED", {
           activeGeneration: activeTransition?.generation,
           frameTrayId,
           height,
           role,
+          contentHeight,
           endpointKey: endpoint ? createTrayEndpointKey(endpoint) : undefined,
           endpointMode: endpoint?.mode,
         });
@@ -258,6 +263,7 @@ export const useActionTrayGeometryOwnership = ({
         endpointKey: createTrayEndpointKey(endpoint),
         generation: activeTransition.generation,
         totalHeight: height,
+        contentHeight,
       };
 
       contentMeasurementLeaseRef.current = true;
@@ -271,6 +277,7 @@ export const useActionTrayGeometryOwnership = ({
         generation: frame.generation,
         role,
         totalHeight: frame.totalHeight,
+        contentHeight: frame.contentHeight,
         renderedTransition: describeTrayTransition(renderedTransitionRef.current),
         leaseActive: contentMeasurementLeaseRef.current,
       });

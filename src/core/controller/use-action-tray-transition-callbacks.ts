@@ -107,6 +107,7 @@ export const useActionTrayTransitionCallbacks = ({
               endpointKey: preparedSheetFrameRef.current.endpointKey,
               generation: preparedSheetFrameRef.current.generation,
               totalHeight: preparedSheetFrameRef.current.totalHeight,
+              contentHeight: preparedSheetFrameRef.current.contentHeight,
             }
           : null,
         leaseActive: contentMeasurementLeaseRef.current,
@@ -171,6 +172,7 @@ export const useActionTrayTransitionCallbacks = ({
               endpointKey: preparedSheetFrameRef.current.endpointKey,
               generation: preparedSheetFrameRef.current.generation,
               totalHeight: preparedSheetFrameRef.current.totalHeight,
+              contentHeight: preparedSheetFrameRef.current.contentHeight,
             }
           : null,
         leaseActive: contentMeasurementLeaseRef.current,
@@ -272,6 +274,7 @@ export const useActionTrayTransitionCallbacks = ({
               endpointKey: preparedSheetFrameRef.current.endpointKey,
               generation: preparedSheetFrameRef.current.generation,
               totalHeight: preparedSheetFrameRef.current.totalHeight,
+              contentHeight: preparedSheetFrameRef.current.contentHeight,
             }
           : null,
         leaseActive: contentMeasurementLeaseRef.current,

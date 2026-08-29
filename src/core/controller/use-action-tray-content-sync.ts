@@ -66,6 +66,7 @@ type Params = {
   onSheetFramePrepared?: (
     height: number,
     role: "source" | "target",
+    contentHeight: number,
     trayId?: string,
   ) => void;
   onPrepared?: (details: Record<string, unknown>) => void;
@@ -169,6 +170,7 @@ export const useActionTrayContentSync = ({
         onSheetFramePreparedRef.current?.(
           contentHeight.value + nextFooterHeight,
           "source",
+          contentHeight.value,
           renderedTrayId,
         );
       }
@@ -203,6 +205,7 @@ export const useActionTrayContentSync = ({
         onSheetFramePreparedRef.current?.(
           restoredContentHeight + nextFooterHeight,
           "target",
+          restoredContentHeight,
           trayId,
         );
       } else if (
@@ -218,6 +221,7 @@ export const useActionTrayContentSync = ({
           onSheetFramePreparedRef.current?.(
             cachedContentHeight + nextFooterHeight,
             "target",
+            cachedContentHeight,
             trayId,
           );
         }

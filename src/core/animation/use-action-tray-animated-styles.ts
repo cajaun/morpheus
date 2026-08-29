@@ -8,6 +8,7 @@ import { useActionTrayVisibilityStyles } from "./use-action-tray-visibility-styl
 export const useActionTrayAnimatedStyles = ({
   translateY,
   contentHeight,
+  contentHeightSnapshot,
   hasFooter,
   surfaceOpacity,
   footerHeight,
@@ -37,6 +38,7 @@ export const useActionTrayAnimatedStyles = ({
   const frameStyles = useActionTrayFrameStyles({
     bottom,
     contentHeight,
+    contentHeightSnapshot,
     footerHeight,
     fullScreen: frameFullScreen,
     hasFooter,

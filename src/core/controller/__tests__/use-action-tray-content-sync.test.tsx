@@ -266,6 +266,7 @@ describe("useActionTrayContentSync", () => {
     expect(onSheetFramePrepared).toHaveBeenCalledWith(
       304,
       "source",
+      240,
       "tray-sheet",
     );
     expect(morphProgress.value).toBe(0);
@@ -304,6 +305,7 @@ describe("useActionTrayContentSync", () => {
     expect(onSheetFramePrepared).toHaveBeenCalledWith(
       304,
       "target",
+      240,
       "tray-sheet",
     );
     expect(showLatestSnapshot).toHaveBeenCalledTimes(2);
@@ -370,6 +372,7 @@ describe("useActionTrayContentSync", () => {
     expect(onSheetFramePrepared).toHaveBeenCalledWith(
       304,
       "target",
+      240,
       "tray-sheet",
     );
   });
@@ -456,6 +459,7 @@ describe("useActionTrayContentSync", () => {
     expect(onSheetFramePrepared).toHaveBeenCalledWith(
       319,
       "target",
+      255,
       "tray-step-two",
     );
   });

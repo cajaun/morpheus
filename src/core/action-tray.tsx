@@ -138,6 +138,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       },
       state: {
         layoutEnabled,
+        contentHeightSnapshot,
         isSurfaceReady,
         preparedSheetFrame,
         renderedHeader,
@@ -222,6 +223,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
               endpointKey: preparedSheetFrame.endpointKey,
               generation: preparedSheetFrame.generation,
               totalHeight: preparedSheetFrame.totalHeight,
+              contentHeight: preparedSheetFrame.contentHeight,
             }
           : null,
         transition: describeTrayTransition(transitionContract),
@@ -243,6 +245,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     const {
       footerSpacerStyle,
       contentBoundarySourceStyle,
+      contentBoundarySourceViewportStyle,
       contentFrameStyle,
       contentViewportStyle,
       headerFrameStyle,
@@ -259,6 +262,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     } = useActionTrayAnimatedStyles({
       translateY,
       contentHeight,
+      contentHeightSnapshot,
       hasFooter,
       surfaceOpacity,
       footerHeight,
@@ -292,11 +296,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       ),
       transition,
     });
-
-    // keep the inner frame intrinsic and bound the fullscreen root to the source viewport during snapshot handoff
-    const contentLayoutStyle = presentationFullScreen
-      ? { flex: 1 }
-      : undefined;
 
     const { fullScreenSafeAreaContentStyle, fullScreenSurfaceFillStyle } =
       useTrayBoundaryMotionState({
@@ -419,7 +418,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
               <Animated.View
                 style={[
                   contentPaddingStyle,
-                  contentLayoutStyle,
+                  contentBoundarySourceViewportStyle,
                   contentViewportStyle,
                   fullScreenSafeAreaContentStyle,
                 ]}

@@ -28,6 +28,8 @@ import { log } from "../logger";
 import {
   isBoundaryClockStarted,
   resolveBoundaryContentStyle,
+  resolveBoundaryContentSourceViewportStyle,
+  resolveBoundaryContentViewportStyle,
   resolveBoundaryHeaderPadding,
   resolveBoundaryProgress,
   resolveBoundaryShellStyle,
@@ -63,6 +65,7 @@ type Params = Pick<
 export const useActionTrayFrameStyles = ({
   bottom,
   contentHeight,
+  contentHeightSnapshot,
   footerHeight,
   fullScreenBoundaryTransition,
   fullScreenBoundarySourceFullScreen,
@@ -226,6 +229,24 @@ export const useActionTrayFrameStyles = ({
         alignSelf: "flex-start" as const,
       }
     : undefined;
+
+  const sourceFullScreen =
+    fullScreenBoundarySourceFullScreen ?? !fullScreen;
+  const sourceContentHeight =
+    sourceFullScreen
+      ? undefined
+      : hasPreparedSheetFrame
+        ? preparedSheetFrame?.contentHeight
+        : contentHeightSnapshot;
+  const contentBoundarySourceViewportStyle =
+    resolveBoundaryContentSourceViewportStyle({
+      fullScreenBoundaryTransition,
+      sourceFullScreen,
+      sourceContentHeight:
+        sourceContentHeight !== undefined && sourceContentHeight > 0
+          ? sourceContentHeight
+          : undefined,
+    });
 
   const footerSpacerStyle = useAnimatedStyle(() => ({
     // the absolute footer does not participate in layout so the body still reserves its measured space when the shell derives its sheet height
@@ -454,17 +475,46 @@ export const useActionTrayFrameStyles = ({
   ]);
 
   const contentViewportStyle = useAnimatedStyle(() => {
-    if (!fullScreen || !fullScreenBoundaryTransition) {
-      return {};
-    }
+    const boundaryClockStarted = isBoundaryClockStarted(
+      transitionGeneration,
+      transitionStartedGeneration?.value,
+      transitionCompletedGeneration?.value,
+    );
+    const sourceFullScreen =
+      fullScreenBoundarySourceFullScreen ?? !fullScreen;
+    const targetFullScreen =
+      fullScreenBoundaryTargetFullScreen ?? fullScreen;
+    const sourceContentHeight =
+      sourceFullScreen
+        ? undefined
+        : hasPreparedSheetFrame
+          ? preparedSheetFrame?.contentHeight
+          : contentHeightSnapshot;
 
-    // keep the inner fullscreen root filling the bounded content frame throughout the handoff
-    return {
-      flex: 1,
-    };
+    return resolveBoundaryContentViewportStyle({
+      boundaryClockStarted,
+      fullScreenBoundaryTransition,
+      sourceFullScreen,
+      targetFullScreen,
+      sourceContentHeight:
+        sourceContentHeight !== undefined && sourceContentHeight > 0
+          ? sourceContentHeight
+          : undefined,
+    });
   }, [
+    contentHeightSnapshot,
     fullScreen,
+    fullScreenBoundarySourceFullScreen,
+    fullScreenBoundaryTargetFullScreen,
     fullScreenBoundaryTransition,
+    hasFooter,
+    hasPreparedSheetFrame,
+    preparedSheetHeight,
+    preparedSheetFrame,
+    shouldUseOriginTransition,
+    transitionCompletedGeneration,
+    transitionGeneration,
+    transitionStartedGeneration,
   ]);
 
   const headerFrameStyle = useAnimatedStyle(() => {
@@ -655,6 +705,7 @@ export const useActionTrayFrameStyles = ({
 
   return {
     contentBoundarySourceStyle,
+    contentBoundarySourceViewportStyle,
     contentFrameStyle,
     contentViewportStyle,
     headerFrameStyle,

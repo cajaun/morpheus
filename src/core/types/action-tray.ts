@@ -51,6 +51,9 @@ export type ActionTraySheetFrame = {
   endpointKey: string;
   generation: number;
   totalHeight: number;
+  // body height is captured with the frame so the inner viewport can be
+  // synchronously bounded before its animated boundary style runs
+  contentHeight: number;
 };
 
 export type RenderedTrayState = {

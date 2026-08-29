@@ -67,6 +67,7 @@ const renderFrameStyles = ({
     styles = useActionTrayFrameStyles({
       bottom: 20,
       contentHeight: shared(320),
+      contentHeightSnapshot: 320,
       footerHeight: shared(80),
       fullScreen,
       fullScreenBoundaryTransition,
@@ -90,6 +91,7 @@ const renderFrameStyles = ({
               generation:
                 preparedSheetFrameGeneration ?? transitionGeneration ?? 1,
               totalHeight: preparedSheetFrameHeight,
+              contentHeight: preparedSheetFrameHeight - 80,
             }
           : undefined,
       shouldUseOriginTransition,
@@ -125,6 +127,7 @@ describe("useActionTrayFrameStyles", () => {
       styles = useActionTrayFrameStyles({
         bottom: 20,
         contentHeight: shared(320),
+        contentHeightSnapshot: 320,
         footerHeight: shared(80),
         fullScreen: false,
         fullScreenBoundaryTransition: false,
@@ -133,7 +136,12 @@ describe("useActionTrayFrameStyles", () => {
         morphProgress: shared(1),
         originProgress: shared(1),
         preparedSheetFrame: prepared
-          ? { endpointKey: "target", generation: 7, totalHeight: 400 }
+          ? {
+              endpointKey: "target",
+              generation: 7,
+              totalHeight: 400,
+              contentHeight: 320,
+            }
           : undefined,
         shouldUseOriginTransition: false,
         transition: undefined,
@@ -316,8 +324,20 @@ describe("useActionTrayFrameStyles", () => {
       transitionStartedGeneration: 7,
     });
 
-    expect(source.contentViewportStyle).toEqual({ flex: 1 });
-    expect(target.contentViewportStyle).toEqual({ flex: 1 });
+    expect(source.contentViewportStyle).toEqual({
+      flex: 0,
+      height: 320,
+    });
+    expect(source.contentBoundarySourceViewportStyle).toEqual({
+      minHeight: 320,
+    });
+    expect(target.contentViewportStyle).toEqual({
+      flex: 1,
+      height: undefined,
+    });
+    expect(target.contentBoundarySourceViewportStyle).toEqual({
+      minHeight: 320,
+    });
   });
 
   it("leases a nonzero source content frame before fullscreen clock start", () => {
@@ -335,6 +355,9 @@ describe("useActionTrayFrameStyles", () => {
     });
 
     expect(styles.contentBoundarySourceStyle?.height).toBe(500);
+    expect(styles.contentBoundarySourceViewportStyle).toEqual({
+      minHeight: 420,
+    });
     expect(styles.contentFrameStyle.height).toBe(500);
   });
 

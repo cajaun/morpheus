@@ -488,6 +488,8 @@ export const useActionTrayController = ({
       footerMeasured: measurements.state.footerMeasured,
       contentMeasured: measurements.state.contentMeasured,
       pendingOpen: measurements.state.pendingOpen,
+      contentHeightSnapshot:
+        measurements.refs.latestResolvedContentHeightRef.current,
       preparedSheetFrame: geometry.state.preparedSheetFrame,
       isSurfaceReady: openCloseLifecycle.state.isSurfaceReady,
       renderedFooter: renderState.state.renderedFooter,
