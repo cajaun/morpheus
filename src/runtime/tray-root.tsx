@@ -3,15 +3,16 @@ import {
   TrayScopeProvider,
   useTrayHostActions,
   type TrayRegistration,
-  type TrayStepDefinition,
+  type TrayStepOptions,
   type TrayTransitionOptions,
 } from "./tray-context";
+import { compileTraySteps } from "./tray-step-compiler";
 
 // root turns local step definitions into a runtime registration entry
-type TrayRootProps = {
+export type TrayRootProps = {
   id?: string;
   children: React.ReactNode;
-  steps: TrayStepDefinition[];
+  stepOptions?: TrayStepOptions;
   footer?: React.ReactNode;
   dismissible?: boolean;
   transition?: TrayTransitionOptions;
@@ -21,7 +22,7 @@ type TrayRootProps = {
 export const TrayRoot: React.FC<TrayRootProps> = ({
   id,
   children,
-  steps,
+  stepOptions,
   footer,
   dismissible,
   transition,
@@ -30,6 +31,10 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
   // explicit ids support deterministic tests and cross component references
   const trayId = useMemo(() => id ?? `tray-${reactId}`, [id, reactId]);
   const { registerTray, unregisterTray } = useTrayHostActions();
+  const steps = useMemo(
+    () => compileTraySteps(children, stepOptions),
+    [children, stepOptions],
+  );
   const registration = useMemo<TrayRegistration>(
     () => ({
       // memoized registration preserves identity until authored tray inputs change

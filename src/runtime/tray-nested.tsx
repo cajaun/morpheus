@@ -4,14 +4,15 @@ import {
   useTrayHostActions,
   useTrayScope,
   type TrayRegistration,
-  type TrayStepDefinition,
+  type TrayStepOptions,
   type TrayTransitionOptions,
 } from "./tray-context";
+import { compileTraySteps } from "./tray-step-compiler";
 
-type TrayNestedProps = Omit<PressableProps, "onPress"> & {
+export type TrayNestedProps = Omit<PressableProps, "onPress"> & {
   id?: string;
   children: React.ReactNode;
-  steps: TrayStepDefinition[];
+  stepOptions?: TrayStepOptions;
   footer?: React.ReactNode;
   transition?: TrayTransitionOptions;
   onPress?: PressableProps["onPress"];
@@ -22,7 +23,7 @@ type TrayNestedProps = Omit<PressableProps, "onPress"> & {
 export const TrayNested: React.FC<TrayNestedProps> = ({
   id,
   children,
-  steps,
+  stepOptions,
   footer,
   transition,
   onPress,
@@ -35,6 +36,10 @@ export const TrayNested: React.FC<TrayNestedProps> = ({
     [id, parentTrayId, reactId],
   );
   const { registerTray, unregisterTray, openNestedTray } = useTrayHostActions();
+  const steps = useMemo(
+    () => compileTraySteps(children, stepOptions),
+    [children, stepOptions],
+  );
   const registration = useMemo<TrayRegistration>(
     () => ({
       steps,

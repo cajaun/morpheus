@@ -3,7 +3,7 @@ import { Pressable, Text, View } from "react-native";
 import { Link } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { Laminar } from "react-native-laminar";
-import { Tray, useTrayFlow, type TrayStepDefinition } from "morpheus";
+import { Tray, useTrayFlow } from "morpheus";
 import {
   EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
@@ -64,9 +64,9 @@ const TransferOptionsStep = () => {
   const { close, index } = useTrayFlow();
   const [selected, setSelected] = useState<number[]>([]);
   const options = [
-    "Point the ENS name to the recipient’s wallet address",
-    "Clear all profile information associated with the ENS name",
-    "Transfer full control of the ENS name to the recipient",
+    "Set the recipient’s wallet address",
+    "Clear the ENS profile",
+    "Give the recipient full control",
   ];
 
   const toggleOption = (option: number) => {
@@ -211,16 +211,6 @@ const ExpandFromTriggerDemo = ({
 }: ExpandFromTriggerDemoProps) => {
   const { bottom } = useSafeAreaInsets();
   const theme = useTrayDemoTheme();
-  const steps: TrayStepDefinition[] = [
-    {
-      key: "transfer-options",
-      content: <TransferOptionsStep />,
-      options: {
-        className: "bg-white",
-        footerStyle: { backgroundColor: trayDemoColors.white },
-      },
-    },
-  ];
 
   return (
     <View style={{ backgroundColor: theme.background, flex: 1 }}>
@@ -260,10 +250,16 @@ const ExpandFromTriggerDemo = ({
       </View>
 
       <Tray.Root
-        steps={steps}
+        stepOptions={{
+          className: "bg-white",
+          footerStyle: { backgroundColor: trayDemoColors.white },
+        }}
         footer={<TransferOptionsFooter />}
         transition={{ open: "expandFromTrigger", close: "collapseToTrigger" }}
       >
+        <Tray.Step>
+          <TransferOptionsStep />
+        </Tray.Step>
         <View
           style={{
             alignItems: "center",

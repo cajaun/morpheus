@@ -3,7 +3,6 @@ import { SymbolView } from "expo-symbols";
 import {
   Tray,
   useTrayFlow,
-  type TrayStepDefinition,
 } from "morpheus";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { ExampleTrigger } from "../shared/example-trigger";
@@ -61,7 +60,7 @@ export const CreatingWalletsInfoStep = ({
   return (
     <Tray.Body style={{ paddingHorizontal: 0 }}>
       <Tray.Section
-        style={{ gap: 20, paddingTop: 0 }}
+        style={{ gap: 0, paddingTop: 0 }}
       >
         <View
           style={{
@@ -136,10 +135,9 @@ export const CreatingWalletsInfoStep = ({
             maxHeightRatio={0.37}
             style={{ paddingVertical: 0 }}
             contentContainerStyle={{
-              paddingHorizontal: 28,
-              paddingTop: 24,
-              paddingBottom: 24,
-              gap: 28,
+                  gap: 28,
+            paddingHorizontal: 28,
+            paddingTop: 28,
             }}
           >
             <Text
@@ -205,7 +203,7 @@ export const CreatingWalletsInfoStep = ({
             </View>
           </Tray.Section>
 
-          <View style={{ width: "100%", paddingHorizontal: 24   }}>
+          <View style={{ width: "100%", paddingHorizontal: 24, paddingTop: 28  }}>
             <PrimaryButton
               label={copy.buttonLabel}
               onPress={close}
@@ -218,24 +216,15 @@ export const CreatingWalletsInfoStep = ({
   );
 };
 
-export const createCreatingWalletsInfoSteps = (
-  copy?: CreatingWalletsInfoCopy,
-): TrayStepDefinition[] => [
-  {
-    key: "creating-wallets-info",
-    content: <CreatingWalletsInfoStep copy={copy} />,
-    options: { className: "bg-white" },
-  },
-];
-
 const CreatingWalletsInfoTray = () => {
-  const steps: TrayStepDefinition[] = createCreatingWalletsInfoSteps();
-
   return (
-    <Tray.Root steps={steps}>
+    <Tray.Root stepOptions={{ className: "bg-white" }}>
       <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Creating Wallets" />
       </Tray.Trigger>
+      <Tray.Step>
+        <CreatingWalletsInfoStep />
+      </Tray.Step>
     </Tray.Root>
   );
 };

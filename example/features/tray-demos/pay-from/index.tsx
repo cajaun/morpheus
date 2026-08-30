@@ -4,7 +4,6 @@ import { SymbolView } from "expo-symbols";
 import {
   Tray,
   useTrayFlow,
-  type TrayStepDefinition,
 } from "morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { PressableScale } from "@/shared/ui/pressable-scale";
@@ -179,26 +178,17 @@ const InsufficientTokensStep = () => {
 
 const PayFromTray = () => {
   const [selectedId, setSelectedId] = useState("3");
-  const steps: TrayStepDefinition[] = [
-    {
-      key: "wallet-selection",
-      content: (
-        <WalletSelectionStep selectedId={selectedId} onSelect={setSelectedId} />
-      ),
-      options: { className: "bg-white" },
-    },
-    {
-      key: "insufficient-tokens",
-      content: <InsufficientTokensStep />,
-      options: { className: "bg-white" },
-    },
-  ];
-
   return (
-    <Tray.Root steps={steps}>
+    <Tray.Root stepOptions={{ className: "bg-white" }}>
       <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Pay From" />
       </Tray.Trigger>
+      <Tray.Step key="wallet-selection">
+        <WalletSelectionStep selectedId={selectedId} onSelect={setSelectedId} />
+      </Tray.Step>
+      <Tray.Step key="insufficient-tokens">
+        <InsufficientTokensStep />
+      </Tray.Step>
     </Tray.Root>
   );
 };

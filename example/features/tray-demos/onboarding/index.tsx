@@ -2,7 +2,6 @@ import { Text, View } from "react-native";
 import {
   Tray,
   useTrayFlow,
-  type TrayStepDefinition,
 } from "morpheus";
 import { BUTTON_HEIGHT } from "@/features/tray-demos/presets/animated-flow-button";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
@@ -11,7 +10,7 @@ import { ExampleTrigger } from "../shared/example-trigger";
 import { OnboardingPageHeader as SharedOnboardingPageHeader } from "../shared/onboarding-page-header";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { SymbolView } from "expo-symbols";
-import { createCreatingWalletsInfoSteps } from "../creating-wallets-info";
+import { CreatingWalletsInfoStep } from "../creating-wallets-info";
 
 const OnboardingFooter = () => {
   const { next, index, total, close, pageIndex } = useTrayFlow();
@@ -22,7 +21,10 @@ const OnboardingFooter = () => {
     <Tray.Footer style={{ width: "100%" }}>
       {shouldOpenNestedInfo ? (
         <Tray.Nested
-          steps={ONBOARDING_CONTINUE_TRAY_STEPS}
+          stepOptions={{
+            className: "bg-white",
+            footerStyle: ONBOARDING_FOOTER_STYLE,
+          }}
           footer={ONBOARDING_CONTINUE_TRAY_FOOTER}
           transition={EXPAND_FROM_TRIGGER_TRANSITION}
           style={{
@@ -35,6 +37,9 @@ const OnboardingFooter = () => {
             width: "100%",
           }}
         >
+          <Tray.Step>
+            <OnboardingContinueTrayContent />
+          </Tray.Step>
           <ContinueButtonLabel />
         </Tray.Nested>
       ) : (
@@ -63,11 +68,19 @@ const ContinueButtonLabel = () => (
   </Text>
 );
 
-const OnboardingContinueTrayHeader = () => {
-  const { close } = useTrayFlow();
 
+
+const OnboardingContinueTrayContent = () => {
+  const benefits = [
+    "Keep your wallet choices together",
+    "Return to this step with everything intact",
+    "Review the details before you finish",
+  ];
+
+      const { close } = useTrayFlow();
   return (
-    <Tray.Header style={{ gap: 0 }}>
+    <Tray.Body>
+      <Tray.Header withSeparator={false} style={{ gap: 0 }}>
       <View style={{ alignItems: "flex-end" }}>
         <PressableScale
           onPress={close}
@@ -90,24 +103,10 @@ const OnboardingContinueTrayHeader = () => {
         </PressableScale>
       </View>
     </Tray.Header>
-  );
-};
-
-const OnboardingContinueTrayContent = () => {
-  const benefits = [
-    "Keep your wallet setup choices together",
-    "Return to this onboarding step with context",
-    "Finish the flow when everything looks right",
-  ];
-
-  return (
-    <Tray.Body style={{ paddingHorizontal: 0 }}>
       <Tray.Section
         style={{
           gap: 20,
-          paddingHorizontal: 28,
-          paddingVertical: 0,
-          paddingBottom: 24,
+        paddingTop: 0
         }}
       >
         <View
@@ -128,7 +127,7 @@ const OnboardingContinueTrayContent = () => {
           />
         </View>
 
-        <View style={{ gap: 10 }}>
+        <View style={{ gap: 12 }}>
           <Text
             className="font-sf-bold"
             style={{
@@ -140,6 +139,7 @@ const OnboardingContinueTrayContent = () => {
           >
             Save your setup
           </Text>
+
           <Text
             className="font-sf-medium"
             style={{
@@ -149,21 +149,8 @@ const OnboardingContinueTrayContent = () => {
               lineHeight: 26,
             }}
           >
-            Keep your onboarding choices ready while you finish setting up your
-            wallet experience.
-          </Text>
-          <Text
-            className="font-sf-medium"
-            style={{
-              color: trayDemoColors.mutedText,
-              fontSize: 18,
-              letterSpacing: 0.2,
-              lineHeight: 26,
-            }}
-          >
-            We will keep this step tidy so you can come back to it without
-            losing the thread. Nothing is submitted yet, and you can still
-            review the details before moving on.
+            You can return to this step at any time. Nothing has been submitted,
+            and you can review everything before you continue.
           </Text>
         </View>
 
@@ -199,7 +186,7 @@ const OnboardingContinueTrayContent = () => {
           ))}
         </View>
 
-        
+
       </Tray.Section>
     </Tray.Body>
   );
@@ -230,32 +217,21 @@ const OnboardingContinueTrayFooter = () => {
 
 const ONBOARDING_FOOTER_STYLE = { backgroundColor: "#FFFFFF" };
 
-const ONBOARDING_CONTINUE_TRAY_STEPS: TrayStepDefinition[] = [
-  {
-    key: "save-setup",
-    header: <OnboardingContinueTrayHeader />,
-    content: <OnboardingContinueTrayContent />,
-    options: {
-      className: "bg-white",
-      footerStyle: ONBOARDING_FOOTER_STYLE,
-    },
-  },
-];
 const ONBOARDING_CONTINUE_TRAY_FOOTER = <OnboardingContinueTrayFooter />;
 
-const ONBOARDING_HELP_INFO_STEPS = createCreatingWalletsInfoSteps({
+const ONBOARDING_HELP_INFO_COPY = {
   title: "Onboarding Wallets",
-  subtitle: "Tiny nonsense for the fullscreen flow",
+  subtitle: "A quick guide to your wallet setup",
   intro:
-    "This onboarding helper is reusing the Creating Wallets tray, but the words are intentionally dummy test copy. The tray pops up from the fullscreen step, says a few onboarding-ish things, and then politely gets out of the way.",
-  firstSectionTitle: "Why this appears here",
+    "This helper explains how your wallet setup flow works and where to find your saved choices.",
+  firstSectionTitle: "Keep your setup together",
   firstSectionBody:
-    "Imagine the user is midway through onboarding and taps the question mark because the vibes are confusing. Blah blah wallet setup, onboarding rails, safe little explanations, banana protocol, tap continue when the clouds align.",
-  secondSectionTitle: "What happens next",
+    "Your onboarding choices stay together as you move through the flow, so you can review them without losing context.",
+  secondSectionTitle: "Return when you're ready",
   secondSectionBody:
-    "Nothing too serious. The parent onboarding tray should stay exactly where it was, the nested tray should animate like a normal tray, and this gibberish should prove the reusable copy path works without replacing the original demo.",
-  buttonLabel: "Cool",
-});
+    "Open this guide whenever you need a reminder. The parent onboarding flow stays in place while you read, and you can return when you're ready to continue.",
+  buttonLabel: "Got It",
+};
 
 const OnboardingHeader = ({ title }: { title: string }) => {
   const { close, back, index } = useTrayFlow();
@@ -289,7 +265,6 @@ export const OnboardingPageHeader = () => {
     <SharedOnboardingPageHeader
       rightAccessory={
         <Tray.Nested
-          steps={ONBOARDING_HELP_INFO_STEPS}
           style={{
             width: 32,
             height: 32,
@@ -297,6 +272,9 @@ export const OnboardingPageHeader = () => {
             justifyContent: "center",
           }}
         >
+          <Tray.Step>
+            <CreatingWalletsInfoStep copy={ONBOARDING_HELP_INFO_COPY} />
+          </Tray.Step>
           <SymbolView
             name="questionmark.circle"
             type="palette"
@@ -423,6 +401,20 @@ const ThirdStep = () => {
               Quisquam placeat praesentium at delectus veritatis, adipisci sint
               atque deserunt velit rem laborum neque minus doloribus.
             </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              Each page keeps the same structure so the progress indicator is
+              easy to follow while the content changes underneath it.
+            </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              Take a moment to read through the details before moving on to the
+              next part of the onboarding flow.
+            </Text>
           </Tray.Section>
         </Tray.Body>
       </Tray.Page>
@@ -448,6 +440,21 @@ const ThirdStep = () => {
               bla test test many words. This is a new sentence and we'll see how
               that fares too.
             </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              The extra room on this page gives the shell a more substantial
+              content change when the fullscreen pages move from one to the
+              next.
+            </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              When you're ready, continue to the final page and review the
+              information before returning to the regular tray.
+            </Text>
           </Tray.Section>
         </Tray.Body>
       </Tray.Page>
@@ -470,6 +477,19 @@ const ThirdStep = () => {
             >
               The progress indicator should now show four items and keep the
               active page emphasized as you continue through the flow.
+            </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              This final page closes out the fullscreen portion of onboarding
+              and leaves the next action ready at the bottom of the tray.
+            </Text>
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              Review the summary, then continue when the setup looks right.
             </Text>
           </Tray.Section>
         </Tray.Body>
@@ -563,42 +583,6 @@ const BackgroundScalePreview = () => (
 );
 
 const OnboardingExample = () => {
-  const steps: TrayStepDefinition[] = [
-      {
-        key: "content-one",
-        content: <FirstStep />,
-        header: <OnboardingHeader title="Content One" />,
-        options: sharedStepOptions,
-      },
-      {
-        key: "content-two",
-        content: <SecondStep />,
-        header: <OnboardingHeader title="Content Two" />,
-        options: sharedStepOptions,
-      },
-      {
-        key: "content-three",
-        content: <ThirdStep />,
-        header: <OnboardingPageHeader />,
-        options: {
-          className: "bg-white",
-          footerStyle: ONBOARDING_FOOTER_STYLE,
-          fullScreen: true,
-          shouldScaleBackground: true,
-          fullScreenSafeAreaTop: true,
-          fullScreenDraggable: false,
-          fullScreenCloseBehavior: "returnToShell",
-        },
-      },
-      {
-        key: "content-four",
-        header: <OnboardingHeader title="Content Four" />,
-        content: <FourthStep />,
-        options: sharedStepOptions,
-      },
-
-  ];
-
   return (
     <View
       style={{
@@ -610,10 +594,42 @@ const OnboardingExample = () => {
     >
       <BackgroundScalePreview />
 
-      <Tray.Root steps={steps} footer={<OnboardingFooter />}>
+      <Tray.Root
+        stepOptions={sharedStepOptions}
+        footer={<OnboardingFooter />}
+      >
         <Tray.Trigger haptics="feedback">
           <ExampleTrigger label="Onboarding" />
         </Tray.Trigger>
+
+        <Tray.Step>
+          <OnboardingHeader title="Content One" />
+          <FirstStep />
+        </Tray.Step>
+
+        <Tray.Step>
+          <OnboardingHeader title="Content Two" />
+          <SecondStep />
+        </Tray.Step>
+
+        <Tray.Step
+          options={{
+            fullScreen: true,
+            shouldScaleBackground: true,
+            fullScreenSafeAreaTop: true,
+            fullScreenDraggable: false,
+            fullScreenCloseBehavior: "returnToShell",
+          }}
+        >
+          <OnboardingPageHeader />
+          <ThirdStep />
+        </Tray.Step>
+
+        <Tray.Step>
+          <OnboardingHeader title="Content Four" />
+          <FourthStep />
+        </Tray.Step>
+
       </Tray.Root>
     </View>
   );

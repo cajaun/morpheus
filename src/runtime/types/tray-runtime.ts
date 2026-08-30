@@ -35,6 +35,11 @@ export type TrayStepOptions = {
   footerClassName?: string;
 };
 
+export type TrayStepProps = {
+  children: React.ReactNode;
+  options?: TrayStepOptions;
+};
+
 export type TrayStepDefinition = {
   key: string;
   header?: React.ReactNode;

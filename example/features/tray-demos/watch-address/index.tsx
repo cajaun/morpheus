@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Tray, type TrayStepDefinition } from "morpheus";
+import { Tray } from "morpheus";
 import { ExampleTrigger } from "../shared/example-trigger";
 import {
   AddExistingWalletStep,
@@ -8,38 +8,22 @@ import {
   WatchAddressChooserStep,
   WatchAddressInputStep,
 } from "./steps";
-import { OnboardingPageHeader } from "../shared/onboarding-page-header";
 import type { WalletAction } from "./types";
 
 const WatchAddressTray = () => {
   const [selectedAction, setSelectedAction] = useState<WalletAction>("watch");
-  const steps: TrayStepDefinition[] = [
-      {
-        key: "watch-address-entry",
-        header: <WatchAddressHeader title="New Wallet" />,
-        content: <WatchAddressChooserStep onSelectAction={setSelectedAction} />,
-        options: { className: "bg-white" },
-      },
-      {
-        key: `watch-address-next-${selectedAction}`,
-        header:
-          selectedAction !== "watch" ? (
-            <OnboardingPageHeader
-              showProgress={selectedAction !== "existing"}
-            />
-          ) : (
-            <WatchAddressHeader title="Watch Address" showBack />
-          ),
-        content:
-          selectedAction === "create" ? (
-            <CreateNewWalletStep />
-          ) : selectedAction === "existing" ? (
-            <AddExistingWalletStep />
-          ) : (
-            <WatchAddressInputStep />
-          ),
-        options: {
-          className: "bg-white",
+  return (
+    <Tray.Root stepOptions={{ className: "bg-white" }}>
+      <Tray.Trigger haptics="feedback">
+        <ExampleTrigger label="Watch Address" />
+      </Tray.Trigger>
+      <Tray.Step key="watch-address-entry">
+        <WatchAddressHeader title="New Wallet" />
+        <WatchAddressChooserStep onSelectAction={setSelectedAction} />
+      </Tray.Step>
+      <Tray.Step
+        key={`watch-address-next-${selectedAction}`}
+        options={{
           keyboardAware: selectedAction !== "existing",
           fullScreen: selectedAction !== "watch",
           shouldScaleBackground: selectedAction !== "watch",
@@ -47,15 +31,19 @@ const WatchAddressTray = () => {
           fullScreenDraggable: selectedAction === "watch",
           fullScreenCloseBehavior:
             selectedAction !== "watch" ? "returnToShell" : "dismiss",
-        },
-      },
-  ];
-
-  return (
-    <Tray.Root steps={steps}>
-      <Tray.Trigger haptics="feedback">
-        <ExampleTrigger label="Watch Address" />
-      </Tray.Trigger>
+        }}
+      >
+        {selectedAction === "watch" ? (
+          <WatchAddressHeader title="Watch Address" showBack />
+        ) : null}
+        {selectedAction === "create" ? (
+          <CreateNewWalletStep />
+        ) : selectedAction === "existing" ? (
+          <AddExistingWalletStep />
+        ) : (
+          <WatchAddressInputStep />
+        )}
+      </Tray.Step>
     </Tray.Root>
   );
 };

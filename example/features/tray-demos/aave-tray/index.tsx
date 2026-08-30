@@ -1,9 +1,5 @@
 import { Text } from "react-native";
-import {
-  Tray,
-  useTrayFlow,
-  type TrayStepDefinition,
-} from "morpheus";
+import { Tray, useTrayFlow } from "morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { AnimatedOnboardingButton } from "@/features/tray-demos/presets/content/button";
 import { trayDemoText } from "@/shared/theme/tokens";
@@ -42,168 +38,98 @@ const AaveHeader = ({ title }: { title: string }) => {
   );
 };
 
-const sharedStepOptions = {
-  className: "bg-white",
-  footerStyle: { backgroundColor: "#FFFFFF" },
-} as const;
-
-const FirstStep = () => {
-  return (
-    <Tray.Body>
-      <Tray.Section>
-        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
-          This is a test title
-        </Text>
-
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-          This is some example test that spans over multiple lines bla bla bla
-          test test test many wods. this is a new sentence and we'll see how
-          that fares too.
-        </Text>
-      </Tray.Section>
-    </Tray.Body>
-  );
-};
-
-const SecondStep = () => {
-  return (
-    <Tray.Body>
-      <Tray.Section>
-        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
-          Different heading
-        </Text>
-
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-          Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
-          amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
-          dolor amet. Lorem ipsum dolor amet.
-        </Text>
-
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-          This is some example test that spans over multiple lines bla bla bla
-          test test test many wods. this is a new sentence and we'll see how
-          that fares too.
-        </Text>
-      </Tray.Section>
-    </Tray.Body>
-  );
-};
-
-const ThirdStep = () => {
-  return (
-    <Tray.Body>
-      <Tray.Section>
-        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
-          Another heading
-        </Text>
-
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-         Lorem ipsum dolor amet. Lorem ipsum dolor
-          amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
-          dolor amet. 
-        </Text>
-
-      
-
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-          This is some example test that spans over multiple lines bla bla bla
-          test test test many wods. this is a new sentence and we'll see how
-          that fares too.
-        </Text>
-      </Tray.Section>
-    </Tray.Body>
-  );
-};
-
-const FourthStep = () => {
-  return (
-    <Tray.Body>
-     
-
-      <Tray.Section>
-        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
-          Some heading
-        </Text>
-
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-         Lorem ipsum dolor amet. Lorem ipsum dolor
-          amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
-          dolor amet. 
-        </Text>
-
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-          Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
-          amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
-          dolor amet. Lorem ipsum dolor amet.
-        </Text>
-
-        <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
-        >
-          This is some example test that spans over multiple lines bla bla bla
-          test test test many wods. this is a new sentence and we'll see how
-          that fares too.
-        </Text>
-      </Tray.Section>
-    </Tray.Body>
-  );
-};
 
 const AaveExample = () => {
-  const steps: TrayStepDefinition[] = [
-    {
-      key: "content-one",
-      content: <FirstStep />,
-      header: <AaveHeader title="Content One" />,
-      options: sharedStepOptions,
-    },
-    {
-      key: "content-two",
-      content: <SecondStep />,
-      header: <AaveHeader title="Content Two" />,
-      options: sharedStepOptions,
-    },
-    {
-      key: "content-three",
-      content: <ThirdStep />,
-      header: <AaveHeader title="Content Three" />,
-      options: sharedStepOptions,
-    },
-    {
-      key: "content-four",
-      content: <FourthStep />,
-      header: <AaveHeader title="Content Four" />,
-      options: sharedStepOptions,
-    },
-  ];
-
   return (
-    <Tray.Root steps={steps} footer={<AaveFooter />}>
+    <Tray.Root
+      stepOptions={{
+        className: "bg-white",
+        footerStyle: { backgroundColor: "#FFFFFF" },
+      }}
+      footer={<AaveFooter />}
+    >
+
       <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Aave" />
       </Tray.Trigger>
+
+      <Tray.Step>
+        <AaveHeader title="Content One" />
+
+        <Tray.Body>
+          <Tray.Section>
+            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+              This is a test title
+            </Text>
+
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              This is some example test that spans over multiple lines bla bla
+              bla test test test many wods. this is a new sentence and we'll see
+              how that fares too.
+            </Text>
+          </Tray.Section>
+        </Tray.Body>
+      </Tray.Step>
+
+      <Tray.Step>
+        <AaveHeader title="Content Two" />
+        <Tray.Body>
+          <Tray.Section>
+            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+              Different heading
+            </Text>
+
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
+              amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
+              dolor amet. Lorem ipsum dolor amet.
+            </Text>
+
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              This is some example test that spans over multiple lines bla bla
+              bla test test test many wods. this is a new sentence and we'll see
+              how that fares too.
+            </Text>
+          </Tray.Section>
+        </Tray.Body>
+      </Tray.Step>
+
+      <Tray.Step>
+        <AaveHeader title="Content Three" />
+        <Tray.Body>
+          <Tray.Section>
+            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+              Another heading
+            </Text>
+
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum dolor
+              amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
+            </Text>
+
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              This is some example test that spans over multiple lines bla bla
+              bla test test test many wods. this is a new sentence and we'll see
+              how that fares too.
+            </Text>
+          </Tray.Section>
+        </Tray.Body>
+      </Tray.Step>
     </Tray.Root>
   );
 };

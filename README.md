@@ -41,9 +41,8 @@ Ensure Reanimated and Worklets are configured for the versions used by your appl
 ## Basic tray
 
 ```tsx
-import { useMemo } from "react";
 import { Button, Text } from "react-native";
-import { Tray, useTrayFlow, type TrayStepDefinition } from "morpheus";
+import { Tray, useTrayFlow } from "morpheus";
 
 function TrayFooter() {
   const { next, close, index, total } = useTrayFlow();
@@ -59,43 +58,33 @@ function TrayFooter() {
 }
 
 export function ProfileTray() {
-  const steps = useMemo<TrayStepDefinition[]>(
-    () => [
-      {
-        key: "profile",
-        header: (
-          <Tray.Header withSeparator>
-            <Text>Profile</Text>
-          </Tray.Header>
-        ),
-        content: (
-          <Tray.Body>
-            <Tray.Section>
-              <Text>Choose your profile settings.</Text>
-            </Tray.Section>
-          </Tray.Body>
-        ),
-      },
-      {
-        key: "confirmation",
-        content: (
-          <Tray.Body>
-            <Tray.Section>
-              <Text>Ready to continue.</Text>
-            </Tray.Section>
-          </Tray.Body>
-        ),
-        options: { fullScreen: true, fullScreenSafeAreaTop: true },
-      },
-    ],
-    [],
-  );
-
   return (
-    <Tray.Root steps={steps} footer={<TrayFooter />}>
+    <Tray.Root footer={<TrayFooter />}>
       <Tray.Trigger>
         <Text>Open profile</Text>
       </Tray.Trigger>
+
+      <Tray.Step key="profile">
+        <Tray.Header withSeparator>
+          <Text>Profile</Text>
+        </Tray.Header>
+        <Tray.Body>
+          <Tray.Section>
+            <Text>Choose your profile settings.</Text>
+          </Tray.Section>
+        </Tray.Body>
+      </Tray.Step>
+
+      <Tray.Step
+        key="confirmation"
+        options={{ fullScreen: true, fullScreenSafeAreaTop: true }}
+      >
+        <Tray.Body>
+          <Tray.Section>
+            <Text>Ready to continue.</Text>
+          </Tray.Section>
+        </Tray.Body>
+      </Tray.Step>
     </Tray.Root>
   );
 }
@@ -105,10 +94,15 @@ export function ProfileTray() {
 
 The `Tray` namespace exposes the authoring primitives:
 
-- `Tray.Root`, `Tray.Nested`, and `Tray.Trigger`
+- `Tray.Root`, `Tray.Nested`, `Tray.Step`, and `Tray.Trigger`
 - `Tray.Header`, `Tray.Body`, `Tray.Section`, `Tray.Footer`, and `Tray.Separator`
 - `Tray.Pages`, `Tray.Page`, and `Tray.Pages.Header`
 - `Tray.TextInput`
+
+Each `Tray.Step` contains one content root and may place one header before it.
+Root `stepOptions` are inherited by every step and can be overridden by
+that step's `options` prop. `Tray.Root` and `Tray.Nested` no longer accept a
+`steps` prop.
 
 Flow and integration hooks include `useTrayFlow`, `useTrayPages`, `useOptionalTrayPages`, `useTrayOriginProgress`, `useTrayHost`, and `useTrayTransitionLifecycle`.
 

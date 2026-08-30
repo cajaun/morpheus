@@ -4,7 +4,6 @@ import { SymbolView } from "expo-symbols";
 import {
   Tray,
   useTrayFlow,
-  type TrayStepDefinition,
 } from "morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { ExampleTrigger } from "../shared/example-trigger";
@@ -193,19 +192,14 @@ const AboutAaveStep = () => {
 };
 
 const AboutAaveTray = () => {
-  const steps: TrayStepDefinition[] = [
-    {
-      key: "about-aave",
-      content: <AboutAaveStep />,
-      options: { className: "bg-[#201F27]" },
-    },
-  ];
-
   return (
-    <Tray.Root steps={steps}>
+    <Tray.Root stepOptions={{ className: "bg-[#201F27]" }}>
       <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="About Aave" />
       </Tray.Trigger>
+      <Tray.Step>
+        <AboutAaveStep />
+      </Tray.Step>
     </Tray.Root>
   );
 };

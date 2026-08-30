@@ -3,7 +3,6 @@ import { SymbolView } from "expo-symbols";
 import {
   Tray,
   useTrayFlow,
-  type TrayStepDefinition,
 } from "morpheus";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { ExampleTrigger } from "../shared/example-trigger";
@@ -124,19 +123,14 @@ const WatchingWalletsInfoStep = () => {
 };
 
 const WatchingWalletsInfoTray = () => {
-  const steps: TrayStepDefinition[] = [
-    {
-      key: "watching-wallets-info",
-      content: <WatchingWalletsInfoStep />,
-      options: { className: "bg-white" },
-    },
-  ];
-
   return (
-    <Tray.Root steps={steps}>
+    <Tray.Root stepOptions={{ className: "bg-white" }}>
       <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Watching Wallets" />
       </Tray.Trigger>
+      <Tray.Step>
+        <WatchingWalletsInfoStep />
+      </Tray.Step>
     </Tray.Root>
   );
 };

@@ -27,7 +27,7 @@ export type {
   TrayRegistration,
   TrayRuntimeStore,
   TrayStackEntry,
-  TrayStepDefinition,
+  TrayStepProps,
   TrayStepOptions,
   TrayTransitionOptions,
   TrayTransitionContract,

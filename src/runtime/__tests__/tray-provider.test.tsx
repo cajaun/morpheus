@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   afterEach,
   beforeEach,
@@ -14,7 +14,7 @@ import {
   TrayProvider,
   useTrayFlow,
   useTrayHost,
-  type TrayStepDefinition,
+  type TrayStepOptions,
 } from "../..";
 
 // tests isolate runtime behavior by replacing the animated shell with a dumb host
@@ -96,12 +96,14 @@ const getRenderedTrayHosts = () =>
       node.props.testID === "action-tray-host",
   );
 
-// create a step definition for provider navigation scenarios
-const step = (key: string, options?: TrayStepDefinition["options"]): TrayStepDefinition => ({
-  key,
-  content: <Text>{key}</Text>,
-  options,
-});
+// create a declarative step for provider navigation scenarios
+const step = (key: string, options?: TrayStepOptions) => (
+  <Tray.Step key={key} options={options}>
+    <Tray.Body>
+      <Text>{key}</Text>
+    </Tray.Body>
+  </Tray.Step>
+);
 
 describe("TrayProvider runtime", () => {
   beforeEach(() => {
@@ -124,7 +126,7 @@ describe("TrayProvider runtime", () => {
       activeRenderer = TestRenderer.create(
         <TrayProvider>
           <HostSpy />
-          <Tray.Root steps={[step("one")]}>
+          <Tray.Root>{[step("one")]}
             <FlowSpy />
           </Tray.Root>
         </TrayProvider>,
@@ -157,7 +159,8 @@ describe("TrayProvider runtime", () => {
       activeRenderer = TestRenderer.create(
         <TrayProvider>
           <HostSpy />
-          <Tray.Root steps={[step("one"), step("two"), step("three")]}>
+          <Tray.Root>
+            {[step("one"), step("two"), step("three")]}
             <FlowSpy />
           </Tray.Root>
         </TrayProvider>,
@@ -212,15 +215,14 @@ describe("TrayProvider runtime", () => {
       activeRenderer = TestRenderer.create(
         <TrayProvider>
           <HostSpy />
-          <Tray.Root
-            steps={[
+          <Tray.Root>
+            {[
               step("shell"),
               step("fullscreen", {
                 fullScreen: true,
                 fullScreenCloseBehavior: "returnToShell",
               }),
             ]}
-          >
             <FlowSpy />
           </Tray.Root>
         </TrayProvider>,
@@ -266,13 +268,11 @@ describe("TrayProvider runtime", () => {
       const [expanded, updateExpanded] = useState(false);
       setExpanded = updateExpanded;
 
-      const steps = useMemo<TrayStepDefinition[]>(
-        () => (expanded ? [step("stable-key"), step("second-step")] : [step("stable-key")]),
-        [expanded],
-      );
-
       return (
-        <Tray.Root steps={steps}>
+        <Tray.Root>
+          {expanded
+            ? [step("stable-key"), step("second-step")]
+            : [step("stable-key")]}
           <FlowSpy />
         </Tray.Root>
       );
@@ -309,13 +309,13 @@ describe("TrayProvider runtime", () => {
       activeRenderer = TestRenderer.create(
         <TrayProvider>
           <HostSpy />
-          <Tray.Root id="alpha" steps={[step("one")]}>
+          <Tray.Root id="alpha">{[step("one")]}
             <></>
           </Tray.Root>
-          <Tray.Root id="beta" steps={[step("one")]}>
+          <Tray.Root id="beta">{[step("one")]}
             <></>
           </Tray.Root>
-          <Tray.Root id="gamma" steps={[step("one")]}>
+          <Tray.Root id="gamma">{[step("one")]}
             <></>
           </Tray.Root>
         </TrayProvider>,
@@ -349,10 +349,10 @@ describe("TrayProvider runtime", () => {
       activeRenderer = TestRenderer.create(
         <TrayProvider>
           <HostSpy />
-          <Tray.Root id="alpha" steps={[step("one")]}>
+          <Tray.Root id="alpha">{[step("one")]}
             <></>
           </Tray.Root>
-          <Tray.Root id="beta" steps={[step("one")]}>
+          <Tray.Root id="beta">{[step("one")]}
             <></>
           </Tray.Root>
         </TrayProvider>,

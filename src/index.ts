@@ -9,6 +9,7 @@ import { TrayTextInput } from "./primitives/text-input";
 import { TrayTrigger } from "./primitives/trigger";
 import { TrayNested } from "./runtime/tray-nested";
 import { TrayRoot } from "./runtime/tray-root";
+import { TrayStep } from "./runtime/tray-step";
 
 // centralize exports here so screens depend on one tray surface area
 export { TrayProvider } from "./core/tray-provider";
@@ -23,7 +24,7 @@ export {
   useTrayHost,
   useTrayTransitionLifecycle,
   type TrayRegistration,
-  type TrayStepDefinition,
+  type TrayStepProps,
   type TrayStepOptions,
   type TrayTransitionContract,
   type TrayTransitionContractState,
@@ -32,6 +33,8 @@ export {
   type TrayGeometrySnapshot,
   type TrayMeasurementOwner,
 } from "./runtime/tray-context";
+export type { TrayNestedProps } from "./runtime/tray-nested";
+export type { TrayRootProps } from "./runtime/tray-root";
 export { useOptionalTrayPages, useTrayPages } from "./pages-context";
 
 // the namespace mirrors the mental model used by tray authors
@@ -47,4 +50,5 @@ export const Tray = {
   TextInput: TrayTextInput,
   Page: TrayPage,
   Pages: TrayPages,
+  Step: TrayStep,
 };

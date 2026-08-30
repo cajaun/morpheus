@@ -1,11 +1,6 @@
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import {
-  Tray,
-  useTrayOriginProgress,
-  useTrayFlow,
-  type TrayStepDefinition,
-} from "morpheus";
+import { Tray, useTrayOriginProgress, useTrayFlow } from "morpheus";
 import {
   EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
@@ -22,89 +17,6 @@ const MUTED_TEXT = "#9FA1A8";
 const SECONDARY_ACTION = "#F3F4F6";
 const WARNING_BUTTON_WIDTH =
   SCREEN_WIDTH - EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN * 2;
-
-const WarningStep = () => {
-  const { close } = useTrayFlow();
-
-  return (
-    <Tray.Body>
-      <Tray.Header withSeparator={false} className="">
-        <View style={{ alignItems: "flex-end" }}>
-          <PressableScale
-            onPress={() => close()}
-            style={{
-              height: 32,
-              width: 32,
-              borderRadius: 999,
-              backgroundColor: "#F4F4F7",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <SymbolView
-              name="xmark"
-              tintColor="#8F9095"
-              size={18}
-              weight="bold"
-            />
-          </PressableScale>
-        </View>
-      </Tray.Header>
-      <Tray.Section style={{ gap: 20, paddingTop: 0 }}>
-        <View
-          style={{
-            alignItems: "center",
-            borderColor: "#FF4353",
-            borderRadius: 24,
-            borderWidth: 3,
-            height: 48,
-            justifyContent: "center",
-            width: 48,
-          }}
-        >
-          <Text
-            className="font-sf-bold"
-            style={{
-              color: "#FF4353",
-              fontSize: 31,
-              lineHeight: 34,
-            }}
-          >
-            !
-          </Text>
-        </View>
-
-        <View style={{ gap: 12 }}>
-          <Text
-            className="font-sf-bold"
-            style={{
-              color: "#25272D",
-              fontSize: 25,
-              lineHeight: 31,
-              letterSpacing: 0.1,
-            }}
-          >
-            Are you sure?
-          </Text>
-
-          <Text
-            className="font-sf-medium"
-            style={{
-              color: MUTED_TEXT,
-              fontSize: 20,
-              lineHeight: 28,
-              letterSpacing: 0.1,
-            }}
-          >
-            You haven't backed up your wallet yet. If you remove it, you could
-            lose access forever. We suggest tapping Cancel and backing up your
-            wallet first with a valid recovery method.
-          </Text>
-        </View>
-      </Tray.Section>
-    </Tray.Body>
-  );
-};
 
 const WarningFooter = () => {
   const { close } = useTrayFlow();
@@ -147,47 +59,99 @@ const WarningTrigger = () => (
 const RemoveWalletWarningTray = () => {
   const { bottom } = useSafeAreaInsets();
   const theme = useTrayDemoTheme();
-  const steps: TrayStepDefinition[] = [
-    {
-      key: "remove-wallet-warning",
-      content: <WarningStep />,
-      options: {
-        className: "bg-white",
-        footerStyle: { backgroundColor: trayDemoColors.white },
-      },
-    },
-  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          paddingTop: 136,
-        }}
-      >
-        <Text
-          className="font-sf-semiBold"
-          style={{
-            color: theme.muted,
-            fontSize: 22,
-            lineHeight: 28,
-            letterSpacing: 0.2,
-          }}
-        >
-          Remove Wallet
-        </Text>
-      </View>
-
       <Tray.Root
-        steps={steps}
+        stepOptions={{
+          className: "bg-white",
+          footerStyle: { backgroundColor: trayDemoColors.white },
+        }}
         footer={<WarningFooter />}
         transition={{
           open: "expandFromTrigger",
           close: "collapseToTrigger",
         }}
       >
+        <Tray.Step>
+          <Tray.Body>
+            <Tray.Header withSeparator={false} className="">
+              <View style={{ alignItems: "flex-end" }}>
+                <PressableScale
+                  onPress={() => close()}
+                  style={{
+                    height: 32,
+                    width: 32,
+                    borderRadius: 999,
+                    backgroundColor: "#F4F4F7",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <SymbolView
+                    name="xmark"
+                    tintColor="#8F9095"
+                    size={18}
+                    weight="bold"
+                  />
+                </PressableScale>
+              </View>
+            </Tray.Header>
+            <Tray.Section style={{ gap: 20, paddingTop: 0 }}>
+              <View
+                style={{
+                  alignItems: "center",
+                  borderColor: "#FF4353",
+                  borderRadius: 24,
+                  borderWidth: 3,
+                  height: 48,
+                  justifyContent: "center",
+                  width: 48,
+                }}
+              >
+                <Text
+                  className="font-sf-bold"
+                  style={{
+                    color: "#FF4353",
+                    fontSize: 31,
+                    lineHeight: 34,
+                  }}
+                >
+                  !
+                </Text>
+              </View>
+
+              <View style={{ gap: 12 }}>
+                <Text
+                  className="font-sf-bold"
+                  style={{
+                    color: "#25272D",
+                    fontSize: 25,
+                    lineHeight: 31,
+                    letterSpacing: 0.1,
+                  }}
+                >
+                  Are you sure?
+                </Text>
+
+                <Text
+                  className="font-sf-medium"
+                  style={{
+                    color: MUTED_TEXT,
+                    fontSize: 20,
+                    lineHeight: 28,
+                    letterSpacing: 0.1,
+                  }}
+                >
+                  You haven't backed up your wallet yet. If you remove it, you
+                  could lose access forever. We suggest tapping Cancel and
+                  backing up your wallet first with a valid recovery method.
+                </Text>
+              </View>
+            </Tray.Section>
+          </Tray.Body>
+        </Tray.Step>
+
         <View
           style={{
             bottom: bottom + EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,

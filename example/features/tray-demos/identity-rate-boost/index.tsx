@@ -4,7 +4,6 @@ import { SymbolView } from "expo-symbols";
 import {
   Tray,
   useTrayFlow,
-  type TrayStepDefinition,
 } from "morpheus";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { ExampleTrigger } from "../shared/example-trigger";
@@ -243,22 +242,19 @@ const IdentityRateBoostStep = () => {
 };
 
 const IdentityRateBoostTray = () => {
-  const steps: TrayStepDefinition[] = [
-    {
-      key: "identity-rate-boost",
-      content: <IdentityRateBoostStep />,
-      options: {
+  return (
+    <Tray.Root
+      stepOptions={{
         className: "bg-[#1E1E25]",
         style: { backgroundColor: PANEL_BACKGROUND },
-      },
-    },
-  ];
-
-  return (
-    <Tray.Root steps={steps}>
+      }}
+    >
       <Tray.Trigger haptics="impact-soft">
         <ExampleTrigger label="Identity Boost" />
       </Tray.Trigger>
+      <Tray.Step>
+        <IdentityRateBoostStep />
+      </Tray.Step>
     </Tray.Root>
   );
 };

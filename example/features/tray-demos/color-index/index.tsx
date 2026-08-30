@@ -8,7 +8,6 @@ import {
   Tray,
   useTrayFlow,
   useTrayMorphProgress,
-  type TrayStepDefinition,
 } from "morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { PressableScale } from "@/shared/ui/pressable-scale";
@@ -546,10 +545,13 @@ const ColorIndexTray = () => {
     });
   };
 
-  const steps: TrayStepDefinition[] = [
-    {
-      key: `${step.key}-overview`,
-      content: (
+  return (
+    <Tray.Root stepOptions={{ className: "bg-white" }}>
+      <Tray.Trigger haptics="feedback">
+        <ExampleTrigger label="Color Index" />
+      </Tray.Trigger>
+      <Tray.Step key={`${step.key}-overview`}>
+        <ColorIndexHeader step={step} />
         <ColorIndexStep
           step={step}
           isFirstStep={paletteIndex === 0}
@@ -558,29 +560,19 @@ const ColorIndexTray = () => {
           onNext={() => changePalette(1)}
           onSelectColor={setSelectedColorIndex}
         />
-      ),
-      header: <ColorIndexHeader step={step} />,
-      options: { className: "bg-white" },
-    },
-    {
-      key: `${step.key}-detail-${selectedColorIndex}`,
-      content: <ColorDetailStep step={step} colorIndex={selectedColorIndex} />,
-      options: {
-        className: "bg-white",
-        fullScreen: true,
-        shouldScaleBackground: false,
-        fullScreenSafeAreaTop: true,
-        fullScreenDraggable: false,
-        fullScreenCloseBehavior: "returnToShell",
-      },
-    },
-  ];
-
-  return (
-    <Tray.Root steps={steps}>
-      <Tray.Trigger haptics="feedback">
-        <ExampleTrigger label="Color Index" />
-      </Tray.Trigger>
+      </Tray.Step>
+      <Tray.Step
+        key={`${step.key}-detail-${selectedColorIndex}`}
+        options={{
+          fullScreen: true,
+          shouldScaleBackground: false,
+          fullScreenSafeAreaTop: true,
+          fullScreenDraggable: false,
+          fullScreenCloseBehavior: "returnToShell",
+        }}
+      >
+        <ColorDetailStep step={step} colorIndex={selectedColorIndex} />
+      </Tray.Step>
     </Tray.Root>
   );
 };

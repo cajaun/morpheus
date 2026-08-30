@@ -6,7 +6,6 @@ import Animated, { Easing, FadeIn, FadeOut } from "react-native-reanimated";
 import {
   Tray,
   useTrayFlow,
-  type TrayStepDefinition,
 } from "morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { PressableScale } from "@/shared/ui/pressable-scale";
@@ -491,29 +490,23 @@ const sharedStepOptions = {
 const WalletGroupTray = () => {
   const [selectedGroupId, setSelectedGroupId] = useState("group-2");
 
-  const steps: TrayStepDefinition[] = [
-      {
-        key: "choose-wallet-group",
-        content: (
-          <ChooseWalletGroupStep
-            selectedGroupId={selectedGroupId}
-            onSelectGroup={setSelectedGroupId}
-          />
-        ),
-        options: sharedStepOptions,
-      },
-      {
-        key: "confirm-new-wallet-group",
-        content: <CreateWalletGroupConfirmationStep />,
-        options: sharedStepOptions,
-      },
-  ];
-
   return (
-    <Tray.Root steps={steps} footer={<WalletGroupFooter />}>
+    <Tray.Root
+      stepOptions={sharedStepOptions}
+      footer={<WalletGroupFooter />}
+    >
       <Tray.Trigger haptics="feedback">
         <ExampleTrigger label="Wallet Group" />
       </Tray.Trigger>
+      <Tray.Step key="choose-wallet-group">
+        <ChooseWalletGroupStep
+          selectedGroupId={selectedGroupId}
+          onSelectGroup={setSelectedGroupId}
+        />
+      </Tray.Step>
+      <Tray.Step key="confirm-new-wallet-group">
+        <CreateWalletGroupConfirmationStep />
+      </Tray.Step>
     </Tray.Root>
   );
 };
