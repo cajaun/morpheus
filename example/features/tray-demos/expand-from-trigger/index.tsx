@@ -1,24 +1,24 @@
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { Link } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { Laminar } from "react-native-laminar";
 import { Tray, useTrayFlow } from "morpheus";
 import {
   EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
   SCREEN_WIDTH,
 } from "morpheus/constants";
-import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTrayDemoTheme } from "../theme";
 
-const TRANSFER_BUTTON_WIDTH =
+const BACKUP_BUTTON_WIDTH =
   SCREEN_WIDTH - EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN * 2;
 
-const TransferButton = ({
+const BACKUP_PURPLE = "#A653F5";
+const BACKUP_MUTED_TEXT = "#9FA1A8";
+
+const BackupTriggerButton = ({
   label,
   onPress,
 }: {
@@ -29,7 +29,7 @@ const TransferButton = ({
     onPress={onPress}
     style={{
       alignItems: "center",
-      backgroundColor: "#9896FF",
+      backgroundColor: BACKUP_PURPLE,
       borderRadius: 50,
       height: 50,
       justifyContent: "center",
@@ -42,164 +42,133 @@ const TransferButton = ({
   </PressableScale>
 );
 
-const OptionCheckbox = ({ checked }: { checked: boolean }) => (
-  <View
-    style={{
-      alignItems: "center",
-      borderColor: checked ? "#FFFFFF" : "#666668",
-      borderRadius: 6,
-      borderWidth: 3,
-      height: 32,
-      justifyContent: "center",
-      width: 32,
-    }}
-  >
-    {checked ? (
-      <Text style={{ color: "#FFFFFF", fontSize: 22, lineHeight: 24 }}>✓</Text>
-    ) : null}
-  </View>
-);
-
-const TransferOptionsStep = () => {
-  const { close, index } = useTrayFlow();
-  const [selected, setSelected] = useState<number[]>([]);
-  const options = [
-    "Set the recipient’s wallet address",
-    "Clear the ENS profile",
-    "Give the recipient full control",
-  ];
-
-  const toggleOption = (option: number) => {
-    setSelected((current) =>
-      current.includes(option)
-        ? current.filter((item) => item !== option)
-        : [...current, option],
-    );
-  };
+const BackupInfoStep = () => {
+  const { close } = useTrayFlow();
 
   return (
-    <Tray.Body>
-      <Tray.Header withSeparator>
-        <FlowHeader
-          step={index}
-          leftLabel="Transfer Options"
-          shouldClose
-          onClose={close}
-        />
-      </Tray.Header>
-
-      <Tray.Section style={{ gap: 28 }}>
+    <Tray.Body style={{ paddingHorizontal: 0 }}>
+      <View
+        style={{
+          alignItems: "flex-start",
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingHorizontal: 28,
+          paddingTop: 24,
+        }}
+      >
         <View
           style={{
-            alignItems: "center",
-            backgroundColor: "#F5F5FA",
-            borderRadius: 17,
-            flexDirection: "row",
-            gap: 14,
-            minHeight: 50,
-            paddingHorizontal: 16,
+            alignItems: "flex-start",
+            height: 68,
+            justifyContent: "center",
+            width: 68,
           }}
         >
-          <View
-            style={{
-              alignItems: "center",
-              backgroundColor: "#6E9BFF",
-              borderRadius: 6,
-              height: 22,
-              justifyContent: "center",
-              width: 22,
-            }}
-          >
-            <SymbolView name="link" size={15} tintColor="#FFFFFF" />
-          </View>
-          <Text
-            style={{
-              color: "#1A1A1A",
-              flex: 1,
-              fontFamily: "Sf-semibold",
-              fontSize: 18,
-            }}
-          >
-            ENS Configuration
-          </Text>
-          <SymbolView name="info.circle" size={24} tintColor="#949595" />
+          <SymbolView name="checkmark.icloud" size={64} tintColor="#9B9C9F" />
         </View>
 
-        <View style={{ gap: 26 }}>
-          {options.map((label, index) => (
-            <Pressable
-              key={label}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: selected.includes(index) }}
-              onPress={() => toggleOption(index)}
-              style={{
-                alignItems: "flex-start",
-                flexDirection: "row",
-                gap: 24,
-              }}
-            >
-              <OptionCheckbox checked={selected.includes(index)} />
-              <Text
-                style={{
-                  color: "#1A1A1A",
-                  flex: 1,
-                  fontFamily: "Sf-semibold",
-                  fontSize: 18,
-                  lineHeight: 26,
-                }}
-              >
-                {label}
-              </Text>
-            </Pressable>
-          ))}
+        <View style={{ alignItems: "flex-end" }}>
+          <PressableScale
+            onPress={close}
+            style={{
+              alignItems: "center",
+              backgroundColor: "#F5F5F8",
+              borderRadius: 999,
+              height: 40,
+              justifyContent: "center",
+              width: 40,
+            }}
+          >
+            <SymbolView
+              name="xmark"
+              size={19}
+              weight="bold"
+              tintColor="#96979A"
+            />
+          </PressableScale>
+        </View>
+      </View>
+
+      <Tray.Section
+        style={{
+          gap: 12,
+          paddingHorizontal: 28,
+        }}
+      >
+        <Text
+          className="font-sf-semiBold"
+          style={{
+            color: "#25272D",
+            fontSize: 28,
+            letterSpacing: 0.1,
+            lineHeight: 31,
+          }}
+        >
+          An existing iCloud{"\n"}Backup is available
+        </Text>
+
+        <View style={{ gap: 12 }}>
+          <Text
+            className="font-sf-medium"
+            style={{
+              color: BACKUP_MUTED_TEXT,
+              fontSize: 20,
+              letterSpacing: 0.1,
+              lineHeight: 28,
+            }}
+          >
+            You’ve already enabled iCloud Backup for at least one of your other
+            wallets.
+          </Text>
+
+          <Text
+            className="font-sf-medium"
+            style={{
+              color: BACKUP_MUTED_TEXT,
+              letterSpacing: 0.1,
+              fontSize: 20,
+              lineHeight: 28,
+            }}
+          >
+            On the next step, simply enter your existing password to add your
+            new wallet to your current iCloud Backup.
+          </Text>
         </View>
       </Tray.Section>
     </Tray.Body>
   );
 };
 
-const TransferOptionsFooter = () => {
+const BackupInfoFooter = () => {
   const { close } = useTrayFlow();
 
   return (
     <Tray.Footer style={{ width: "100%" }}>
-      <View style={{ width: TRANSFER_BUTTON_WIDTH }}>
+      <View style={{ width: "100%" }}>
         <PressableScale
           onPress={close}
           style={{
             alignItems: "center",
-            backgroundColor: "#9896FF",
+            backgroundColor: BACKUP_PURPLE,
             borderRadius: 50,
             height: 50,
             justifyContent: "center",
             width: "100%",
           }}
         >
-          <View style={{ alignItems: "center", flexDirection: "row", gap: 5 }}>
-            <Laminar
-              text="Confirm"
-              autoSize={false}
-              align="center"
-              animationPreset="default"
-              clipToBounds={false}
-              style={{
-                color: "#FFFFFF",
-                fontFamily: "Sf-bold",
-                textAlign: "center",
-              }}
-              className="text-2xl"
-            />
-          </View>
+          <Text className="text-white font-sf-bold" style={trayDemoText.button}>
+            Continue
+          </Text>
         </PressableScale>
       </View>
     </Tray.Footer>
   );
 };
 
-const TransferOptionsTrigger = () => (
+const BackupInfoTrigger = () => (
   <Tray.Trigger haptics="feedback">
-    <View style={{ width: TRANSFER_BUTTON_WIDTH }}>
-      <TransferButton label="Continue" />
+    <View style={{ width: BACKUP_BUTTON_WIDTH }}>
+      <BackupTriggerButton label="Continue" />
     </View>
   </Tray.Trigger>
 );
@@ -214,51 +183,16 @@ const ExpandFromTriggerDemo = ({
 
   return (
     <View style={{ backgroundColor: theme.background, flex: 1 }}>
-      {showBackLink ? (
-        <View style={{ paddingHorizontal: 24, paddingTop: 64 }}>
-          <Link
-            href="/"
-            style={{
-              color: theme.muted,
-              fontFamily: "Sf-semibold",
-              fontSize: 16,
-            }}
-          >
-            Back
-          </Link>
-        </View>
-      ) : null}
-
-      <View
-        style={{
-          alignItems: "center",
-          flex: 1,
-          paddingTop: showBackLink ? 72 : 136,
-        }}
-      >
-        <Text
-          className="font-sf-semiBold"
-          style={{
-            color: theme.muted,
-            fontSize: 22,
-            lineHeight: 28,
-            letterSpacing: 0.2,
-          }}
-        >
-          Transfer Options
-        </Text>
-      </View>
-
       <Tray.Root
         stepOptions={{
           className: "bg-white",
           footerStyle: { backgroundColor: trayDemoColors.white },
         }}
-        footer={<TransferOptionsFooter />}
+        footer={<BackupInfoFooter />}
         transition={{ open: "expandFromTrigger", close: "collapseToTrigger" }}
       >
         <Tray.Step>
-          <TransferOptionsStep />
+          <BackupInfoStep />
         </Tray.Step>
         <View
           style={{
@@ -269,7 +203,7 @@ const ExpandFromTriggerDemo = ({
             right: EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
           }}
         >
-          <TransferOptionsTrigger />
+          <BackupInfoTrigger />
         </View>
       </Tray.Root>
     </View>
