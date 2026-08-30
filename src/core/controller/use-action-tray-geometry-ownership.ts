@@ -56,6 +56,7 @@ export const useActionTrayGeometryOwnership = ({
     undefined,
   );
   const contentMeasurementLeaseRef = useRef(false);
+  const originGeometryLeaseRef = useRef(false);
   const renderedTrayIdRef = useRef(renderedTrayId);
   renderedTrayIdRef.current = renderedTrayId;
   const activeTrayIdRef = useRef(trayId);
@@ -107,6 +108,7 @@ export const useActionTrayGeometryOwnership = ({
       incomingFullScreen: !!fullScreen,
       presentationFullScreen,
       leaseActive: contentMeasurementLeaseRef.current,
+      originGeometryLeaseActive: originGeometryLeaseRef.current,
       preparedSheetFrame: preparedSheetFrameRef.current
         ? {
             endpointKey: preparedSheetFrameRef.current.endpointKey,
@@ -347,6 +349,7 @@ export const useActionTrayGeometryOwnership = ({
       preparedSheetFrameRef,
       committedSheetFrameRef,
       contentMeasurementLeaseRef,
+      originGeometryLeaseRef,
     },
     handlers: {
       handleGeometryMeasured,

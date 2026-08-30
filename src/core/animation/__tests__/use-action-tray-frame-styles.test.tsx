@@ -33,6 +33,7 @@ const shared = <T,>(value: T) => ({ value });
 const renderFrameStyles = ({
   contentHeight = 320,
   contentHeightSnapshot = contentHeight,
+  originTargetContentHeight = contentHeight,
   fullScreen = false,
   fullScreenBoundaryTransition = false,
   fullScreenBoundarySourceFullScreen,
@@ -51,6 +52,7 @@ const renderFrameStyles = ({
 }: {
   contentHeight?: number;
   contentHeightSnapshot?: number;
+  originTargetContentHeight?: number;
   fullScreen?: boolean;
   fullScreenBoundaryTransition?: boolean;
   fullScreenBoundarySourceFullScreen?: boolean;
@@ -83,6 +85,7 @@ const renderFrameStyles = ({
       keyboardHeight: shared(0),
       morphProgress: shared(morphProgress),
       originProgress: shared(1),
+      originTargetContentHeight: shared(originTargetContentHeight),
       transitionStartedGeneration: shared(transitionStartedGeneration ?? 0),
       transitionLayoutStartedGeneration: shared(
         transitionLayoutStartedGeneration ?? 0,
@@ -135,6 +138,16 @@ describe("useActionTrayFrameStyles", () => {
     expect(styles.trayLayoutStyle.height).toBe("auto");
   });
 
+  it("keeps trigger geometry on its opening snapshot", () => {
+    const styles = renderFrameStyles({
+      contentHeight: 580,
+      originTargetContentHeight: 506,
+      shouldUseOriginTransition: true,
+    });
+
+    expect(styles.trayLayoutStyle.height).toBe(596);
+  });
+
   it("releases a concrete return height after fullscreen cleanup", () => {
     let styles: FrameStyles | null = null;
 
@@ -150,6 +163,7 @@ describe("useActionTrayFrameStyles", () => {
         keyboardHeight: shared(0),
         morphProgress: shared(1),
         originProgress: shared(1),
+        originTargetContentHeight: shared(320),
         preparedSheetFrame: prepared
           ? {
               endpointKey: "target",

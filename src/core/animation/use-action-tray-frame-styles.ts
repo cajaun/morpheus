@@ -77,6 +77,7 @@ export const useActionTrayFrameStyles = ({
   keyboardHeight,
   morphProgress,
   originProgress,
+  originTargetContentHeight,
   preparedSheetFrame,
   shouldUseOriginTransition,
   transition,
@@ -289,9 +290,13 @@ export const useActionTrayFrameStyles = ({
         ? EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT
         : footerHeight.value
       : 0;
+    const stableOriginContentHeight =
+      shouldUseOriginTransition && originTargetContentHeight.value > 0
+        ? originTargetContentHeight.value
+        : contentHeight.value;
     const resolvedSheetHeight =
-      contentHeight.value > 0
-        ? Math.max(0, contentHeight.value + resolvedFooterHeight)
+      stableOriginContentHeight > 0
+        ? Math.max(0, stableOriginContentHeight + resolvedFooterHeight)
         : undefined;
     const targetSheetMeasurementPending = isTargetSheetMeasurementPending({
       fullScreenBoundaryTransition,
@@ -422,6 +427,7 @@ export const useActionTrayFrameStyles = ({
     fullScreenBoundarySourceFullScreen,
     fullScreenBoundaryTargetFullScreen,
     originProgress,
+    originTargetContentHeight,
     preparedSheetFrame,
     shouldUseOriginTransition,
     targetBottomInset,

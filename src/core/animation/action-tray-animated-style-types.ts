@@ -23,6 +23,7 @@ export type ActionTrayAnimatedStyleParams = {
   visible: boolean;
   layoutEnabled: boolean;
   originProgress: AnimatedValue<number>;
+  originTargetContentHeight: AnimatedValue<number>;
   morphProgress: AnimatedValue<number>;
   transitionStartedGeneration?: AnimatedValue<number>;
   transitionLayoutStartedGeneration?: AnimatedValue<number>;
@@ -39,6 +40,7 @@ export type ActionTrayAnimationState = {
   contentHeightSnapshot?: number;
   morphProgress: AnimatedValue<number>;
   originProgress: AnimatedValue<number>;
+  originTargetContentHeight: AnimatedValue<number>;
   preparedSheetFrame?: ActionTraySheetFrame;
   transitionGeneration?: number;
   transitionSourceKey?: string;

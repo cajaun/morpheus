@@ -35,6 +35,7 @@ export const useActionTrayPresentationState = ({
   const animationTravel = useSharedValue(SCREEN_HEIGHT);
   const surfaceOpacity = useSharedValue(1);
   const originProgress = useSharedValue(1);
+  const originTargetContentHeight = useSharedValue(0);
 
   useEffect(() => {
     // footer presence is shared with worklets so spacer height can update off the js thread
@@ -132,6 +133,7 @@ export const useActionTrayPresentationState = ({
       animationTravel,
       surfaceOpacity,
       originProgress,
+      originTargetContentHeight,
       totalHeight,
       progress,
     },

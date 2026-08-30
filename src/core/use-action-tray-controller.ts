@@ -172,6 +172,7 @@ export const useActionTrayController = ({
     preparedSheetFrameRef,
     committedSheetFrameRef,
     contentMeasurementLeaseRef,
+    originGeometryLeaseRef,
     renderedTrayIdRef,
   } = geometry.refs;
   const {
@@ -294,6 +295,7 @@ export const useActionTrayController = ({
     contentMeasurementLeaseActive:
       geometry.state.preparedSheetFrame !== undefined,
     contentMeasurementLeaseRef,
+    originGeometryLeaseRef,
     committedSheetFrameRef,
     resolveContentHeight: resolveMeasuredContentHeight,
     onContentHeightResolved: heightCache.actions.handleContentHeightResolved,
@@ -391,6 +393,7 @@ export const useActionTrayController = ({
     clearPreparedSheetFrame,
     clearRenderState,
     contentMeasurementLeaseRef,
+    originGeometryLeaseRef,
     morphProgress,
     preparedSheetFrameRef,
     committedSheetFrameRef,
@@ -401,6 +404,7 @@ export const useActionTrayController = ({
       animationTravel: presentation.shared.animationTravel,
       closeGeneration: presentation.shared.closeGeneration,
       originProgress: presentation.shared.originProgress,
+      originTargetContentHeight: presentation.shared.originTargetContentHeight,
       surfaceOpacity: presentation.shared.surfaceOpacity,
       translateY: presentation.shared.translateY,
     },
@@ -422,6 +426,7 @@ export const useActionTrayController = ({
     onCloseComplete,
     renderState,
     measurements,
+    originGeometryLeaseRef,
     shared: {
       translateY: presentation.shared.translateY,
       contentHeight: presentation.shared.contentHeight,
@@ -431,6 +436,7 @@ export const useActionTrayController = ({
       closeGeneration: presentation.shared.closeGeneration,
       surfaceOpacity: presentation.shared.surfaceOpacity,
       originProgress: presentation.shared.originProgress,
+      originTargetContentHeight: presentation.shared.originTargetContentHeight,
     },
     resolveClosedTranslateY: presentation.helpers.resolveClosedTranslateY,
     transition,
@@ -521,6 +527,7 @@ export const useActionTrayController = ({
       transitionStartedGeneration,
       transitionLayoutStartedGeneration,
       transitionCompletedGeneration,
+      originTargetContentHeight: presentation.shared.originTargetContentHeight,
     },
     state: {
       layoutEnabled: measurements.state.layoutEnabled,

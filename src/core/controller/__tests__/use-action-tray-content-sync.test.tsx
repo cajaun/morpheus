@@ -82,6 +82,54 @@ describe("useActionTrayContentSync", () => {
     expect(onContentHeightResolved).not.toHaveBeenCalled();
   });
 
+  it("quarantines transient layouts during trigger origin geometry", () => {
+    const contentHeight = shared(506);
+    const footerHeight = shared(90);
+    const originGeometryLeaseRef = { current: true };
+    const onContentHeightResolved = jest.fn();
+    let handleContentLayout: ((event: never) => void) | null = null;
+
+    const Probe = () => {
+      const measurements = useActionTrayMeasurements({
+        contentHeight,
+        footerHeight,
+        renderedTrayId: "nested-sheet",
+        hasRenderedBody: true,
+        originGeometryLeaseRef,
+        onContentHeightResolved,
+      });
+
+      handleContentLayout = measurements.handlers.handleContentLayout as (
+        event: never,
+      ) => void;
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    act(() => {
+      handleContentLayout?.({
+        nativeEvent: { layout: { height: 580 } },
+      } as never);
+    });
+
+    expect(contentHeight.value).toBe(506);
+    expect(onContentHeightResolved).not.toHaveBeenCalled();
+
+    originGeometryLeaseRef.current = false;
+
+    act(() => {
+      handleContentLayout?.({
+        nativeEvent: { layout: { height: 506 } },
+      } as never);
+    });
+
+    expect(contentHeight.value).toBe(506);
+    expect(onContentHeightResolved).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps the last body frame when a rendered step reports zero height", () => {
     const contentHeight = shared(255);
     const footerHeight = shared(64);

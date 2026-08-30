@@ -47,6 +47,7 @@ export const useActionTrayOpenCloseLifecycle = ({
   onTransitionCommitted,
   onTransitionStarted,
   onTransitionCompleted,
+  originGeometryLeaseRef,
 }: Params) => {
   const justOpenedRef = useRef(false);
   const [isSurfaceReady, setIsSurfaceReady] = useState(true);
@@ -73,16 +74,29 @@ export const useActionTrayOpenCloseLifecycle = ({
     shared.animationTravel.value = SCREEN_HEIGHT;
     shared.surfaceOpacity.value = 1;
     shared.originProgress.value = 1;
+    shared.originTargetContentHeight.value = 0;
+    originGeometryLeaseRef.current = false;
     setIsSurfaceReady(true);
     clear();
     reset();
     onTransitionCompleted?.({ owner: "tray-close" });
     onCloseComplete?.();
-  }, [clear, onCloseComplete, onTransitionCompleted, reset, shared]);
+  }, [
+    clear,
+    onCloseComplete,
+    onTransitionCompleted,
+    originGeometryLeaseRef,
+    reset,
+    shared,
+  ]);
 
   const handleOpenTransitionCompleted = useCallback(() => {
     onTransitionCompleted?.({ owner: "tray-open" });
   }, [onTransitionCompleted]);
+
+  const releaseOriginGeometryLease = useCallback(() => {
+    originGeometryLeaseRef.current = false;
+  }, [originGeometryLeaseRef]);
 
   const doOpenSpring = useCallback(() => {
     // refs beat react state here because layout callbacks can land between renders
@@ -114,6 +128,12 @@ export const useActionTrayOpenCloseLifecycle = ({
     const shouldExpandFromTrigger =
       transition?.open === "expandFromTrigger";
 
+    // capture origin geometry before its clock can expose transient layouts
+    shared.originTargetContentHeight.value = shouldExpandFromTrigger
+      ? nextContentHeight
+      : 0;
+    originGeometryLeaseRef.current = shouldExpandFromTrigger;
+
     onTransitionStarted?.({ owner: "tray-open" });
 
     // the ui thread spring owns the visible open transition from travel to zero
@@ -134,19 +154,19 @@ export const useActionTrayOpenCloseLifecycle = ({
         shared.active.value = true;
 
         if (expandFromTrigger) {
-          // trigger origin open enables layout only after the pill reaches full sheet geometry
+          // trigger origin open keeps explicit geometry until a later sheet change requests layout ownership
           shared.originProgress.value = withTiming(
             1,
             { duration: EXPAND_FROM_TRIGGER_OPEN_DURATION },
             (finished) => {
               if (finished) {
+                scheduleOnRN(releaseOriginGeometryLease);
                 scheduleOnRN(
                   markTrayOpenFinished,
                   rootTrayId ?? trayId ?? "unknown",
                   trayId,
                 );
                 scheduleOnRN(log, "EXPAND OPEN FINISHED");
-                scheduleOnRN(enableLayout);
                 scheduleOnRN(handleOpenTransitionCompleted);
               }
             },
@@ -188,6 +208,8 @@ export const useActionTrayOpenCloseLifecycle = ({
     trayId,
     transition?.open,
     onTransitionStarted,
+    originGeometryLeaseRef,
+    releaseOriginGeometryLease,
   ]);
 
   useLayoutEffect(() => {

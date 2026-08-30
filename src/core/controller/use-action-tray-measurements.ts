@@ -21,6 +21,7 @@ type Params = {
   acceptContentMeasurement?: boolean;
   contentMeasurementLeaseActive?: boolean;
   contentMeasurementLeaseRef?: { current: boolean };
+  originGeometryLeaseRef?: { current: boolean };
   committedSheetFrameRef?: { current: ActionTraySheetFrame | undefined };
   resolveContentHeight?: (measuredHeight: number) => number;
   onContentHeightResolved?: (
@@ -52,6 +53,7 @@ export const useActionTrayMeasurements = ({
   acceptContentMeasurement = true,
   contentMeasurementLeaseActive = false,
   contentMeasurementLeaseRef,
+  originGeometryLeaseRef,
   committedSheetFrameRef,
   resolveContentHeight,
   onContentHeightResolved,
@@ -95,6 +97,7 @@ export const useActionTrayMeasurements = ({
       acceptContentMeasurement,
       contentMeasurementLeaseActive,
       contentMeasurementLeaseRef: contentMeasurementLeaseRef?.current ?? false,
+      originGeometryLeaseActive: originGeometryLeaseRef?.current ?? false,
       measurementOwner: measurementOwner
         ? {
             presentationKey: measurementOwner.presentationKey,
@@ -115,6 +118,7 @@ export const useActionTrayMeasurements = ({
     footerHeight,
     hasRenderedBody,
     measurementOwner,
+    originGeometryLeaseRef,
     renderedFooter,
     renderedFullScreen,
     renderedTrayId,
@@ -257,6 +261,21 @@ export const useActionTrayMeasurements = ({
         return;
       }
 
+      if (originGeometryLeaseRef?.current === true) {
+        // trigger origin owns the target while transient fullscreen layouts drain
+        log("CONTENT onLayout ignored during trigger origin lease", {
+          height: e.nativeEvent.layout.height,
+          trayId: renderedTrayId,
+          acceptContentMeasurement,
+          originGeometryLeaseActive: originGeometryLeaseRef.current,
+          renderedFullScreen,
+          measurementOwner: measurementOwner?.presentationKey,
+          latestMeasuredContentHeight: latestMeasuredContentHeightRef.current,
+          latestResolvedContentHeight: latestResolvedContentHeightRef.current,
+        });
+        return;
+      }
+
       const height = e.nativeEvent.layout.height;
       const previousMeasuredHeight = latestMeasuredContentHeightRef.current;
 
@@ -379,6 +398,7 @@ export const useActionTrayMeasurements = ({
       acceptContentMeasurement,
       contentMeasurementLeaseActive,
       contentMeasurementLeaseRef,
+      originGeometryLeaseRef,
       committedSheetFrameRef,
       footerHeight,
       hasRenderedBody,

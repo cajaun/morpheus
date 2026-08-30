@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type MutableRefObject } from "react";
+import { useLayoutEffect, useRef, type RefObject } from "react";
 import type { SharedValue } from "react-native-reanimated";
 import { SCREEN_HEIGHT } from "../constants";
 import { log } from "../logger";
@@ -8,17 +8,19 @@ type Params = {
   assignmentId: number;
   clearPreparedSheetFrame: () => void;
   clearRenderState: () => void;
-  contentMeasurementLeaseRef: MutableRefObject<boolean>;
+  contentMeasurementLeaseRef: RefObject<boolean>;
+  originGeometryLeaseRef: RefObject<boolean>;
   morphProgress: SharedValue<number>;
-  preparedSheetFrameRef: MutableRefObject<ActionTraySheetFrame | undefined>;
-  committedSheetFrameRef: MutableRefObject<ActionTraySheetFrame | undefined>;
+  preparedSheetFrameRef: RefObject<ActionTraySheetFrame | undefined>;
+  committedSheetFrameRef: RefObject<ActionTraySheetFrame | undefined>;
   resetMeasurements: () => void;
-  returningToSheetRef: MutableRefObject<boolean>;
+  returningToSheetRef: RefObject<boolean>;
   shared: {
     active: SharedValue<boolean>;
     animationTravel: SharedValue<number>;
     closeGeneration: SharedValue<number>;
     originProgress: SharedValue<number>;
+    originTargetContentHeight: SharedValue<number>;
     surfaceOpacity: SharedValue<number>;
     translateY: SharedValue<number>;
   };
@@ -27,7 +29,7 @@ type Params = {
     layoutStartedGeneration: SharedValue<number>;
     startedAt: SharedValue<number>;
     startedGeneration: SharedValue<number>;
-    lastHandledLayoutCompletionGenerationRef: MutableRefObject<number>;
+    lastHandledLayoutCompletionGenerationRef: RefObject<number>;
   };
 };
 
@@ -37,6 +39,7 @@ export const useActionTrayAssignmentReset = ({
   clearPreparedSheetFrame,
   clearRenderState,
   contentMeasurementLeaseRef,
+  originGeometryLeaseRef,
   morphProgress,
   preparedSheetFrameRef,
   committedSheetFrameRef,
@@ -51,6 +54,7 @@ export const useActionTrayAssignmentReset = ({
     animationTravel,
     closeGeneration,
     originProgress,
+    originTargetContentHeight,
     surfaceOpacity,
     translateY,
   } = shared;
@@ -77,6 +81,7 @@ export const useActionTrayAssignmentReset = ({
     translateY.value = SCREEN_HEIGHT;
     animationTravel.value = SCREEN_HEIGHT;
     originProgress.value = 1;
+    originTargetContentHeight.value = 0;
     morphProgress.value = 1;
     startedGeneration.value = 0;
     startedAt.value = 0;
@@ -90,6 +95,7 @@ export const useActionTrayAssignmentReset = ({
     preparedSheetFrameRef.current = undefined;
     committedSheetFrameRef.current = undefined;
     contentMeasurementLeaseRef.current = false;
+    originGeometryLeaseRef.current = false;
     clearPreparedSheetFrame();
     returningToSheetRef.current = false;
   }, [
@@ -97,6 +103,7 @@ export const useActionTrayAssignmentReset = ({
     clearPreparedSheetFrame,
     clearRenderState,
     contentMeasurementLeaseRef,
+    originGeometryLeaseRef,
     morphProgress,
     preparedSheetFrameRef,
     committedSheetFrameRef,
@@ -109,6 +116,7 @@ export const useActionTrayAssignmentReset = ({
     layoutStartedGeneration,
     lastHandledLayoutCompletionGenerationRef,
     originProgress,
+    originTargetContentHeight,
     startedAt,
     startedGeneration,
     surfaceOpacity,

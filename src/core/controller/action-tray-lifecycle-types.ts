@@ -1,6 +1,6 @@
 // define the inputs shared by shell lifecycle hooks
 import type { ReactNode } from "react";
-import type { MutableRefObject } from "react";
+import type { RefObject } from "react";
 import type { SharedValue } from "react-native-reanimated";
 import type { TrayTransitionOptions } from "../../runtime/types";
 
@@ -26,8 +26,8 @@ export type ActionTrayLifecycleParams = {
       measuredFooterHeight: SharedValue<number>;
     };
     refs: {
-      latestResolvedContentHeightRef: MutableRefObject<number>;
-      latestMeasuredFooterHeightRef: MutableRefObject<number>;
+      latestResolvedContentHeightRef: RefObject<number>;
+      latestMeasuredFooterHeightRef: RefObject<number>;
     };
     state: {
       isReadyToOpen: boolean;
@@ -40,6 +40,7 @@ export type ActionTrayLifecycleParams = {
       reset: () => void;
     };
   };
+  originGeometryLeaseRef: RefObject<boolean>;
   shared: {
     translateY: SharedValue<number>;
     contentHeight: SharedValue<number>;
@@ -49,6 +50,7 @@ export type ActionTrayLifecycleParams = {
     closeGeneration: SharedValue<number>;
     surfaceOpacity: SharedValue<number>;
     originProgress: SharedValue<number>;
+    originTargetContentHeight: SharedValue<number>;
   };
   resolveClosedTranslateY: (
     nextFooterHeight?: number,
