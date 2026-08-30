@@ -64,7 +64,7 @@ const BackupInfoStep = () => {
             width: 68,
           }}
         >
-          <SymbolView name="checkmark.icloud" size={64} tintColor="#9B9C9F" />
+          <SymbolView name="checkmark.icloud" size={64} tintColor="#9B9C9F" weight="thin" />
         </View>
 
         <View style={{ alignItems: "flex-end" }}>
@@ -74,14 +74,14 @@ const BackupInfoStep = () => {
               alignItems: "center",
               backgroundColor: "#F5F5F8",
               borderRadius: 999,
-              height: 40,
+              height: 36,
               justifyContent: "center",
-              width: 40,
+              width: 36,
             }}
           >
             <SymbolView
               name="xmark"
-              size={19}
+              size={18}
               weight="bold"
               tintColor="#96979A"
             />

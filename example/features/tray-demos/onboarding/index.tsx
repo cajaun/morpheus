@@ -10,7 +10,9 @@ import { ExampleTrigger } from "../shared/example-trigger";
 import { OnboardingPageHeader as SharedOnboardingPageHeader } from "../shared/onboarding-page-header";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { SymbolView } from "expo-symbols";
-import { CreatingWalletsInfoStep } from "../creating-wallets-info";
+import { PrimaryButton } from "../shared/primary-button";
+
+const ONBOARDING_INFO_ICON = "rgba(255,255,255,0.24)";
 
 const OnboardingFooter = () => {
   const { next, index, total, close, pageIndex } = useTrayFlow();
@@ -33,7 +35,6 @@ const OnboardingFooter = () => {
             borderRadius: 50,
             height: BUTTON_HEIGHT,
             justifyContent: "center",
-            paddingHorizontal: 20,
             width: "100%",
           }}
         >
@@ -71,122 +72,103 @@ const ContinueButtonLabel = () => (
 
 
 const OnboardingContinueTrayContent = () => {
-  const benefits = [
-    "Keep your wallet choices together",
-    "Return to this step with everything intact",
-    "Review the details before you finish",
-  ];
+  const { close } = useTrayFlow();
 
-      const { close } = useTrayFlow();
   return (
-    <Tray.Body>
-      <Tray.Header withSeparator={false} style={{ gap: 0 }}>
-      <View style={{ alignItems: "flex-end" }}>
-        <PressableScale
-          onPress={close}
-          style={{
-            alignItems: "center",
-            backgroundColor: trayDemoColors.fieldBackground,
-            borderRadius: 999,
-            height: 32,
-            justifyContent: "center",
-            width: 32,
-          }}
-        >
-          <SymbolView
-            name="xmark"
-            type="palette"
-            size={16}
-            weight="semibold"
-            tintColor="#2A2A2C"
-          />
-        </PressableScale>
-      </View>
-    </Tray.Header>
-      <Tray.Section
+    <Tray.Body style={{ paddingHorizontal: 0 }}>
+      <View
         style={{
-          gap: 20,
-        paddingTop: 0
+          alignItems: "flex-start",
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingHorizontal: 28,
+          paddingTop: 24,
         }}
       >
         <View
           style={{
-            alignItems: "center",
-            backgroundColor: "#EEF8FF",
-            borderRadius: 30,
-            height: 60,
+            alignItems: "flex-start",
+            height: 68,
             justifyContent: "center",
-            width: 60,
+            width: 68,
           }}
         >
           <SymbolView
-            name="checkmark.circle.fill"
-            type="palette"
-            size={32}
-            tintColor={trayDemoColors.primaryAction}
+            name="checkmark.icloud"
+            size={64}
+            tintColor={trayDemoColors.mutedText}
+            weight="thin"
           />
         </View>
 
-        <View style={{ gap: 12 }}>
-          <Text
-            className="font-sf-bold"
+        <View style={{ alignItems: "flex-end" }}>
+          <PressableScale
+            onPress={close}
             style={{
-              color: trayDemoColors.headingText,
-              fontSize: 28,
-              letterSpacing: 0.2,
-              lineHeight: 34,
+              alignItems: "center",
+              backgroundColor: trayDemoColors.fieldBackground,
+              borderRadius: 999,
+              height: 36,
+              justifyContent: "center",
+              width: 36,
             }}
           >
-            Save your setup
+            <SymbolView
+              name="xmark"
+              size={18}
+              weight="bold"
+              tintColor={trayDemoColors.mutedText}
+            />
+          </PressableScale>
+        </View>
+      </View>
+
+      <Tray.Section
+        style={{
+          gap: 12,
+          paddingHorizontal: 28,
+        }}
+      >
+        <Text
+          className="font-sf-semibold"
+          style={{
+            color: trayDemoColors.headingText,
+            fontSize: 28,
+            letterSpacing: 0.1,
+            lineHeight: 31,
+          }}
+        >
+          Your setup is saved
+        </Text>
+
+        <View style={{ gap: 12 }}>
+          <Text
+            className="font-sf-medium"
+            style={{
+              color: trayDemoColors.mutedText,
+              fontSize: 20,
+              letterSpacing: 0.1,
+              lineHeight: 28,
+            }}
+          >
+            Your wallet choices stay together as you move through onboarding.
+            Nothing is submitted yet, so you can still make changes.
           </Text>
 
           <Text
             className="font-sf-medium"
             style={{
               color: trayDemoColors.mutedText,
-              fontSize: 18,
-              letterSpacing: 0.2,
-              lineHeight: 26,
+              fontSize: 20,
+              letterSpacing: 0.1,
+              lineHeight: 28,
             }}
           >
-            You can return to this step at any time. Nothing has been submitted,
-            and you can review everything before you continue.
+            You can return to this flow at any time to review your choices
+            before you finish. When everything looks right, continue to the
+            next step.
           </Text>
         </View>
-
-        <View style={{ gap: 12 }}>
-          {benefits.map((benefit) => (
-            <View
-              key={benefit}
-              style={{
-                alignItems: "flex-start",
-                flexDirection: "row",
-                gap: 10,
-              }}
-            >
-              <SymbolView
-                name="checkmark.circle.fill"
-                type="palette"
-                size={20}
-                tintColor={trayDemoColors.primaryAction}
-              />
-              <Text
-                className="font-sf-medium"
-                style={{
-                  color: trayDemoColors.mutedText,
-                  flex: 1,
-                  fontSize: 17,
-                  letterSpacing: 0.15,
-                  lineHeight: 24,
-                }}
-              >
-                {benefit}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-
       </Tray.Section>
     </Tray.Body>
   );
@@ -197,40 +179,143 @@ const OnboardingContinueTrayFooter = () => {
 
   return (
     <Tray.Footer style={{ width: "100%" }}>
-      <PressableScale
-        onPress={closeAndNextParentPage}
-        style={{
-          alignItems: "center",
-          backgroundColor: trayDemoColors.primaryAction,
-          borderRadius: 50,
-          height: BUTTON_HEIGHT,
-          justifyContent: "center",
-          paddingHorizontal: 20,
-          width: "100%",
-        }}
-      >
-        <ContinueButtonLabel />
-      </PressableScale>
+      <View style={{ width: "100%" }}>
+        <PressableScale
+          onPress={closeAndNextParentPage}
+          style={{
+            alignItems: "center",
+            backgroundColor: trayDemoColors.primaryAction,
+            borderRadius: 50,
+            height: 50,
+            justifyContent: "center",
+            width: "100%",
+          }}
+        >
+          <Text className="text-white font-sf-bold" style={trayDemoText.button}>
+            Continue
+          </Text>
+        </PressableScale>
+      </View>
     </Tray.Footer>
   );
 };
 
-const ONBOARDING_FOOTER_STYLE = { backgroundColor: "#FFFFFF" };
+const ONBOARDING_FOOTER_STYLE = {
+  backgroundColor: trayDemoColors.white,
+};
 
 const ONBOARDING_CONTINUE_TRAY_FOOTER = <OnboardingContinueTrayFooter />;
 
-const ONBOARDING_HELP_INFO_COPY = {
-  title: "Onboarding Wallets",
-  subtitle: "A quick guide to your wallet setup",
-  intro:
-    "This helper explains how your wallet setup flow works and where to find your saved choices.",
-  firstSectionTitle: "Keep your setup together",
-  firstSectionBody:
-    "Your onboarding choices stay together as you move through the flow, so you can review them without losing context.",
-  secondSectionTitle: "Return when you're ready",
-  secondSectionBody:
-    "Open this guide whenever you need a reminder. The parent onboarding flow stays in place while you read, and you can return when you're ready to continue.",
-  buttonLabel: "Got It",
+const OnboardingWalletsInfoStep = () => {
+  const { close } = useTrayFlow();
+
+  return (
+    <Tray.Body style={{ paddingHorizontal: 0 }}>
+      <Tray.Section style={{ gap: 20, paddingTop: 0 }}>
+        <View
+          style={{
+            backgroundColor: trayDemoColors.white,
+            borderRadius: 34,
+            overflow: "hidden",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: trayDemoColors.primaryAction,
+              justifyContent: "flex-end",
+              minHeight: 200,
+              paddingBottom: 24,
+              paddingHorizontal: 28,
+              paddingTop: 28,
+            }}
+          >
+            <View style={{ position: "absolute", left: 24, top: 18 }}>
+              <SymbolView
+                name="text.document.fill"
+                tintColor={ONBOARDING_INFO_ICON}
+                size={120}
+              />
+            </View>
+
+            <PressableScale
+              onPress={close}
+              style={{
+                alignItems: "center",
+                backgroundColor: "rgba(255,255,255,0.22)",
+                borderRadius: 17,
+                height: 34,
+                justifyContent: "center",
+                position: "absolute",
+                right: 20,
+                top: 20,
+                width: 34,
+              }}
+            >
+              <SymbolView
+                name="xmark"
+                type="palette"
+                size={17}
+                tintColor={trayDemoColors.white}
+                weight="bold"
+              />
+            </PressableScale>
+
+            <View style={{ gap: 2 }}>
+              <Text
+                className="font-sf-semibold text-white"
+                style={{
+                  fontSize: 28,
+                  letterSpacing: 0.3,
+                  lineHeight: 34,
+                }}
+              >
+                Onboarding guide
+              </Text>
+              <Text
+                className="font-sf-medium"
+                style={{
+                  color: trayDemoColors.white,
+                  fontSize: 18,
+                  letterSpacing: 0.2,
+                  lineHeight: 24,
+                }}
+              >
+                A quick look at this flow
+              </Text>
+            </View>
+          </View>
+
+          <View style={{ paddingHorizontal: 28, paddingTop: 24 }}>
+            <Text
+              className="font-sf-medium"
+              style={{
+                color: trayDemoColors.mutedText,
+                fontSize: 21,
+                letterSpacing: 0.2,
+                lineHeight: 28,
+              }}
+            >
+              Your onboarding flow keeps your choices together as you move
+              between steps. This makes it easier to review each decision,
+              keep track of where you are, and return to an earlier page
+              without losing your place. It can also help you take your time,
+              compare the details, and finish your setup when everything looks
+              right. At each step, you can pause, go back, or continue when you
+              are ready.
+            </Text>
+          </View>
+        </View>
+
+        <View style={{ paddingHorizontal: 24, width: "100%" }}>
+          <PrimaryButton
+            backgroundColor={trayDemoColors.primaryAction}
+            label="Got It"
+            onPress={close}
+          />
+        </View>
+      </Tray.Section>
+    </Tray.Body>
+  );
 };
 
 const OnboardingHeader = ({ title }: { title: string }) => {
@@ -265,6 +350,7 @@ export const OnboardingPageHeader = () => {
     <SharedOnboardingPageHeader
       rightAccessory={
         <Tray.Nested
+          stepOptions={{ className: "bg-white" }}
           style={{
             width: 32,
             height: 32,
@@ -273,13 +359,14 @@ export const OnboardingPageHeader = () => {
           }}
         >
           <Tray.Step>
-            <CreatingWalletsInfoStep copy={ONBOARDING_HELP_INFO_COPY} />
+            <OnboardingWalletsInfoStep />
           </Tray.Step>
           <SymbolView
             name="questionmark.circle"
             type="palette"
-            size={32}
-            tintColor="#2A2A2C"
+            size={28}
+            tintColor="#222222"
+            weight="regular"
           />
         </Tray.Nested>
       }

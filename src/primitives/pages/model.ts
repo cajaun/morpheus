@@ -8,9 +8,9 @@ import {
 
 // keep page movement rules testable without rendering the pager
 export const PAGE_SPRING_CONFIG = {
-  stiffness: 1000,
-  damping: 500,
-  mass: 3,
+  stiffness: 600,
+  damping: 48,
+  mass: 1,
   overshootClamping: true,
 } as const;
 

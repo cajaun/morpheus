@@ -25,11 +25,11 @@ const PageProgressItem = ({
     const distance = Math.min(Math.abs(progress.value - index), 1);
 
     return {
-      width: interpolate(distance, [0, 1], [42, 22]),
+      width: interpolate(distance, [0, 1], [32, 16]),
       backgroundColor: interpolateColor(
         distance,
         [0, 1],
-        ["#41BBFF", "#DCDDDF"],
+        ["#4FAFF8", "#D9D9D9"],
       ),
     };
   }, [index, progress]);
@@ -60,7 +60,7 @@ const PageProgress = ({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        gap: 8,
+        gap: 4,
         flex: 1,
       }}
     >
@@ -85,9 +85,6 @@ export const OnboardingPageHeader = ({
   return (
     <View
       style={{
-        // 24 + 44 + 16 matches the sheet header's vertical frame closely,
-        // keeping both headers and both body boundaries aligned while their
-        // keyed trees overlap during the fullscreen morph.
         paddingTop: FULL_SCREEN_HEADER_PADDING_TOP,
         flexDirection: "row",
         alignItems: "center",
@@ -105,8 +102,9 @@ export const OnboardingPageHeader = ({
         <SymbolView
           name="xmark"
           type="palette"
-          weight="semibold"
-          tintColor="#2A2A2C"
+          weight="regular"
+          tintColor="#222222"
+          size={20}
         />
       </PressableScale>
 
@@ -128,7 +126,9 @@ export const OnboardingPageHeader = ({
           <SymbolView
             name="questionmark.circle"
             type="palette"
-            tintColor="#2A2A2C"
+            tintColor="#222222"
+            size={24}
+            weight="regular"
           />
         )}
       </View>

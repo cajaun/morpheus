@@ -15,20 +15,31 @@ export const TrayPagesScene: React.FC<{
   pageWidth: number;
   progress: SharedValue<number>;
 }> = ({ children, index, pageIndex, pageWidth, progress }) => {
-  const offscreenOffset = pageWidth + 4;
+  const offscreenOffset = pageWidth / 3;
   const animatedStyle = useAnimatedStyle(
-    () => ({
-      transform: [
-        {
-          translateX: interpolate(
-            progress.value,
-            [index - 1, index, index + 1],
-            [offscreenOffset, 0, -offscreenOffset],
-            Extrapolation.CLAMP,
-          ),
-        },
-      ],
-    }),
+    () => {
+      // fade each page with the same clock that moves it
+      const pageProgress = interpolate(
+        progress.value,
+        [index - 1, index, index + 1],
+        [0, 1, 0],
+        Extrapolation.CLAMP,
+      );
+
+      return {
+        opacity: pageProgress,
+        transform: [
+          {
+            translateX: interpolate(
+              progress.value,
+              [index - 1, index, index + 1],
+              [offscreenOffset, 0, -offscreenOffset],
+              Extrapolation.CLAMP,
+            ),
+          },
+        ],
+      };
+    },
     [index, offscreenOffset, progress],
   );
 
