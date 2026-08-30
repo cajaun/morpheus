@@ -82,11 +82,13 @@ const HostSpy = () => {
   return null;
 };
 
+// expose flow state so navigation assertions can inspect it
 const FlowSpy = () => {
   latestFlow = useTrayFlow();
   return null;
 };
 
+// collect rendered host nodes without depending on visual content
 const getRenderedTrayHosts = () =>
   activeRenderer!.root.findAll(
     (node) =>
@@ -94,6 +96,7 @@ const getRenderedTrayHosts = () =>
       node.props.testID === "action-tray-host",
   );
 
+// create a step definition for provider navigation scenarios
 const step = (key: string, options?: TrayStepDefinition["options"]): TrayStepDefinition => ({
   key,
   content: <Text>{key}</Text>,
@@ -167,7 +170,7 @@ describe("TrayProvider runtime", () => {
 
     expect(latestHost!.activeTrayId).toBe(latestFlow!.trayId);
     expect(latestHost!.activeIndex).toBe(0);
-    expect(latestHost!.transition).toMatchObject({
+    expect(latestHost!.lastTransition).toMatchObject({
       generation: 1,
       reason: "open",
       direction: "none",
@@ -181,7 +184,7 @@ describe("TrayProvider runtime", () => {
     });
 
     expect(latestHost!.activeIndex).toBe(1);
-    expect(latestHost!.transition).toMatchObject({
+    expect(latestHost!.lastTransition).toMatchObject({
       generation: 2,
       reason: "nextStep",
       direction: "forward",
@@ -195,7 +198,7 @@ describe("TrayProvider runtime", () => {
     });
 
     expect(latestHost!.activeIndex).toBe(0);
-    expect(latestHost!.transition).toMatchObject({
+    expect(latestHost!.lastTransition).toMatchObject({
       generation: 3,
       reason: "previousStep",
       direction: "backward",
@@ -237,7 +240,7 @@ describe("TrayProvider runtime", () => {
 
     expect(latestHost!.activeTrayId).toBe(latestFlow!.trayId);
     expect(latestHost!.activeIndex).toBe(0);
-    expect(latestHost!.transition).toMatchObject({
+    expect(latestHost!.lastTransition).toMatchObject({
       reason: "returnToShell",
       direction: "backward",
       boundary: "fullScreenToSheet",
@@ -249,7 +252,7 @@ describe("TrayProvider runtime", () => {
     });
 
     expect(latestHost!.activeTrayId).toBeNull();
-    expect(latestHost!.transition).toMatchObject({
+    expect(latestHost!.lastTransition).toMatchObject({
       reason: "dismiss",
       boundary: "closing",
       to: null,

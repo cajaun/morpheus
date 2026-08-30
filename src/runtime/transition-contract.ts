@@ -1,4 +1,5 @@
 import { resolveTrayStepOptions } from "./tray-step-options";
+import { clampTrayStepIndex } from "./tray-step-index";
 import type {
   TrayPresentationEndpoint,
   TrayRegistration,
@@ -10,14 +11,7 @@ import type {
   TraySharedRegionContract,
 } from "./types";
 
-const clampIndex = (index: number, total: number) => {
-  if (total <= 0) {
-    return 0;
-  }
-
-  return Math.max(0, Math.min(index, total - 1));
-};
-
+// derive an endpoint from stack identity and registered step data
 export const resolveTrayPresentationEndpoint = ({
   entry,
   registration,
@@ -29,7 +23,7 @@ export const resolveTrayPresentationEndpoint = ({
     return null;
   }
 
-  const stepIndex = clampIndex(entry.index, registration.steps.length);
+  const stepIndex = clampTrayStepIndex(entry.index, registration.steps.length);
   const step = registration.steps[stepIndex];
 
   if (!step) {
@@ -50,6 +44,7 @@ export const resolveTrayPresentationEndpoint = ({
   };
 };
 
+// derive forward or backward motion from the step indexes
 const resolveDirection = (
   reason: TrayTransitionReason,
   from: TrayPresentationEndpoint | null,
@@ -78,6 +73,7 @@ const resolveDirection = (
   return "none";
 };
 
+// classify the transition by source and target presentation modes
 const resolveBoundary = (
   reason: TrayTransitionReason,
   from: TrayPresentationEndpoint | null,
@@ -91,8 +87,7 @@ const resolveBoundary = (
     return "closing";
   }
 
-  // nested/root entries are separate host surfaces; their mode values must
-  // not be interpreted as one shell morphing between sheet and fullscreen
+  // nested/root entries are separate host surfaces their mode values must not be interpreted as one shell morphing between sheet and fullscreen
   if (from.trayId !== to.trayId) {
     return reason === "closeNested" ? "closing" : "opening";
   }
@@ -110,6 +105,7 @@ const resolveBoundary = (
     : "sheetToSheet";
 };
 
+// build the immutable identity and shared region plan for a transition
 export const createTrayTransitionContract = ({
   generation,
   reason,

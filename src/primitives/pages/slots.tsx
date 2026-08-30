@@ -13,6 +13,7 @@ export const TrayPagesHeaderSlot: React.FC<{
 
 TrayPagesHeaderSlot.displayName = "TrayPagesHeader";
 
+// render footer content with fullscreen keyboard compensation
 export const TrayPagesFooterSlot: React.FC<{
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -45,6 +46,7 @@ export const TrayPagesFooterSlot: React.FC<{
 
 TrayPagesFooterSlot.displayName = "TrayPagesFooter";
 
+// identify typed page slots while parsing arbitrary children
 export const isElementOfType = <T,>(
   child: React.ReactNode,
   component: React.ComponentType<T>,

@@ -23,6 +23,7 @@ type Params = Pick<
     "originProgress" | "shouldUseOriginTransition"
   >;
 
+// coordinate surface content and footer visibility with shell progress
 export const useActionTrayVisibilityStyles = ({
   hasFooter,
   originProgress,

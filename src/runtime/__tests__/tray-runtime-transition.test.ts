@@ -1,10 +1,13 @@
+// verify navigation and registration preserve transition identity
 import { describe, expect, it, jest } from "@jest/globals";
 import type { SharedValue } from "react-native-reanimated";
 import { createTrayRuntimeStore } from "../store/create-tray-runtime-store";
 import type { TrayPagesRegistration, TrayRegistration } from "../types";
 
+// create the shared value shape used by runtime transition tests
 const sharedValue = (value: number) => ({ value }) as SharedValue<number>;
 
+// build a store with inert external dependencies
 const createStore = () =>
   createTrayRuntimeStore({
     keyboardHeight: sharedValue(0),
@@ -13,6 +16,7 @@ const createStore = () =>
     registerFocusable: () => () => undefined,
   });
 
+// build page registration data for fullscreen page transitions
 const pages = (pageIndex: number): TrayPagesRegistration => ({
   stepKey: "fullscreen",
   pageIndex,
@@ -106,7 +110,7 @@ describe("tray runtime transition ownership", () => {
 
         expect(store.getState().activeTrayId === "root").toBe(expectedActive);
         expect(store.getState().activeIndex).toBe(expectedIndex);
-        expect(store.getState().transition?.reason).toBe(expectedReason);
+        expect(store.getState().lastTransition?.reason).toBe(expectedReason);
       },
     );
   });
@@ -133,7 +137,7 @@ describe("tray runtime transition ownership", () => {
     store.actions.nextStep();
 
     expect(store.getState().activeIndex).toBe(1);
-    expect(store.getState().transition).toMatchObject({
+    expect(store.getState().lastTransition).toMatchObject({
       generation: 2,
       reason: "nextStep",
       boundary: "sheetToFullScreen",
@@ -147,7 +151,7 @@ describe("tray runtime transition ownership", () => {
     expect(store.getState().transitionGeneration).toBe(
       generationBeforePageChange + 1,
     );
-    expect(store.getState().transition).toMatchObject({
+    expect(store.getState().lastTransition).toMatchObject({
       reason: "pageChange",
       direction: "forward",
       stepChanged: false,
@@ -159,7 +163,7 @@ describe("tray runtime transition ownership", () => {
     store.actions.openNestedTray("nested", "root");
 
     expect(store.getState().activeTrayId).toBe("nested");
-    expect(store.getState().transition).toMatchObject({
+    expect(store.getState().lastTransition).toMatchObject({
       reason: "openNested",
       boundary: "opening",
       fullScreenChanged: false,
@@ -171,7 +175,7 @@ describe("tray runtime transition ownership", () => {
 
     expect(store.getState().activeTrayId).toBe("root");
     expect(store.getState().activeIndex).toBe(1);
-    expect(store.getState().transition).toMatchObject({
+    expect(store.getState().lastTransition).toMatchObject({
       reason: "closeNested",
       boundary: "closing",
       fullScreenChanged: false,
@@ -187,13 +191,13 @@ describe("tray runtime transition ownership", () => {
       steps: [{ key: "only", content: null }],
     });
     store.actions.openTray("single");
-    const transition = store.getState().transition;
+    const transition = store.getState().lastTransition;
     const generation = store.getState().transitionGeneration;
 
     store.actions.nextStep();
     store.actions.previousStep();
 
-    expect(store.getState().transition).toBe(transition);
+    expect(store.getState().lastTransition).toBe(transition);
     expect(store.getState().transitionGeneration).toBe(generation);
   });
 
@@ -233,7 +237,7 @@ describe("tray runtime transition ownership", () => {
     store.actions.registerTrayPages("root", pages(1));
 
     expect(store.getState().transitionGeneration).toBe(generation);
-    expect(store.getState().transition?.generation).toBe(generation);
+    expect(store.getState().lastTransition?.generation).toBe(generation);
   });
 
   it("reconciles a pending step boundary when registration settles after navigation", () => {
@@ -249,7 +253,7 @@ describe("tray runtime transition ownership", () => {
     store.actions.nextStep();
 
     const generation = store.getState().transitionGeneration;
-    expect(store.getState().transition?.boundary).toBe("sheetToSheet");
+    expect(store.getState().lastTransition?.boundary).toBe("sheetToSheet");
 
     store.actions.registerTray("wallet", {
       steps: [
@@ -263,7 +267,7 @@ describe("tray runtime transition ownership", () => {
     });
 
     expect(store.getState().transitionGeneration).toBe(generation);
-    expect(store.getState().transition).toMatchObject({
+    expect(store.getState().lastTransition).toMatchObject({
       boundary: "sheetToFullScreen",
       fullScreenChanged: true,
       to: { mode: "fullScreen", stepKey: "create" },
@@ -272,6 +276,78 @@ describe("tray runtime transition ownership", () => {
       boundary: "sheetToFullScreen",
       fullScreenChanged: true,
     });
+  });
+
+  it("reissues a generation when registration changes a sealed destination", () => {
+    const store = createStore();
+
+    store.actions.registerTray("wallet", {
+      steps: [
+        { key: "chooser", content: null },
+        { key: "create", content: null },
+      ],
+    });
+    store.actions.openTray("wallet");
+    store.actions.nextStep();
+
+    const sealedGeneration = store.getState().transitionGeneration;
+    store.transitions.mark(sealedGeneration, "prepared");
+
+    store.actions.registerTray("wallet", {
+      steps: [
+        { key: "chooser", content: null },
+        {
+          key: "create",
+          content: null,
+          options: { fullScreen: true },
+        },
+      ],
+    });
+
+    const reissuedGeneration = store.getState().transitionGeneration;
+
+    expect(reissuedGeneration).toBeGreaterThan(sealedGeneration);
+    expect(store.transitions.get(sealedGeneration)?.phase).toBe(
+      "interrupted",
+    );
+    expect(store.getState().lastTransition).toMatchObject({
+      generation: reissuedGeneration,
+      boundary: "sheetToFullScreen",
+      fullScreenChanged: true,
+    });
+  });
+
+  it("does not reconcile a completed generation when registration changes", () => {
+    const store = createStore();
+
+    store.actions.registerTray("wallet", {
+      steps: [
+        { key: "chooser", content: null },
+        { key: "create", content: null },
+      ],
+    });
+    store.actions.openTray("wallet");
+    store.actions.nextStep();
+
+    const completedGeneration = store.getState().transitionGeneration;
+    store.transitions.mark(completedGeneration, "completed");
+
+    store.actions.registerTray("wallet", {
+      steps: [
+        { key: "chooser", content: null },
+        {
+          key: "create",
+          content: null,
+          options: { fullScreen: true },
+        },
+      ],
+    });
+
+    expect(store.getState().transitionGeneration).toBe(completedGeneration);
+    expect(store.transitions.getActive()).toBeNull();
+    expect(store.transitions.get(completedGeneration)?.contract.to?.mode).toBe(
+      "sheet",
+    );
   });
 
   it("interrupts a superseded transaction and rejects its late callbacks", () => {

@@ -30,8 +30,10 @@ let nextAttemptId = 1;
 const tracesByTrayId = new Map<string, TrayOpenTrace>();
 
 // high resolution time gives more useful comparisons between animation stages
+// read a high resolution clock when the platform provides one
 const now = () => globalThis.performance?.now?.() ?? Date.now();
 
+// retain only the latest open timing summaries for inspection
 const writeSummary = (summary: TrayOpenTimingSummary) => {
   const existing =
     ((globalThis as typeof globalThis & {
@@ -48,11 +50,13 @@ const writeSummary = (summary: TrayOpenTimingSummary) => {
   ).__ACTION_TRAY_OPEN_TIMINGS__ = nextSummaries;
 };
 
+// create the mutable record for one tray open attempt
 const createTrace = (rootTrayId: string): TrayOpenTrace => ({
   attemptId: nextAttemptId++,
   rootTrayId,
 });
 
+// reuse the current open record when later lifecycle marks arrive
 const getOrCreateTrace = (rootTrayId: string) => {
   // later lifecycle marks should attach to the same attempt when possible
   const existing = tracesByTrayId.get(rootTrayId);
@@ -66,9 +70,11 @@ const getOrCreateTrace = (rootTrayId: string) => {
   return nextTrace;
 };
 
+// format optional durations without inventing a missing measurement
 const formatDuration = (value?: number) =>
   value == null ? "n/a" : `${value.toFixed(1)}ms`;
 
+// print the completed open timing breakdown for local diagnosis
 const logSummary = (summary: TrayOpenTimingSummary) => {
   // console logging is the lowest friction place to inspect timing while iterating
   console.log(
@@ -91,6 +97,7 @@ const logSummary = (summary: TrayOpenTimingSummary) => {
   );
 };
 
+// start an open trace at the user press boundary
 export const markTrayTriggerPressed = (rootTrayId: string) => {
   if (!isActionTrayInstrumentationEnabled()) {
     return;
@@ -102,6 +109,7 @@ export const markTrayTriggerPressed = (rootTrayId: string) => {
   tracesByTrayId.set(rootTrayId, trace);
 };
 
+// record when navigation requests the tray to open
 export const markTrayOpenRequested = (rootTrayId: string) => {
   if (!isActionTrayInstrumentationEnabled()) {
     return;
@@ -111,6 +119,7 @@ export const markTrayOpenRequested = (rootTrayId: string) => {
   trace.openRequestedAt = now();
 };
 
+// record when the visible open motion begins
 export const markTrayOpenStarted = (
   rootTrayId: string,
   presentedTrayId?: string,
@@ -124,6 +133,7 @@ export const markTrayOpenStarted = (
   trace.openStartedAt = now();
 };
 
+// record when measurements allow the open motion to proceed
 export const markTrayReadyToOpen = (
   rootTrayId: string,
   presentedTrayId?: string,
@@ -137,6 +147,7 @@ export const markTrayReadyToOpen = (
   trace.readyToOpenAt = now();
 };
 
+// close the trace after the open motion reports completion
 export const markTrayOpenFinished = (
   rootTrayId: string,
   presentedTrayId?: string,

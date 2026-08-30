@@ -90,8 +90,7 @@ export const useTrayBoundaryMotionState = ({
       !boundaryGeometryReady;
 
     if (waitingForSheetGeometry) {
-      // Keep the previous mode latched until the target sheet owns a valid
-      // frame. This preserves the existing boundary clock start contract.
+      // keep the previous mode latched until the target sheet owns a valid frame this preserves the existing boundary clock start contract
       log("BOUNDARY CONFIG WAITING FOR SHEET GEOMETRY", {
         boundaryGeometryReady,
         transition: describeTrayTransition(transitionContract),

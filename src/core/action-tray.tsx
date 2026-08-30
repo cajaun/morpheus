@@ -422,10 +422,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             <Animated.View
               style={[
                 trayStyles.content,
-                // The source frame is only a synchronous fallback. The
-                // clock-aware animated frame must be applied last so it can
-                // switch from source topology to target topology when the
-                // existing boundary clock starts.
+                // apply the clock aware frame last so target topology wins
                 ...(isFullScreenBoundaryTransition
                   ? [contentBoundarySourceStyle, contentFrameStyle]
                   : [contentFrameStyle]),

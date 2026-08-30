@@ -1,3 +1,4 @@
+// verify motion direction follows the transition boundary
 import {
   BACKWARD_CONTENT_MOTION,
   FORWARD_CONTENT_MOTION,
@@ -12,6 +13,7 @@ import {
 } from "../constants";
 import type { TrayTransitionContract } from "../../runtime/types";
 
+// build a contract with the boundary and direction under test
 const transition = (
   direction: TrayTransitionContract["direction"],
   boundary: TrayTransitionContract["boundary"],

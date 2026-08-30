@@ -74,6 +74,7 @@ type Params = {
   onPrepared?: (details: Record<string, unknown>) => void;
 };
 
+// decide when incoming props can replace the committed shell snapshot
 export const useActionTrayContentSync = ({
   visible,
   interactive,
@@ -201,8 +202,7 @@ export const useActionTrayContentSync = ({
         trayId,
         measuredContentHeight.value,
         "sheet",
-        // A fullscreen source measurement is a viewport constraint, never a
-        // valid fallback for a new sheet endpoint.
+        // a fullscreen source measurement is a viewport constraint, never a valid fallback for a new sheet endpoint
         !renderedFullScreen,
       );
 
@@ -215,10 +215,7 @@ export const useActionTrayContentSync = ({
           trayId,
         );
       } else if (!renderedFullScreen && renderedTrayId !== trayId) {
-        // A sheet-to-sheet handoff must not let the incoming content's first
-        // native layout report the outgoing shell height. The cached target
-        // measurement is the intrinsic endpoint, so promote it before the
-        // snapshot is published and hold the lease until layout completes.
+        // promote cached target height before publishing the sheet handoff
         const cachedContentHeight =
           readCachedSheetContentHeightRef.current?.(trayId);
 
@@ -243,8 +240,7 @@ export const useActionTrayContentSync = ({
       morphProgress: morphProgress.value,
       renderedTransition: describeTrayTransition(renderedTransitionContract),
     });
-    // shell level swaps key off tray identity not every prop change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // shell level swaps key off tray identity not every prop change eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trayId, visible, fullScreen, morphProgress, onPrepared]);
 
   // publish visual content after native layout can derive the sheet frame

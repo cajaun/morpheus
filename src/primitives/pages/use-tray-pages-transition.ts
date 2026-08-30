@@ -13,6 +13,7 @@ import type {
   TrayHostActionsValue,
   TrayTransitionLifecycle,
 } from "../../runtime/types";
+import { reportTrayTransitionPhase } from "../../runtime/transition-lifecycle-bridge";
 import { createTrayMeasurementOwner } from "../../runtime/types";
 import {
   clampPageIndex,
@@ -65,9 +66,12 @@ export const useTrayPagesTransition = ({
     transitionGenerationRef.current = null;
 
     if (generation !== null) {
-      transitions.mark(generation, "cancelled", {
-        owner: "Tray.Pages",
-        reason: "page-range-changed",
+      reportTrayTransitionPhase({
+        lifecycle: transitions,
+        generation,
+        phase: "cancelled",
+        source: "Tray.Pages",
+        details: { reason: "page-range-changed" },
       });
     }
 
@@ -81,9 +85,12 @@ export const useTrayPagesTransition = ({
       const generation = transitionGenerationRef.current;
 
       if (generation !== null) {
-        transitions.mark(generation, "cancelled", {
-          owner: "Tray.Pages",
-          reason: "pager-unmounted",
+        reportTrayTransitionPhase({
+          lifecycle: transitions,
+          generation,
+          phase: "cancelled",
+          source: "Tray.Pages",
+          details: { reason: "pager-unmounted" },
         });
       }
     },
@@ -128,10 +135,15 @@ export const useTrayPagesTransition = ({
         if (generation !== null) {
           const transition = transitions.get(generation)?.contract;
 
-          transitions.mark(generation, "prepared", {
-            owner: "Tray.Pages",
-            fromPageIndex: pageIndex,
-            toPageIndex: resolvedIndex,
+          reportTrayTransitionPhase({
+            lifecycle: transitions,
+            generation,
+            phase: "prepared",
+            source: "Tray.Pages",
+            details: {
+              fromPageIndex: pageIndex,
+              toPageIndex: resolvedIndex,
+            },
           });
 
           if (transition?.from && viewportFrameRef.current) {
@@ -176,9 +188,12 @@ export const useTrayPagesTransition = ({
       transitionGenerationRef.current = null;
 
       if (generation !== null) {
-        transitions.mark(generation, "completed", {
-          owner: "Tray.Pages",
-          pageIndex: targetIndex,
+        reportTrayTransitionPhase({
+          lifecycle: transitions,
+          generation,
+          phase: "completed",
+          source: "Tray.Pages",
+          details: { pageIndex: targetIndex },
         });
       }
     },
@@ -200,9 +215,12 @@ export const useTrayPagesTransition = ({
     if (generation !== null) {
       const transition = transitions.get(generation)?.contract;
 
-      transitions.mark(generation, "committed", {
-        owner: "Tray.Pages",
-        pageIndex,
+      reportTrayTransitionPhase({
+        lifecycle: transitions,
+        generation,
+        phase: "committed",
+        source: "Tray.Pages",
+        details: { pageIndex },
       });
       if (transition?.to && viewportFrameRef.current && trayId) {
         transitions.captureGeometry(generation, "target", {
@@ -215,9 +233,12 @@ export const useTrayPagesTransition = ({
           bodyFrame: viewportFrameRef.current,
         });
       }
-      transitions.mark(generation, "layoutStarted", {
-        owner: "Tray.Pages",
-        pageIndex,
+      reportTrayTransitionPhase({
+        lifecycle: transitions,
+        generation,
+        phase: "layoutStarted",
+        source: "Tray.Pages",
+        details: { pageIndex },
       });
     }
 

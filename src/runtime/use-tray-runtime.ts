@@ -11,6 +11,7 @@ type Params = {
   registerFocusable: TrayHostActionsValue["registerFocusable"];
 };
 
+// create the runtime store and refresh its external dependencies
 export const useTrayRuntime = ({
   keyboardHeight,
   anticipateKeyboard,

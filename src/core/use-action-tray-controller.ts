@@ -64,6 +64,7 @@ type Params = {
   onClose: () => void;
 };
 
+// compose measurement render and lifecycle hooks into one tray controller
 export const useActionTrayController = ({
   assignmentId = 0,
   visible,

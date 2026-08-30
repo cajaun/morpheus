@@ -1,8 +1,10 @@
+// verify lifecycle phases and geometry ownership follow one generation
 import { describe, expect, it } from "@jest/globals";
 import { createTrayTransitionContract } from "../transition-contract";
 import { createTrayTransitionLifecycle } from "../transition-lifecycle";
 import { createTrayMeasurementOwner } from "../types";
 
+// build a contract whose endpoint identity follows the generation
 const contract = (generation: number) =>
   createTrayTransitionContract({
     generation,
@@ -73,7 +75,24 @@ describe("tray transition lifecycle", () => {
     lifecycle.begin(contract(1), 20);
     expect(lifecycle.mark(1, "completed", undefined, 30)).toBe(true);
     expect(lifecycle.mark(1, "layoutStarted", undefined, 40)).toBe(false);
+    expect(
+      lifecycle.markParticipant(1, {
+        participantId: "late",
+        role: "incoming",
+        phase: "mounted",
+      }),
+    ).toBe(false);
     expect(lifecycle.get(1)?.phase).toBe("completed");
+  });
+
+  it("AT-LIFECYCLE-ST-003A permits forward milestone skips but rejects backwards edges", () => {
+    const lifecycle = createTrayTransitionLifecycle();
+
+    lifecycle.begin(contract(1), 10);
+
+    expect(lifecycle.mark(1, "layoutStarted", undefined, 20)).toBe(true);
+    expect(lifecycle.mark(1, "prepared", undefined, 30)).toBe(false);
+    expect(lifecycle.mark(1, "completed", undefined, 40)).toBe(true);
   });
 
   it("AT-LIFECYCLE-ST-004 treats repeated phase callbacks as idempotent", () => {
@@ -85,7 +104,31 @@ describe("tray transition lifecycle", () => {
     expect(lifecycle.get(1)?.events).toHaveLength(2);
   });
 
-  it("AT-LIFECYCLE-ST-005 owns source and target geometry atomically", () => {
+  it("AT-LIFECYCLE-ST-005A refines provisional descriptors and seals them at preparation", () => {
+    const lifecycle = createTrayTransitionLifecycle();
+    const initial = contract(1);
+    const refined = {
+      ...initial,
+      to: {
+        ...initial.to!,
+        stepKey: "registered-step",
+      },
+    };
+
+    lifecycle.begin(initial, 10);
+
+    expect(lifecycle.refineContract?.(refined)).toBe(true);
+    expect(lifecycle.get(1)?.contract.to?.stepKey).toBe("registered-step");
+    expect(lifecycle.get(1)?.contractState).toBe("provisional");
+
+    lifecycle.mark(1, "prepared", undefined, 20);
+
+    expect(lifecycle.get(1)?.contractState).toBe("sealed");
+    expect(lifecycle.refineContract?.(initial)).toBe(false);
+    expect(lifecycle.get(1)?.contract.to?.stepKey).toBe("registered-step");
+  });
+
+  it("AT-LIFECYCLE-ST-006 owns source and target geometry atomically", () => {
     const lifecycle = createTrayTransitionLifecycle();
     const transition = contract(2);
     const sourceOwner = createTrayMeasurementOwner({
@@ -117,7 +160,28 @@ describe("tray transition lifecycle", () => {
     });
   });
 
-  it("AT-LIFECYCLE-ST-006 records actual incoming and outgoing participants", () => {
+  it("AT-LIFECYCLE-ST-007 rejects geometry from another generation or endpoint", () => {
+    const lifecycle = createTrayTransitionLifecycle();
+    const transition = contract(2);
+    const wrongOwner = createTrayMeasurementOwner({
+      rootTrayId: "root",
+      endpoint: transition.from!,
+      generation: 1,
+    });
+
+    lifecycle.begin(transition, 10);
+
+    expect(
+      lifecycle.captureGeometry(2, "source", {
+        owner: wrongOwner,
+        capturedAt: 11,
+        shellFrame: { x: 0, y: 0, width: 1, height: 1 },
+      }),
+    ).toBe(false);
+    expect(lifecycle.get(2)?.geometry).toEqual({});
+  });
+
+  it("AT-LIFECYCLE-ST-008 records actual incoming and outgoing participants", () => {
     const lifecycle = createTrayTransitionLifecycle();
 
     lifecycle.begin(contract(2), 10);

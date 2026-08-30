@@ -12,6 +12,7 @@ import type {
   TrayTransitionLifecycle,
 } from "../../runtime/types";
 import { log } from "../logger";
+import { reportTrayTransitionPhase } from "../../runtime/transition-lifecycle-bridge";
 import { describeTrayTransition } from "../diagnostics/action-tray-transition-diagnostics";
 import {
   createTrayEndpointKey,
@@ -185,12 +186,14 @@ export const useActionTrayTransitionCallbacks = ({
       });
 
       if (activeTransition) {
-        transitionLifecycle?.mark(
-          callbackGeneration ?? activeTransition.generation,
-          "layoutStarted",
-          { trayId: activeTrayIdRef.current },
-          observedAt,
-        );
+        reportTrayTransitionPhase({
+          lifecycle: transitionLifecycle,
+          generation: callbackGeneration ?? activeTransition.generation,
+          phase: "layoutStarted",
+          source: "ActionTray.Layout",
+          details: { trayId: activeTrayIdRef.current },
+          at: observedAt,
+        });
       }
 
       if (isActionTrayInstrumentationEnabled()) {
@@ -287,12 +290,14 @@ export const useActionTrayTransitionCallbacks = ({
       });
 
       if (activeTransition) {
-        transitionLifecycle?.mark(
-          callbackGeneration ?? activeTransition.generation,
-          "completed",
-          { trayId: activeTrayIdRef.current },
-          observedAt,
-        );
+        reportTrayTransitionPhase({
+          lifecycle: transitionLifecycle,
+          generation: callbackGeneration ?? activeTransition.generation,
+          phase: "completed",
+          source: "ActionTray.Layout",
+          details: { trayId: activeTrayIdRef.current },
+          at: observedAt,
+        });
       }
 
       markTrayStepLayoutFinished(

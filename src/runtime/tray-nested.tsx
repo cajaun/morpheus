@@ -18,6 +18,7 @@ type TrayNestedProps = Omit<PressableProps, "onPress"> & {
 };
 
 // register a child tray and open it from the current tray scope
+// register a nested tray while keeping its parent scope available to triggers
 export const TrayNested: React.FC<TrayNestedProps> = ({
   id,
   children,

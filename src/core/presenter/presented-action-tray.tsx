@@ -1,24 +1,18 @@
+// adapt runtime payloads into the animated native shell
 import React, { useCallback } from "react";
-import { ActionTray } from "../../core/action-tray";
+import { TrayStepContent } from "../../tray-step-content";
+import {
+  TrayScopeProvider,
+  TrayStepOptionsProvider,
+  useTrayRuntimeStore,
+} from "../../runtime/tray-context";
 import { isActionTrayInstrumentationEnabled } from "../../telemetry/config";
 import { markTrayStepReactRenderStarted } from "../../telemetry/tray-step-timing";
-import { useTrayRuntimeStore } from "../tray-context";
-import type {
-  PresentedTray,
-  TrayKeyboardHeight,
-} from "./types";
+import { ActionTray } from "../action-tray";
+import type { PresentedActionTrayProps } from "../../runtime/presenter/types";
 
-// bridge presenter payloads into one animated shell instance
-type PresentedActionTrayProps = {
-  payload: PresentedTray;
-  assignmentId: number;
-  keyboardHeight: TrayKeyboardHeight;
-  onRequestClose: () => void;
-  onCloseComplete: () => void;
-  dismissKeyboardForTray: (trayId?: string | null) => void;
-};
-
-export const PresentedActionTray = ({
+// render one resolved payload through the animated shell and content layers
+const PresentedActionTray = ({
   payload,
   assignmentId,
   keyboardHeight,
@@ -44,6 +38,43 @@ export const PresentedActionTray = ({
     },
     [payload.rootTrayId, payload.trayId],
   );
+
+  const header = payload.header ? (
+    <TrayScopeProvider value={payload.rootTrayId}>
+      <TrayStepOptionsProvider value={payload.stepOptions}>
+        <TrayStepContent
+          stepKey={`${payload.trayId}-header`}
+          scale={false}
+          fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
+          skipEntering={payload.isFirstRender}
+        >
+          {payload.header}
+        </TrayStepContent>
+      </TrayStepOptionsProvider>
+    </TrayScopeProvider>
+  ) : null;
+  const content = (
+    <TrayScopeProvider value={payload.rootTrayId}>
+      <TrayStepOptionsProvider value={payload.stepOptions}>
+        <TrayStepContent
+          stepKey={payload.trayId}
+          scale={payload.stepOptions.scale}
+          anchorScaleToTop={payload.fullScreen}
+          fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
+          skipEntering={payload.isFirstRender}
+        >
+          {payload.content}
+        </TrayStepContent>
+      </TrayStepOptionsProvider>
+    </TrayScopeProvider>
+  );
+  const footer = payload.footer ? (
+    <TrayScopeProvider value={payload.rootTrayId}>
+      <TrayStepOptionsProvider value={payload.stepOptions}>
+        {payload.footer}
+      </TrayStepOptionsProvider>
+    </TrayScopeProvider>
+  ) : null;
   const tray = (
     <ActionTray
       assignmentId={assignmentId}
@@ -51,9 +82,9 @@ export const PresentedActionTray = ({
       interactive={payload.interactive}
       keyboardTransitionMode={payload.keyboardTransitionMode}
       rootTrayId={payload.rootTrayId}
-      content={payload.content}
-      header={payload.header}
-      footer={payload.footer}
+      content={content}
+      header={header}
+      footer={footer}
       onClose={payload.interactive ? onRequestClose : () => {}}
       onCloseComplete={onCloseComplete}
       trayId={payload.trayId}
@@ -73,6 +104,7 @@ export const PresentedActionTray = ({
       dismissKeyboard={() => dismissKeyboardForTray(payload.rootTrayId)}
     />
   );
+
   if (!isActionTrayInstrumentationEnabled()) {
     return tray;
   }
@@ -86,3 +118,5 @@ export const PresentedActionTray = ({
     </React.Profiler>
   );
 };
+
+export { PresentedActionTray };

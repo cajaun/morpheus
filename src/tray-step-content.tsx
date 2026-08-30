@@ -51,6 +51,7 @@ export const FULL_SCREEN_CONTENT_EASING = Easing.bezier(
   ...FULL_SCREEN_CONTENT_EASING_POINTS,
 );
 
+// record the end of an entering content animation for timing inspection
 const logStepEnterFinished = (stepKey: string, finishedAt: number) => {
   if (!isActionTrayInstrumentationEnabled()) {
     return;
@@ -62,6 +63,7 @@ const logStepEnterFinished = (stepKey: string, finishedAt: number) => {
   });
 };
 
+// record when incoming content releases its visibility latch
 const logStepEnterStarted = (stepKey: string, startedAt: number) => {
   if (!isActionTrayInstrumentationEnabled()) {
     return;
@@ -75,6 +77,7 @@ const logStepEnterStarted = (stepKey: string, startedAt: number) => {
   });
 };
 
+// build the entering animation that follows the shared transition clock
 const createMorphEntering = (
   scale: boolean,
   stepKey: string,
@@ -88,8 +91,7 @@ const createMorphEntering = (
       resolveTrayTransitionFullScreenChanged(transitionStart);
     const transitionGeneration =
       resolveTrayTransitionGeneration(transitionStart);
-    // content must not become the transition clock owner; the shell layout
-    // participant establishes the existing clock for every real transition
+    // content must not become the transition clock owner the shell layout participant establishes the existing clock for every real transition
     const waitForLayoutStart =
       transitionStart !== null && transitionGeneration > 0;
     const duration = synchronizedFullScreen
@@ -200,6 +202,7 @@ const createMorphEntering = (
   };
 };
 
+// build the exiting animation that follows the shared transition clock
 const createMorphExiting = (
   scale: boolean,
   fullScreenBoundaryExit: boolean,
@@ -291,6 +294,7 @@ const createMorphExiting = (
   };
 };
 
+// render keyed step content with synchronized entering and exiting motion
 export const TrayStepContent: React.FC<Props> = ({
   children,
   scale = true,

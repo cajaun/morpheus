@@ -14,6 +14,7 @@ export const PAGE_SPRING_CONFIG = {
   overshootClamping: true,
 } as const;
 
+// keep a page index inside the registered page range
 export const clampPageIndex = (index: number, totalPages: number) => {
   if (totalPages <= 0) {
     return 0;
@@ -22,6 +23,7 @@ export const clampPageIndex = (index: number, totalPages: number) => {
   return Math.max(0, Math.min(index, totalPages - 1));
 };
 
+// keep only current and transitioning pages mounted
 export const isTrayPageInRenderWindow = (
   index: number,
   pageIndex: number,

@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 
 // focus management is tray scoped so one close action only affects its own inputs
+// track focusable inputs so tray dismissal can clear the active field
 export const useTrayFocusManager = (
   dismissKeyboard: () => void | Promise<void>,
 ) => {

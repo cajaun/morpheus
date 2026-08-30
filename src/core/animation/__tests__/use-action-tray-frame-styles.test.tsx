@@ -26,8 +26,10 @@ jest.mock("react-native-reanimated", () => {
 
 type FrameStyles = ReturnType<typeof useActionTrayFrameStyles>;
 
+// create a minimal shared value for frame style probes
 const shared = <T,>(value: T) => ({ value });
 
+// render the frame policy with controlled geometry inputs
 const renderFrameStyles = ({
   contentHeight = 320,
   contentHeightSnapshot = contentHeight,
@@ -180,8 +182,7 @@ describe("useActionTrayFrameStyles", () => {
       renderer!.update(<Probe prepared={false} />);
     });
 
-    // cleanup must leave the promoted endpoint in place so releasing the
-    // temporary frame does not trigger a second intrinsic-layout pass
+    // cleanup must leave the promoted endpoint in place so releasing the temporary frame does not trigger a second intrinsic-layout pass
     expect(styles!.trayLayoutStyle.height).toBe(400);
   });
 

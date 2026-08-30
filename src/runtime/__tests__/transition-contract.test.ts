@@ -12,6 +12,7 @@ import {
   resolveTrayAnimationContract,
 } from "../presenter/animation-contract";
 
+// build endpoints with explicit step and presentation identity
 const endpoint = (
   stepIndex: number,
   mode: TrayPresentationEndpoint["mode"],

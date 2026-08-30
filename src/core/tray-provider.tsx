@@ -4,14 +4,15 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
-import { useActionTrayKeyboard } from "../core/input/use-action-tray-keyboard";
-import { TrayBackgroundScaleProvider } from "./tray-background-scale";
-import { TrayStoreProvider } from "./tray-context";
-import { TrayPresenter } from "./tray-presenter";
-import { useTrayFocusManager } from "./use-tray-focus-manager";
-import { useTrayRuntime } from "./use-tray-runtime";
+import { useActionTrayKeyboard } from "./input/use-action-tray-keyboard";
+import { PresentedActionTray } from "./presenter/presented-action-tray";
+import { TrayBackgroundScaleProvider } from "../runtime/tray-background-scale";
+import { TrayStoreProvider } from "../runtime/tray-context";
+import { TrayPresenter } from "../runtime/tray-presenter";
+import { useTrayFocusManager } from "../runtime/use-tray-focus-manager";
+import { useTrayRuntime } from "../runtime/use-tray-runtime";
 
-// provider is the integration boundary between ambient app state and tray runtime
+// integration boundary between runtime state and the native animated renderer
 export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -39,7 +40,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
         </Animated.View>
 
         {/* presenter stays outside the scaled background so trays keep exact geometry */}
-        <TrayPresenter />
+        <TrayPresenter renderHost={PresentedActionTray} />
       </TrayBackgroundScaleProvider>
     </TrayStoreProvider>
   );

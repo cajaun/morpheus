@@ -28,9 +28,11 @@ const TrayTransitionStartContext =
 
 export const TrayTransitionStartProvider = TrayTransitionStartContext.Provider;
 
+// read the transition clock shared by shell and content participants
 export const useTrayTransitionStart = () =>
   useContext(TrayTransitionStartContext);
 
+// resolve the newest generation across render and ui thread state
 export const resolveTrayTransitionGeneration = (
   transitionStart: TrayTransitionStart | null,
 ) => {
@@ -38,10 +40,7 @@ export const resolveTrayTransitionGeneration = (
 
   const descriptorGeneration = transitionStart?.generation ?? 0;
 
-  // A descriptor is created during the React handoff, while the shared
-  // value is updated in the following UI-thread lifecycle pass. The shared
-  // value may therefore still describe the previous generation. A newer
-  // descriptor must never be hidden by that stale value.
+  // let the descriptor lead until the shared generation catches up
   if (descriptorGeneration <= 0) {
     return 0;
   }
@@ -52,6 +51,7 @@ export const resolveTrayTransitionGeneration = (
   );
 };
 
+// resolve fullscreen change from the descriptor until shared state catches up
 export const resolveTrayTransitionFullScreenChanged = (
   transitionStart: TrayTransitionStart | null,
 ) => {
@@ -67,9 +67,7 @@ export const resolveTrayTransitionFullScreenChanged = (
   const sharedFullScreenChanged =
     transitionStart?.fullScreenChangedValue.value ?? 0;
 
-  // Until the shared generation catches up, the descriptor is authoritative.
-  // Once a retained participant observes a newer generation, use that newer
-  // shared descriptor instead.
+  // use descriptor fullscreen state until the shared generation advances
   return (
     (sharedGeneration > descriptorGeneration
       ? sharedFullScreenChanged
@@ -79,6 +77,7 @@ export const resolveTrayTransitionFullScreenChanged = (
   );
 };
 
+// publish the timestamp before the generation for joining participants
 export const publishTrayTransitionStart = (
   startedGeneration: SharedValue<number>,
   startedAt: SharedValue<number>,
@@ -94,6 +93,7 @@ export const publishTrayTransitionStart = (
   }
 };
 
+// record completion once so late callbacks cannot move the clock backwards
 export const completeTrayTransition = (
   completedGeneration: SharedValue<number>,
   generation: number,
@@ -130,7 +130,7 @@ type WithTrayTransitionStart = <T extends AnimatableValue>(
   waitForLayoutStart?: boolean,
 ) => T;
 
-// every participant joins one ui thread clock the first participant publishes the clock later participants backdate their inner animation to that start
+// join every participant to one ui thread clock
 export const withTrayTransitionStart = function <T extends AnimationObject>(
   nextAnimationInput: T | (() => T),
   startedGeneration: SharedValue<number>,

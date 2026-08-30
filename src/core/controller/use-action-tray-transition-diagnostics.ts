@@ -6,6 +6,7 @@ import type {
   TrayTransitionContract,
   TrayTransitionLifecycle,
 } from "../../runtime/types";
+import { reportTrayTransitionPhase } from "../../runtime/transition-lifecycle-bridge";
 import { isActionTrayInstrumentationEnabled } from "../../telemetry/config";
 import {
   markTrayStepRenderedCommit,
@@ -60,7 +61,14 @@ export const useActionTrayTransitionDiagnostics = ({
         return;
       }
 
-      transitionLifecycle?.mark(generation, phase, details, at);
+      reportTrayTransitionPhase({
+        lifecycle: transitionLifecycle,
+        generation,
+        phase,
+        source: "ActionTray.Diagnostics",
+        details,
+        at,
+      });
     },
     [transitionContract?.generation, transitionLifecycle],
   );
@@ -128,11 +136,13 @@ export const useActionTrayTransitionDiagnostics = ({
       renderedTransitionContract.boundary !== "opening" &&
       renderedTransitionContract.boundary !== "closing"
     ) {
-      transitionLifecycle?.mark(
-        renderedTransitionContract.generation,
-        "committed",
-        { trayId: renderedTrayId },
-      );
+      reportTrayTransitionPhase({
+        lifecycle: transitionLifecycle,
+        generation: renderedTransitionContract.generation,
+        phase: "committed",
+        source: "ActionTray.RenderCommit",
+        details: { trayId: renderedTrayId },
+      });
     }
 
     if (!isActionTrayInstrumentationEnabled()) {

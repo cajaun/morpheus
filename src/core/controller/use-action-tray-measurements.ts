@@ -41,6 +41,7 @@ type Params = {
   ) => void;
 };
 
+// collect body and footer measurements used to resolve shell geometry
 export const useActionTrayMeasurements = ({
   contentHeight,
   footerHeight,

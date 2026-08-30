@@ -22,6 +22,7 @@ export const createTrayRuntimeRegistrationActions = ({
   allocateTransitionGeneration,
   getPendingPageTransition,
   setPendingPageTransition,
+  transitions,
 }: TrayRuntimeActionContext): RegistrationActions => ({
   registerTray: (id: string, registration: TrayRegistration) => {
     setState((current) => {
@@ -41,7 +42,12 @@ export const createTrayRuntimeRegistrationActions = ({
         },
       });
 
-      return reconcileTransitionAfterRegistration(current, next, id);
+      return reconcileTransitionAfterRegistration(
+        current,
+        next,
+        id,
+        transitions.getActive()?.contract.generation ?? null,
+      );
     });
   },
   unregisterTray: (id: string) => {
@@ -111,7 +117,7 @@ export const createTrayRuntimeRegistrationActions = ({
         return {
           ...next,
           transitionGeneration: pendingTransition.generation,
-          transition: pendingTransition,
+          lastTransition: pendingTransition,
         };
       }
 

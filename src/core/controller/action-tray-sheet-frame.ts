@@ -1,6 +1,8 @@
+// identify sheet frames by endpoint and generation
 import type { TrayPresentationEndpoint } from "../../runtime/types";
 import type { ActionTraySheetFrame } from "../types/action-tray";
 
+// build a stable key from the endpoint fields that identify one sheet frame
 export const createTrayEndpointKey = (
   endpoint: TrayPresentationEndpoint,
 ) =>
@@ -11,10 +13,12 @@ export const createTrayEndpointKey = (
     endpoint.mode,
   ].join("::");
 
+// resolve the key for an optional transition endpoint
 export const resolveTransitionEndpointKey = (
   endpoint: TrayPresentationEndpoint | null | undefined,
 ) => (endpoint ? createTrayEndpointKey(endpoint) : undefined);
 
+// accept a frame only when its generation belongs to either transition endpoint
 export const isSheetFrameForTransition = (
   frame: ActionTraySheetFrame | undefined,
   transitionGeneration: number | undefined,

@@ -1,3 +1,4 @@
+// verify fullscreen values stay within the intended geometry range
 import { describe, expect, it } from "@jest/globals";
 import {
   FULL_SCREEN_BOUNDARY_CONTENT_SCALE,

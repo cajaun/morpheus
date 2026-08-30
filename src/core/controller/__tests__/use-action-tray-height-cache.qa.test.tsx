@@ -1,3 +1,4 @@
+// verify cached sheet heights survive presentation changes
 import React from "react";
 import { describe, expect, it } from "@jest/globals";
 import type { SharedValue } from "react-native-reanimated";
@@ -6,8 +7,10 @@ import { useActionTrayHeightCache } from "../use-action-tray-height-cache";
 
 type HeightCache = ReturnType<typeof useActionTrayHeightCache>;
 
+// create the mutable height value used by cache probes
 const sharedValue = (value: number) => ({ value }) as SharedValue<number>;
 
+// render the cache hook with a controllable fullscreen state
 const renderHeightCache = ({ fullScreen = false } = {}) => {
   const contentHeight = sharedValue(0);
   let cache: HeightCache | null = null;

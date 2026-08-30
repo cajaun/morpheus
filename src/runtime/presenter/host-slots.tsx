@@ -11,15 +11,15 @@ import {
   markTrayStepPresenterResolved,
   markTrayStepSlotCommitted,
 } from "../../telemetry/tray-step-timing";
-import { describeTrayTransition } from "../../core/diagnostics/action-tray-transition-diagnostics";
-import { log } from "../../core/logger";
+import { describeTrayTransition } from "../transition-diagnostics";
+import { log } from "../logger";
 import {
   createIdleSlot,
   resolveNextActiveSlotIndex,
   resolveOrderedHostSlots,
 } from "./model";
-import { PresentedActionTray } from "./presented-action-tray";
 import type {
+  PresentedActionTrayRenderer,
   PresentedTray,
   TrayHostSlot,
   TrayKeyboardHeight,
@@ -32,17 +32,21 @@ type HostCommonProps = {
   requestCloseActiveTray: () => void;
   dismissKeyboardForTray: (trayId?: string | null) => void;
   transitionContract: TrayTransitionContract | null;
+  renderHost: PresentedActionTrayRenderer;
 };
 
+// keep root hosts in two slots so outgoing and incoming shells can overlap
 export const RootTraySlots = ({
   activeHost,
   keyboardHeight,
   requestCloseActiveTray,
   dismissKeyboardForTray,
   transitionContract,
+  renderHost,
 }: HostCommonProps & {
   activeHost: PresentedTray | null;
 }) => {
+  const Host = renderHost;
   const nextAssignmentIdRef = useRef(0);
   const activeSlotIndexRef = useRef<number | null>(null);
   const pendingPresentedHostRef = useRef<PresentedTray | null>(null);
@@ -75,7 +79,7 @@ export const RootTraySlots = ({
         const pendingHost = pendingPresentedHostRef.current;
 
         if (pendingHost) {
-          // replacement tray starts in the slot that just completed its close
+          // replacement tray starts in the slot that already completed its close
           nextAssignmentIdRef.current += 1;
           next[slotIndex] = {
             assignmentId: nextAssignmentIdRef.current,
@@ -274,7 +278,7 @@ export const RootTraySlots = ({
         }
 
         return (
-          <PresentedActionTray
+          <Host
             key={`tray-root-host-slot-${index}-${slot.assignmentId}`}
             payload={{
               ...payload,
@@ -295,15 +299,18 @@ export const RootTraySlots = ({
   );
 };
 
+// retain nested hosts in stack order while the active root changes
 export const NestedTrayStack = ({
   hosts,
   keyboardHeight,
   requestCloseActiveTray,
   dismissKeyboardForTray,
   transitionContract,
+  renderHost,
 }: HostCommonProps & {
   hosts: PresentedTray[];
 }) => {
+  const Host = renderHost;
   const [renderedHosts, setRenderedHosts] = useState<PresentedTray[]>([]);
 
   useEffect(() => {
@@ -339,7 +346,7 @@ export const NestedTrayStack = ({
   return (
     <>
       {renderedHosts.map((payload) => (
-        <PresentedActionTray
+        <Host
           key={`tray-nested-host-${payload.rootTrayId}`}
           payload={payload}
           assignmentId={payload.stackIndex + 1}

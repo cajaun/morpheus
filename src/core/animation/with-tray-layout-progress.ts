@@ -19,6 +19,7 @@ type WithTrayLayoutProgress = <T extends AnimatableValue>(
   target: number,
 ) => T;
 
+// map the rendered geometry back onto one normalized transition value
 const resolveProgress = (current: number, source: number, target: number) => {
   "worklet";
 
@@ -31,7 +32,7 @@ const resolveProgress = (current: number, source: number, target: number) => {
   return Math.min(1, Math.max(0, (current - source) / distance));
 };
 
-// follow the value reanimated actually rendered instead of starting a parallel timing animation that could drift from native layout scheduling
+// follow the value reanimated rendered instead of starting a parallel timing animation that could drift from native layout scheduling
 export const withTrayLayoutProgress = function <T extends AnimationObject>(
   nextAnimationInput: T | (() => T),
   progress: SharedValue<number>,

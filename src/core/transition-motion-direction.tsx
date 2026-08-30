@@ -13,6 +13,7 @@ export const FORWARD_CONTENT_MOTION: TrayContentMotionDirection = 1;
 export const BACKWARD_CONTENT_MOTION: TrayContentMotionDirection = -1;
 
 // let the active transition choose boundary motion so ordinary reversals keep their direction
+// identify a fullscreen boundary exit from the transition contract
 export const resolveActiveFullScreenBoundaryExit = (
   configuredBoundaryExit: boolean,
   fullScreenChanged: boolean,
@@ -22,6 +23,7 @@ export const resolveActiveFullScreenBoundaryExit = (
   return configuredBoundaryExit && fullScreenChanged;
 };
 
+// derive content motion direction from navigation direction
 export const resolveTrayContentMotionDirection = (
   transition: TrayTransitionContract | null | undefined,
 ): TrayContentMotionDirection =>
@@ -30,6 +32,7 @@ export const resolveTrayContentMotionDirection = (
     ? BACKWARD_CONTENT_MOTION
     : FORWARD_CONTENT_MOTION;
 
+// compute the scale applied to content entering a transition
 export const resolveMorphEnteringScale = ({
   scale,
   synchronizedFullScreen,
@@ -50,6 +53,7 @@ export const resolveMorphEnteringScale = ({
     : MORPH_ENTERING_SCALE;
 };
 
+// compute the scale applied to content leaving a transition
 export const resolveMorphExitingScale = ({
   scale,
   fullScreenBoundaryExit,
@@ -76,5 +80,6 @@ const TrayContentMotionDirectionContext =
 export const TrayContentMotionDirectionProvider =
   TrayContentMotionDirectionContext.Provider;
 
+// provide one direction value to every content animation participant
 export const useTrayContentMotionDirection = () =>
   useContext(TrayContentMotionDirectionContext);

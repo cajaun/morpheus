@@ -31,6 +31,7 @@ import {
 
 type Params = ActionTrayLifecycleParams;
 
+// coordinate opening and closing springs with measurement and lifecycle state
 export const useActionTrayOpenCloseLifecycle = ({
   visible,
   rootTrayId,
@@ -291,8 +292,7 @@ export const useActionTrayOpenCloseLifecycle = ({
         },
       );
     }
-    // visibility is the boundary for open and close work
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // visibility is the boundary for open and close work eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   useEffect(() => {

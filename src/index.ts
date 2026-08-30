@@ -11,7 +11,7 @@ import { TrayNested } from "./runtime/tray-nested";
 import { TrayRoot } from "./runtime/tray-root";
 
 // centralize exports here so screens depend on one tray surface area
-export { TrayProvider } from "./runtime/tray-provider";
+export { TrayProvider } from "./core/tray-provider";
 export { useTrayOriginProgress } from "./core/tray-origin-progress";
 export { useTrayMorphProgress } from "./core/tray-morph-progress";
 export type {
@@ -26,6 +26,8 @@ export {
   type TrayStepDefinition,
   type TrayStepOptions,
   type TrayTransitionContract,
+  type TrayTransitionContractState,
+  type KeyboardTransitionMode,
   type TrayTransitionLifecycleRecord,
   type TrayGeometrySnapshot,
   type TrayMeasurementOwner,

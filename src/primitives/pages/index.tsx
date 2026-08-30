@@ -30,6 +30,7 @@ type TrayPagesProps = {
   className?: string;
 };
 
+// coordinate page parsing registration and animated page rendering
 const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   children,
   initialPage = 0,

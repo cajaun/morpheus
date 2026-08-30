@@ -16,6 +16,7 @@ type Params = {
   onRequestClose: () => void;
 };
 
+// build the pan gesture that maps drag distance into close or snap behavior
 export const useActionTrayGesture = ({
   translateY,
   totalHeight,

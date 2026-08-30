@@ -3,6 +3,7 @@ import type { TrayRegistration, TrayStepDefinition } from "./types";
 
 type ComparableRecord = Record<string, unknown>;
 
+// distinguish authored records from values that need reference comparison
 const isPlainRecord = (value: unknown): value is ComparableRecord => {
   if (value === null || typeof value !== "object") {
     return false;
@@ -12,6 +13,7 @@ const isPlainRecord = (value: unknown): value is ComparableRecord => {
   return prototype === Object.prototype || prototype === null;
 };
 
+// compare record fields so equivalent inline options do not trigger updates
 const areRecordsEquivalent = (
   left: ComparableRecord,
   right: ComparableRecord,
@@ -31,6 +33,7 @@ const areRecordsEquivalent = (
 };
 
 // compare authored values before inline jsx reaches the external store as a false definition update
+// compare authored values with structural equality for plain records
 export const areAuthoredValuesEquivalent = (
   left: unknown,
   right: unknown,
@@ -75,10 +78,11 @@ export const areAuthoredValuesEquivalent = (
     );
   }
 
-  // functions and non plain objects are meaningful references consumers only need usecallback usememo when those references intentionally form the api
+  // compare functions by reference so callback identity remains meaningful
   return false;
 };
 
+// compare step definitions while preserving meaningful node identity
 const areStepsEquivalent = (
   left: TrayStepDefinition,
   right: TrayStepDefinition,
@@ -88,6 +92,7 @@ const areStepsEquivalent = (
   areAuthoredValuesEquivalent(left.content, right.content) &&
   areAuthoredValuesEquivalent(left.options, right.options);
 
+// compare registrations before publishing a new external store snapshot
 export const areTrayRegistrationsEquivalent = (
   current: TrayRegistration | undefined,
   next: TrayRegistration,

@@ -2,13 +2,12 @@ import React from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import type {
+  KeyboardTransitionMode,
   TrayTransitionContract,
   TrayTransitionLifecycle,
   TrayTransitionOptions,
 } from "../../runtime/types";
-
-// keep shell contracts separate from controller and runtime implementation
-export type KeyboardTransitionMode = "idle" | "entering" | "exiting";
+export type { KeyboardTransitionMode } from "../../runtime/types";
 
 // describe the shell payload after the presenter resolves a step
 export type ActionTrayProps = {
@@ -51,8 +50,7 @@ export type ActionTraySheetFrame = {
   endpointKey: string;
   generation: number;
   totalHeight: number;
-  // body height is captured with the frame so the inner viewport can be
-  // synchronously bounded before its animated boundary style runs
+  // body height is captured with the frame so the inner viewport can be synchronously bounded before its animated boundary style runs
   contentHeight: number;
 };
 

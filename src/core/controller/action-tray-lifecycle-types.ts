@@ -1,3 +1,4 @@
+// define the inputs shared by shell lifecycle hooks
 import type { ReactNode } from "react";
 import type { MutableRefObject } from "react";
 import type { SharedValue } from "react-native-reanimated";

@@ -16,6 +16,7 @@ type Params = {
   keyboardHeight: SharedValue<number>;
 };
 
+// own shared geometry values consumed by gesture and animation worklets
 export const useActionTrayPresentationState = ({
   visible,
   renderedFooter,

@@ -6,6 +6,7 @@ import {
   SCREEN_WIDTH,
 } from "../constants";
 
+// hold boundary progress at the correct lifecycle phase
 export const resolveBoundaryProgress = (
   progress: number,
   transitionGeneration: number | undefined,
@@ -35,6 +36,7 @@ export const resolveBoundaryProgress = (
   return progress;
 };
 
+// check whether a boundary transition can read its shared clock
 export const isBoundaryClockStarted = (
   transitionGeneration: number | undefined,
   transitionStartedGeneration: number | undefined,
@@ -52,6 +54,7 @@ export const isBoundaryClockStarted = (
   );
 };
 
+// keep a sheet target in measurement mode until its frame is ready
 export const isTargetSheetMeasurementPending = ({
   fullScreenBoundaryTransition,
   sourceFullScreen,
@@ -80,6 +83,7 @@ export const isTargetSheetMeasurementPending = ({
   );
 };
 
+// derive shell bounds from the source and target presentation modes
 export const resolveBoundaryShellStyle = ({
   progress,
   sourceFullScreen,
@@ -125,6 +129,7 @@ export const resolveBoundaryShellStyle = ({
   };
 };
 
+// derive the content viewport from the same boundary phase as the shell
 export const resolveBoundaryContentStyle = ({
   progress,
   boundaryClockStarted,
@@ -164,6 +169,7 @@ export const resolveBoundaryContentStyle = ({
   };
 };
 
+// choose intrinsic or fullscreen content sizing during a boundary change
 export const resolveBoundaryContentViewportStyle = ({
   boundaryClockStarted,
   fullScreenBoundaryTransition,
@@ -185,9 +191,7 @@ export const resolveBoundaryContentViewportStyle = ({
     return targetFullScreen ? { flex: 1 } : {};
   }
 
-  // A first-time sheet target must measure intrinsically before the boundary
-  // clock starts. The shell remains on its source frame until that measurement
-  // supplies the existing prepared-frame lease.
+  // hold the shell on its source frame until the target sheet is measured
   if (targetSheetMeasurementPending) {
     return {
       flex: 0,
@@ -195,9 +199,7 @@ export const resolveBoundaryContentViewportStyle = ({
     };
   }
 
-  // The content tree must use the same phase as the boundary frame. Before
-  // the clock starts, a sheet source needs a concrete body height; after the
-  // clock starts, the target presentation owns the viewport topology.
+  // keep content viewport phase aligned with shell boundary phase
   const contentFullScreen = boundaryClockStarted
     ? targetFullScreen
     : sourceFullScreen;
@@ -219,6 +221,7 @@ export const resolveBoundaryContentViewportStyle = ({
   return {};
 };
 
+// preserve the source viewport while the target sheet waits for measurement
 export const resolveBoundaryContentSourceViewportStyle = ({
   fullScreenBoundaryTransition,
   sourceFullScreen,
@@ -238,16 +241,13 @@ export const resolveBoundaryContentSourceViewportStyle = ({
     return undefined;
   }
 
-  // This is intentionally a synchronous minimum constraint. The inner
-  // viewport must not collapse to its header-only intrinsic height on the
-  // React/native commit before an animated style can publish the boundary
-  // clock phase. minHeight remains compatible with the later fullscreen
-  // flex layout, so it does not need a second timing or latch path.
+  // preserve a minimum until the animated style publishes its boundary phase
   return {
     minHeight: sourceContentHeight,
   };
 };
 
+// derive header padding from the active boundary progress
 export const resolveBoundaryHeaderPadding = ({
   progress,
   sourceFullScreen,

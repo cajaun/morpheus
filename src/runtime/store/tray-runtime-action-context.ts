@@ -1,3 +1,4 @@
+// define the services shared by runtime action modules
 import type { SharedValue } from "react-native-reanimated";
 import type {
   TrayHostActionsValue,

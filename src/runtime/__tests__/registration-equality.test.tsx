@@ -1,3 +1,4 @@
+// verify authored registration changes use value and reference rules
 import React from "react";
 import { describe, expect, it, jest } from "@jest/globals";
 import type { SharedValue } from "react-native-reanimated";
@@ -5,10 +6,14 @@ import { areTrayRegistrationsEquivalent } from "../registration-equality";
 import { createTrayRuntimeStore } from "../store/create-tray-runtime-store";
 import type { TrayRegistration } from "../types";
 
+// provide stable test nodes for authored registration comparisons
 const Content = ({ label }: { label: string }) => label;
+// render a header value whose props can change between registrations
 const Header = ({ title }: { title: string }) => title;
+// provide a footer node for registration shape comparisons
 const Footer = () => null;
 
+// create an authored registration with optional header content
 const registration = (title = "Content One"): TrayRegistration => ({
   steps: [
     {

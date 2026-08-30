@@ -1,5 +1,6 @@
 import type {
   TrayTransitionContract,
+  TrayMeasurementOwner,
   TrayTransitionLifecycle,
   TrayTransitionLifecycleEvent,
   TrayTransitionLifecycleRecord,
@@ -13,6 +14,11 @@ const terminalPhases = new Set<TrayTransitionPhase>([
   "cancelled",
 ]);
 
+// check whether a lifecycle phase can accept more transition work
+export const isTrayTransitionTerminal = (phase: TrayTransitionPhase) =>
+  terminalPhases.has(phase);
+
+// read one clock source for lifecycle event timestamps
 const now = () => performance.now();
 const MAX_TRANSITION_HISTORY = 100;
 const phaseOrder: Partial<Record<TrayTransitionPhase, number>> = {
@@ -23,6 +29,31 @@ const phaseOrder: Partial<Record<TrayTransitionPhase, number>> = {
   completed: 4,
 };
 
+// check whether a phase has consumed the provisional contract
+const isAtOrAfterPreparation = (phase: TrayTransitionPhase) => {
+  const order = phaseOrder[phase];
+  return order !== undefined && order >= phaseOrder.prepared!;
+};
+
+// verify that measured geometry belongs to the declared endpoint
+const endpointMatchesOwner = (
+  endpoint: TrayTransitionContract["from"],
+  owner: TrayMeasurementOwner,
+) => {
+  if (!endpoint) {
+    return false;
+  }
+
+  return (
+    owner.trayId === endpoint.trayId &&
+    owner.stepIndex === endpoint.stepIndex &&
+    owner.stepKey === endpoint.stepKey &&
+    owner.pageIndex === endpoint.pageIndex &&
+    owner.mode === endpoint.mode
+  );
+};
+
+// derive planned participants from shared region behavior
 const resolveContractParticipants = (
   contract: TrayTransitionContract,
 ): TrayTransitionParticipant[] =>
@@ -71,6 +102,7 @@ const resolveContractParticipants = (
     return participants;
   });
 
+// create the lifecycle ledger that owns generation and phase transitions
 export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
   const records = new Map<number, TrayTransitionLifecycleRecord>();
   let activeGeneration: number | null = null;
@@ -82,6 +114,11 @@ export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
     const next = {
       ...record,
       phase: event.phase,
+      contractState:
+        record.contractState === "sealed" ||
+        !isAtOrAfterPreparation(event.phase)
+          ? record.contractState
+          : "sealed",
       events: [...record.events, event],
     };
 
@@ -160,6 +197,7 @@ export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
 
       records.set(contract.generation, {
         contract,
+        contractState: "provisional",
         phase: "requested",
         events: [requested],
         geometry: {},
@@ -168,10 +206,14 @@ export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
       });
       activeGeneration = contract.generation;
     },
-    replaceContract: (contract) => {
+    refineContract: (contract) => {
       const record = records.get(contract.generation);
 
-      if (!record || terminalPhases.has(record.phase)) {
+      if (
+        !record ||
+        terminalPhases.has(record.phase) ||
+        record.contractState === "sealed"
+      ) {
         return false;
       }
 
@@ -187,6 +229,17 @@ export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
       const record = records.get(generation);
 
       if (!record || terminalPhases.has(record.phase)) {
+        return false;
+      }
+
+      const endpoint = role === "source"
+        ? record.contract.from
+        : record.contract.to;
+
+      if (
+        snapshot.owner.generation !== generation ||
+        !endpointMatchesOwner(endpoint, snapshot.owner)
+      ) {
         return false;
       }
 
@@ -224,8 +277,7 @@ export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
 
       if (
         !record ||
-        record.phase === "interrupted" ||
-        record.phase === "cancelled"
+        terminalPhases.has(record.phase)
       ) {
         return false;
       }

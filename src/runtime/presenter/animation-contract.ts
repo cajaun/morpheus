@@ -11,13 +11,15 @@ export type TrayAnimationContract = {
   fullScreenBoundaryExit: boolean;
 };
 
+// accept a transition only when its target matches the rendered endpoint
 const transitionTargetsPresentation = (
   transition: TrayTransitionContract | null,
   endpoint: TrayPresentationEndpoint,
 ) => {
   if (
     transition?.to?.trayId !== endpoint.trayId ||
-    transition.to.stepIndex !== endpoint.stepIndex
+    transition.to.stepIndex !== endpoint.stepIndex ||
+    transition.to.mode !== endpoint.mode
   ) {
     return false;
   }
@@ -34,6 +36,7 @@ const transitionTargetsPresentation = (
 };
 
 // preserve adjacent fullscreen boundary behavior while the active transition owns direction
+// check whether neighboring steps cross a fullscreen boundary
 export const hasAdjacentFullScreenBoundary = (
   registration: TrayRegistration,
   stepIndex: number,
@@ -56,6 +59,7 @@ export const hasAdjacentFullScreenBoundary = (
   });
 };
 
+// resolve content animation policy from registration and transition state
 export const resolveTrayAnimationContract = ({
   registration,
   endpoint,

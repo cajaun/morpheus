@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
-import type { KeyboardTransitionMode } from "../../core/types";
 import type {
+  KeyboardTransitionMode,
+  ResolvedTrayStepOptions,
   TrayTransitionContract,
   TrayTransitionOptions,
 } from "../types";
@@ -12,9 +13,12 @@ export type PresentedTray = {
   rootTrayId: string;
   trayId: string;
   keyboardTransitionMode: KeyboardTransitionMode;
+  stepOptions: ResolvedTrayStepOptions;
   header: ReactNode;
   content: ReactNode;
   footer: ReactNode;
+  fullScreenBoundaryExit: boolean;
+  isFirstRender: boolean;
   fullScreen: boolean;
   fullScreenBackgroundScale: number;
   fullScreenSafeAreaTop: boolean;
@@ -39,3 +43,14 @@ export type TrayHostSlot = {
 };
 
 export type TrayKeyboardHeight = SharedValue<number>;
+
+export type PresentedActionTrayProps = {
+  payload: PresentedTray;
+  assignmentId: number;
+  keyboardHeight: TrayKeyboardHeight;
+  onRequestClose: () => void;
+  onCloseComplete: () => void;
+  dismissKeyboardForTray: (trayId?: string | null) => void;
+};
+
+export type PresentedActionTrayRenderer = ComponentType<PresentedActionTrayProps>;

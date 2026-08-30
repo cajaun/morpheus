@@ -8,13 +8,17 @@ import {
   NestedTrayStack,
   RootTraySlots,
   type PresentedTray,
+  type PresentedActionTrayRenderer,
 } from "./presenter";
 
 // resolve runtime stack entries into root and nested host groups
-export const TrayPresenter: React.FC = () => {
+// resolve runtime stack entries into root and nested host presentations
+export const TrayPresenter: React.FC<{
+  renderHost: PresentedActionTrayRenderer;
+}> = ({ renderHost }) => {
   const registry = useTrayHostSelector((state) => state.registry);
   const stack = useTrayHostSelector((state) => state.stack);
-  const transition = useTrayHostSelector((state) => state.transition);
+  const transition = useTrayHostSelector((state) => state.lastTransition);
   const keyboardHeight = useTrayHostSelector((state) => state.keyboardHeight);
   const { dismissKeyboardForTray, requestCloseActiveTray } = useTrayHostActions();
   const previousIndexByTrayRef = useRef<Record<string, number>>({});
@@ -81,6 +85,7 @@ export const TrayPresenter: React.FC = () => {
         requestCloseActiveTray={requestCloseActiveTray}
         dismissKeyboardForTray={dismissKeyboardForTray}
         transitionContract={transition}
+        renderHost={renderHost}
       />
       <NestedTrayStack
         hosts={nestedHosts}
@@ -88,6 +93,7 @@ export const TrayPresenter: React.FC = () => {
         requestCloseActiveTray={requestCloseActiveTray}
         dismissKeyboardForTray={dismissKeyboardForTray}
         transitionContract={transition}
+        renderHost={renderHost}
       />
     </>
   );

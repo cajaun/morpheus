@@ -6,6 +6,7 @@ import {
   useTrayScope,
 } from "./tray-store-context";
 
+// connect scoped navigation actions to the active tray and page state
 export const useTrayFlow = () => {
   const trayId = useTrayScope();
   // flow state follows the nearest root so nested trays keep independent navigation

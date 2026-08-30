@@ -29,11 +29,11 @@ export type TrayTransitionBoundary =
   | "fullScreenToFullScreen";
 
 export type TrayPresentationEndpoint = {
-  trayId: string;
-  stepIndex: number;
-  stepKey: string;
-  pageIndex?: number;
-  mode: TrayPresentationMode;
+  readonly trayId: string;
+  readonly stepIndex: number;
+  readonly stepKey: string;
+  readonly pageIndex?: number;
+  readonly mode: TrayPresentationMode;
 };
 
 export type TraySharedRegionBehavior =
@@ -43,23 +43,23 @@ export type TraySharedRegionBehavior =
   | "absent";
 
 export type TraySharedRegionContract = {
-  region: "surface" | "header" | "body" | "footer";
-  behavior: TraySharedRegionBehavior;
-  sourceId?: string;
-  targetId?: string;
+  readonly region: "surface" | "header" | "body" | "footer";
+  readonly behavior: TraySharedRegionBehavior;
+  readonly sourceId?: string;
+  readonly targetId?: string;
 };
 
 export type TrayTransitionContract = {
-  generation: number;
-  reason: TrayTransitionReason;
-  direction: TrayTransitionDirection;
-  boundary: TrayTransitionBoundary;
-  from: TrayPresentationEndpoint | null;
-  to: TrayPresentationEndpoint | null;
-  stepChanged: boolean;
-  pageChanged: boolean;
-  fullScreenChanged: boolean;
-  sharedRegions: readonly TraySharedRegionContract[];
+  readonly generation: number;
+  readonly reason: TrayTransitionReason;
+  readonly direction: TrayTransitionDirection;
+  readonly boundary: TrayTransitionBoundary;
+  readonly from: TrayPresentationEndpoint | null;
+  readonly to: TrayPresentationEndpoint | null;
+  readonly stepChanged: boolean;
+  readonly pageChanged: boolean;
+  readonly fullScreenChanged: boolean;
+  readonly sharedRegions: readonly TraySharedRegionContract[];
 };
 
 export type TrayTransitionPhase =
@@ -77,8 +77,11 @@ export type TrayTransitionLifecycleEvent = {
   details?: Record<string, unknown>;
 };
 
+export type TrayTransitionContractState = "provisional" | "sealed";
+
 export type TrayTransitionLifecycleRecord = {
   contract: TrayTransitionContract;
+  contractState: TrayTransitionContractState;
   phase: TrayTransitionPhase;
   events: readonly TrayTransitionLifecycleEvent[];
   geometry: TrayTransitionGeometry;
@@ -95,7 +98,8 @@ export type TrayTransitionParticipantEvent = {
 
 export type TrayTransitionLifecycle = {
   begin: (contract: TrayTransitionContract, at?: number) => void;
-  replaceContract?: (contract: TrayTransitionContract) => boolean;
+  // refine registration data before preparation seals the contract
+  refineContract: (contract: TrayTransitionContract) => boolean;
   mark: (
     generation: number,
     phase: Exclude<TrayTransitionPhase, "requested">,

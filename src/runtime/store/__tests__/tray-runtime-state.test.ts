@@ -1,3 +1,4 @@
+// verify pure state derivations keep stack and transition data aligned
 import { describe, expect, it } from "@jest/globals";
 import type {
   TrayHostStateValue,
@@ -13,6 +14,7 @@ import {
 
 const keyboardHeight = { value: 0 } as never;
 
+// build an endpoint for shared region derivation tests
 const endpoint = (
   stepIndex: number,
   mode: TrayPresentationEndpoint["mode"],

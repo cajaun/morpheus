@@ -26,8 +26,10 @@ jest.mock("react-native-reanimated", () => {
 
 type VisibilityStyles = ReturnType<typeof useActionTrayVisibilityStyles>;
 
+// create a minimal shared value for visibility style probes
 const shared = <T,>(value: T) => ({ value });
 
+// render visibility styles with one origin configuration
 const renderVisibilityStyles = ({
   origin,
 }: {

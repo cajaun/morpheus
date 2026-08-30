@@ -1,3 +1,4 @@
+// declare class name support for native components
 import "react-native";
 
 declare module "react-native" {

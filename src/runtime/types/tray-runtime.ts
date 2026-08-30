@@ -5,6 +5,8 @@ import type { SharedValue } from "react-native-reanimated";
 import type { TrayTransitionContract } from "./tray-transition";
 import type { TrayTransitionLifecycle } from "./tray-transition";
 
+export type KeyboardTransitionMode = "idle" | "entering" | "exiting";
+
 // keep runtime contracts separate from context hook implementation
 export type TrayFullScreenCloseBehavior = "dismiss" | "returnToShell";
 export type TrayFullScreenTransition = "morph" | "slide";
@@ -90,7 +92,8 @@ export type TrayHostStateValue = {
   activeIndex: number;
   stack: TrayStackEntry[];
   transitionGeneration: number;
-  transition: TrayTransitionContract | null;
+  // retained descriptor used by the presenter lifecycle activity is exposed separately by traytransitionlifecyclegetactive()
+  lastTransition: TrayTransitionContract | null;
   keyboardHeight: SharedValue<number>;
 };
 

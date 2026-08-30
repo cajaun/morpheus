@@ -25,6 +25,7 @@ type TrayLayoutTransitionParams = {
 type GeometryKey = "originY" | "height" | "width";
 type GeometryAnimationMap = Partial<Record<GeometryKey, AnimationObject>>;
 
+// combine changing shell dimensions under one native transition clock
 export const createTrayLayoutTransition = ({
   transitionGeneration,
   transitionStartedAt,
@@ -49,8 +50,7 @@ export const createTrayLayoutTransition = ({
       scheduleOnRN(onConfigure, performance.now(), transitionGeneration);
     }
 
-    // fullscreen boundaries are owned by usetrayboundarymotionstate
-    // native layout animation is intentionally reserved for ordinary sheet changes
+    // fullscreen boundaries are owned by usetrayboundarymotionstate native layout animation is intentionally reserved for ordinary sheet changes
     const animation = buildTransition(values);
     const geometryAnimations = animation.animations as unknown as
       GeometryAnimationMap;
@@ -79,9 +79,7 @@ export const createTrayLayoutTransition = ({
     const geometryAnimation = geometryAnimations[geometryClock.key];
 
     if (geometryAnimation !== undefined) {
-      // originY and height jointly determine the shell bottom. Join every
-      // changing geometry property to one native start so that their sum
-      // cannot drift while the fixed footer remains stationary.
+      // join changing geometry under one clock so the footer edge stays stable
       for (const candidate of geometryCandidates) {
         const candidateAnimation = geometryAnimations[candidate.key];
         const isGeometryClock = candidate.key === geometryClock.key;

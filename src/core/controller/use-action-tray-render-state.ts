@@ -24,6 +24,7 @@ type TraySnapshot = {
 
 type InternalRenderedTrayState = RenderedTrayState;
 
+// convert a prop snapshot into the normalized rendered shell shape
 const toRenderedTrayState = ({
   header,
   content,
@@ -54,6 +55,7 @@ const toRenderedTrayState = ({
   transitionContract,
 });
 
+// compare shell snapshots before publishing another render
 const areTrayStatesEqual = (
   current: RenderedTrayState,
   next: RenderedTrayState,
@@ -72,6 +74,7 @@ const areTrayStatesEqual = (
   current.footerClassName === next.footerClassName &&
   current.transitionContract === next.transitionContract;
 
+// reject transient empty payloads before they erase visible content
 const commitTraySnapshot = (
   current: InternalRenderedTrayState,
   next: RenderedTrayState,
@@ -101,6 +104,7 @@ const commitTraySnapshot = (
   return next;
 };
 
+// expose the fields needed to diagnose a rendered shell snapshot
 const describeTrayState = (state: RenderedTrayState) => ({
   trayId: state.trayId,
   fullScreen: state.fullScreen ?? false,
@@ -112,6 +116,7 @@ const describeTrayState = (state: RenderedTrayState) => ({
   transition: describeTrayTransition(state.transitionContract),
 });
 
+// retain a stable rendered payload while transitions consume new props
 export const useActionTrayRenderState = ({
   header,
   content,

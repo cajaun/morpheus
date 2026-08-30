@@ -1,3 +1,4 @@
+// verify every transition participant joins the same ui clock
 import { describe, expect, it, jest } from "@jest/globals";
 import type {
   AnimatableValue,
@@ -36,8 +37,10 @@ jest.mock("react-native-worklets", () => {
   };
 });
 
+// create the shared value shape used by worklet tests
 const shared = (value: number) => ({ value }) as SharedValue<number>;
 
+// create a controllable animation stub for clock assertions
 const createAnimation = () => {
   const animation: AnimationObject<number> = {
     current: 0,

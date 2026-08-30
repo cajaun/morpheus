@@ -1,15 +1,32 @@
 # Action tray transition contract
 
-The runtime creates one immutable transition contract before presentation work
-begins. Its `generation` is the transaction identity used by navigation,
+The runtime creates one transition contract before presentation work begins.
+Its `generation` is the immutable transaction identity used by navigation,
 snapshots, measurement, shell layout, incoming and outgoing content, page
 springs, close retention, completion, and interruption.
 
+The descriptor is provisional while the transition is `requested`, because
+React registration can finish after navigation has created the transition.
+The descriptor may be refined during that phase. Preparation seals the
+descriptor; after that point a changed destination must interrupt the old
+generation and create a new one instead of mutating an already-consumed
+contract.
+
+The host state retains this descriptor as `lastTransition` for presenter
+retention and render continuity. It is not the authoritative answer to
+whether a transition is currently active; use the lifecycle's `getActive()`
+for that question.
+
 ## Lifecycle
 
-The canonical lifecycle is:
+The lifecycle milestones are ordered as:
 
 `requested -> prepared -> committed -> layoutStarted -> completed`
+
+The forward milestones are optional observability points, so an implementation
+may advance from `requested` directly to `committed` or `completed`. It may
+never move backwards, and `completed`, `interrupted`, and `cancelled` are
+terminal states.
 
 A newer generation interrupts the current generation. A retained close host
 keeps the closing contract until its own animation completes. Late callbacks
@@ -32,9 +49,11 @@ changing today’s restore policy.
 
 Each contract declares surface, header, body, and footer continuity. The
 contract describes whether a region is persistent, keyed overlap, replacement,
-or absent. The lifecycle can record participant events, but it is deliberately
-not connected from inside `TrayStepContent`: Reanimated entering and exiting
-builders remain completely contract-agnostic.
+or absent. The lifecycle record distinguishes planned participants from
+observed participant events. Planned participants come from the contract.
+Observed events are optional telemetry and are not a second source of truth
+for transition ownership or completion. Reanimated entering and exiting
+builders remain contract-agnostic.
 
 ## Behavioral compatibility
 

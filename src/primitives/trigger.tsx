@@ -48,6 +48,7 @@ export type TrayTriggerProps = PressableProps & {
   haptics?: TrayTriggerHaptics;
 };
 
+// translate public haptic options into native feedback calls
 const fireTriggerHaptics = (haptics: TrayTriggerHaptics) => {
   // object syntax exposes the native enum without leaking that shape to every caller
   if (typeof haptics === "object") {
@@ -98,6 +99,7 @@ const fireTriggerHaptics = (haptics: TrayTriggerHaptics) => {
   }
 };
 
+// open the scoped tray from a press while applying optional feedback
 export const TrayTrigger: React.FC<TrayTriggerProps> = ({
   children,
   onPress,

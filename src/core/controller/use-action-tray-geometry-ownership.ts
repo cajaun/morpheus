@@ -12,6 +12,7 @@ import type {
   TrayTransitionLifecycle,
 } from "../../runtime/types";
 import { createTrayMeasurementOwner } from "../../runtime/types";
+import { isTrayTransitionTerminal } from "../../runtime/transition-lifecycle";
 import { log } from "../logger";
 import { describeTrayTransition } from "../diagnostics/action-tray-transition-diagnostics";
 import { createTrayEndpointKey } from "./action-tray-sheet-frame";
@@ -50,8 +51,7 @@ export const useActionTrayGeometryOwnership = ({
   const preparedSheetFrameRef = useRef<ActionTraySheetFrame | undefined>(
     undefined,
   );
-  // keeps the completed target authoritative while queued native onLayout
-  // events from the transition drain
+  // keeps the completed target authoritative while queued native onlayout events from the transition drain
   const committedSheetFrameRef = useRef<ActionTraySheetFrame | undefined>(
     undefined,
   );
@@ -253,12 +253,19 @@ export const useActionTrayGeometryOwnership = ({
         activeTransition != null &&
         transitionCompletedGenerationRef.current.value >=
           activeTransition.generation;
+      const lifecyclePhase = activeTransition
+        ? transitionLifecycle?.get(activeTransition.generation)?.phase
+        : undefined;
+      const lifecycleTerminal = lifecyclePhase
+        ? isTrayTransitionTerminal(lifecyclePhase)
+        : false;
 
       if (
         !activeTransition ||
         !endpoint ||
         endpoint.mode !== "sheet" ||
         transitionCompleted ||
+        lifecycleTerminal ||
         !Number.isFinite(height) ||
         height <= 0 ||
         !Number.isFinite(contentHeight) ||
@@ -273,6 +280,7 @@ export const useActionTrayGeometryOwnership = ({
           endpointKey: endpoint ? createTrayEndpointKey(endpoint) : undefined,
           endpointMode: endpoint?.mode,
           transitionCompleted,
+          lifecyclePhase,
           transitionCompletedGeneration:
             transitionCompletedGenerationRef.current.value,
         });
@@ -309,7 +317,7 @@ export const useActionTrayGeometryOwnership = ({
         leaseActive: contentMeasurementLeaseRef.current,
       });
     },
-    [],
+    [transitionLifecycle],
   );
 
   const clearPreparedSheetFrame = useCallback(() => {

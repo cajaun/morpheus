@@ -43,8 +43,10 @@ const MAX_RECORDED_SUMMARIES = 50;
 const tracesByRootTrayId = new Map<string, TrayStepTimingTrace>();
 const rootTrayIdByPresentedTrayId = new Map<string, string>();
 
+// read one clock source for every step timing mark
 const now = () => globalThis.performance?.now?.() ?? Date.now();
 
+// retain only the latest step timing summaries for inspection
 const writeSummary = (summary: TrayStepTimingSummary) => {
   const timingGlobal = globalThis as typeof globalThis & {
     __ACTION_TRAY_STEP_TIMINGS__?: TrayStepTimingSummary[];
@@ -57,6 +59,7 @@ const writeSummary = (summary: TrayStepTimingSummary) => {
   ].slice(-MAX_RECORDED_SUMMARIES);
 };
 
+// publish a summary only after every required stage has a timestamp
 const tryFinishTrace = (rootTrayId: string) => {
   const trace = tracesByRootTrayId.get(rootTrayId);
 
@@ -166,6 +169,7 @@ const tryFinishTrace = (rootTrayId: string) => {
   });
 };
 
+// start a step trace at the navigation request boundary
 export const markTrayStepRequested = (rootTrayId?: string) => {
   if (!isActionTrayInstrumentationEnabled() || !rootTrayId) {
     return;
@@ -177,6 +181,7 @@ export const markTrayStepRequested = (rootTrayId?: string) => {
   });
 };
 
+// record when the render snapshot exposes the new step
 export const markTrayStepSnapshotPublished = (
   rootTrayId?: string,
   trayId?: string,
@@ -194,6 +199,7 @@ export const markTrayStepSnapshotPublished = (
   }
 };
 
+// record when the presenter resolves the new step payload
 export const markTrayStepPresenterResolved = (rootTrayId?: string) => {
   if (!isActionTrayInstrumentationEnabled() || !rootTrayId) {
     return;
@@ -206,6 +212,7 @@ export const markTrayStepPresenterResolved = (rootTrayId?: string) => {
   }
 };
 
+// record when the host slot commits the resolved payload
 export const markTrayStepSlotCommitted = (rootTrayId?: string) => {
   if (!isActionTrayInstrumentationEnabled() || !rootTrayId) {
     return;
@@ -218,6 +225,7 @@ export const markTrayStepSlotCommitted = (rootTrayId?: string) => {
   }
 };
 
+// record the react render start and measured render cost
 export const markTrayStepReactRenderStarted = (
   rootTrayId: string | undefined,
   trayId: string | undefined,
@@ -240,6 +248,7 @@ export const markTrayStepReactRenderStarted = (
   }
 };
 
+// record when native layout begins consuming the new geometry
 export const markTrayStepLayoutStarted = (
   rootTrayId: string | undefined,
   trayId: string | undefined,
@@ -259,6 +268,7 @@ export const markTrayStepLayoutStarted = (
   }
 };
 
+// record when native layout accepts the transition configuration
 export const markTrayStepLayoutConfigured = (
   rootTrayId: string | undefined,
   trayId: string | undefined,
@@ -279,6 +289,7 @@ export const markTrayStepLayoutConfigured = (
   }
 };
 
+// record when the shell reports its committed layout
 export const markTrayStepShellLayout = (
   rootTrayId?: string,
   trayId?: string,
@@ -298,6 +309,7 @@ export const markTrayStepShellLayout = (
   }
 };
 
+// record when native layout finishes and try to close the trace
 export const markTrayStepLayoutFinished = (
   rootTrayId: string | undefined,
   trayId: string | undefined,
@@ -319,6 +331,7 @@ export const markTrayStepLayoutFinished = (
   }
 };
 
+// record when the rendered snapshot commits to the host tree
 export const markTrayStepRenderedCommit = (
   rootTrayId?: string,
   trayId?: string,
@@ -339,6 +352,7 @@ export const markTrayStepRenderedCommit = (
   }
 };
 
+// record when incoming content releases its entering transition
 export const markTrayStepContentReleased = (
   trayId: string,
   releasedAt: number,

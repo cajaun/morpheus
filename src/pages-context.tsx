@@ -18,6 +18,7 @@ const TrayPagesContext = createContext<TrayPagesContextValue | null>(null);
 
 export const TrayPagesProvider = TrayPagesContext.Provider;
 
+// return local page state before falling back to registered runtime state
 export const useTrayPages = () => {
   const ctx = useContext(TrayPagesContext);
   const trayId = useTrayScope();
@@ -46,4 +47,5 @@ export const useTrayPages = () => {
   };
 };
 
+// read page state without requiring a pages provider
 export const useOptionalTrayPages = () => useContext(TrayPagesContext);

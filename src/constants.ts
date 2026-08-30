@@ -1,4 +1,4 @@
-// deliberately small public constants surface internal animation constants remain private so package releases can evolve implementation details safely
+// expose stable tray constants while keeping implementation values private
 export {
   EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,

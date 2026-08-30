@@ -63,6 +63,7 @@ type Params = Pick<
 > &
   ActionTrayAnimationState;
 
+// coordinate shell frame styles with measurement and transition ownership
 export const useActionTrayFrameStyles = ({
   bottom,
   contentHeight,
@@ -408,9 +409,7 @@ export const useActionTrayFrameStyles = ({
         ? SCREEN_HEIGHT
         : shouldLeaseBoundarySheetFrame || hasPreparedSheetFrame
           ? boundarySheetFrameHeight
-          // keep the measured sheet endpoint owned by the shell after a
-          // temporary boundary frame is released; auto is only valid before
-          // the first content measurement exists
+          // preserve measured sheet geometry until intrinsic content makes auto valid
           : resolvedSheetHeight ?? "auto",
       borderRadius: targetRadius,
     };

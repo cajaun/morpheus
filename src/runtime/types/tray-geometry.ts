@@ -1,3 +1,4 @@
+// define immutable measurement ownership for tray geometry
 import type {
   TrayPresentationEndpoint,
   TrayPresentationMode,
@@ -11,41 +12,41 @@ export type TrayCoordinateSpace =
   | "footer";
 
 export type TrayRect = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
 };
 
 export type TrayInsets = {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+  readonly left: number;
 };
 
 export type TrayMeasurementOwner = {
-  rootTrayId: string;
-  trayId: string;
-  stepKey: string;
-  stepIndex: number;
-  pageIndex?: number;
-  mode: TrayPresentationMode;
-  generation: number;
-  presentationKey: string;
+  readonly rootTrayId: string;
+  readonly trayId: string;
+  readonly stepKey: string;
+  readonly stepIndex: number;
+  readonly pageIndex?: number;
+  readonly mode: TrayPresentationMode;
+  readonly generation: number;
+  readonly presentationKey: string;
 };
 
 export type TrayGeometrySnapshot = {
-  owner: TrayMeasurementOwner;
-  capturedAt: number;
-  shellFrame?: TrayRect;
-  headerFrame?: TrayRect;
-  bodyFrame?: TrayRect;
-  footerFrame?: TrayRect;
-  safeAreaInsets?: TrayInsets;
-  measuredContentHeight?: number;
-  resolvedContentHeight?: number;
-  measuredFooterHeight?: number;
+  readonly owner: TrayMeasurementOwner;
+  readonly capturedAt: number;
+  readonly shellFrame?: TrayRect;
+  readonly headerFrame?: TrayRect;
+  readonly bodyFrame?: TrayRect;
+  readonly footerFrame?: TrayRect;
+  readonly safeAreaInsets?: TrayInsets;
+  readonly measuredContentHeight?: number;
+  readonly resolvedContentHeight?: number;
+  readonly measuredFooterHeight?: number;
 };
 
 export type TrayGeometryRole = "source" | "target";
@@ -70,6 +71,7 @@ export type TrayTransitionParticipant = {
   endpoint: TrayPresentationEndpoint;
 };
 
+// create an immutable owner key for one measured presentation endpoint
 export const createTrayMeasurementOwner = ({
   rootTrayId,
   endpoint,

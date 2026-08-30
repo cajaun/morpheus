@@ -5,6 +5,7 @@ import type {
   TrayRegistration,
   TrayStackEntry,
 } from "../tray-context";
+import { resolveTrayStepOptions } from "../tray-step-options";
 import {
   createIdleSlot,
   createPresentedTray,
@@ -14,6 +15,7 @@ import {
 import type { PresentedTray, TrayHostSlot } from "../presenter/types";
 
 // probe presenter model decisions without mounting host slots
+// create a registered step node for presenter model tests
 const step = (
   key: string,
   options?: TrayRegistration["steps"][number]["options"],
@@ -23,13 +25,20 @@ const step = (
   options,
 });
 
+// create a minimal presented payload for slot ordering tests
 const presented = (rootTrayId: string): PresentedTray => ({
   rootTrayId,
   trayId: `${rootTrayId}-one`,
   keyboardTransitionMode: "idle",
+  stepOptions: {
+    ...resolveTrayStepOptions(),
+    hasFooter: false,
+  },
   header: null,
   content: null,
   footer: null,
+  fullScreenBoundaryExit: false,
+  isFirstRender: false,
   fullScreen: false,
   fullScreenBackgroundScale: 1,
   fullScreenSafeAreaTop: false,
@@ -41,6 +50,7 @@ const presented = (rootTrayId: string): PresentedTray => ({
   interactive: true,
 });
 
+// create a host slot with explicit visibility and interaction state
 const slot = (
   payload: PresentedTray | null,
   visible: boolean,

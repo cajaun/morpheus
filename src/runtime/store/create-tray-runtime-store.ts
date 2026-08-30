@@ -13,6 +13,7 @@ import type {
 } from "./tray-runtime-action-context";
 import { createInitialTrayHostState } from "./tray-runtime-state";
 
+// create the external store that joins navigation state to lifecycle records
 export const createTrayRuntimeStore = (
   initialDependencies: TrayRuntimeDependencies,
 ): TrayRuntimeStore => {
@@ -39,7 +40,7 @@ export const createTrayRuntimeStore = (
       | TrayHostStateValue
       | ((current: TrayHostStateValue) => TrayHostStateValue),
   ) => {
-    const resolvedState =
+    let resolvedState =
       typeof nextState === "function" ? nextState(state) : nextState;
 
     if (resolvedState === state) {
@@ -48,21 +49,38 @@ export const createTrayRuntimeStore = (
     }
 
     if (
-      resolvedState.transition !== null &&
-      resolvedState.transition !== state.transition
+      resolvedState.lastTransition !== null &&
+      resolvedState.lastTransition !== state.lastTransition
     ) {
       if (
-        state.transition?.generation ===
-        resolvedState.transition.generation
+        state.lastTransition?.generation ===
+        resolvedState.lastTransition.generation
       ) {
-        transitions.replaceContract?.(resolvedState.transition);
+        const refined = transitions.refineContract(resolvedState.lastTransition);
+
+        if (refined !== false) {
+          // the descriptor is still provisional and may be refined in place
+        } else {
+          // a sealed descriptor cannot be rewritten reissue the transition atomically so the lifecycle and presenter share one new identity
+          const generation = allocateTransitionGeneration();
+          const reissuedTransition = {
+            ...resolvedState.lastTransition,
+            generation,
+          };
+          resolvedState = {
+            ...resolvedState,
+            transitionGeneration: generation,
+            lastTransition: reissuedTransition,
+          };
+          transitions.begin(reissuedTransition);
+        }
       } else {
-        transitions.begin(resolvedState.transition);
+        transitions.begin(resolvedState.lastTransition);
       }
 
       if (
         pendingPageTransition !== null &&
-        pendingPageTransition.generation !== resolvedState.transition.generation
+        pendingPageTransition.generation !== resolvedState.lastTransition?.generation
       ) {
         pendingPageTransition = null;
       }

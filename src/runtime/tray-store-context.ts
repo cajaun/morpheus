@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useRef,
   useSyncExternalStore,
 } from "react";
 import { DEFAULT_TRAY_STEP_OPTIONS } from "./tray-step-options";
@@ -21,6 +22,7 @@ export const TrayStoreProvider = TrayStoreContext.Provider;
 export const TrayScopeProvider = TrayScopeContext.Provider;
 export const TrayStepOptionsProvider = TrayStepOptionsContext.Provider;
 
+// require the runtime store from the nearest provider
 export const useTrayRuntimeStore = () => {
   const store = useContext(TrayStoreContext);
 
@@ -31,13 +33,41 @@ export const useTrayRuntimeStore = () => {
   return store;
 };
 
+// subscribe to one stable selection from the external tray store
 export const useTrayHostSelector = <T,>(
   selector: (state: TrayHostStateValue) => T,
 ) => {
   const store = useTrayRuntimeStore();
-  // selectors limit rerenders to the state selected by each consumer
+  const selectedSnapshotRef = useRef<{
+    state: TrayHostStateValue;
+    selector: (state: TrayHostStateValue) => T;
+    value: T;
+  } | null>(null);
+
+  // cache each selector result for one store snapshot this satisfies usesyncexternalstore's stable-snapshot requirement even for object selectors
   const getSnapshot = useCallback(
-    () => selector(store.getState()),
+    () => {
+      const state = store.getState();
+      const cached = selectedSnapshotRef.current;
+
+      if (cached?.state === state && cached.selector === selector) {
+        return cached.value;
+      }
+
+      const value = selector(state);
+
+      if (cached && Object.is(cached.value, value)) {
+        selectedSnapshotRef.current = {
+          state,
+          selector,
+          value: cached.value,
+        };
+        return cached.value;
+      }
+
+      selectedSnapshotRef.current = { state, selector, value };
+      return value;
+    },
     [selector, store],
   );
 
@@ -48,13 +78,17 @@ export const useTrayHostSelector = <T,>(
   );
 };
 
+// read the complete host state for low level integrations
 export const useTrayHostState = () => useTrayHostSelector((state) => state);
 
+// expose imperative host actions without subscribing to state changes
 export const useTrayHostActions = () => useTrayRuntimeStore().actions;
 
+// expose lifecycle records to diagnostics and integration code
 export const useTrayTransitionLifecycle = () =>
   useTrayRuntimeStore().transitions;
 
+// combine host state and actions for the public convenience hook
 export const useTrayHost = () => {
   const state = useTrayHostState();
   const actions = useTrayHostActions();
@@ -66,8 +100,10 @@ export const useTrayHost = () => {
   };
 };
 
+// read the nearest tray scope used by triggers and flow hooks
 export const useTrayScope = () => useContext(TrayScopeContext);
 
+// read normalized options for the current tray step subtree
 export const useTrayStepOptions = () =>
   useContext(TrayStepOptionsContext);
 

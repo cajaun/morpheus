@@ -1,4 +1,4 @@
-import { DEFAULT_FULL_SCREEN_BACKGROUND_SCALE } from "../core/constants";
+import { DEFAULT_FULL_SCREEN_BACKGROUND_SCALE } from "./viewport";
 import type {
   ResolvedTrayStepOptions,
   TrayStepOptions,
@@ -22,6 +22,7 @@ export const DEFAULT_TRAY_STEP_OPTIONS: ResolvedTrayStepOptions = {
   footerClassName: undefined,
 };
 
+// merge optional author settings with the runtime defaults
 export const resolveTrayStepOptions = (
   options?: TrayStepOptions,
 ): ResolvedTrayStepOptions => {

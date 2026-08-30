@@ -161,8 +161,10 @@ export const createTrayRuntimeNavigationActions = ({
       ? state.registry[activeEntry.trayId]
       : undefined;
     const total = activeTray?.steps.length ?? 0;
-    const nextIndex =
-      total <= 0 ? 0 : Math.min((activeEntry?.index ?? 0) + 1, total - 1);
+    const nextIndex = clampTrayStepIndex(
+      (activeEntry?.index ?? 0) + 1,
+      total,
+    );
 
     setState((current) => {
       const activeStackIndex = current.stack.length - 1;

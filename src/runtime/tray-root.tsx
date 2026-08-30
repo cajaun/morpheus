@@ -17,6 +17,7 @@ type TrayRootProps = {
   transition?: TrayTransitionOptions;
 };
 
+// register a root tray and expose its scoped navigation entry point
 export const TrayRoot: React.FC<TrayRootProps> = ({
   id,
   children,

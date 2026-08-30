@@ -1,26 +1,16 @@
-import React from "react";
-import { TrayStepContent } from "../../tray-step-content";
 import {
   resolveTrayStepOptions,
-  TrayScopeProvider,
-  TrayStepOptionsProvider,
   type TrayRegistration,
   type TrayStackEntry,
   type TrayTransitionContract,
 } from "../tray-context";
 import { resolveTrayPresentationEndpoint } from "../transition-contract";
+import { clampTrayStepIndex } from "../tray-step-index";
 import { resolveTrayAnimationContract } from "./animation-contract";
 import type { PresentedTray, TrayHostSlot } from "./types";
 
 // convert registered tray state into the payload consumed by host slots
-const clampIndex = (index: number, total: number) => {
-  if (total <= 0) {
-    return 0;
-  }
-
-  return Math.max(0, Math.min(index, total - 1));
-};
-
+// create an empty host slot that cannot receive input or render content
 export const createIdleSlot = (): TrayHostSlot => ({
   assignmentId: 0,
   payload: null,
@@ -28,6 +18,7 @@ export const createIdleSlot = (): TrayHostSlot => ({
   interactive: false,
 });
 
+// choose the next host slot without reusing the current visible slot
 export const resolveNextActiveSlotIndex = (
   slots: [TrayHostSlot, TrayHostSlot],
   previousActiveSlotIndex: number | null,
@@ -48,6 +39,7 @@ export const resolveNextActiveSlotIndex = (
   return hiddenSlotIndex >= 0 ? hiddenSlotIndex : 0;
 };
 
+// order hosts so interactive content sits above retained content
 export const resolveOrderedHostSlots = (
   hostSlots: [TrayHostSlot, TrayHostSlot],
 ) =>
@@ -66,6 +58,7 @@ export const resolveOrderedHostSlots = (
       return left.index - right.index;
     });
 
+// convert registry state into the payload consumed by the shell presenter
 export const createPresentedTray = ({
   entry,
   registration,
@@ -82,7 +75,7 @@ export const createPresentedTray = ({
   stackLength: number;
 }): PresentedTray | null => {
   const trayTotal = registration.steps.length;
-  const trayIndex = clampIndex(entry.index, trayTotal);
+  const trayIndex = clampTrayStepIndex(entry.index, trayTotal);
   const step = registration.steps[trayIndex];
 
   if (!step) {
@@ -113,42 +106,12 @@ export const createPresentedTray = ({
     rootTrayId: entry.trayId,
     trayId: `${entry.trayId}-${step.key}`,
     keyboardTransitionMode,
-    header: step.header ? (
-      <TrayScopeProvider value={entry.trayId}>
-        <TrayStepOptionsProvider value={contextualStepOptions}>
-          <TrayStepContent
-            stepKey={`${entry.trayId}-${step.key}-header`}
-            scale={false}
-            fullScreenBoundaryExit={animationContract.fullScreenBoundaryExit}
-            skipEntering={animationContract.isFirstRender}
-          >
-            {step.header}
-          </TrayStepContent>
-        </TrayStepOptionsProvider>
-      </TrayScopeProvider>
-    ) : null,
-    content: (
-      <TrayScopeProvider value={entry.trayId}>
-        <TrayStepOptionsProvider value={contextualStepOptions}>
-          <TrayStepContent
-            stepKey={`${entry.trayId}-${step.key}`}
-            scale={stepOptions.scale}
-            anchorScaleToTop={stepOptions.fullScreen}
-            fullScreenBoundaryExit={animationContract.fullScreenBoundaryExit}
-            skipEntering={animationContract.isFirstRender}
-          >
-            {step.content}
-          </TrayStepContent>
-        </TrayStepOptionsProvider>
-      </TrayScopeProvider>
-    ),
-    footer: registration.footer ? (
-      <TrayScopeProvider value={entry.trayId}>
-        <TrayStepOptionsProvider value={contextualStepOptions}>
-          {registration.footer}
-        </TrayStepOptionsProvider>
-      </TrayScopeProvider>
-    ) : null,
+    stepOptions: contextualStepOptions,
+    header: step.header ?? null,
+    content: step.content,
+    footer: registration.footer ?? null,
+    fullScreenBoundaryExit: animationContract.fullScreenBoundaryExit,
+    isFirstRender: animationContract.isFirstRender,
     fullScreen: stepOptions.fullScreen,
     fullScreenBackgroundScale: stepOptions.fullScreenBackgroundScale,
     fullScreenSafeAreaTop: stepOptions.fullScreenSafeAreaTop,

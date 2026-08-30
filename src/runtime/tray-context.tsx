@@ -1,3 +1,4 @@
+// reexport runtime hooks and contracts from one module
 export {
   TrayScopeProvider,
   TrayStoreProvider,
@@ -30,6 +31,8 @@ export type {
   TrayStepOptions,
   TrayTransitionOptions,
   TrayTransitionContract,
+  TrayTransitionContractState,
+  KeyboardTransitionMode,
   TrayTransitionBoundary,
   TrayTransitionDirection,
   TrayTransitionReason,
