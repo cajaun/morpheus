@@ -1,5 +1,4 @@
 import { createContext, useContext } from "react";
-import type { SharedValue } from "react-native-reanimated";
 import type { TrayTransitionContract } from "../runtime/types";
 import {
   FULL_SCREEN_BOUNDARY_CONTENT_SCALE,
@@ -27,8 +26,7 @@ export const resolveActiveFullScreenBoundaryExit = (
 export const resolveTrayContentMotionDirection = (
   transition: TrayTransitionContract | null | undefined,
 ): TrayContentMotionDirection =>
-  transition?.boundary === "sheetToSheet" &&
-  transition.direction === "backward"
+  transition?.direction === "backward"
     ? BACKWARD_CONTENT_MOTION
     : FORWARD_CONTENT_MOTION;
 
@@ -75,7 +73,7 @@ export const resolveMorphExitingScale = ({
 };
 
 const TrayContentMotionDirectionContext =
-  createContext<SharedValue<TrayContentMotionDirection> | null>(null);
+  createContext<TrayContentMotionDirection | null>(null);
 
 export const TrayContentMotionDirectionProvider =
   TrayContentMotionDirectionContext.Provider;

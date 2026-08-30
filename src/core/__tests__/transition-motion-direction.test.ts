@@ -44,17 +44,25 @@ describe("resolveTrayContentMotionDirection", () => {
     ).toBe(BACKWARD_CONTENT_MOTION);
   });
 
-  it("keeps the established motion for forward and fullscreen boundaries", () => {
+  it("keeps forward motion for forward transitions", () => {
     expect(
       resolveTrayContentMotionDirection(
         transition("forward", "sheetToSheet"),
       ),
     ).toBe(FORWARD_CONTENT_MOTION);
+  });
+
+  it("preserves backward motion across fullscreen boundaries", () => {
     expect(
       resolveTrayContentMotionDirection(
         transition("backward", "fullScreenToSheet"),
       ),
-    ).toBe(FORWARD_CONTENT_MOTION);
+    ).toBe(BACKWARD_CONTENT_MOTION);
+    expect(
+      resolveTrayContentMotionDirection(
+        transition("backward", "sheetToFullScreen"),
+      ),
+    ).toBe(BACKWARD_CONTENT_MOTION);
   });
 
   it("mirrors the scale endpoints for incoming and outgoing backward content", () => {

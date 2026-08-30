@@ -2,7 +2,6 @@ import React, {
   forwardRef,
   useEffect,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
 } from "react";
 import { StyleSheet } from "react-native";
@@ -22,10 +21,8 @@ import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
 import { TrayMorphProgressProvider } from "./tray-morph-progress";
 import { TrayTransitionStartProvider } from "./transition-start";
 import {
-  FORWARD_CONTENT_MOTION,
   resolveTrayContentMotionDirection,
   TrayContentMotionDirectionProvider,
-  type TrayContentMotionDirection,
 } from "./transition-motion-direction";
 import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animated-styles";
 import { useTrayBoundaryMotionState } from "./animation/use-tray-boundary-motion-state";
@@ -83,14 +80,9 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     },
     ref,
   ) => {
+    // resolve direction during render so entering and exiting content receive the same transition snapshot
     const contentMotionDirection =
-      useSharedValue<TrayContentMotionDirection>(FORWARD_CONTENT_MOTION);
-
-    useLayoutEffect(() => {
-      // update before passive snapshot publication replaces the keyed subtree the retained outgoing view and incoming view then read one transaction
-      contentMotionDirection.value =
-        resolveTrayContentMotionDirection(transitionContract);
-    }, [contentMotionDirection, transitionContract]);
+      resolveTrayContentMotionDirection(transitionContract);
 
     // keep orchestration in one hook so the tree stays declarative
     const controller = useActionTrayController({

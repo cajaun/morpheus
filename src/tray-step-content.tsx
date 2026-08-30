@@ -82,7 +82,7 @@ const createMorphEntering = (
   scale: boolean,
   stepKey: string,
   transitionStart: TrayTransitionStart | null,
-  motionDirection: { value: TrayContentMotionDirection } | null,
+  motionDirection: TrayContentMotionDirection | null,
 ): EntryExitAnimationFunction => {
   return () => {
     "worklet";
@@ -100,8 +100,7 @@ const createMorphEntering = (
     const easing = synchronizedFullScreen
       ? FULL_SCREEN_CONTENT_EASING
       : MORPH_EASING;
-    const direction =
-      motionDirection?.value ?? FORWARD_CONTENT_MOTION;
+    const direction = motionDirection ?? FORWARD_CONTENT_MOTION;
     const initialScale = resolveMorphEnteringScale({
       scale,
       synchronizedFullScreen,
@@ -207,7 +206,7 @@ const createMorphExiting = (
   scale: boolean,
   fullScreenBoundaryExit: boolean,
   transitionStart: TrayTransitionStart | null,
-  motionDirection: { value: TrayContentMotionDirection } | null,
+  motionDirection: TrayContentMotionDirection | null,
 ): EntryExitAnimationFunction => {
   return () => {
     "worklet";
@@ -228,8 +227,7 @@ const createMorphExiting = (
     const easing = activeFullScreenBoundaryExit
       ? FULL_SCREEN_CONTENT_EASING
       : SHEET_EASING;
-    const direction =
-      motionDirection?.value ?? FORWARD_CONTENT_MOTION;
+    const direction = motionDirection ?? FORWARD_CONTENT_MOTION;
     const targetScale = resolveMorphExitingScale({
       scale,
       fullScreenBoundaryExit: activeFullScreenBoundaryExit,

@@ -41,6 +41,7 @@ const AaveHeader = ({ title }: { title: string }) => {
 
 const AaveExample = () => {
   return (
+
     <Tray.Root
       stepOptions={{
         className: "bg-white",
@@ -131,6 +132,7 @@ const AaveExample = () => {
         </Tray.Body>
       </Tray.Step>
     </Tray.Root>
+    
   );
 };
 
