@@ -38,10 +38,8 @@ const AaveHeader = ({ title }: { title: string }) => {
   );
 };
 
-
 const AaveExample = () => {
   return (
-
     <Tray.Root
       stepOptions={{
         className: "bg-white",
@@ -49,9 +47,8 @@ const AaveExample = () => {
       }}
       footer={<AaveFooter />}
     >
-
       <Tray.Trigger haptics="feedback">
-        <ExampleTrigger label="Aave" />
+        <ExampleTrigger label="Trigger" />
       </Tray.Trigger>
 
       <Tray.Step>
@@ -131,8 +128,44 @@ const AaveExample = () => {
           </Tray.Section>
         </Tray.Body>
       </Tray.Step>
+
+      <Tray.Step>
+        <AaveHeader title="Content Four" />
+        <Tray.Body>
+          <Tray.Section>
+            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+              Some heading
+            </Text>
+
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum dolor
+              amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
+            </Text>
+
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
+              amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
+              dolor amet. Lorem ipsum dolor amet.
+            </Text>
+
+            <Text
+              className="text-black font-sf-regular"
+              style={trayDemoText.bodyLarge}
+            >
+              This is some example test that spans over multiple lines bla bla
+              bla test test test many wods. this is a new sentence and we'll see
+              how that fares too.
+            </Text>
+          </Tray.Section>
+        </Tray.Body>
+      </Tray.Step>
     </Tray.Root>
-    
   );
 };
 

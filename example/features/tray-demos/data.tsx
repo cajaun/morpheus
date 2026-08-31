@@ -4,6 +4,7 @@ import AboutAaveTray from "./about-aave";
 import type { UsageVariant } from "./component-presentation/types";
 import CreatingWalletsInfoTray from "./creating-wallets-info";
 import ColorIndexTray from "./color-index";
+import DynamicHeightsTray from "./dynamic-heights";
 import ExpandFromTriggerDemo from "./expand-from-trigger";
 import HelpSupportTray from "./help-support";
 import IdentityRateBoostTray from "./identity-rate-boost";
@@ -56,6 +57,15 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     content: (
       <TrayExampleFrame>
         <AaveExample />
+      </TrayExampleFrame>
+    ),
+  },
+  {
+    value: "dynamic-heights",
+    label: "Dynamic Heights",
+    content: (
+      <TrayExampleFrame>
+        <DynamicHeightsTray />
       </TrayExampleFrame>
     ),
   },
