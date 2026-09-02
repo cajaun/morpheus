@@ -18,7 +18,7 @@ operation, application cannot start, or widespread data corruption.
 A primary flow is unavailable or materially incorrect for all users or a
 significant subset, but a safe workaround may exist.
 
-Examples: tray cannot close, keyboard step loses all content, fullscreen flow
+Examples: tray cannot close, a step loses all content, fullscreen flow
 navigates to the wrong action, or nested tray blocks its parent permanently.
 
 ### Minor

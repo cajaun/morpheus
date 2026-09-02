@@ -2,6 +2,10 @@
 module.exports = {
   preset: "jest-expo",
   clearMocks: true,
+  moduleNameMapper: {
+    "^react-native-keyboard-controller$":
+      "<rootDir>/src/__mocks__/react-native-keyboard-controller.ts",
+  },
   modulePathIgnorePatterns: ["<rootDir>/lib/", "<rootDir>/example/"],
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",

@@ -5,8 +5,6 @@ import type { SharedValue } from "react-native-reanimated";
 import type { TrayTransitionContract } from "./tray-transition";
 import type { TrayTransitionLifecycle } from "./tray-transition";
 
-export type KeyboardTransitionMode = "idle" | "entering" | "exiting";
-
 // keep runtime contracts separate from context hook implementation
 export type TrayFullScreenCloseBehavior = "dismiss" | "returnToShell";
 export type TrayFullScreenTransition = "morph" | "slide";
@@ -20,8 +18,8 @@ export type TrayTransitionOptions = {
 };
 
 export type TrayStepOptions = {
-  scale?: boolean;
   keyboardAware?: boolean;
+  scale?: boolean;
   fullScreen?: boolean;
   shouldScaleBackground?: boolean;
   fullScreenBackgroundScale?: number;
@@ -76,8 +74,8 @@ export type TrayPagesRegistration = {
 
 export type ResolvedTrayStepOptions = {
   hasFooter: boolean;
-  scale: boolean;
   keyboardAware: boolean;
+  scale: boolean;
   fullScreen: boolean;
   shouldScaleBackground: boolean;
   fullScreenBackgroundScale: number;
@@ -99,7 +97,6 @@ export type TrayHostStateValue = {
   transitionGeneration: number;
   // retained descriptor used by the presenter lifecycle activity is exposed separately by traytransitionlifecyclegetactive()
   lastTransition: TrayTransitionContract | null;
-  keyboardHeight: SharedValue<number>;
 };
 
 export type TrayHostActionsValue = {
@@ -121,12 +118,6 @@ export type TrayHostActionsValue = {
     fromPageIndex: number,
     toPageIndex: number,
   ) => number | null;
-  anticipateKeyboard: () => void;
-  dismissKeyboardForTray: (trayId?: string | null) => void;
-  registerFocusable: (
-    trayId: string,
-    ref: React.RefObject<any>,
-  ) => () => void;
 };
 
 export type TrayRuntimeStore = {
@@ -135,10 +126,4 @@ export type TrayRuntimeStore = {
   actions: TrayHostActionsValue;
   justOpenedRef: RefObject<boolean>;
   transitions: TrayTransitionLifecycle;
-  setDependencies: (params: {
-    keyboardHeight: SharedValue<number>;
-    anticipateKeyboard: () => void;
-    dismissFocusedInputs: (trayId?: string | null) => void | Promise<void>;
-    registerFocusable: TrayHostActionsValue["registerFocusable"];
-  }) => void;
 };

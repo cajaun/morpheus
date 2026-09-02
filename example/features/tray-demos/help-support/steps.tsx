@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Image, Text, View } from "react-native";
+import { Image, Text, TextInput, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import { Tray, useTrayFlow } from "morpheus";
 import { trayDemoText } from "@/shared/theme/tokens";
@@ -112,7 +112,7 @@ export const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
     <Tray.Body>
       <Tray.Section style={{ gap: 16 }}>
         <FieldShell>
-          <Tray.TextInput
+          <TextInput
             value={subject}
             onChangeText={setSubject}
             autoCapitalize="sentences"
@@ -131,7 +131,7 @@ export const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
         </FieldShell>
 
         <FieldShell style={{ minHeight: 170 }}>
-          <Tray.TextInput
+          <TextInput
             value={details}
             onChangeText={setDetails}
             autoCapitalize="sentences"
@@ -235,7 +235,7 @@ export const YourDetailsStep = () => {
         </Text>
 
         <FieldShell>
-          <Tray.TextInput
+          <TextInput
             value={name}
             autoFocus
             onChangeText={setName}
@@ -251,7 +251,7 @@ export const YourDetailsStep = () => {
         </FieldShell>
 
         <FieldShell>
-          <Tray.TextInput
+          <TextInput
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"

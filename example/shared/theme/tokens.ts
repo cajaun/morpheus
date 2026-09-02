@@ -27,7 +27,7 @@ export const trayDemoText = {
     letterSpacing: 0.3,
   } satisfies TextStyle,
   bodyLarge: {
-    fontSize: 21,
+    fontSize: 20,
     lineHeight: 28,
     letterSpacing: 0.2,
   } satisfies TextStyle,

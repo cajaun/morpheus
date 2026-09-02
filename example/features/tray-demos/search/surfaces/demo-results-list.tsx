@@ -1,11 +1,16 @@
 import React from "react";
-import { FlatList, Pressable, StyleSheet, Text } from "react-native";
+import {
+  FlatList,
+  KeyboardAvoidingView,
+  Pressable,
+  StyleSheet,
+  Text,
+} from "react-native";
 import Animated, {
   Extrapolation,
   interpolate,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import type { UsageVariant } from "../../component-presentation/types";

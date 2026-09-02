@@ -20,14 +20,6 @@ Record build, commit, device, OS, theme, text size, and result for every session
 - [ ] Rounded corners, fill, backdrop, and background scale remain continuous.
 - [ ] Close animation starts from the exact visible fullscreen frame.
 
-## Keyboard and input
-
-- [ ] Keyboard-aware morph begins in coordination with native keyboard movement.
-- [ ] Tray remains visible while keyboard appears/disappears.
-- [ ] Focus lands on the intended field and returns safely after nested trays.
-- [ ] Rapid back/next/close during keyboard movement recovers cleanly.
-- [ ] Hardware keyboard and software keyboard paths are both usable.
-
 ## Nested and interruption behavior
 
 - [ ] Nested tray preserves parent page and transition state.

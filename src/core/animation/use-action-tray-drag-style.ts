@@ -21,6 +21,7 @@ export const useActionTrayDragStyle = ({
       return {
         transform: [
           {
+            // trigger-origin progress stays local to the shell's existing drag transform
             translateY: translateY.value * originProgress.value,
           },
         ],

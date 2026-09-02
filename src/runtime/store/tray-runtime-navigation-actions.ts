@@ -26,17 +26,14 @@ type NavigationActions = Pick<
 export const createTrayRuntimeNavigationActions = ({
   getState,
   setState,
-  getDependencies,
   allocateTransitionGeneration,
   transitions,
   setPendingPageTransition,
   justOpenedRef,
 }: TrayRuntimeActionContext): NavigationActions => ({
   openTray: (id: string) => {
-    const state = getState();
     justOpenedRef.current = true;
     markTrayOpenRequested(id);
-    void getDependencies().dismissFocusedInputs(state.activeTrayId);
 
     setState((current) =>
       withTrayTransition(
@@ -51,10 +48,8 @@ export const createTrayRuntimeNavigationActions = ({
     );
   },
   openNestedTray: (id: string, parentTrayId?: string | null) => {
-    const state = getState();
     justOpenedRef.current = true;
     markTrayOpenRequested(id);
-    void getDependencies().dismissFocusedInputs(state.activeTrayId);
 
     setState((current) =>
       withTrayTransition(
@@ -76,9 +71,6 @@ export const createTrayRuntimeNavigationActions = ({
     );
   },
   closeActiveTray: () => {
-    const state = getState();
-    void getDependencies().dismissFocusedInputs(state.activeTrayId);
-
     setState((current) => {
       if (current.stack.length === 0) {
         return current;
@@ -133,8 +125,6 @@ export const createTrayRuntimeNavigationActions = ({
       });
       return;
     }
-
-    void getDependencies().dismissFocusedInputs(state.activeTrayId);
 
     setState((current) => {
       if (current.stack.length === 0) {

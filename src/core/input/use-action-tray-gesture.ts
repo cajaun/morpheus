@@ -11,8 +11,6 @@ type Params = {
   interactive: boolean;
   fullScreen: boolean;
   fullScreenDraggable: boolean;
-  keyboardHeight: { value: number };
-  dismissKeyboard: () => void;
   onRequestClose: () => void;
 };
 
@@ -24,8 +22,6 @@ export const useActionTrayGesture = ({
   interactive,
   fullScreen,
   fullScreenDraggable,
-  keyboardHeight,
-  dismissKeyboard,
   onRequestClose,
 }: Params) => {
   return useMemo(() => {
@@ -34,11 +30,6 @@ export const useActionTrayGesture = ({
     return Gesture.Pan()
       .enabled(interactive && dragEnabled)
       .onStart(() => {
-        if (keyboardHeight.value > 0) {
-          // drag should dismiss the keyboard before measuring gesture travel
-          scheduleOnRN(dismissKeyboard);
-        }
-
         // capture current offset so a drag can start while a spring is mid flight
         context.value = { y: Math.max(0, translateY.value) };
       })
@@ -71,11 +62,9 @@ export const useActionTrayGesture = ({
         }
       });
   }, [
-    dismissKeyboard,
     fullScreen,
     fullScreenDraggable,
     interactive,
-    keyboardHeight,
     onRequestClose,
     context,
     totalHeight,

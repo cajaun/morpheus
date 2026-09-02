@@ -14,17 +14,14 @@ import type {
 export { clampTrayStepIndex } from "../tray-step-index";
 
 // pure runtime derivation keeps store commands focused on mutation and notification
-// create the empty state from the shared keyboard dependency
-export const createInitialTrayHostState = (
-  keyboardHeight: TrayHostStateValue["keyboardHeight"],
-): TrayHostStateValue => ({
+// create the empty state for the tray registry and navigation stack
+export const createInitialTrayHostState = (): TrayHostStateValue => ({
   registry: {},
   activeTrayId: null,
   activeIndex: 0,
   stack: [],
   transitionGeneration: 0,
   lastTransition: null,
-  keyboardHeight,
 });
 
 // stack ownership is derived once so every command agrees on the active tray

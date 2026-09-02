@@ -32,7 +32,6 @@ export type {
   TrayTransitionOptions,
   TrayTransitionContract,
   TrayTransitionContractState,
-  KeyboardTransitionMode,
   TrayTransitionBoundary,
   TrayTransitionDirection,
   TrayTransitionReason,

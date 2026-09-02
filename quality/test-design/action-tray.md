@@ -4,7 +4,7 @@
 
 ActionTray includes registration, stack ownership, root/nested presentation,
 step and page navigation, rendering snapshots, measurement/cache ownership,
-layout/visibility animation policy, keyboard coordination, gestures, headers,
+layout/visibility animation policy, gestures, headers,
 footers, and fullscreen behavior.
 
 ## State model
@@ -17,14 +17,13 @@ Primary states:
 4. Fullscreen open
 5. Fullscreen page transition
 6. Fullscreen-to-sheet transition
-7. Keyboard-aware sheet
-8. Nested tray open over parent
-9. Closing
+7. Nested tray open over parent
+8. Closing
 
 Primary events:
 
-- open, open nested, next, back, set page, request close, dismiss, keyboard
-  start/end, gesture close, content measurement, transition completion.
+- open, open nested, next, back, set page, request close, dismiss, gesture close,
+  content measurement, transition completion.
 
 Minimum automated criterion is all valid runtime transitions plus representative
 invalid/no-op transitions. Native-only events are covered through the checklist
@@ -59,7 +58,6 @@ and exploratory charters until a device harness exists.
 - Page ownership: no pages, matching active step, stale different step.
 - Background scale: disabled, enabled default, enabled valid override, invalid.
 - Footer: absent, shell footer, page-local footer.
-- Keyboard: idle, entering, visible, dismissing, interrupted.
 - Host: root, nested, closing, replacement pending.
 
 ## Boundaries
@@ -78,9 +76,8 @@ and exploratory charters until a device harness exists.
 | AT-REG-001 | Fullscreen page D exit lost its actual source | Contract retains page and direction |
 | AT-REG-002 | Incoming content received a visual head start | Layout/content start generation ordering |
 | AT-REG-003 | Returning sheet restored another step's height | Cache ownership and revisit sequence |
-| AT-REG-004 | Keyboard-aware transition made tray disappear | Native keyboard event and visibility sequence |
-| AT-REG-005 | Footer changed width during fullscreen morph | Visual geometry checklist |
-| AT-REG-006 | Header/body reflowed or shifted between modes | Canonical grid and frame review |
+| AT-REG-004 | Footer changed width during fullscreen morph | Visual geometry checklist |
+| AT-REG-005 | Header/body reflowed or shifted between modes | Canonical grid and frame review |
 
 ## Traceability rule
 

@@ -34,6 +34,8 @@ export type TrayPresentationEndpoint = {
   readonly stepKey: string;
   readonly pageIndex?: number;
   readonly mode: TrayPresentationMode;
+  /** Whether this endpoint keeps the tray attached to the software keyboard. */
+  readonly keyboardAware?: boolean;
 };
 
 export type TraySharedRegionBehavior =

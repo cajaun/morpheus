@@ -15,10 +15,8 @@ import type { PresentedActionTrayProps } from "../../runtime/presenter/types";
 const PresentedActionTray = ({
   payload,
   assignmentId,
-  keyboardHeight,
   onRequestClose,
   onCloseComplete,
-  dismissKeyboardForTray,
 }: PresentedActionTrayProps) => {
   const runtime = useTrayRuntimeStore();
   const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
@@ -80,11 +78,11 @@ const PresentedActionTray = ({
       assignmentId={assignmentId}
       visible={payload.visible}
       interactive={payload.interactive}
-      keyboardTransitionMode={payload.keyboardTransitionMode}
       rootTrayId={payload.rootTrayId}
       content={content}
       header={header}
       footer={footer}
+      keyboardAware={payload.stepOptions.keyboardAware}
       onClose={payload.interactive ? onRequestClose : () => {}}
       onCloseComplete={onCloseComplete}
       trayId={payload.trayId}
@@ -100,8 +98,6 @@ const PresentedActionTray = ({
       className={payload.className}
       footerStyle={payload.footerStyle}
       footerClassName={payload.footerClassName}
-      keyboardHeight={keyboardHeight}
-      dismissKeyboard={() => dismissKeyboardForTray(payload.rootTrayId)}
     />
   );
 

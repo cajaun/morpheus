@@ -96,4 +96,36 @@ describe("useActionTrayRenderState", () => {
     expect(state!.state.renderedFooter).toBe("footer");
   });
 
+  it("publishes keyboard awareness with same-step policy updates", () => {
+    let state: ReturnType<typeof useActionTrayRenderState> | null = null;
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+
+    const Probe = ({ keyboardAware }: { keyboardAware: boolean }) => {
+      state = useActionTrayRenderState({
+        content: "body",
+        keyboardAware,
+        trayId: "tray-step",
+        fullScreen: false,
+      });
+
+      return null;
+    };
+
+    act(() => {
+      renderer = TestRenderer.create(<Probe keyboardAware={false} />);
+    });
+
+    expect(state!.state.renderedKeyboardAware).toBe(false);
+
+    act(() => {
+      renderer!.update(<Probe keyboardAware />);
+    });
+
+    act(() => {
+      state!.actions.syncRenderedNodes("tray-step");
+    });
+
+    expect(state!.state.renderedKeyboardAware).toBe(true);
+  });
+
 });

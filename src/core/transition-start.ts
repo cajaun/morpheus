@@ -19,6 +19,9 @@ export type TrayTransitionStart = {
   startedGeneration: SharedValue<number>;
   layoutStartedGeneration: SharedValue<number>;
   completedGeneration: SharedValue<number>;
+  // Shared so an exiting step can read the current keyboard handoff even
+  // though React retains the outgoing view's animation builder.
+  keyboardStepTransitionValue?: SharedValue<number>;
 };
 
 export type TrayTransitionParticipant = "incoming" | "outgoing" | "layout";

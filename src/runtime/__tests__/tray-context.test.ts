@@ -4,6 +4,13 @@ import { resolveTrayStepOptions } from "../tray-context";
 
 // probe runtime option normalization before presenter payload creation
 describe("resolveTrayStepOptions", () => {
+  it("keeps keyboard awareness opt-in per step", () => {
+    expect(resolveTrayStepOptions().keyboardAware).toBe(false);
+    expect(resolveTrayStepOptions({ keyboardAware: true }).keyboardAware).toBe(
+      true,
+    );
+  });
+
   it("keeps fullscreen background scale neutral by default", () => {
     expect(resolveTrayStepOptions().shouldScaleBackground).toBe(false);
     expect(resolveTrayStepOptions().fullScreenBackgroundScale).toBe(1);

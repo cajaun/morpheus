@@ -135,10 +135,11 @@ export const TrayPages = Object.assign(TrayPagesRoot, {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    height: "100%",
+    minHeight: 0,
   },
   viewport: {
     flex: 1,
+    minHeight: 0,
     overflow: "hidden",
     position: "relative",
   },

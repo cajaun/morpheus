@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  Platform,
   View,
   ScrollView,
   StyleSheet,
@@ -90,11 +89,6 @@ export const TraySection: React.FC<TraySectionProps> = ({
           bounces={true}
           overScrollMode="always"
           scrollEventThrottle={16}
-          keyboardDismissMode={
-            Platform.OS === "ios" ? "interactive" : "on-drag"
-          }
-          // taps inside tray forms should not dismiss the keyboard before controls run
-          keyboardShouldPersistTaps="handled"
         >
           {children}
         </ScrollView>

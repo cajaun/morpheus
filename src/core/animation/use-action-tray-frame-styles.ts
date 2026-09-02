@@ -55,7 +55,6 @@ type Params = Pick<
   | "fullScreenBoundarySourceFullScreen"
   | "fullScreenBoundaryTargetFullScreen"
   | "hasFooter"
-  | "keyboardHeight"
   | "transitionStartedGeneration"
   | "transitionLayoutStartedGeneration"
   | "transitionCompletedGeneration"
@@ -74,7 +73,6 @@ export const useActionTrayFrameStyles = ({
   fullScreenBoundaryTargetFullScreen,
   fullScreen,
   hasFooter,
-  keyboardHeight,
   morphProgress,
   originProgress,
   originTargetContentHeight,
@@ -329,7 +327,6 @@ export const useActionTrayFrameStyles = ({
       fullScreenBoundaryTransition &&
       !fullScreen &&
       boundarySheetFrameHeight !== undefined;
-
     if (fullScreenBoundaryTransition) {
       const sourceFullScreen =
         fullScreenBoundarySourceFullScreen ?? !fullScreen;
@@ -615,10 +612,7 @@ export const useActionTrayFrameStyles = ({
   const footerContainerStyle = useAnimatedStyle(() => {
     const targetLeft = fullScreen ? 0 : HORIZONTAL_MARGIN;
     const targetRight = fullScreen ? 0 : HORIZONTAL_MARGIN;
-    const resolvedFooterBottom =
-      !shouldUseOriginTransition && keyboardHeight.value > 0
-        ? keyboardHeight.value
-        : bottom + targetBottomInset;
+    const resolvedFooterBottom = bottom + targetBottomInset;
     const targetRadius = BORDER_RADIUS;
 
     if (shouldUseOriginTransition) {
@@ -747,7 +741,6 @@ export const useActionTrayFrameStyles = ({
     fullScreenBoundarySourceFullScreen,
     fullScreenBoundaryTargetFullScreen,
     fullScreen,
-    keyboardHeight,
     morphProgress,
     originProgress,
     shouldUseOriginTransition,

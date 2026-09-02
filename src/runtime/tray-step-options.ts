@@ -7,8 +7,8 @@ import type {
 // normalize optional step configuration before the presenter reads it
 export const DEFAULT_TRAY_STEP_OPTIONS: ResolvedTrayStepOptions = {
   hasFooter: false,
-  scale: true,
   keyboardAware: false,
+  scale: true,
   fullScreen: false,
   shouldScaleBackground: false,
   fullScreenBackgroundScale: 1,

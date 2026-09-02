@@ -11,6 +11,7 @@ import { markTrayStepSnapshotPublished } from "../../telemetry/tray-step-timing"
 import type { TrayTransitionContract } from "../../runtime/types";
 import { log } from "../logger";
 import { describeTrayTransition } from "../diagnostics/action-tray-transition-diagnostics";
+import { isKeyboardAwareSheetStepTransition } from "../input/keyboard-transition";
 
 // this hook decides when new props should update the committed shell snapshot
 type Params = {
@@ -19,6 +20,8 @@ type Params = {
   rootTrayId?: string;
   trayId?: string;
   fullScreen?: boolean;
+  keyboardAware?: boolean;
+  transitionContract?: TrayTransitionContract | null;
   fullScreenBackgroundScale?: number;
   content?: ReactNode;
   header?: ReactNode;
@@ -81,6 +84,8 @@ export const useActionTrayContentSync = ({
   rootTrayId,
   trayId,
   fullScreen,
+  keyboardAware,
+  transitionContract,
   fullScreenBackgroundScale,
   content,
   header,
@@ -127,6 +132,10 @@ export const useActionTrayContentSync = ({
 
   const onSheetFramePreparedRef = useRef(onSheetFramePrepared);
   onSheetFramePreparedRef.current = onSheetFramePrepared;
+
+  // The keyboard path must publish its incoming snapshot before paint. Keep a
+  // one-commit latch so the passive fallback does not publish it a second time.
+  const keyboardSnapshotPublishedRef = useRef<string | undefined>(undefined);
 
   // prepare geometry before paint without publishing incoming react nodes
   useLayoutEffect(() => {
@@ -240,6 +249,15 @@ export const useActionTrayContentSync = ({
       morphProgress: morphProgress.value,
       renderedTransition: describeTrayTransition(renderedTransitionContract),
     });
+
+    if (
+      renderedTrayId !== trayId &&
+      isKeyboardAwareSheetStepTransition(transitionContract)
+    ) {
+      keyboardSnapshotPublishedRef.current = trayId;
+      markTrayStepSnapshotPublished(rootTrayId, trayId);
+      showLatestSnapshot();
+    }
     // shell level swaps key off tray identity not every prop change eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trayId, visible, fullScreen, morphProgress, onPrepared]);
 
@@ -252,6 +270,11 @@ export const useActionTrayContentSync = ({
     if (renderedTrayId === trayId) {
       // same key updates can sync nodes without replaying snapshot publication
       syncRenderedNodes(trayId);
+      return;
+    }
+
+    if (keyboardSnapshotPublishedRef.current === trayId) {
+      keyboardSnapshotPublishedRef.current = undefined;
       return;
     }
 
@@ -268,6 +291,7 @@ export const useActionTrayContentSync = ({
     footerStyle,
     fullScreen,
     fullScreenBackgroundScale,
+    keyboardAware,
     rootTrayId,
     renderedTrayId,
     showLatestSnapshot,
@@ -305,6 +329,7 @@ export const useActionTrayContentSync = ({
     footerStyle,
     fullScreen,
     fullScreenBackgroundScale,
+    keyboardAware,
     interactive,
     renderedFullScreen,
     trayId,

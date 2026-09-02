@@ -771,4 +771,88 @@ describe("useActionTrayContentSync", () => {
       "tray-content-one",
     );
   });
+
+  it("publishes a keyboard step in the layout preparation commit", () => {
+    const contentHeight = shared(240);
+    const footerHeight = shared(64);
+    const morphProgress = shared(1);
+    const measuredContentHeight = shared(240);
+    const measuredFooterHeight = shared(64);
+    const justOpenedRef = { current: false };
+    const events: string[] = [];
+    const showLatestSnapshot = jest.fn(() => events.push("snapshot"));
+    const syncRenderedNodes = jest.fn();
+    const setLayoutAnimationEnabled = jest.fn();
+
+    const Probe = () => {
+      useActionTrayContentSync({
+        visible: true,
+        interactive: true,
+        rootTrayId: "root",
+        trayId: "root-keyboard-step",
+        fullScreen: false,
+        keyboardAware: true,
+        transitionContract: {
+          generation: 12,
+          reason: "nextStep",
+          direction: "forward",
+          boundary: "sheetToSheet",
+          from: {
+            trayId: "root",
+            stepIndex: 0,
+            stepKey: "intro",
+            mode: "sheet",
+            keyboardAware: false,
+          },
+          to: {
+            trayId: "root",
+            stepIndex: 1,
+            stepKey: "keyboard-step",
+            mode: "sheet",
+            keyboardAware: true,
+          },
+          stepChanged: true,
+          pageChanged: false,
+          fullScreenChanged: false,
+          sharedRegions: [],
+        },
+        content: "keyboard content",
+        header: "keyboard header",
+        footer: null,
+        justOpenedRef,
+        measurements: {
+          state: { layoutEnabled: true },
+          actions: { setLayoutAnimationEnabled },
+          shared: { measuredContentHeight, measuredFooterHeight },
+        },
+        renderState: {
+          state: {
+            renderedTrayId: "root-intro",
+            renderedContent: "intro content",
+            renderedHeader: "intro header",
+            renderedFooter: null,
+            renderedFullScreen: false,
+            renderedTransitionContract: null,
+          },
+          actions: { showLatestSnapshot, syncRenderedNodes },
+        },
+        contentHeight,
+        footerHeight,
+        morphProgress,
+        resolveIncomingContentHeight: jest.fn((height: number) => height),
+        restoreContentHeight: jest.fn(() => 240),
+        onPrepared: () => events.push("prepared"),
+      });
+
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    expect(events).toEqual(["prepared", "snapshot"]);
+    expect(showLatestSnapshot).toHaveBeenCalledTimes(1);
+    expect(syncRenderedNodes).not.toHaveBeenCalled();
+  });
 });

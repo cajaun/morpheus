@@ -7,7 +7,7 @@ usable, and does not regress as its native animation and interaction systems
 evolve. Testing is a product-risk control, not a code-coverage contest.
 
 The current highest-risk subsystem is ActionTray because it coordinates React
-state, native layout, Reanimated worklets, gestures, keyboard state, safe-area
+state, native layout, Reanimated worklets, gestures, safe-area
 geometry, nested presentation, and paged navigation.
 
 ## 2. Quality principles
@@ -51,12 +51,12 @@ Exercise runtime store → presenter → shell contracts together. These tests c
 the transition sequences most likely to regress while refactoring ownership.
 
 - Primary technique: state-transition testing.
-- Include forward, backward, close, interruption, nested, keyboard, and pages.
+- Include forward, backward, close, interruption, nested, and pages.
 - Verify source/destination identity as well as the final active state.
 
 ### 3.4 Native/device tests
 
-Jest cannot prove native frame timing, keyboard synchronization, gesture feel,
+Jest cannot prove native frame timing, gesture feel,
 safe-area placement, accessibility focus, or visual continuity. These require
 device/simulator execution and evidence from the ActionTray checklist.
 
@@ -70,8 +70,8 @@ capture harness is introduced.
 | --- | --- | --- |
 | Equivalence partitioning | Options, modes, valid/invalid inputs | Every identified valid and invalid partition |
 | 3-value BVA | Indexes, dimensions, scale values, thresholds | Boundary and both neighbors where meaningful |
-| Decision tables | Close policy, fullscreen mode, footer/keyboard combinations | Every feasible rule or documented risk reduction |
-| State transitions | Tray stack, steps, pages, keyboard, visibility | Every valid transition; invalid transitions for high-risk states |
+| Decision tables | Close policy, fullscreen mode, footer combinations | Every feasible rule or documented risk reduction |
+| State transitions | Tray stack, steps, pages, visibility | Every valid transition; invalid transitions for high-risk states |
 | Statement/branch | Detect untested implementation paths | Coverage report plus targeted tests, never coverage alone |
 | Error guessing | Known race, stale cache, remount, and native event patterns | Fault list linked to tests/checklist |
 | Exploratory | Visual motion, usability, timing, unexpected sequences | Time-boxed charter and notes |

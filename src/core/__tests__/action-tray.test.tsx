@@ -11,18 +11,6 @@ jest.mock("react-native-gesture-handler", () => ({
   GestureDetector: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-jest.mock("react-native-keyboard-controller", () => ({
-  KeyboardStickyView: ({
-    children,
-    ...props
-  }: {
-    children: React.ReactNode;
-  }) => {
-    const ReactNative = require("react-native");
-    return <ReactNative.View {...props}>{children}</ReactNative.View>;
-  },
-}));
-
 jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
@@ -111,8 +99,6 @@ describe("ActionTray", () => {
         <ActionTray
           visible
           onClose={jest.fn()}
-          keyboardHeight={{ value: 0 } as never}
-          dismissKeyboard={jest.fn()}
         />,
       );
     });
@@ -134,8 +120,6 @@ describe("ActionTray", () => {
           visible
           dismissible={false}
           onClose={jest.fn()}
-          keyboardHeight={{ value: 0 } as never}
-          dismissKeyboard={jest.fn()}
         />,
       );
     });

@@ -7,14 +7,8 @@ import type { TrayPagesRegistration, TrayRegistration } from "../types";
 // create the shared value shape used by runtime transition tests
 const sharedValue = (value: number) => ({ value }) as SharedValue<number>;
 
-// build a store with inert external dependencies
-const createStore = () =>
-  createTrayRuntimeStore({
-    keyboardHeight: sharedValue(0),
-    anticipateKeyboard: () => undefined,
-    dismissFocusedInputs: () => undefined,
-    registerFocusable: () => () => undefined,
-  });
+// build a store for runtime transition tests
+const createStore = () => createTrayRuntimeStore();
 
 // build page registration data for fullscreen page transitions
 const pages = (pageIndex: number): TrayPagesRegistration => ({

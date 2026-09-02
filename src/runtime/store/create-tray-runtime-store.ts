@@ -9,16 +9,12 @@ import { createTrayRuntimeNavigationActions } from "./tray-runtime-navigation-ac
 import { createTrayRuntimeRegistrationActions } from "./tray-runtime-registration-actions";
 import type {
   TrayRuntimeActionContext,
-  TrayRuntimeDependencies,
 } from "./tray-runtime-action-context";
 import { createInitialTrayHostState } from "./tray-runtime-state";
 
 // create the external store that joins navigation state to lifecycle records
-export const createTrayRuntimeStore = (
-  initialDependencies: TrayRuntimeDependencies,
-): TrayRuntimeStore => {
-  let dependencies = initialDependencies;
-  let state = createInitialTrayHostState(initialDependencies.keyboardHeight);
+export const createTrayRuntimeStore = (): TrayRuntimeStore => {
+  let state = createInitialTrayHostState();
   const listeners = new Set<() => void>();
   const justOpenedRef = { current: false };
   const transitions = createTrayTransitionLifecycle();
@@ -93,7 +89,6 @@ export const createTrayRuntimeStore = (
   const actionContext: TrayRuntimeActionContext = {
     getState: () => state,
     setState,
-    getDependencies: () => dependencies,
     allocateTransitionGeneration,
     transitions,
     getPendingPageTransition: () => pendingPageTransition,
@@ -106,14 +101,6 @@ export const createTrayRuntimeStore = (
   const actions: TrayHostActionsValue = {
     ...createTrayRuntimeRegistrationActions(actionContext),
     ...createTrayRuntimeNavigationActions(actionContext),
-    anticipateKeyboard: () => {
-      dependencies.anticipateKeyboard();
-    },
-    dismissKeyboardForTray: (trayId?: string | null) => {
-      void dependencies.dismissFocusedInputs(trayId);
-    },
-    registerFocusable: (trayId, ref) =>
-      dependencies.registerFocusable(trayId, ref),
   };
 
   return {
@@ -128,18 +115,5 @@ export const createTrayRuntimeStore = (
     actions,
     justOpenedRef,
     transitions,
-    setDependencies: (nextDependencies) => {
-      dependencies = nextDependencies;
-
-      if (state.keyboardHeight === nextDependencies.keyboardHeight) {
-        return;
-      }
-
-      // mutable dependencies let the store survive provider rerenders
-      setState({
-        ...state,
-        keyboardHeight: nextDependencies.keyboardHeight,
-      });
-    },
   };
 };

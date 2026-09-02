@@ -43,8 +43,6 @@ export const useTrayFlow = () => {
     requestCloseActiveTray,
     nextStep,
     previousStep,
-    anticipateKeyboard,
-    dismissKeyboardForTray,
   } = useTrayHostActions();
 
   if (!trayId) {
@@ -134,7 +132,5 @@ export const useTrayFlow = () => {
         previousStep();
       }
     },
-    anticipateKeyboard,
-    dismissKeyboard: () => dismissKeyboardForTray(trayId),
   };
 };

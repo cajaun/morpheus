@@ -11,8 +11,8 @@ import { ExampleTrigger } from "../shared/example-trigger";
 
 type SymbolName = ComponentProps<typeof SymbolView>["name"];
 
-const PRIMARY = "#09B6F4";
-const SOFT_BLUE = "#DDF5FF";
+const PRIMARY = "#41BAFF";
+const SOFT_BLUE = "#E9F9FF";
 const SOFT_SURFACE = "#F8F8FA";
 const BORDER = "#E8E9EC";
 const MUTED = "#9B9DA3";
@@ -74,12 +74,12 @@ const VerifiedBanner = () => {
       <SymbolView
         name="checkmark.seal.fill"
         tintColor={PRIMARY}
-        size={20}
+        size={25}
         weight="bold"
       />
       <Text
         className="font-sf-medium"
-        style={{ color: PRIMARY, fontSize: 17, lineHeight: 22 }}
+        style={{ color: PRIMARY, fontSize: 18, lineHeight: 22 }}
       >
         This domain has been verified.
       </Text>
@@ -152,9 +152,9 @@ const WalletChangeRow = ({
       </Text>
       <CurrencyMark />
       <Text
-        className="font-sf-semibold"
+        className="font-sf-medium"
         style={{
-          ...trayDemoText.bodyLarge,
+          ...trayDemoText.body,
           color: isSend ? RED : "#12B65D",
           marginLeft: 8,
         }}
@@ -215,7 +215,7 @@ const KeyValueRow = ({
             <SymbolView
               name="info.circle"
               tintColor="#B4B6BB"
-              size={16}
+              size={18}
               weight="regular"
             />
           </View>
@@ -232,7 +232,7 @@ const KeyValueRow = ({
           </Text>
         ) : null}
         <Text
-          className="font-sf-semibold"
+          className="font-sf-medium"
           style={{
             ...trayDemoText.bodyLarge,
             color: DARK,
@@ -269,7 +269,6 @@ const SeeAllDivider = () => {
           name="chevron.down"
           tintColor={MUTED}
           size={14}
-          weight="semibold"
         />
       </View>
       <View style={{ backgroundColor: "#F0F0F2", flex: 1, height: 1 }} />
@@ -292,7 +291,7 @@ const RefuelGasBody = () => {
             }}
           >
             <Text
-              className="font-sf-medium"
+              className="font-sf-regular"
               style={{ color: MUTED, fontSize: 16, lineHeight: 22 }}
             >
               Estimated Wallet Changes
@@ -300,7 +299,7 @@ const RefuelGasBody = () => {
             <SymbolView
               name="questionmark.circle"
               tintColor="#B4B6BB"
-              size={16}
+              size={19}
               weight="regular"
             />
           </View>
@@ -390,28 +389,28 @@ const PriceGauge = () => {
         <View style={styles.gaugeLabels}>
           <View>
             <Text
-              className="font-sf-semibold"
+              className="font-sf-medium"
               style={{ color: DARK, fontSize: 18, lineHeight: 24 }}
             >
               $1.31
             </Text>
             <Text
               className="font-sf-medium"
-              style={{ color: "#B6B8BD", fontSize: 14, lineHeight: 18 }}
+              style={{ color: "#B6B8BD", fontSize: 16, lineHeight: 18 }}
             >
               0.00039335 ETH
             </Text>
           </View>
           <View style={{ alignItems: "flex-end" }}>
             <Text
-              className="font-sf-semibold"
+              className="font-sf-medium"
               style={{ color: DARK, fontSize: 18, lineHeight: 24 }}
             >
               $1.82
             </Text>
             <Text
               className="font-sf-medium"
-              style={{ color: "#B6B8BD", fontSize: 14, lineHeight: 18 }}
+              style={{ color: "#B6B8BD", fontSize: 16, lineHeight: 18 }}
             >
               0.00054617 ETH
             </Text>
@@ -457,7 +456,7 @@ const styles = StyleSheet.create({
 
 const FeeEstimateBody = () => {
   return (
-    <Tray.Body style={{ paddingHorizontal: 20 }}>
+    <Tray.Body>
       <Tray.Section style={{ gap: 18, paddingTop: 20 }}>
         <PriceGauge />
         <View style={{ gap: 12 }}>

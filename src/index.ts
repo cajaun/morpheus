@@ -5,7 +5,6 @@ import { TrayPage } from "./primitives/page";
 import { TrayPages } from "./primitives/pages";
 import { TraySection } from "./primitives/section";
 import { TraySeparator } from "./primitives/separator";
-import { TrayTextInput } from "./primitives/text-input";
 import { TrayTrigger } from "./primitives/trigger";
 import { TrayNested } from "./runtime/tray-nested";
 import { TrayRoot } from "./runtime/tray-root";
@@ -28,7 +27,6 @@ export {
   type TrayStepOptions,
   type TrayTransitionContract,
   type TrayTransitionContractState,
-  type KeyboardTransitionMode,
   type TrayTransitionLifecycleRecord,
   type TrayGeometrySnapshot,
   type TrayMeasurementOwner,
@@ -47,7 +45,6 @@ export const Tray = {
   Header: TrayHeader,
   Separator: TraySeparator,
   Section: TraySection,
-  TextInput: TrayTextInput,
   Page: TrayPage,
   Pages: TrayPages,
   Step: TrayStep,

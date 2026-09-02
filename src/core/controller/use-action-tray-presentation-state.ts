@@ -3,7 +3,6 @@ import {
   useAnimatedReaction,
   useDerivedValue,
   useSharedValue,
-  type SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SCREEN_HEIGHT } from "../constants";
@@ -13,7 +12,6 @@ type Params = {
   visible: boolean;
   renderedFooter?: ReactNode;
   presentationFullScreen: boolean;
-  keyboardHeight: SharedValue<number>;
 };
 
 // own shared geometry values consumed by gesture and animation worklets
@@ -21,7 +19,6 @@ export const useActionTrayPresentationState = ({
   visible,
   renderedFooter,
   presentationFullScreen,
-  keyboardHeight,
 }: Params) => {
   const { bottom } = useSafeAreaInsets();
 
@@ -48,18 +45,12 @@ export const useActionTrayPresentationState = ({
         return measuredHeight;
       }
 
-      // fullscreen should dock to the keyboard instead of preserving sheet gap
-      const keyboardInset =
-        keyboardHeight.value > 0
-          ? keyboardHeight.value
-          : 0;
-
       return Math.max(
         0,
-        SCREEN_HEIGHT - footerHeight.value - keyboardInset,
+        SCREEN_HEIGHT - footerHeight.value,
       );
     },
-    [footerHeight, keyboardHeight, presentationFullScreen],
+    [footerHeight, presentationFullScreen],
   );
 
   const totalHeight = useDerivedValue(() => {
@@ -69,7 +60,7 @@ export const useActionTrayPresentationState = ({
     }
 
     return contentHeight.value + footerHeight.value + bottom;
-  }, [bottom, keyboardHeight, presentationFullScreen]);
+  }, [bottom, presentationFullScreen]);
 
   const resolveClosedTranslateY = useCallback(
     (

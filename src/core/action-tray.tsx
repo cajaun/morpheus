@@ -27,6 +27,7 @@ import {
 import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animated-styles";
 import { useTrayBoundaryMotionState } from "./animation/use-tray-boundary-motion-state";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
+import { useActionTrayKeyboard } from "./input/use-action-tray-keyboard";
 import { useActionTrayController } from "./use-action-tray-controller";
 import {
   isSheetFrameForTransition,
@@ -39,7 +40,6 @@ import {
   TRAY_FOOTER_PADDING_BOTTOM,
   TRAY_FOOTER_PADDING_TOP,
   TRAY_HEADER_HORIZONTAL_PADDING,
-  TRAY_KEYBOARD_GAP,
   TRAY_VERTICAL_PADDING,
 } from "./constants";
 import {
@@ -60,6 +60,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       header,
       footer,
       trayId,
+      keyboardAware,
       fullScreen,
       fullScreenBackgroundScale,
       fullScreenSafeAreaTop,
@@ -70,13 +71,10 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       transitionLifecycle,
       visible,
       interactive = true,
-      keyboardTransitionMode = "idle",
       containerStyle,
       className,
       footerClassName,
       footerStyle,
-      keyboardHeight: trayKeyboardHeight,
-      dismissKeyboard,
     },
     ref,
   ) => {
@@ -89,13 +87,13 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       assignmentId,
       visible,
       interactive,
-      keyboardTransitionMode,
       content,
       header,
       footer,
       onCloseComplete,
       rootTrayId,
       trayId,
+      keyboardAware,
       fullScreen,
       fullScreenBackgroundScale,
       fullScreenSafeAreaTop,
@@ -107,8 +105,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       className,
       footerStyle,
       footerClassName,
-      keyboardHeight: trayKeyboardHeight,
-      dismissKeyboard,
       onClose,
     });
 
@@ -131,6 +127,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         transitionStartedGeneration,
         transitionLayoutStartedGeneration,
         transitionCompletedGeneration,
+        keyboardStepTransitionValue,
       },
       state: {
         layoutEnabled,
@@ -169,6 +166,10 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
 
     const presentationFullScreen = renderedFullScreen;
     const { top: safeAreaTopInset } = useSafeAreaInsets();
+    const keyboard = useActionTrayKeyboard({
+      visible,
+      keyboardAware: keyboardAware ?? false,
+    });
     const providerBackgroundScale = useTrayBackgroundScale();
     const fallbackBackgroundScale = useSharedValue(1);
     // nested test shells may render without a provider so keep a local scale value
@@ -185,7 +186,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       ? originBackdropProgress
       : progress;
 
-    // wait for layout and keyboard state before drag starts
+    // wait for layout before drag starts
     const gesture = useActionTrayGesture({
       translateY,
       totalHeight,
@@ -193,8 +194,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       interactive: interactive && isSurfaceReady && dismissible,
       fullScreen: presentationFullScreen,
       fullScreenDraggable: renderedFullScreenDraggable,
-      keyboardHeight: trayKeyboardHeight,
-      dismissKeyboard,
       onRequestClose: handleRequestClose,
     });
 
@@ -272,7 +271,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       hasFooter,
       surfaceOpacity,
       footerHeight,
-      keyboardHeight: trayKeyboardHeight,
       frameFullScreen,
       fullScreen: presentationFullScreen,
       preparedSheetFrame,
@@ -363,6 +361,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         startedGeneration: transitionStartedGeneration,
         layoutStartedGeneration: transitionLayoutStartedGeneration,
         completedGeneration: transitionCompletedGeneration,
+        keyboardStepTransitionValue,
       }),
       [
         transitionContract?.generation,
@@ -373,6 +372,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         transitionStartedGeneration,
         transitionLayoutStartedGeneration,
         transitionCompletedGeneration,
+        keyboardStepTransitionValue,
         morphProgress,
       ],
     );
@@ -387,16 +387,13 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           : undefined,
       [flattenedContainerStyle],
     );
-    // keyboard sticky view wants a closed and opened offset even when the gap is zero
-    const keyboardStickyOffset = useMemo(
-      () => ({
-        closed: 0,
-        opened: -TRAY_KEYBOARD_GAP,
-      }),
-      [],
-    );
     const traySurface = (
-      <>
+      <KeyboardStickyView
+        enabled={!presentationFullScreen && keyboard.stickyEnabled}
+        offset={{ opened: 20 }}
+        pointerEvents="box-none"
+        style={StyleSheet.absoluteFillObject}
+      >
         <GestureDetector gesture={gesture}>
           <Animated.View
             className={renderedClassName}
@@ -476,7 +473,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             </TrayOriginProgressProvider>
           </Animated.View>
         </Animated.View>
-      </>
+      </KeyboardStickyView>
     );
 
     return (
@@ -523,15 +520,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         )}
 
         {renderedTrayId !== undefined && (
-          // fullscreen owns the viewport so sheet keyboard stickiness must pause
-          <KeyboardStickyView
-            enabled={!presentationFullScreen}
-            offset={keyboardStickyOffset}
-            pointerEvents="box-none"
-            style={StyleSheet.absoluteFillObject}
-          >
-            {traySurface}
-          </KeyboardStickyView>
+          traySurface
         )}
       </TrayMorphProgressProvider>
     );

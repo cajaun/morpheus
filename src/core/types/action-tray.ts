@@ -1,20 +1,15 @@
 import React from "react";
 import { StyleProp, ViewStyle } from "react-native";
-import type { SharedValue } from "react-native-reanimated";
 import type {
-  KeyboardTransitionMode,
   TrayTransitionContract,
   TrayTransitionLifecycle,
   TrayTransitionOptions,
 } from "../../runtime/types";
-export type { KeyboardTransitionMode } from "../../runtime/types";
-
 // describe the shell payload after the presenter resolves a step
 export type ActionTrayProps = {
   assignmentId?: number;
   visible: boolean;
   interactive?: boolean;
-  keyboardTransitionMode?: KeyboardTransitionMode;
   style?: StyleProp<ViewStyle>;
   onClose: () => void;
   onCloseComplete?: () => void;
@@ -23,6 +18,7 @@ export type ActionTrayProps = {
   header?: React.ReactNode;
   footer?: React.ReactNode;
   trayId?: string;
+  keyboardAware?: boolean;
   fullScreen?: boolean;
   fullScreenBackgroundScale?: number;
   fullScreenSafeAreaTop?: boolean;
@@ -35,8 +31,6 @@ export type ActionTrayProps = {
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
   footerClassName?: string;
-  keyboardHeight: SharedValue<number>;
-  dismissKeyboard: () => void;
 };
 
 export type ActionTrayRef = {
@@ -59,6 +53,7 @@ export type RenderedTrayState = {
   content: React.ReactNode;
   footer: React.ReactNode;
   trayId?: string;
+  keyboardAware?: boolean;
   fullScreen?: boolean;
   fullScreenBackgroundScale?: number;
   fullScreenSafeAreaTop?: boolean;

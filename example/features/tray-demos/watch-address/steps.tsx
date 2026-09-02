@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Text, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import { Tray, useTrayFlow } from "morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
@@ -181,7 +181,7 @@ export const WatchAddressInputStep = () => {
     <Tray.Body>
       <Tray.Section style={{ gap: 20 }}>
         <FieldShell>
-          <Tray.TextInput
+          <TextInput
             value={address}
             onChangeText={setAddress}
             autoCapitalize="none"
@@ -284,7 +284,7 @@ export const CreateNewWalletStep = () => {
                   paddingBottom: 12,
                 }}
               >
-                <Tray.TextInput
+                <TextInput
                   value={walletName}
                   onChangeText={setWalletName}
                   autoCapitalize="words"

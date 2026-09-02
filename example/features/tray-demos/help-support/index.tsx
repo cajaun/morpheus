@@ -42,7 +42,10 @@ const HelpSupportTray = () => {
         <SupportFlowHeader title="Choose Areas" />
         <ChooseAreasStep />
       </Tray.Step>
-      <Tray.Step key={`help-compose-${selectedFlow}`} options={{ keyboardAware: true }}>
+      <Tray.Step
+        key={`help-compose-${selectedFlow}`}
+        options={{ keyboardAware: true }}
+      >
         <SupportFlowHeader
           title={
             selectedFlow === "feedback"
@@ -58,7 +61,10 @@ const HelpSupportTray = () => {
         <SupportFlowHeader title="Attach Media" />
         <AttachMediaStep flow={selectedFlow} />
       </Tray.Step>
-      <Tray.Step key={`help-details-${selectedFlow}`} options={{ keyboardAware: true }}>
+      <Tray.Step
+        key={`help-details-${selectedFlow}`}
+        options={{ keyboardAware: true }}
+      >
         <SupportFlowHeader title="Your Details" />
         <YourDetailsStep />
       </Tray.Step>

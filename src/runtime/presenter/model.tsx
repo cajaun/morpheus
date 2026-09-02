@@ -99,13 +99,9 @@ export const createPresentedTray = ({
     previousIndex,
     transition,
   });
-  // keyboard aware steps preload keyboard behavior only for the entering step
-  const keyboardTransitionMode = stepOptions.keyboardAware ? "entering" : "idle";
-
   return {
     rootTrayId: entry.trayId,
     trayId: `${entry.trayId}-${step.key}`,
-    keyboardTransitionMode,
     stepOptions: contextualStepOptions,
     header: step.header ?? null,
     content: step.content,

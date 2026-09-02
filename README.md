@@ -18,19 +18,16 @@ Morpheus treats React, React Native, and the native integration libraries above 
 
 ## App setup
 
-Place `TrayProvider` inside the gesture-handler and keyboard providers. The presenter is mounted once by `TrayProvider`; individual trays only register their steps and render a trigger.
+Place `TrayProvider` inside the gesture-handler provider. `TrayProvider` owns the keyboard-controller provider, so keyboard-aware steps are ready without another app-level wrapper. The presenter is mounted once by `TrayProvider`; individual trays only register their steps and render a trigger.
 
 ```tsx
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
 import { TrayProvider } from "morpheus";
 
 export function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <KeyboardProvider>
-        <TrayProvider>{/* app navigation */}</TrayProvider>
-      </KeyboardProvider>
+      <TrayProvider>{/* app navigation */}</TrayProvider>
     </GestureHandlerRootView>
   );
 }
@@ -97,12 +94,15 @@ The `Tray` namespace exposes the authoring primitives:
 - `Tray.Root`, `Tray.Nested`, `Tray.Step`, and `Tray.Trigger`
 - `Tray.Header`, `Tray.Body`, `Tray.Section`, `Tray.Footer`, and `Tray.Separator`
 - `Tray.Pages`, `Tray.Page`, and `Tray.Pages.Header`
-- `Tray.TextInput`
 
 Each `Tray.Step` contains one content root and may place one header before it.
 Root `stepOptions` are inherited by every step and can be overridden by
 that step's `options` prop. `Tray.Root` and `Tray.Nested` no longer accept a
 `steps` prop.
+
+Set `keyboardAware: true` on a step that contains a focused input. Morpheus
+composes the native keyboard translation with the existing tray transform, so
+the step transition and keyboard movement remain independent and uninterrupted.
 
 Flow and integration hooks include `useTrayFlow`, `useTrayPages`, `useOptionalTrayPages`, `useTrayOriginProgress`, `useTrayHost`, and `useTrayTransitionLifecycle`.
 

@@ -30,6 +30,7 @@ export const resolveTrayPresentationEndpoint = ({
     return null;
   }
 
+  const stepOptions = resolveTrayStepOptions(step.options);
   const pages = registration.pages;
   const pageIndex = pages?.stepKey === step.key ? pages.pageIndex : undefined;
 
@@ -38,9 +39,8 @@ export const resolveTrayPresentationEndpoint = ({
     stepIndex,
     stepKey: step.key,
     pageIndex,
-    mode: resolveTrayStepOptions(step.options).fullScreen
-      ? "fullScreen"
-      : "sheet",
+    mode: stepOptions.fullScreen ? "fullScreen" : "sheet",
+    keyboardAware: stepOptions.keyboardAware,
   };
 };
 

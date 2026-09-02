@@ -9,13 +9,9 @@ import {
   StyleProp,
   ViewStyle,
 } from "react-native";
-import {
-  type SharedValue,
-  useSharedValue,
-} from "react-native-reanimated";
+import { useSharedValue } from "react-native-reanimated";
 import { log } from "./logger";
-import { SCREEN_HEIGHT, TRAY_KEYBOARD_GAP } from "./constants";
-import { KeyboardTransitionMode } from "./types";
+import { SCREEN_HEIGHT } from "./constants";
 import type {
   TrayTransitionContract,
   TrayTransitionLifecycle,
@@ -35,19 +31,20 @@ import { useActionTrayPresentationState } from "./controller/use-action-tray-pre
 import { useActionTrayRenderState } from "./controller/use-action-tray-render-state";
 import { useActionTrayTransitionCallbacks } from "./controller/use-action-tray-transition-callbacks";
 import { useActionTrayTransitionDiagnostics } from "./controller/use-action-tray-transition-diagnostics";
+import { isKeyboardAwareSheetStepTransition } from "./input/keyboard-transition";
 
 // compose tray policy before the shell renders
 type Params = {
   assignmentId?: number;
   visible: boolean;
   interactive?: boolean;
-  keyboardTransitionMode?: KeyboardTransitionMode;
   header?: React.ReactNode;
   content?: React.ReactNode;
   footer?: React.ReactNode;
   onCloseComplete?: () => void;
   rootTrayId?: string;
   trayId?: string;
+  keyboardAware?: boolean;
   fullScreen?: boolean;
   fullScreenBackgroundScale?: number;
   fullScreenSafeAreaTop?: boolean;
@@ -59,8 +56,6 @@ type Params = {
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
   footerClassName?: string;
-  keyboardHeight: SharedValue<number>;
-  dismissKeyboard: () => void;
   onClose: () => void;
 };
 
@@ -69,13 +64,13 @@ export const useActionTrayController = ({
   assignmentId = 0,
   visible,
   interactive = true,
-  keyboardTransitionMode = "idle",
   header,
   content,
   footer,
   onCloseComplete,
   rootTrayId,
   trayId,
+  keyboardAware,
   fullScreen,
   fullScreenBackgroundScale,
   fullScreenSafeAreaTop,
@@ -87,8 +82,6 @@ export const useActionTrayController = ({
   className,
   footerStyle,
   footerClassName,
-  keyboardHeight,
-  dismissKeyboard,
   onClose,
 }: Params) => {
   // snapshot rendered content so prop streams cannot interrupt a morph
@@ -97,6 +90,7 @@ export const useActionTrayController = ({
     header,
     footer,
     trayId,
+    keyboardAware,
     fullScreen,
     fullScreenBackgroundScale,
     fullScreenSafeAreaTop,
@@ -117,6 +111,7 @@ export const useActionTrayController = ({
   const fullScreenChangedValue = useSharedValue(
     transitionContract?.fullScreenChanged ? 1 : 0,
   );
+  const keyboardStepTransitionValue = useSharedValue(0);
   const morphProgress = useSharedValue(1);
 
   useLayoutEffect(() => {
@@ -132,6 +127,16 @@ export const useActionTrayController = ({
     transitionGenerationValue,
   ]);
 
+  useLayoutEffect(() => {
+    // Update this shared policy before the retained outgoing view starts its
+    // exit builder; no second animation clock is introduced.
+    keyboardStepTransitionValue.value = isKeyboardAwareSheetStepTransition(
+      transitionContract,
+    )
+      ? 1
+      : 0;
+  }, [keyboardStepTransitionValue, transitionContract]);
+
   const presentationFullScreen = renderState.state.renderedFullScreen;
   const isEnteringFullScreen = !!fullScreen && !presentationFullScreen;
   // keep frame mode and keyed content in the same commit
@@ -142,7 +147,6 @@ export const useActionTrayController = ({
     visible,
     renderedFooter: renderState.state.renderedFooter,
     presentationFullScreen,
-    keyboardHeight,
   });
   const renderedTransitionContract =
     renderState.state.renderedTransitionContract;
@@ -218,11 +222,6 @@ export const useActionTrayController = ({
 
   const resolveMeasuredContentHeight = useCallback(
     (measuredHeight: number) => {
-      const keyboardInset =
-        keyboardHeight.value > 0
-          ? keyboardHeight.value + TRAY_KEYBOARD_GAP
-          : 0;
-
       if (!isEnteringFullScreen) {
         const resolvedHeight = resolveRenderedContentHeight(measuredHeight);
 
@@ -236,7 +235,6 @@ export const useActionTrayController = ({
           renderedFullScreen: presentationFullScreen,
           isEnteringFullScreen,
           footerHeight: presentation.shared.footerHeight.value,
-          keyboardInset,
           mode: "rendered-presentation",
         });
 
@@ -245,7 +243,7 @@ export const useActionTrayController = ({
 
       const resolvedHeight = Math.max(
         0,
-        SCREEN_HEIGHT - presentation.shared.footerHeight.value - keyboardInset,
+        SCREEN_HEIGHT - presentation.shared.footerHeight.value,
       );
 
       // entering fullscreen uses viewport math before fullscreen content has settled
@@ -258,7 +256,6 @@ export const useActionTrayController = ({
         renderedFullScreen: presentationFullScreen,
         isEnteringFullScreen,
         footerHeight: presentation.shared.footerHeight.value,
-        keyboardInset,
         mode: "entering-fullscreen",
       });
 
@@ -266,7 +263,6 @@ export const useActionTrayController = ({
     },
     [
       isEnteringFullScreen,
-      keyboardHeight,
       fullScreen,
       resolveRenderedContentHeight,
       presentationFullScreen,
@@ -372,7 +368,7 @@ export const useActionTrayController = ({
       return;
     }
 
-    // refresh the shared content height when keyboard or presentation policy changes
+    // refresh the shared content height when presentation policy changes
     presentation.shared.contentHeight.value =
       resolveMeasuredContentHeight(measurements.shared.measuredContentHeight.value);
   }, [
@@ -455,6 +451,8 @@ export const useActionTrayController = ({
     rootTrayId,
     trayId,
     fullScreen,
+    keyboardAware,
+    transitionContract,
     fullScreenBackgroundScale,
     content,
     header,
@@ -478,10 +476,8 @@ export const useActionTrayController = ({
   });
 
   const handleRequestClose = useCallback(() => {
-    // close requests blur inputs before letting runtime mutate the stack
-    dismissKeyboard();
     onClose?.();
-  }, [dismissKeyboard, onClose]);
+  }, [onClose]);
 
   const handleShellLayout = useCallback(
     (event: LayoutChangeEvent) => {
@@ -527,6 +523,7 @@ export const useActionTrayController = ({
       transitionStartedGeneration,
       transitionLayoutStartedGeneration,
       transitionCompletedGeneration,
+      keyboardStepTransitionValue,
       originTargetContentHeight: presentation.shared.originTargetContentHeight,
     },
     state: {
@@ -539,6 +536,7 @@ export const useActionTrayController = ({
       preparedSheetFrame: geometry.state.preparedSheetFrame,
       isSurfaceReady: openCloseLifecycle.state.isSurfaceReady,
       renderedFooter: renderState.state.renderedFooter,
+      renderedKeyboardAware: renderState.state.renderedKeyboardAware,
       renderedHeader: renderState.state.renderedHeader,
       renderedContent: renderState.state.renderedContent,
       renderedTrayId: renderState.state.renderedTrayId,

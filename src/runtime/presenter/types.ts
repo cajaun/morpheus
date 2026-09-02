@@ -1,8 +1,6 @@
 import type { ComponentType, ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
-import type { SharedValue } from "react-native-reanimated";
 import type {
-  KeyboardTransitionMode,
   ResolvedTrayStepOptions,
   TrayTransitionContract,
   TrayTransitionOptions,
@@ -12,7 +10,6 @@ import type {
 export type PresentedTray = {
   rootTrayId: string;
   trayId: string;
-  keyboardTransitionMode: KeyboardTransitionMode;
   stepOptions: ResolvedTrayStepOptions;
   header: ReactNode;
   content: ReactNode;
@@ -42,15 +39,11 @@ export type TrayHostSlot = {
   interactive: boolean;
 };
 
-export type TrayKeyboardHeight = SharedValue<number>;
-
 export type PresentedActionTrayProps = {
   payload: PresentedTray;
   assignmentId: number;
-  keyboardHeight: TrayKeyboardHeight;
   onRequestClose: () => void;
   onCloseComplete: () => void;
-  dismissKeyboardForTray: (trayId?: string | null) => void;
 };
 
 export type PresentedActionTrayRenderer = ComponentType<PresentedActionTrayProps>;

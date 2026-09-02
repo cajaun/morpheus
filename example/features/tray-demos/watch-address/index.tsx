@@ -24,7 +24,7 @@ const WatchAddressTray = () => {
       <Tray.Step
         key={`watch-address-next-${selectedAction}`}
         options={{
-          keyboardAware: selectedAction !== "existing",
+          keyboardAware: selectedAction === "watch",
           fullScreen: selectedAction !== "watch",
           shouldScaleBackground: selectedAction !== "watch",
           fullScreenSafeAreaTop: selectedAction !== "watch",

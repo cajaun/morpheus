@@ -11,6 +11,7 @@ import {
   FULL_SCREEN_EXITING_DURATION,
   MORPH_ENTERING_DURATION,
   MORPH_EXITING_DURATION,
+  MORPH_LAYOUT_DURATION,
 } from "./core/constants";
 import {
   type TrayTransitionStart,
@@ -223,7 +224,9 @@ const createMorphExiting = (
       );
     const duration = activeFullScreenBoundaryExit
       ? FULL_SCREEN_EXITING_DURATION
-      : MORPH_EXITING_DURATION;
+      : (transitionStart?.keyboardStepTransitionValue?.value ?? 0) > 0
+        ? MORPH_LAYOUT_DURATION
+        : MORPH_EXITING_DURATION;
     const easing = activeFullScreenBoundaryExit
       ? FULL_SCREEN_CONTENT_EASING
       : SHEET_EASING;

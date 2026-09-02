@@ -11,6 +11,7 @@ import IdentityRateBoostTray from "./identity-rate-boost";
 import AaveExample from "./aave-tray";
 import OnboardingExample from "./onboarding";
 import PayFromTray from "./pay-from";
+import QuickOnboarding from "./quick-onboarding";
 import RemoveWalletWarningTray from "./remove-wallet-warning";
 import Send from "./send";
 import WalletGroupTray from "./wallet-group";
@@ -75,6 +76,15 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     content: (
       <TrayExampleFrame>
         <OnboardingExample />
+      </TrayExampleFrame>
+    ),
+  },
+  {
+    value: "quick-onboarding",
+    label: "Quick Onboarding",
+    content: (
+      <TrayExampleFrame>
+        <QuickOnboarding />
       </TrayExampleFrame>
     ),
   },

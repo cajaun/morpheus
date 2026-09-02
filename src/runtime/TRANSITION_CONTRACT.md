@@ -59,5 +59,5 @@ builders remain contract-agnostic.
 
 Contracts are observational and coordinative. They do not choose durations,
 easings, transforms, transform origins, mount windows, footer sizing, safe-area
-spacing, keyboard movement, or the presenter’s established adjacent-fullscreen
-compatibility rule. Those remain in their existing owners.
+spacing, or the presenter’s established adjacent-fullscreen compatibility rule.
+Those remain in their existing owners.
