@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
 import { Tray, useTrayFlow } from "morpheus";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
@@ -6,6 +6,9 @@ import { ExampleTrigger } from "../shared/example-trigger";
 import { PrimaryButton } from "../shared/primary-button";
 import FlowHeader from "../presets/flow-header";
 import { OnboardingPageHeader } from "../onboarding";
+import { useState } from "react";
+import { trayTextInputStyle } from "../shared/input-styles";
+import { FieldShell } from "../shared/field-shell";
 
 const quickStepOptions = {
   className: "bg-white",
@@ -102,7 +105,7 @@ const CreateManuallyDivider = () => (
 
 const QuickOnboarding = () => {
   const { bottom } = useSafeAreaInsets();
-
+  const [address, setAddress] = useState("");
   return (
     <Tray.Root
       stepOptions={quickStepOptions}
@@ -145,13 +148,25 @@ const QuickOnboarding = () => {
                   <Text className="font-sf-bold" style={trayDemoText.title}>
                     Full screen step
                   </Text>
-                  <Text
-                    className="font-sf-regular"
-                    style={trayDemoText.bodyLarge}
-                  >
-                    Continue through the full screen flow, or choose manual
-                    setup below.
-                  </Text>
+                  <FieldShell>
+                    <TextInput
+                      value={address}
+                      onChangeText={setAddress}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      autoFocus={true}
+                      autoComplete="off"
+                      clearButtonMode="while-editing"
+                      keyboardType="ascii-capable"
+                      placeholder="ENS or Address"
+                      placeholderTextColor={trayDemoColors.secondaryText}
+                      returnKeyType="done"
+                      smartInsertDelete={false}
+                      spellCheck={false}
+                      textContentType="none"
+                      style={{ ...trayTextInputStyle, height: 28 }}
+                    />
+                  </FieldShell>
                 </View>
                 <Tray.Nested
                   stepOptions={quickStepOptions}

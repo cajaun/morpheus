@@ -28,6 +28,7 @@ import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animate
 import { useTrayBoundaryMotionState } from "./animation/use-tray-boundary-motion-state";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayKeyboard } from "./input/use-action-tray-keyboard";
+import { isKeyboardAwareSheetStepTransition } from "./input/keyboard-transition";
 import { useActionTrayController } from "./use-action-tray-controller";
 import {
   isSheetFrameForTransition,
@@ -127,7 +128,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         transitionStartedGeneration,
         transitionLayoutStartedGeneration,
         transitionCompletedGeneration,
-        keyboardStepTransitionValue,
       },
       state: {
         layoutEnabled,
@@ -361,18 +361,18 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         startedGeneration: transitionStartedGeneration,
         layoutStartedGeneration: transitionLayoutStartedGeneration,
         completedGeneration: transitionCompletedGeneration,
-        keyboardStepTransitionValue,
+        keyboardStepTransition: isKeyboardAwareSheetStepTransition(
+          transitionContract,
+        ),
       }),
       [
-        transitionContract?.generation,
-        transitionContract?.fullScreenChanged,
+        transitionContract,
         transitionGenerationValue,
         fullScreenChangedValue,
         transitionStartedAt,
         transitionStartedGeneration,
         transitionLayoutStartedGeneration,
         transitionCompletedGeneration,
-        keyboardStepTransitionValue,
         morphProgress,
       ],
     );

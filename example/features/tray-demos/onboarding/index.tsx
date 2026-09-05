@@ -1,8 +1,5 @@
-import { Text, View } from "react-native";
-import {
-  Tray,
-  useTrayFlow,
-} from "morpheus";
+import { Text, TextInput, View } from "react-native";
+import { Tray, useTrayFlow } from "morpheus";
 import { BUTTON_HEIGHT } from "@/features/tray-demos/presets/animated-flow-button";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
@@ -11,6 +8,9 @@ import { OnboardingPageHeader as SharedOnboardingPageHeader } from "../shared/on
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { SymbolView } from "expo-symbols";
 import { PrimaryButton } from "../shared/primary-button";
+import { useState } from "react";
+import { trayTextInputStyle } from "../shared/input-styles";
+import { FieldShell } from "../shared/field-shell";
 
 const ONBOARDING_INFO_ICON = "rgba(255,255,255,0.24)";
 
@@ -68,8 +68,6 @@ const ContinueButtonLabel = () => (
     Continue
   </Text>
 );
-
-
 
 const OnboardingContinueTrayContent = () => {
   const { close } = useTrayFlow();
@@ -165,8 +163,8 @@ const OnboardingContinueTrayContent = () => {
             }}
           >
             You can return to this flow at any time to review your choices
-            before you finish. When everything looks right, continue to the
-            next step.
+            before you finish. When everything looks right, continue to the next
+            step.
           </Text>
         </View>
       </Tray.Section>
@@ -296,12 +294,11 @@ const OnboardingWalletsInfoStep = () => {
               }}
             >
               Your onboarding flow keeps your choices together as you move
-              between steps. This makes it easier to review each decision,
-              keep track of where you are, and return to an earlier page
-              without losing your place. It can also help you take your time,
-              compare the details, and finish your setup when everything looks
-              right. At each step, you can pause, go back, or continue when you
-              are ready.
+              between steps. This makes it easier to review each decision, keep
+              track of where you are, and return to an earlier page without
+              losing your place. It can also help you take your time, compare
+              the details, and finish your setup when everything looks right. At
+              each step, you can pause, go back, or continue when you are ready.
             </Text>
           </View>
         </View>
@@ -399,7 +396,7 @@ const SecondStep = () => {
   return (
     <Tray.Body>
       <Tray.Section>
-       <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
           Different heading
         </Text>
 
@@ -426,48 +423,40 @@ const SecondStep = () => {
 };
 
 const ThirdStep = () => {
+  const [address, setAddress] = useState("");
   return (
     <Tray.Pages>
-
-
       <Tray.Page className="flex-1">
         <Tray.Body style={{ flex: 1 }}>
           <Tray.Section>
             <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
               Content Three A
             </Text>
-            <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
-            >
-              Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
-              amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
-            </Text>
-            <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
-            >
-              Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laborum
-              hic ut excepturi, aut eum obcaecati repudiandae! Aliquam expedita,
-              minima.
-            </Text>
-
-            <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
-            >
-              Lorem ipsum dolor sit amet, consectetur adipisicing elit. Atque,
-              esse blanditiis. Est ipsum temporibus quis esse dolores similique
-              amet doloribus adipisci modi ullam rerum itaque tempore
-              perferendis id unde aperiam libero facilis, repellendus tempora
-              velit. Dolores iste ipsam molestiae harum?
-            </Text>
+            <FieldShell>
+              <TextInput
+                value={address}
+                onChangeText={setAddress}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoFocus={true}
+                autoComplete="off"
+                clearButtonMode="while-editing"
+                keyboardType="ascii-capable"
+                placeholder="ENS or Address"
+                placeholderTextColor={trayDemoColors.secondaryText}
+                returnKeyType="done"
+                smartInsertDelete={false}
+                spellCheck={false}
+                textContentType="none"
+                style={{ ...trayTextInputStyle, height: 28 }}
+              />
+            </FieldShell>
           </Tray.Section>
         </Tray.Body>
       </Tray.Page>
 
       <Tray.Page className="flex-1">
-        <Tray.Body style={{  flex: 1 }}>
+        <Tray.Body style={{ flex: 1 }}>
           <Tray.Section>
             <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
               Content Three B
@@ -679,10 +668,7 @@ const OnboardingExample = () => {
     >
       <BackgroundScalePreview />
 
-      <Tray.Root
-        stepOptions={sharedStepOptions}
-        footer={<OnboardingFooter />}
-      >
+      <Tray.Root stepOptions={sharedStepOptions} footer={<OnboardingFooter />}>
         <Tray.Trigger haptics="feedback">
           <ExampleTrigger label="Onboarding" />
         </Tray.Trigger>
@@ -714,7 +700,6 @@ const OnboardingExample = () => {
           <OnboardingHeader title="Content Four" />
           <FourthStep />
         </Tray.Step>
-
       </Tray.Root>
     </View>
   );

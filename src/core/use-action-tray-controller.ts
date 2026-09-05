@@ -31,7 +31,6 @@ import { useActionTrayPresentationState } from "./controller/use-action-tray-pre
 import { useActionTrayRenderState } from "./controller/use-action-tray-render-state";
 import { useActionTrayTransitionCallbacks } from "./controller/use-action-tray-transition-callbacks";
 import { useActionTrayTransitionDiagnostics } from "./controller/use-action-tray-transition-diagnostics";
-import { isKeyboardAwareSheetStepTransition } from "./input/keyboard-transition";
 
 // compose tray policy before the shell renders
 type Params = {
@@ -111,7 +110,6 @@ export const useActionTrayController = ({
   const fullScreenChangedValue = useSharedValue(
     transitionContract?.fullScreenChanged ? 1 : 0,
   );
-  const keyboardStepTransitionValue = useSharedValue(0);
   const morphProgress = useSharedValue(1);
 
   useLayoutEffect(() => {
@@ -126,16 +124,6 @@ export const useActionTrayController = ({
     transitionContract?.generation,
     transitionGenerationValue,
   ]);
-
-  useLayoutEffect(() => {
-    // Update this shared policy before the retained outgoing view starts its
-    // exit builder; no second animation clock is introduced.
-    keyboardStepTransitionValue.value = isKeyboardAwareSheetStepTransition(
-      transitionContract,
-    )
-      ? 1
-      : 0;
-  }, [keyboardStepTransitionValue, transitionContract]);
 
   const presentationFullScreen = renderState.state.renderedFullScreen;
   const isEnteringFullScreen = !!fullScreen && !presentationFullScreen;
@@ -523,7 +511,6 @@ export const useActionTrayController = ({
       transitionStartedGeneration,
       transitionLayoutStartedGeneration,
       transitionCompletedGeneration,
-      keyboardStepTransitionValue,
       originTargetContentHeight: presentation.shared.originTargetContentHeight,
     },
     state: {

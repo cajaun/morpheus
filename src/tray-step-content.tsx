@@ -222,9 +222,11 @@ const createMorphExiting = (
         fullScreenBoundaryExit,
         synchronizedFullScreen,
       );
+    const keyboardStepTransition =
+      transitionStart?.keyboardStepTransition === true;
     const duration = activeFullScreenBoundaryExit
       ? FULL_SCREEN_EXITING_DURATION
-      : (transitionStart?.keyboardStepTransitionValue?.value ?? 0) > 0
+      : keyboardStepTransition
         ? MORPH_LAYOUT_DURATION
         : MORPH_EXITING_DURATION;
     const easing = activeFullScreenBoundaryExit
@@ -319,6 +321,10 @@ export const TrayStepContent: React.FC<Props> = ({
   return (
     <Animated.View
       key={stepKey}
+      // Keep the exiting layer as a real native view while the parent shell
+      // relayouts for the keyboard; native flattening can recycle it early on
+      // physical devices even though Reanimated still owns its exit clock.
+      collapsable={false}
       // scale fullscreen layers from the body boundary so they stay below the header
       style={
         anchorScaleToTop
