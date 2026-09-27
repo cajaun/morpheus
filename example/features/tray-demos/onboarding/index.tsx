@@ -686,6 +686,7 @@ const OnboardingExample = () => {
         <Tray.Step
           options={{
             fullScreen: true,
+            keyboardAware: true,
             shouldScaleBackground: true,
             fullScreenSafeAreaTop: true,
             fullScreenDraggable: false,

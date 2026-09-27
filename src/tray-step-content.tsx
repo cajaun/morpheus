@@ -9,6 +9,7 @@ import {
   FULL_SCREEN_CONTENT_EASING_POINTS,
   FULL_SCREEN_ENTERING_DURATION,
   FULL_SCREEN_EXITING_DURATION,
+  FULL_SCREEN_LAYOUT_DURATION,
   MORPH_ENTERING_DURATION,
   MORPH_EXITING_DURATION,
   MORPH_LAYOUT_DURATION,
@@ -224,10 +225,12 @@ const createMorphExiting = (
       );
     const keyboardStepTransition =
       transitionStart?.keyboardStepTransition === true;
-    const duration = activeFullScreenBoundaryExit
-      ? FULL_SCREEN_EXITING_DURATION
-      : keyboardStepTransition
-        ? MORPH_LAYOUT_DURATION
+    const duration = keyboardStepTransition
+      ? activeFullScreenBoundaryExit
+        ? FULL_SCREEN_LAYOUT_DURATION
+        : MORPH_LAYOUT_DURATION
+      : activeFullScreenBoundaryExit
+        ? FULL_SCREEN_EXITING_DURATION
         : MORPH_EXITING_DURATION;
     const easing = activeFullScreenBoundaryExit
       ? FULL_SCREEN_CONTENT_EASING

@@ -1,14 +1,18 @@
 import React, {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
+  useState,
 } from "react";
 import { StyleSheet } from "react-native";
 import Animated, {
+  useAnimatedReaction,
   useDerivedValue,
   useSharedValue,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { GestureDetector } from "react-native-gesture-handler";
 import { KeyboardStickyView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,7 +32,7 @@ import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animate
 import { useTrayBoundaryMotionState } from "./animation/use-tray-boundary-motion-state";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useActionTrayKeyboard } from "./input/use-action-tray-keyboard";
-import { isKeyboardAwareSheetStepTransition } from "./input/keyboard-transition";
+import { isKeyboardAwareTrayStepTransition } from "./input/keyboard-transition";
 import { useActionTrayController } from "./use-action-tray-controller";
 import {
   isSheetFrameForTransition,
@@ -170,6 +174,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       visible,
       keyboardAware: keyboardAware ?? false,
     });
+    const [boundaryLayoutStartedGeneration, setBoundaryLayoutStartedGeneration] =
+      useState(0);
     const providerBackgroundScale = useTrayBackgroundScale();
     const fallbackBackgroundScale = useSharedValue(1);
     // nested test shells may render without a provider so keep a local scale value
@@ -199,6 +205,55 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
 
     const isFullScreenBoundaryTransition =
       transitionContract?.fullScreenChanged ?? false;
+    const transitionGeneration = transitionContract?.generation ?? 0;
+    const fullscreenKeyboardReady =
+      !isFullScreenBoundaryTransition ||
+      boundaryLayoutStartedGeneration === transitionGeneration;
+    const handleBoundaryTransitionStart = useCallback(
+      (startedAt: number, generation: number) => {
+        handleLayoutTransitionStart(startedAt, generation);
+
+        if (generation === transitionGeneration) {
+          setBoundaryLayoutStartedGeneration(generation);
+        }
+      },
+      [handleLayoutTransitionStart, transitionGeneration],
+    );
+
+    useEffect(() => {
+      if (!isFullScreenBoundaryTransition) {
+        setBoundaryLayoutStartedGeneration(0);
+      }
+    }, [isFullScreenBoundaryTransition]);
+
+    const latchFullscreenKeyboard = useCallback((generation: number) => {
+      setBoundaryLayoutStartedGeneration((currentGeneration) =>
+        Math.max(currentGeneration, generation),
+      );
+    }, []);
+
+    // The boundary clock is authoritative on the UI thread. Mirror its
+    // existing layout-start latch to React so the native sticky host cannot
+    // remain disabled after the keyboard-aware fullscreen step settles.
+    useAnimatedReaction(
+      () => {
+        const generation = transitionContract?.generation ?? 0;
+        return transitionLayoutStartedGeneration.value >= generation
+          ? generation
+          : 0;
+      },
+      (readyGeneration) => {
+        if (readyGeneration > 0) {
+          scheduleOnRN(latchFullscreenKeyboard, readyGeneration);
+        }
+      },
+      [
+        latchFullscreenKeyboard,
+        transitionContract?.generation,
+        transitionLayoutStartedGeneration,
+      ],
+    );
+
     const hasValidBoundarySheetFrame = isSheetFrameForTransition(
       preparedSheetFrame,
       transitionContract?.generation,
@@ -317,7 +372,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         transitionCompletedGeneration,
         transitionContract: transitionContract ?? null,
         boundaryGeometryReady,
-        onTransitionStart: handleLayoutTransitionStart,
+        onTransitionStart: handleBoundaryTransitionStart,
         onTransitionComplete: handleLayoutTransitionComplete,
       });
     const layoutAnimationConfig = useMemo(
@@ -361,7 +416,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         startedGeneration: transitionStartedGeneration,
         layoutStartedGeneration: transitionLayoutStartedGeneration,
         completedGeneration: transitionCompletedGeneration,
-        keyboardStepTransition: isKeyboardAwareSheetStepTransition(
+        keyboardStepTransition: isKeyboardAwareTrayStepTransition(
           transitionContract,
         ),
       }),
@@ -387,9 +442,41 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           : undefined,
       [flattenedContainerStyle],
     );
+    // Keep the footer layer definition shared between the sheet host and the
+    // fullscreen keyboard host so the boundary morph remains the sole owner
+    // of its geometry.
+    const footerLayer = (
+      <Animated.View
+        className={renderedFooterClassName}
+        onLayout={handleVisibleFooterLayout}
+        style={[
+          trayStyles.footer,
+          dragStyle,
+          renderedFooterStyle,
+          footerContainerStyle,
+          footerVisibilityStyle,
+        ]}
+        pointerEvents={
+          renderedFooter && interactive && isSurfaceReady ? "auto" : "none"
+        }
+      >
+        <Animated.View style={footerContentFrameStyle}>
+          <TrayOriginProgressProvider value={originProgress}>
+            {renderedFooter ?? null}
+          </TrayOriginProgressProvider>
+        </Animated.View>
+      </Animated.View>
+    );
+
     const traySurface = (
       <KeyboardStickyView
-        enabled={!presentationFullScreen && keyboard.stickyEnabled}
+        // A fullscreen tray owns the viewport. Only its detached footer gets
+        // keyboard translation; a sheet may still move as one surface.
+        enabled={
+          !presentationFullScreen &&
+          !isFullScreenBoundaryTransition &&
+          keyboard.stickyEnabled
+        }
         offset={{ opened: 20 }}
         pointerEvents="box-none"
         style={StyleSheet.absoluteFillObject}
@@ -452,27 +539,22 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
             </Animated.View>
           </Animated.View>
         </GestureDetector>
-        {/* fixed footers stay outside the layout animated shell only a fullscreen boundary may move this layer and then it follows the shell s explicit morph clock rather than content layout */}
-        <Animated.View
-          className={renderedFooterClassName}
-          onLayout={handleVisibleFooterLayout}
-          style={[
-            trayStyles.footer,
-            dragStyle,
-            renderedFooterStyle,
-            footerContainerStyle,
-            footerVisibilityStyle,
-          ]}
-          pointerEvents={
-            renderedFooter && interactive && isSurfaceReady ? "auto" : "none"
+        {/* fixed footers stay outside the layout animated shell */}
+        <KeyboardStickyView
+          enabled={
+            presentationFullScreen &&
+            fullscreenKeyboardReady &&
+            keyboard.stickyEnabled
           }
+          offset={{ opened: 20 }}
+          pointerEvents="box-none"
+          // Preserve the original footer's full-screen positioning context;
+          // without this, its absolute child is laid out against a zero-size
+          // wrapper during tray opening.
+          style={StyleSheet.absoluteFillObject}
         >
-          <Animated.View style={footerContentFrameStyle}>
-            <TrayOriginProgressProvider value={originProgress}>
-              {renderedFooter ?? null}
-            </TrayOriginProgressProvider>
-          </Animated.View>
-        </Animated.View>
+          {footerLayer}
+        </KeyboardStickyView>
       </KeyboardStickyView>
     );
 
@@ -522,6 +604,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         {renderedTrayId !== undefined && (
           traySurface
         )}
+
       </TrayMorphProgressProvider>
     );
   },
