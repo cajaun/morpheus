@@ -17,6 +17,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { PressableScale } from "@/shared/ui/pressable-scale";
+import { TRAY_PRIMARY_BUTTON_HEIGHT } from "morpheus/constants";
 import {
   trayDemoColors,
   trayDemoText,
@@ -24,7 +25,7 @@ import {
 
 const { width: windowWidth } = Dimensions.get("window");
 
-export const BUTTON_HEIGHT = 50;
+export const BUTTON_HEIGHT = TRAY_PRIMARY_BUTTON_HEIGHT;
 export const BUTTON_WIDTH = windowWidth * 0.82;
 export const MIN_BUTTON_WIDTH = windowWidth * 0.4;
 
@@ -129,7 +130,7 @@ export const AnimatedFlowButton: React.FC<AnimatedFlowButtonProps> = ({
     onPress: onNext,
     backgroundColor: primaryBackgroundColor,
     textColor: "#FFFFFF",
-    className: "text-white font-sf-bold",
+    className: "text-white font-bold",
     ...primaryAction,
   };
   const resolvedSecondaryAction = {
@@ -137,7 +138,7 @@ export const AnimatedFlowButton: React.FC<AnimatedFlowButtonProps> = ({
     onPress: onSecondaryPress,
     backgroundColor: secondaryBackgroundColor,
     textColor: "#000000",
-    className: "text-black font-sf-bold",
+    className: "text-black font-bold",
     ...secondaryAction,
   };
   const resolvedTotalSteps =
@@ -249,7 +250,7 @@ export const AnimatedFlowButton: React.FC<AnimatedFlowButtonProps> = ({
           <Text
             className={resolvedSecondaryAction.className}
             style={[
-              trayDemoText.button,
+              trayDemoText.Button,
               { color: resolvedSecondaryAction.textColor },
               resolvedSecondaryAction.textStyle,
             ]}
@@ -288,7 +289,7 @@ export const AnimatedFlowButton: React.FC<AnimatedFlowButtonProps> = ({
           <Text
             className={resolvedPrimaryAction.className}
             style={[
-              trayDemoText.button,
+              trayDemoText.Button,
               { color: resolvedPrimaryAction.textColor },
               resolvedPrimaryAction.textStyle,
             ]}

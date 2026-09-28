@@ -137,7 +137,7 @@ const WalletCard = () => {
           }}
         >
           <Text
-            className="font-sf-bold"
+            className="font-bold"
             style={{
               color: "#FFFFFF",
               fontSize: 18,
@@ -164,7 +164,7 @@ const WalletCard = () => {
       >
         <View>
           <Text
-            className="font-sf-bold"
+            className="font-bold"
             style={{
               color: "#FFFFFF",
               fontSize: 20,
@@ -174,7 +174,7 @@ const WalletCard = () => {
             Testing
           </Text>
           <Text
-            className="font-sf-medium"
+            className="font-medium"
             style={{
               color: "rgba(255,255,255,0.72)",
               fontSize: 18,
@@ -196,7 +196,7 @@ const WalletCard = () => {
           }}
         >
           <Text
-            className="font-sf-semibold"
+            className="font-semibold"
             style={{
               color: WARNING_RED,
               fontSize: 17,
@@ -246,7 +246,7 @@ const BackupWarning = () => {
       </View>
 
       <Text
-        className="font-sf-medium"
+        className="font-medium"
         style={{
           color: MUTED_TEXT,
           fontSize: 14,
@@ -295,7 +295,7 @@ const RemoveWalletInfoStep = () => {
             }}
           >
             <Text
-              className="font-sf-bold"
+              className="font-bold"
               style={{
                 color: "#FF4353",
                 fontSize: 31,
@@ -332,7 +332,7 @@ const RemoveWalletInfoStep = () => {
       <Tray.Section style={{ gap: 12, paddingHorizontal: 28 }}>
         <View style={{ gap: 12 }}>
           <Text
-            className="font-sf-bold"
+            className="font-bold"
             style={{
               color: DARK_TEXT,
               fontSize: 25,
@@ -344,7 +344,7 @@ const RemoveWalletInfoStep = () => {
           </Text>
 
           <Text
-            className="font-sf-medium"
+            className="font-medium"
             style={{
               color: MUTED_TEXT,
               fontSize: 20,
@@ -380,7 +380,7 @@ const RemoveWalletPage = ({
         }}
       >
         <Text
-          className="font-sf-semibold"
+          className="font-semibold"
           style={{
             color: DARK_TEXT,
             fontSize: 32,
@@ -392,7 +392,7 @@ const RemoveWalletPage = ({
         </Text>
 
         <Text
-          className="font-sf-medium"
+          className="font-medium"
           style={{
             color: MUTED_TEXT,
             fontSize: 21,

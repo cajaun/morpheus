@@ -63,7 +63,7 @@ export default function DrawerButton({
         {/* shrink here so long copy wraps before it pushes the icon slot */}
         <View style={{ flexShrink: 1 }}>
           <Text
-            className="text-xl font-sfMedium"
+            className="text-xl font-medium"
             style={{ color: textColor,    fontSize: 18,
                 lineHeight: 26,
                 letterSpacing: 0.2, }}

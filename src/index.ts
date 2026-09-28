@@ -1,12 +1,17 @@
 import { TrayBody } from "./primitives/body";
 import { TrayFooter } from "./primitives/footer";
 import { TrayHeader } from "./primitives/header";
+import {
+  TrayHeaderCloseButton,
+  TrayHeaderRow,
+} from "./primitives/header";
 import { TrayPage } from "./primitives/page";
 import { TrayPages } from "./primitives/pages";
 import { TraySection } from "./primitives/section";
 import { TraySeparator } from "./primitives/separator";
 import { TrayTextInput } from "./primitives/text-input";
 import { TrayTrigger } from "./primitives/trigger";
+import { TrayPrimaryButton } from "./primitives/primary-button";
 import { TrayNested } from "./runtime/tray-nested";
 import { TrayRoot } from "./runtime/tray-root";
 import { TrayStep } from "./runtime/tray-step";
@@ -45,6 +50,9 @@ export const Tray = {
   Footer: TrayFooter,
   Body: TrayBody,
   Header: TrayHeader,
+  HeaderRow: TrayHeaderRow,
+  HeaderCloseButton: TrayHeaderCloseButton,
+  PrimaryButton: TrayPrimaryButton,
   Separator: TraySeparator,
   Section: TraySection,
   TextInput: TrayTextInput,

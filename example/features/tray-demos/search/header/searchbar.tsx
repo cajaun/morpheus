@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   input: {
     borderCurve: "continuous",
     borderRadius: 18,
-    fontFamily: "Sf-medium",
+    fontWeight: "500",
     fontSize: 16,
     height: SEARCHBAR_HEIGHT,
     paddingLeft: 42,

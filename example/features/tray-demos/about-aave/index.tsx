@@ -48,7 +48,7 @@ const LockedPill = () => {
         weight="bold"
       />
       <Text
-        className="font-sf-bold text-[#8B87FF]"
+        className="font-bold text-[#8B87FF]"
         style={{
           fontSize: 18,
           lineHeight: 22,
@@ -121,7 +121,7 @@ const FeatureBlock = ({
 
       <View style={{ gap: 4, alignItems: "center" }}>
         <Text
-          className="font-sf-bold text-white"
+          className="font-bold text-white"
           style={{
             fontSize: 23,
             lineHeight: 30,
@@ -133,7 +133,7 @@ const FeatureBlock = ({
         </Text>
 
         <Text
-          className="font-sf-medium text-[#A5A4AE]"
+          className="font-medium text-[#A5A4AE]"
           style={{
             fontSize: 18,
             lineHeight: 28,

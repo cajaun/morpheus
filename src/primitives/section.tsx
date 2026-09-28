@@ -10,6 +10,8 @@ import {
 } from "react-native";
 import {
   TRAY_ITEM_GAP,
+  TRAY_SECTION_ACTION_GAP,
+  TRAY_SECTION_ACTION_PADDING_BOTTOM,
   TRAY_SECTION_PADDING_BOTTOM,
   TRAY_SECTION_PADDING_TOP,
 } from "../core/constants";
@@ -20,6 +22,7 @@ const SCREEN_HEIGHT = Dimensions.get("window").height;
 type TraySectionProps = {
   children: React.ReactNode;
   scrollable?: boolean;
+  withAction?: boolean;
   maxHeight?: number | `${number}%`;
   maxHeightRatio?: number;
 
@@ -63,6 +66,7 @@ const resolveHeight = (
 export const TraySection: React.FC<TraySectionProps> = ({
   children,
   scrollable = false,
+  withAction = false,
 
   maxHeight,
   maxHeightRatio,
@@ -74,6 +78,27 @@ export const TraySection: React.FC<TraySectionProps> = ({
 }) => {
   const height = resolveHeight(maxHeight, maxHeightRatio);
   const { hasFooter } = useTrayStepOptions();
+  const sectionChildren = withAction ? React.Children.toArray(children) : [];
+  const actionChild = sectionChildren[sectionChildren.length - 1];
+  const contentChildren = withAction ? (
+    <>
+      {sectionChildren.slice(0, -1)}
+      {actionChild !== undefined ? (
+        <View
+          style={[
+            styles.actionSlot,
+            sectionChildren.length > 1
+              ? styles.actionSlotWithPreviousContent
+              : styles.actionSlotWithoutPreviousContent,
+          ]}
+        >
+          {actionChild}
+        </View>
+      ) : null}
+    </>
+  ) : (
+    children
+  );
 
   if (scrollable) {
     return (
@@ -83,6 +108,7 @@ export const TraySection: React.FC<TraySectionProps> = ({
           contentContainerStyle={[
             styles.scrollContent,
             hasFooter && styles.footerAwareSection,
+            withAction && styles.actionAwareSection,
             contentContainerStyle,
           ]}
           className={contentClassName}
@@ -96,7 +122,7 @@ export const TraySection: React.FC<TraySectionProps> = ({
           // taps inside tray forms should not dismiss the keyboard before controls run
           keyboardShouldPersistTaps="handled"
         >
-          {children}
+          {contentChildren}
         </ScrollView>
       </View>
     );
@@ -107,12 +133,13 @@ export const TraySection: React.FC<TraySectionProps> = ({
       style={[
         styles.section,
         hasFooter && styles.footerAwareSection,
+        withAction && styles.actionAwareSection,
         style,
       ]}
       className={className}
     >
       {/* static sections keep intrinsic height so the tray shell measures them directly */}
-      {children}
+      {contentChildren}
     </View>
   );
 };
@@ -126,6 +153,20 @@ const styles = StyleSheet.create({
   footerAwareSection: {
     // let the footer own the 16pt content to button gap
     paddingBottom: 0,
+  },
+  actionAwareSection: {
+    paddingBottom: TRAY_SECTION_ACTION_PADDING_BOTTOM,
+  },
+  actionSlot: {
+    width: "100%",
+  },
+  actionSlotWithPreviousContent: {
+    // the base section gap is 16pt; add 12pt to reach the footer's 28pt action gap
+    marginTop: TRAY_SECTION_ACTION_GAP - TRAY_ITEM_GAP,
+  },
+  actionSlotWithoutPreviousContent: {
+    // the base section top padding is 24pt; add 4pt to reach the footer's 28pt action inset
+    marginTop: TRAY_SECTION_ACTION_GAP - TRAY_SECTION_PADDING_TOP,
   },
   scrollView: {
     flex: 1,

@@ -8,7 +8,11 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
-import { PressableScale } from "@/shared/ui/pressable-scale";
+import { Tray } from "morpheus";
+import { trayDemoText } from "@/shared/theme/tokens";
+import {
+  TRAY_HEADER_CLOSE_ICON_SIZE,
+} from "morpheus/constants";
 
 type Props = {
   step: number;
@@ -64,33 +68,21 @@ export default function OnboardingHeader({
   };
 
   return (
-    <View
-      style={{
-        paddingVertical: 12,
-        justifyContent: "center",
-      }}
-    >
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-        }}
-      >
+    <Tray.HeaderRow>
         <View style={{ width: 44, alignItems: "flex-start" }}>
           <Animated.View style={backStyle}>
             {showBack ? (
-              <PressableScale
+              <Tray.HeaderCloseButton
                 onPress={handleBackPress}
-                className="p-3 rounded-full bg-[#F5F5FA]"
               >
                 <SymbolView
                   name="chevron.left"
                   type="palette"
-                  size={18}
+                  size={TRAY_HEADER_CLOSE_ICON_SIZE}
                   weight="semibold"
-                  tintColor="#94999F"
+                  tintColor="#787878"
                 />
-              </PressableScale>
+              </Tray.HeaderCloseButton>
             ) : null}
           </Animated.View>
         </View>
@@ -105,7 +97,9 @@ export default function OnboardingHeader({
           ]}
         >
           {typeof leftLabel === "string" ? (
-            <Text className="text-2xl font-sf-medium">{leftLabel}</Text>
+          <Text className="font-medium" style={trayDemoText.Title1}>
+            {leftLabel}
+          </Text>
           ) : (
             leftLabel
           )}
@@ -113,21 +107,19 @@ export default function OnboardingHeader({
 
         <View style={{ width: 44, alignItems: "flex-end" }}>
           {shouldClose ? (
-            <PressableScale
+            <Tray.HeaderCloseButton
               onPress={handleClosePress}
-              className="p-3 rounded-full bg-[#F5F5FA]"
             >
               <SymbolView
                 name="xmark"
                 type="palette"
-                size={18}
+                size={TRAY_HEADER_CLOSE_ICON_SIZE}
                 weight="semibold"
-                tintColor="#94999F"
+                tintColor="#787878"
               />
-            </PressableScale>
+            </Tray.HeaderCloseButton>
           ) : null}
         </View>
-      </View>
-    </View>
+    </Tray.HeaderRow>
   );
 }

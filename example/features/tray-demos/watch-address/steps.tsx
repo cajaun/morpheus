@@ -117,7 +117,7 @@ export const AddExistingWalletStep = () => {
               }}
             >
               <Text
-                className="font-sf-semibold"
+                className="font-semibold"
                 style={{
                   fontSize: 28,
                   lineHeight: 36,
@@ -129,7 +129,7 @@ export const AddExistingWalletStep = () => {
                 Add an Existing Wallet
               </Text>
               <Text
-                className="font-sf-medium"
+                className="font-medium"
                 style={{
                   fontSize: 21,
                   lineHeight: 28,
@@ -217,7 +217,7 @@ export const WatchAddressInputStep = () => {
           />
 
           <Text
-            className="font-sf-medium text-center text-[#B6BAC2]"
+            className="font-medium text-center text-[#B6BAC2]"
             style={{
               fontSize: 20,
               lineHeight: 28,
@@ -256,7 +256,7 @@ export const CreateNewWalletStep = () => {
           <Tray.Section style={{ gap: 0 }}>
             <View style={{ gap: 18 }}>
               <Text
-                className="font-sf-semibold text-[#2D2E30]"
+                className="font-semibold text-[#2D2E30]"
                 style={{
                   fontSize: 32,
                   lineHeight: 34,
@@ -267,7 +267,7 @@ export const CreateNewWalletStep = () => {
               </Text>
 
               <Text
-                className="font-sf-medium text-[#A0A4AA]"
+                className="font-medium text-[#A0A4AA]"
                 style={{
                   fontSize: 21,
                   lineHeight: 28,
@@ -303,7 +303,7 @@ export const CreateNewWalletStep = () => {
             </View>
 
             <Text
-              className="font-sf-medium text-[#B2B6BC]"
+              className="font-medium text-[#B2B6BC]"
               style={{
                 fontSize: 16,
                 lineHeight: 24,
@@ -322,7 +322,7 @@ export const CreateNewWalletStep = () => {
           <Tray.Section style={{ gap: 0 }}>
             <View style={{ gap: 12 }}>
               <Text
-                className="font-sf-semibold text-[#2D2E30]"
+                className="font-semibold text-[#2D2E30]"
                 style={{
                   fontSize: 32,
                   lineHeight: 34,
@@ -333,7 +333,7 @@ export const CreateNewWalletStep = () => {
               </Text>
 
               <Text
-                className="font-sf-medium text-[#A0A4AA]"
+                className="font-medium text-[#A0A4AA]"
                 style={{
                   fontSize: 21,
                   lineHeight: 28,
@@ -360,7 +360,7 @@ export const CreateNewWalletStep = () => {
           <Tray.Section style={{ gap: 0, flex: 1 }}>
             <View style={{ gap: 12 }}>
               <Text
-                className="font-sf-semibold text-[#2D2E30]"
+                className="font-semibold text-[#2D2E30]"
                 style={{
                   fontSize: 32,
                   lineHeight: 34,
@@ -371,7 +371,7 @@ export const CreateNewWalletStep = () => {
               </Text>
 
               <Text
-                className="font-sf-medium text-[#A0A4AA]"
+                className="font-medium text-[#A0A4AA]"
                 style={{
                   fontSize: 21,
                   lineHeight: 28,

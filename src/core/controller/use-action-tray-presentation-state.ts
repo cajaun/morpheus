@@ -5,8 +5,7 @@ import {
   useSharedValue,
   type SharedValue,
 } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { SCREEN_HEIGHT } from "../constants";
+import { HORIZONTAL_MARGIN, SCREEN_HEIGHT } from "../constants";
 
 // presentation state owns the shared values read across gesture layout and lifecycle code
 type Params = {
@@ -23,7 +22,9 @@ export const useActionTrayPresentationState = ({
   presentationFullScreen,
   keyboardHeight,
 }: Params) => {
-  const { bottom } = useSafeAreaInsets();
+  // Sheets sit 8pt above the screen edge so the system home indicator can
+  // remain over the surface, matching the reference tray.
+  const sheetBottomInset = HORIZONTAL_MARGIN;
 
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const contentHeight = useSharedValue(0);
@@ -68,8 +69,8 @@ export const useActionTrayPresentationState = ({
       return SCREEN_HEIGHT;
     }
 
-    return contentHeight.value + footerHeight.value + bottom;
-  }, [bottom, keyboardHeight, presentationFullScreen]);
+    return contentHeight.value + footerHeight.value + sheetBottomInset;
+  }, [keyboardHeight, presentationFullScreen, sheetBottomInset]);
 
   const resolveClosedTranslateY = useCallback(
     (
@@ -81,9 +82,9 @@ export const useActionTrayPresentationState = ({
         return SCREEN_HEIGHT;
       }
 
-      return nextContentHeight + nextFooterHeight + bottom;
+      return nextContentHeight + nextFooterHeight + sheetBottomInset;
     },
-    [bottom, contentHeight, footerHeight, presentationFullScreen],
+    [contentHeight, footerHeight, presentationFullScreen, sheetBottomInset],
   );
 
   const progress = useDerivedValue(() => {

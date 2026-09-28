@@ -45,13 +45,13 @@ export const HelpCard = ({
 
       <View style={{ flex: 1 }}>
         <Text
-          className="font-sf-semibold text-[#282828]"
-          style={trayDemoText.bodyLarge}
+          className="font-semibold text-[#282828]"
+          style={trayDemoText.Title2}
         >
           {label}
         </Text>
 
-        <Text className="font-sf-medium text-[#9FA4AA]" style={trayDemoText.body}>
+        <Text className="font-medium text-[#9FA4AA]" style={trayDemoText.Body}>
           {description}
         </Text>
       </View>
@@ -92,8 +92,8 @@ export const AreaRow = ({
       >
         <SymbolView name={icon} tintColor="#B0B0B0" size={22} weight="medium" />
         <Text
-          className="font-sf-medium text-[#2C2C2C]"
-          style={trayDemoText.bodyLarge}
+          className="font-medium text-[#2C2C2C]"
+          style={trayDemoText.Title2}
         >
           {label}
         </Text>

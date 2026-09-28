@@ -106,7 +106,7 @@ export const CreatingWalletsInfoStep = ({
 
             <View style={{ gap: 2 }}>
               <Text
-                className="font-sf-semibold text-white"
+                className="font-semibold text-white"
                 style={{
                   fontSize: 28,
                   lineHeight: 34,
@@ -117,7 +117,7 @@ export const CreatingWalletsInfoStep = ({
               </Text>
 
               <Text
-                className="font-sf-medium"
+                className="font-medium"
                 style={{
                   fontSize: 18,
                   lineHeight: 24,
@@ -141,7 +141,7 @@ export const CreatingWalletsInfoStep = ({
             }}
           >
             <Text
-              className="font-sf-medium"
+              className="font-medium"
               style={{
                 fontSize: 21,
                 lineHeight: 28,
@@ -154,7 +154,7 @@ export const CreatingWalletsInfoStep = ({
 
             <View style={{ gap: 10 }}>
               <Text
-                className="font-sf-semibold text-[#15161A]"
+                className="font-semibold text-[#15161A]"
                 style={{
                   fontSize: 21,
                   lineHeight: 30,
@@ -165,7 +165,7 @@ export const CreatingWalletsInfoStep = ({
               </Text>
 
               <Text
-                className="font-sf-medium"
+                className="font-medium"
                 style={{
                   fontSize: 21,
                   lineHeight: 28,
@@ -179,7 +179,7 @@ export const CreatingWalletsInfoStep = ({
 
             <View style={{ gap: 10 }}>
               <Text
-                className="font-sf-semibold text-[#15161A]"
+                className="font-semibold text-[#15161A]"
                 style={{
                   fontSize: 21,
                   lineHeight: 30,
@@ -190,7 +190,7 @@ export const CreatingWalletsInfoStep = ({
               </Text>
 
               <Text
-                className="font-sf-medium"
+                className="font-medium"
                 style={{
                   fontSize: 21,
                   lineHeight: 28,

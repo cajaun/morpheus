@@ -36,7 +36,7 @@ const BackupTriggerButton = ({
       width: "100%",
     }}
   >
-    <Text className="text-white font-sf-bold" style={trayDemoText.button}>
+    <Text className="text-white font-bold" style={trayDemoText.Button}>
       {label}
     </Text>
   </PressableScale>
@@ -96,7 +96,7 @@ const BackupInfoStep = () => {
         }}
       >
         <Text
-          className="font-sf-semiBold"
+          className="font-semibold"
           style={{
             color: "#25272D",
             fontSize: 28,
@@ -109,7 +109,7 @@ const BackupInfoStep = () => {
 
         <View style={{ gap: 12 }}>
           <Text
-            className="font-sf-medium"
+            className="font-medium"
             style={{
               color: BACKUP_MUTED_TEXT,
               fontSize: 20,
@@ -122,7 +122,7 @@ const BackupInfoStep = () => {
           </Text>
 
           <Text
-            className="font-sf-medium"
+            className="font-medium"
             style={{
               color: BACKUP_MUTED_TEXT,
               letterSpacing: 0.1,
@@ -156,7 +156,7 @@ const BackupInfoFooter = () => {
             width: "100%",
           }}
         >
-          <Text className="text-white font-sf-bold" style={trayDemoText.button}>
+          <Text className="text-white font-bold" style={trayDemoText.Button}>
             Continue
           </Text>
         </PressableScale>

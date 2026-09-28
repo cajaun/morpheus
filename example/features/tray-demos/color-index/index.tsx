@@ -62,7 +62,7 @@ const ColorIndexHeader = ({ step }: { step: ColorStep }) => {
         step={index}
         leftLabel={
           <View>
-            <Text className="font-sf-semibold" style={trayDemoText.title}>
+            <Text className="font-semibold" style={trayDemoText.Title1}>
               {step.name}
             </Text>
           </View>
@@ -160,9 +160,9 @@ const ColorIndexFooter = ({
           }}
         >
           <Text
-            className="font-sf-bold"
+            className="font-bold"
             style={[
-              trayDemoText.button,
+              trayDemoText.Button,
               { color: isFirstStep ? "#E4CACA" : step.colors[0] },
             ]}
           >
@@ -181,8 +181,8 @@ const ColorIndexFooter = ({
           }}
         >
           <Text
-             className="font-sf-bold text-white "
-                   style={trayDemoText.button}
+             className="font-bold text-white "
+                   style={trayDemoText.Button}
           >
             {isLastStep ? "Done" : "Next"}
           </Text>
@@ -357,7 +357,7 @@ const ColorDetailStep = ({
           ]}
         >
           <Text
-            style={{ color: "#3B1930", fontFamily: "Sf-medium", fontSize: 14 }}
+            style={{ color: "#3B1930", fontSize: 14, fontWeight: "500" }}
           >
             Palette sample
           </Text>
@@ -366,9 +366,9 @@ const ColorDetailStep = ({
             <Text
               style={{
                 color: "#FFFFFF",
-                fontFamily: "Sf-semibold",
                 fontSize: 46,
                 lineHeight: 52,
+                fontWeight: "600",
               }}
             >
               {colorName}
@@ -383,8 +383,8 @@ const ColorDetailStep = ({
               <Text
                 style={{
                   color: "#FFFFFF",
-                  fontFamily: "Sf-medium",
                   fontSize: 24,
+                  fontWeight: "500",
                 }}
               >
                 {color}
@@ -392,8 +392,8 @@ const ColorDetailStep = ({
               <Text
                 style={{
                   color: "#FFFFFF",
-                  fontFamily: "Sf-medium",
                   fontSize: 32,
+                  fontWeight: "500",
                 }}
               >
                 {String(colorIndex + 1).padStart(2, "0")}
@@ -411,7 +411,7 @@ const ColorDetailStep = ({
           }}
         >
           <Text
-            style={{ color: "#77746F", fontFamily: "Sf-medium", fontSize: 14 }}
+            style={{ color: "#77746F", fontSize: 14, fontWeight: "500" }}
           >
             Color story
           </Text>
@@ -426,8 +426,8 @@ const ColorDetailStep = ({
             <Text
               style={{
                 color: "#26231F",
-                fontFamily: "Sf-semibold",
                 fontSize: 20,
+                fontWeight: "600",
               }}
             >
               {step.name}
@@ -435,8 +435,8 @@ const ColorDetailStep = ({
             <Text
               style={{
                 color: "#77746F",
-                fontFamily: "Sf-regular",
                 fontSize: 14,
+                fontWeight: "400",
               }}
             >
               {step.key.replace("-", " ")}
@@ -446,10 +446,10 @@ const ColorDetailStep = ({
           <Text
             style={{
               color: "#46433F",
-              fontFamily: "Sf-regular",
               fontSize: 17,
               lineHeight: 23,
               marginTop: 22,
+              fontWeight: "400",
             }}
           >
             {COLOR_STORIES[step.key]}
@@ -460,8 +460,8 @@ const ColorDetailStep = ({
               <Text
                 style={{
                   color: "#77746F",
-                  fontFamily: "Sf-medium",
                   fontSize: 13,
+                  fontWeight: "500",
                 }}
               >
                 Rgb
@@ -469,9 +469,9 @@ const ColorDetailStep = ({
               <Text
                 style={{
                   color: "#26231F",
-                  fontFamily: "Sf-medium",
                   fontSize: 16,
                   marginTop: 4,
+                  fontWeight: "500",
                 }}
               >
                 {r}, {g}, {b}
@@ -481,8 +481,8 @@ const ColorDetailStep = ({
               <Text
                 style={{
                   color: "#77746F",
-                  fontFamily: "Sf-medium",
                   fontSize: 13,
+                  fontWeight: "500",
                 }}
               >
                 Hsl
@@ -490,9 +490,9 @@ const ColorDetailStep = ({
               <Text
                 style={{
                   color: "#26231F",
-                  fontFamily: "Sf-medium",
                   fontSize: 16,
                   marginTop: 4,
+                  fontWeight: "500",
                 }}
               >
                 {h}°, {s}%, {l}%
@@ -518,8 +518,8 @@ const ColorDetailStep = ({
           }}
         >
           <Text
-                 className="font-sf-bold text-white "
-                   style={trayDemoText.button}
+                 className="font-bold text-white "
+                   style={trayDemoText.Button}
           >
             Done
           </Text>

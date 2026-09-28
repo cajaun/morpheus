@@ -21,25 +21,69 @@ export const trayDemoRadius = {
 } as const;
 
 export const trayDemoText = {
-  title: {
-    fontSize: 24,
+  LargeTitle: {
+    fontSize: 32,
     lineHeight: 34,
-    letterSpacing: 0.3,
-  } satisfies TextStyle,
-  bodyLarge: {
-    fontSize: 21,
-    lineHeight: 28,
     letterSpacing: 0.2,
   } satisfies TextStyle,
-  body: {
-    fontSize: 18,
+  Title1: {
+    fontSize: 25,
+    lineHeight: 30,
+    letterSpacing: 0.2,
+  } satisfies TextStyle,
+  Title2: {
+    fontSize: 23,
+    lineHeight: 28,
+  } satisfies TextStyle,
+  Title3: {
+    fontSize: 20,
     lineHeight: 24,
-    letterSpacing: 0.15,
+    letterSpacing: 0.2,
   } satisfies TextStyle,
-  button: {
+  Headline: {
+    fontSize: 17,
+    lineHeight: 22,
+    letterSpacing: 0.1,
+  } satisfies TextStyle,
+  Subheadline: {
+    fontSize: 16,
+    lineHeight: 20,
+    letterSpacing: 0.1,
+  } satisfies TextStyle,
+  Body: {
+    fontSize: 17,
+    lineHeight: 22,
+    letterSpacing: 0.1,
+  } satisfies TextStyle,
+  Callout: {
+    fontSize: 17,
+    lineHeight: 20,
+    letterSpacing: 0.1,
+  } satisfies TextStyle,
+  Footnote: {
+    fontSize: 13,
+    lineHeight: 14,
+    letterSpacing: 0,
+  } satisfies TextStyle,
+  Caption1: {
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0,
+  } satisfies TextStyle,
+  Caption2: {
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0,
+  } satisfies TextStyle,
+  Button: {
+    fontSize: 20,
+    lineHeight: 24,
+    letterSpacing: 0.2,
+  } satisfies TextStyle,
+  Status: {
     fontSize: 21,
     lineHeight: 28,
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   } satisfies TextStyle,
 } as const;
 

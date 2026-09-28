@@ -9,6 +9,7 @@ import ExpandFromTriggerDemo from "./expand-from-trigger";
 import HelpSupportTray from "./help-support";
 import IdentityRateBoostTray from "./identity-rate-boost";
 import AaveExample from "./aave-tray";
+import NotificationsTray from "./notifications";
 import OnboardingExample from "./onboarding";
 import PayFromTray from "./pay-from";
 import RemoveWalletWarningTray from "./remove-wallet-warning";
@@ -57,6 +58,15 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     content: (
       <TrayExampleFrame>
         <AaveExample />
+      </TrayExampleFrame>
+    ),
+  },
+  {
+    value: "notifications",
+    label: "Notifications",
+    content: (
+      <TrayExampleFrame>
+        <NotificationsTray />
       </TrayExampleFrame>
     ),
   },

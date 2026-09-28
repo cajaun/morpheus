@@ -78,7 +78,7 @@ export const DemoResultsList = ({ data, query }: DemoResultsListProps) => {
               style={styles.resultRow}
             >
               <Text
-                className="font-sf-semibold"
+                className="font-semibold"
                 numberOfLines={1}
                 style={[styles.resultText, { color: theme.foreground }]}
               >

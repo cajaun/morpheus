@@ -39,7 +39,7 @@ export const CancelButton = () => {
       ]}
     >
       <Text
-        className="font-sf-medium "
+        className="font-medium "
         style={{ color: theme.icon, fontSize: 17 }}
       >
         Cancel

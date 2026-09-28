@@ -78,7 +78,7 @@ const VerifiedBanner = () => {
         weight="bold"
       />
       <Text
-        className="font-sf-medium"
+        className="font-medium"
         style={{ color: PRIMARY, fontSize: 17, lineHeight: 22 }}
       >
         This domain has been verified.
@@ -140,9 +140,9 @@ const WalletChangeRow = ({
         />
       </View>
       <Text
-        className="font-sf-medium"
+        className="font-medium"
         style={{
-          ...trayDemoText.bodyLarge,
+          ...trayDemoText.Title2,
           color: DARK,
           flex: 1,
           marginLeft: 12,
@@ -152,9 +152,9 @@ const WalletChangeRow = ({
       </Text>
       <CurrencyMark />
       <Text
-        className="font-sf-semibold"
+        className="font-semibold"
         style={{
-          ...trayDemoText.bodyLarge,
+          ...trayDemoText.Title2,
           color: isSend ? RED : "#12B65D",
           marginLeft: 8,
         }}
@@ -169,7 +169,7 @@ const InfoLabel = ({ children }: { children: string }) => {
   return (
     <View style={{ alignItems: "center", flexDirection: "row", gap: 7 }}>
       <Text
-        className="font-sf-medium"
+        className="font-medium"
         style={{ color: MUTED, fontSize: 15, lineHeight: 20 }}
       >
         {children}
@@ -203,8 +203,8 @@ const KeyValueRow = ({
     <View style={{ alignItems: "center", flexDirection: "row", minHeight: 30 }}>
       <View style={{ alignItems: "center", flex: 1, flexDirection: "row", gap: 7 }}>
         <Text
-          className="font-sf-medium"
-          style={{ ...trayDemoText.bodyLarge, color: MUTED }}
+          className="font-medium"
+          style={{ ...trayDemoText.Title2, color: MUTED }}
         >
           {label}
         </Text>
@@ -225,16 +225,16 @@ const KeyValueRow = ({
         {valueIcon ? <CurrencyMark /> : null}
         {valuePrefix ? (
           <Text
-            className="font-sf-medium"
-            style={{ ...trayDemoText.bodyLarge, color: MUTED, marginRight: 6 }}
+            className="font-medium"
+            style={{ ...trayDemoText.Title2, color: MUTED, marginRight: 6 }}
           >
             {valuePrefix}
           </Text>
         ) : null}
         <Text
-          className="font-sf-semibold"
+          className="font-semibold"
           style={{
-            ...trayDemoText.bodyLarge,
+            ...trayDemoText.Title2,
             color: DARK,
             marginLeft: valueIcon ? 8 : 0,
           }}
@@ -243,8 +243,8 @@ const KeyValueRow = ({
         </Text>
         {valueUnit ? (
           <Text
-            className="font-sf-medium"
-            style={{ ...trayDemoText.bodyLarge, color: MUTED, marginLeft: 6 }}
+            className="font-medium"
+            style={{ ...trayDemoText.Title2, color: MUTED, marginLeft: 6 }}
           >
             {valueUnit}
           </Text>
@@ -260,7 +260,7 @@ const SeeAllDivider = () => {
       <View style={{ backgroundColor: "#F0F0F2", flex: 1, height: 1 }} />
       <View style={{ alignItems: "center", flexDirection: "row", gap: 6 }}>
         <Text
-          className="font-sf-medium"
+          className="font-medium"
           style={{ color: MUTED, fontSize: 18, lineHeight: 24 }}
         >
           See All
@@ -292,7 +292,7 @@ const RefuelGasBody = () => {
             }}
           >
             <Text
-              className="font-sf-medium"
+              className="font-medium"
               style={{ color: MUTED, fontSize: 16, lineHeight: 22 }}
             >
               Estimated Wallet Changes
@@ -357,7 +357,7 @@ const PriceGauge = () => {
         }}
       >
         <Text
-          className="font-sf-medium"
+          className="font-medium"
           style={{ color: DARK, fontSize: 18, lineHeight: 24 }}
         >
           Price Range
@@ -390,13 +390,13 @@ const PriceGauge = () => {
         <View style={styles.gaugeLabels}>
           <View>
             <Text
-              className="font-sf-semibold"
+              className="font-semibold"
               style={{ color: DARK, fontSize: 18, lineHeight: 24 }}
             >
               $1.31
             </Text>
             <Text
-              className="font-sf-medium"
+              className="font-medium"
               style={{ color: "#B6B8BD", fontSize: 14, lineHeight: 18 }}
             >
               0.00039335 ETH
@@ -404,13 +404,13 @@ const PriceGauge = () => {
           </View>
           <View style={{ alignItems: "flex-end" }}>
             <Text
-              className="font-sf-semibold"
+              className="font-semibold"
               style={{ color: DARK, fontSize: 18, lineHeight: 24 }}
             >
               $1.82
             </Text>
             <Text
-              className="font-sf-medium"
+              className="font-medium"
               style={{ color: "#B6B8BD", fontSize: 14, lineHeight: 18 }}
             >
               0.00054617 ETH
@@ -484,16 +484,16 @@ const PriceRangeBody = () => {
     <Tray.Body>
       <Tray.Section style={{ gap: 18, paddingTop: 20 }}>
         <Text
-          className="font-sf-medium"
-          style={{ ...trayDemoText.bodyLarge, color: MUTED }}
+          className="font-medium"
+          style={{ ...trayDemoText.Title2, color: MUTED }}
         >
           In the context of gas fees on the Ethereum network, the “Price Range”
           refers to the spectrum of gas prices that can be chosen to pay for a
           transaction.
         </Text>
         <Text
-          className="font-sf-medium"
-          style={{ ...trayDemoText.bodyLarge, color: MUTED }}
+          className="font-medium"
+          style={{ ...trayDemoText.Title2, color: MUTED }}
         >
           Selecting a higher price may result in a faster confirmation time,
           while a lower price may be more economical but slower. The range is

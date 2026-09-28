@@ -113,7 +113,7 @@ const AnimatedOptionRow = ({
           />
         ) : null}
         <Text
-          className="font-sf-semibold"
+          className="font-semibold"
           numberOfLines={1}
           style={[styles.optionLabel, { color: theme.foreground }]}
         >

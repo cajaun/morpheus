@@ -83,7 +83,7 @@ export const PaginationIndicator = ({
         ]}
       >
         <Text
-          className="font-sf-medium"
+          className="font-medium"
           numberOfLines={1}
           style={{ color: theme.foreground, fontSize: 18 }}
         >

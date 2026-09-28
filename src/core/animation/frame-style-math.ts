@@ -90,7 +90,6 @@ export const resolveBoundaryShellStyle = ({
   targetFullScreen,
   sourceHeight,
   targetHeight,
-  bottom,
   bottomInset,
 }: {
   progress: number;
@@ -98,13 +97,12 @@ export const resolveBoundaryShellStyle = ({
   targetFullScreen: boolean;
   sourceHeight: number;
   targetHeight: number;
-  bottom: number;
   bottomInset: number;
 }) => {
   "worklet";
 
-  const sourceBottom = sourceFullScreen ? 0 : bottom + bottomInset;
-  const targetBottom = targetFullScreen ? 0 : bottom + bottomInset;
+  const sourceBottom = sourceFullScreen ? 0 : HORIZONTAL_MARGIN + bottomInset;
+  const targetBottom = targetFullScreen ? 0 : HORIZONTAL_MARGIN + bottomInset;
   const sourceLeft = sourceFullScreen ? 0 : HORIZONTAL_MARGIN;
   const targetLeft = targetFullScreen ? 0 : HORIZONTAL_MARGIN;
   const sourceTop = sourceFullScreen

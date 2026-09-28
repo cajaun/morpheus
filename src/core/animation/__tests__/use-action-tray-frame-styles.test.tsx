@@ -6,6 +6,7 @@ import {
   HORIZONTAL_MARGIN,
   SCREEN_HEIGHT,
   SCREEN_WIDTH,
+  TRAY_FOOTER_PADDING_BOTTOM,
 } from "../../constants";
 import { useActionTrayFrameStyles } from "../use-action-tray-frame-styles";
 
@@ -42,6 +43,8 @@ const renderFrameStyles = ({
   preparedSheetFrameHeight,
   preparedSheetFrameGeneration,
   preparedSheetFrameEndpoint = "source",
+  originProgress = 1,
+  transitionOrigin,
   shouldUseOriginTransition = false,
   transitionGeneration,
   transitionSourceKey = "source",
@@ -61,6 +64,8 @@ const renderFrameStyles = ({
   preparedSheetFrameHeight?: number;
   preparedSheetFrameGeneration?: number;
   preparedSheetFrameEndpoint?: string;
+  originProgress?: number;
+  transitionOrigin?: "fullScreenFooter";
   shouldUseOriginTransition?: boolean;
   transitionGeneration?: number;
   transitionSourceKey?: string;
@@ -84,7 +89,7 @@ const renderFrameStyles = ({
       hasFooter: shared(true),
       keyboardHeight: shared(0),
       morphProgress: shared(morphProgress),
-      originProgress: shared(1),
+      originProgress: shared(originProgress),
       originTargetContentHeight: shared(originTargetContentHeight),
       transitionStartedGeneration: shared(transitionStartedGeneration ?? 0),
       transitionLayoutStartedGeneration: shared(
@@ -105,7 +110,9 @@ const renderFrameStyles = ({
           : undefined,
       shouldUseOriginTransition,
       transition: shouldUseOriginTransition
-        ? { open: "expandFromTrigger" }
+        ? transitionOrigin === "fullScreenFooter"
+          ? { open: "expandFromTrigger", origin: transitionOrigin }
+          : { open: "expandFromTrigger" }
         : undefined,
       transitionGeneration,
       transitionSourceKey,
@@ -145,7 +152,36 @@ describe("useActionTrayFrameStyles", () => {
       shouldUseOriginTransition: true,
     });
 
-    expect(styles.trayLayoutStyle.height).toBe(596);
+    expect(styles.trayLayoutStyle.height).toBe(612);
+  });
+
+  it("keeps expand-from-trigger geometry on the safe-area anchor", () => {
+    const styles = renderFrameStyles({
+      originProgress: 0,
+      shouldUseOriginTransition: true,
+    });
+
+    const collapsedBottom = 20 + 2;
+    const collapsedHeight = 50;
+    const expectedTop = SCREEN_HEIGHT - collapsedBottom - collapsedHeight;
+
+    expect(styles.trayLayoutStyle.top).toBe(expectedTop);
+    expect(styles.footerContainerStyle.top).toBe(expectedTop);
+  });
+
+  it("keeps fullscreen-footer origins aligned with the fixed footer anchor", () => {
+    const styles = renderFrameStyles({
+      originProgress: 0,
+      shouldUseOriginTransition: true,
+      transitionOrigin: "fullScreenFooter",
+    });
+
+    const collapsedBottom = HORIZONTAL_MARGIN + TRAY_FOOTER_PADDING_BOTTOM;
+    const collapsedHeight = 50;
+    const expectedTop = SCREEN_HEIGHT - collapsedBottom - collapsedHeight;
+
+    expect(styles.trayLayoutStyle.top).toBe(expectedTop);
+    expect(styles.footerContainerStyle.top).toBe(expectedTop);
   });
 
   it("releases a concrete return height after fullscreen cleanup", () => {
@@ -222,9 +258,9 @@ describe("useActionTrayFrameStyles", () => {
       fullScreenBoundaryTransition: false,
     });
 
-    expect(sheet.footerContainerStyle.left).toBe(16);
-    expect(sheet.footerContainerStyle.right).toBe(16);
-    expect(sheet.footerContainerStyle.bottom).toBe(20);
+    expect(sheet.footerContainerStyle.left).toBe(8);
+    expect(sheet.footerContainerStyle.right).toBe(8);
+    expect(sheet.footerContainerStyle.bottom).toBe(HORIZONTAL_MARGIN);
   });
 
   it("keeps the footer vertically fixed while entering fullscreen", () => {
@@ -243,12 +279,12 @@ describe("useActionTrayFrameStyles", () => {
       morphProgress: 1,
     });
 
-    expect(entering.footerContainerStyle.left).toBe(16);
-    expect(entering.footerContainerStyle.right).toBe(16);
-    expect(entering.footerContainerStyle.bottom).toBe(20);
+    expect(entering.footerContainerStyle.left).toBe(8);
+    expect(entering.footerContainerStyle.right).toBe(8);
+    expect(entering.footerContainerStyle.bottom).toBe(HORIZONTAL_MARGIN);
     expect(settled.footerContainerStyle.left).toBe(0);
     expect(settled.footerContainerStyle.right).toBe(0);
-    expect(settled.footerContainerStyle.bottom).toBe(20);
+    expect(settled.footerContainerStyle.bottom).toBe(HORIZONTAL_MARGIN);
   });
 
   it("uses matching shell and footer anchors when returning to a sheet", () => {
@@ -272,14 +308,18 @@ describe("useActionTrayFrameStyles", () => {
       morphProgress: 1,
     });
 
-    expect(settledFullscreen.footerContainerStyle.bottom).toBe(20);
-    // fullscreen and sheet footer frames share the safe area anchor to prevent a return drop
+    expect(settledFullscreen.footerContainerStyle.bottom).toBe(
+      HORIZONTAL_MARGIN,
+    );
+    // fullscreen and sheet footer frames share the same anchor to prevent a return drop
     expect(source.footerContainerStyle.bottom).toBe(
       settledFullscreen.footerContainerStyle.bottom,
     );
-    expect(target.footerContainerStyle.bottom).toBe(20);
+    expect(target.footerContainerStyle.bottom).toBe(HORIZONTAL_MARGIN);
     expect(source.trayLayoutStyle.top).toBe(0);
-    expect(target.trayLayoutStyle.top).toBe(SCREEN_HEIGHT - 20 - 400);
+    expect(target.trayLayoutStyle.top).toBe(
+      SCREEN_HEIGHT - HORIZONTAL_MARGIN - 400,
+    );
   });
 
   it("keeps boundary content bounded to the source viewport until morph begins", () => {
@@ -319,7 +359,7 @@ describe("useActionTrayFrameStyles", () => {
     expect(
       (target.contentFrameStyle as { width?: number }).width,
     ).toBe(SCREEN_WIDTH);
-    expect(source.trayLayoutStyle.left).toBe(16);
+    expect(source.trayLayoutStyle.left).toBe(8);
     expect(target.trayLayoutStyle.left).toBe(0);
   });
 
@@ -436,7 +476,9 @@ describe("useActionTrayFrameStyles", () => {
     });
 
     expect(styles.trayLayoutStyle.height).toBe(500);
-    expect(styles.trayLayoutStyle.top).toBe(SCREEN_HEIGHT - 20 - 500);
+    expect(styles.trayLayoutStyle.top).toBe(
+      SCREEN_HEIGHT - HORIZONTAL_MARGIN - 500,
+    );
     expect(styles.trayLayoutStyle.bottom).toBe("auto");
   });
 

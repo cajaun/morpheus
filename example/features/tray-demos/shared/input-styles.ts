@@ -1,5 +1,5 @@
 export const trayTextInputStyle = {
-  fontFamily: "Sf-medium",
+  fontWeight: "500",
   fontSize: 19,
 
   color: "#101318",

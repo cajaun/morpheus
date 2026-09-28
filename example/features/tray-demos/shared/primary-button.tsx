@@ -1,9 +1,8 @@
 import React from "react";
 import { Text } from "react-native";
-import { PressableScale } from "@/shared/ui/pressable-scale";
+import { Tray } from "morpheus";
 import {
   trayDemoColors,
-  trayDemoRadius,
   trayDemoText,
 } from "@/shared/theme/tokens";
 
@@ -21,26 +20,20 @@ export const PrimaryButton: React.FC<Props> = ({
   backgroundColor = trayDemoColors.primaryAction,
 }) => {
   return (
-    <PressableScale
+    <Tray.PrimaryButton
       onPress={disabled ? undefined : onPress}
       style={{
         backgroundColor: disabled
           ? trayDemoColors.primaryActionDisabled
           : backgroundColor,
-        height: 50,
-        borderRadius: trayDemoRadius.button,
-        alignItems: "center",
-        justifyContent: "center",
-        width: "100%",
-        borderCurve: "continuous"
       }}
     >
       <Text
-        className="font-sf-bold text-white "
-        style={trayDemoText.button}
+        className="font-bold text-white "
+        style={trayDemoText.Button}
       >
         {label}
       </Text>
-    </PressableScale>
+    </Tray.PrimaryButton>
   );
 };

@@ -175,14 +175,14 @@ const WalletGroupRow = ({
           <WalletGroupAvatars swatches={swatches} />
 
           <View>
-            <Text className="font-sf-semiBold" style={trayDemoText.bodyLarge}>
+            <Text className="font-semibold" style={trayDemoText.Title2}>
               {name}
             </Text>
 
             <Text
-              className="font-sf-medium"
+              className="font-medium"
               style={{
-                ...trayDemoText.body,
+                ...trayDemoText.Body,
                 color: trayDemoColors.mutedText,
               }}
             >
@@ -232,7 +232,7 @@ const NewGroupRow = () => {
 
       <View style={{ gap: 4 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Text className="font-sf-semiBold" style={trayDemoText.bodyLarge}>
+          <Text className="font-semibold" style={trayDemoText.Title2}>
             New Group
           </Text>
 
@@ -245,7 +245,7 @@ const NewGroupRow = () => {
             }}
           >
             <Text
-              className="font-sf-semibold"
+              className="font-semibold"
               style={{
                 fontSize: 14,
                 lineHeight: 16,
@@ -259,9 +259,9 @@ const NewGroupRow = () => {
         </View>
 
         <Text
-          className="font-sf-medium"
+          className="font-medium"
           style={{
-            ...trayDemoText.body,
+            ...trayDemoText.Body,
             color: trayDemoColors.mutedText,
           }}
         >
@@ -370,16 +370,16 @@ const CreateWalletGroupConfirmationStep = () => {
         </View>
 
         <Text
-          className="font-sf-semiBold "
+          className="font-semibold "
           style={{ fontSize: 28, lineHeight: 34, letterSpacing: 0.3 }}
         >
           Are you sure?
         </Text>
 
         <Text
-          className="font-sf-medium"
+          className="font-medium"
           style={{
-            ...trayDemoText.bodyLarge,
+            ...trayDemoText.Title2,
             color: trayDemoColors.mutedText,
           }}
         >
@@ -389,9 +389,9 @@ const CreateWalletGroupConfirmationStep = () => {
         </Text>
 
         <Text
-          className="font-sf-medium"
+          className="font-medium"
           style={{
-            ...trayDemoText.bodyLarge,
+            ...trayDemoText.Title2,
             color: trayDemoColors.mutedText,
           }}
         >
@@ -401,15 +401,15 @@ const CreateWalletGroupConfirmationStep = () => {
         </Text>
 
         <Text
-          className="font-sf-medium"
+          className="font-medium"
           style={{
-            ...trayDemoText.bodyLarge,
+            ...trayDemoText.Title2,
             color: trayDemoColors.mutedText,
           }}
         >
           If you are sure you want to create a new wallet group, tap{" "}
           <Text
-            className="font-sf-semibold"
+            className="font-semibold"
             style={{
               fontSize: 16,
               lineHeight: 20,
@@ -471,8 +471,8 @@ const WalletGroupFooter = () => {
             key={label}
             entering={fadeInFadeOut.entering}
             exiting={fadeInFadeOut.exiting}
-            className="font-sf-semibold text-white"
-            style={trayDemoText.button}
+            className="font-semibold text-white"
+            style={trayDemoText.Button}
           >
             {label}
           </Animated.Text>

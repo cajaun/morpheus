@@ -2,8 +2,11 @@ import React from "react";
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import * as Haptics from "expo-haptics";
-import { PressableScale } from "@/shared/ui/pressable-scale";
+import { Tray } from "morpheus";
 import { trayDemoText } from "@/shared/theme/tokens";
+import {
+  TRAY_HEADER_CLOSE_ICON_SIZE,
+} from "morpheus/constants";
 
 type TitleWeight =
   | "thin"
@@ -15,13 +18,13 @@ type TitleWeight =
   | "black";
 
 const weightClassMap: Record<TitleWeight, string> = {
-  thin: "font-sf-thin",
-  light: "font-sf-light",
-  regular: "font-sf-regular",
-  medium: "font-sf-medium",
-  semibold: "font-sf-semibold",
-  bold: "font-sf-bold",
-  black: "font-sf-black",
+  thin: "font-thin",
+  light: "font-light",
+  regular: "font-normal",
+  medium: "font-medium",
+  semibold: "font-semibold",
+  bold: "font-bold",
+  black: "font-black",
 };
 
 type Props = {
@@ -56,10 +59,10 @@ export default function FlowHeader({
   };
 
   return (
-    <View style={{ justifyContent: "center" }}>
+    <Tray.HeaderRow>
       <View>
         {typeof leftLabel === "string" ? (
-          <Text className={weightClassMap[titleWeight]} style={trayDemoText.title}>
+          <Text className={weightClassMap[titleWeight]} style={trayDemoText.Title1}>
             {leftLabel}
           </Text>
         ) : (
@@ -68,25 +71,18 @@ export default function FlowHeader({
       </View>
 
       {shouldClose ? (
-        <PressableScale
+        <Tray.HeaderCloseButton
           onPress={handlePress}
-          className="rounded-full bg-[#F5F5FA] items-center justify-center"
-          style={{
-            position: "absolute",
-            right: 0,
-            height: 32,
-            width: 32,
-          }}
         >
           <SymbolView
             name={"xmark"}
             type="palette"
-            size={16}
+            size={TRAY_HEADER_CLOSE_ICON_SIZE}
             weight="bold"
-            tintColor="#949595"
+            tintColor="#787878"
           />
-        </PressableScale>
+        </Tray.HeaderCloseButton>
       ) : null}
-    </View>
+    </Tray.HeaderRow>
   );
 }

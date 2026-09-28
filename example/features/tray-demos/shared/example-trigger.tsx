@@ -19,7 +19,7 @@ export const ExampleTrigger = ({ label }: { label: string }) => {
         alignItems: "center",
       }}
     >
-      <Text className="text-2xl font-sf-bold" style={trayDemoText.title}>
+      <Text className="text-2xl font-bold" style={trayDemoText.Title1}>
         {label}
       </Text>
     </PressableScale>

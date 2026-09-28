@@ -71,7 +71,7 @@ export const DemoOverview = () => {
         showsVerticalScrollIndicator={false}
       >
         <Text
-          className="font-sf-bold"
+          className="font-bold"
           style={[styles.title, { color: theme.foreground }]}
         >
           Tray Demos

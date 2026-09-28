@@ -48,13 +48,13 @@ export const ActionRow = ({
       </View>
 
       <View className="flex-1">
-        <Text className="font-sf-medium text-white" style={trayDemoText.bodyLarge}>
+        <Text className="font-medium text-white" style={trayDemoText.Title2}>
           {label}
         </Text>
 
         <Text
-          className="text-[#94999F] font-sf-medium"
-          style={trayDemoText.bodyLarge}
+          className="text-[#94999F] font-medium"
+          style={trayDemoText.Title2}
         >
           {description}
         </Text>
@@ -73,7 +73,7 @@ const FullScreenActionHeader = ({
   return (
     <View className="flex-row items-center justify-between">
       <Text
-        className="text-white font-sf-bold"
+        className="text-white font-bold"
         style={{
           fontSize: 32,
           lineHeight: 40,

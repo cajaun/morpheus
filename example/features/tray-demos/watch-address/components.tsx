@@ -71,13 +71,13 @@ export const WalletActionRow = ({
 
       <View style={{ flex: 1 }}>
         <Text
-          className="font-sf-semibold text-[#282828]"
-          style={trayDemoText.bodyLarge}
+          className="font-semibold text-[#282828]"
+          style={trayDemoText.Title2}
         >
           {label}
         </Text>
 
-        <Text className="font-sf-medium text-[#9FA4AA]" style={trayDemoText.body}>
+        <Text className="font-medium text-[#9FA4AA]" style={trayDemoText.Body}>
           {description}
         </Text>
       </View>
@@ -210,18 +210,18 @@ export const ExistingWalletOption = ({
 
       <View style={{ flex: 1 }}>
         <Text
-          className="font-sf-semibold"
+          className="font-semibold"
           style={[
-            trayDemoText.bodyLarge,
+            trayDemoText.Title2,
             { color: disabled ? "#BFC2C6" : "#282828" },
           ]}
         >
           {title}
         </Text>
         <Text
-          className="font-sf-medium"
+          className="font-medium"
           style={[
-            trayDemoText.body,
+            trayDemoText.Body,
             { color: disabled ? "#D6D8DB" : "#9FA4AA" },
           ]}
         >
@@ -342,7 +342,7 @@ export const CreateWalletNameHint = () => {
       </View>
 
       <Text
-        className="font-sf-medium text-center text-[#A5A9B0]"
+        className="font-medium text-center text-[#A5A9B0]"
         style={{
           fontSize: 16,
           lineHeight: 24,
@@ -488,7 +488,7 @@ export const CreateWalletFlowFooter = () => {
           backgroundColor: trayDemoColors.primaryAction,
         }}
       >
-        <Text className="font-sf-semibold text-white" style={trayDemoText.button}>
+        <Text className="font-semibold text-white" style={trayDemoText.Button}>
           Continue
         </Text>
       </PressableScale>

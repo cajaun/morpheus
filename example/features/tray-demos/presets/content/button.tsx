@@ -138,7 +138,7 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
             alignItems: "center",
           }}
         >
-          <Text className="text-black font-sfBold text-2xl">Cancel</Text>
+          <Text className="text-black font-bold text-2xl">Cancel</Text>
         </PressableScale>
       </Animated.View>
 
@@ -166,7 +166,7 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
         >
           <Laminar
             text={isLastStep ? "Continue" : "Continue"}
-            className="text-white font-sfBold text-2xl"
+            className="text-white font-bold text-2xl"
             align="center"
          
           />

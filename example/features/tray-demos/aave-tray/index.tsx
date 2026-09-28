@@ -56,13 +56,13 @@ const AaveExample = () => {
 
         <Tray.Body>
           <Tray.Section>
-            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+            <Text className="font-bold" style={trayDemoText.Title2}>
               This is a test title
             </Text>
 
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               This is some example test that spans over multiple lines bla bla
               bla test test test many wods. this is a new sentence and we'll see
@@ -76,13 +76,13 @@ const AaveExample = () => {
         <AaveHeader title="Content Two" />
         <Tray.Body>
           <Tray.Section>
-            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+            <Text className="font-bold" style={trayDemoText.Title2}>
               Different heading
             </Text>
 
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
               amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
@@ -90,8 +90,8 @@ const AaveExample = () => {
             </Text>
 
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               This is some example test that spans over multiple lines bla bla
               bla test test test many wods. this is a new sentence and we'll see
@@ -105,21 +105,21 @@ const AaveExample = () => {
         <AaveHeader title="Content Three" />
         <Tray.Body>
           <Tray.Section>
-            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+            <Text className="font-bold" style={trayDemoText.Title2}>
               Another heading
             </Text>
 
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum dolor
               amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
             </Text>
 
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               This is some example test that spans over multiple lines bla bla
               bla test test test many wods. this is a new sentence and we'll see
@@ -133,21 +133,21 @@ const AaveExample = () => {
         <AaveHeader title="Content Four" />
         <Tray.Body>
           <Tray.Section>
-            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+            <Text className="font-bold" style={trayDemoText.Title2}>
               Some heading
             </Text>
 
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum dolor
               amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
             </Text>
 
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
               amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
@@ -155,8 +155,8 @@ const AaveExample = () => {
             </Text>
 
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               This is some example test that spans over multiple lines bla bla
               bla test test test many wods. this is a new sentence and we'll see

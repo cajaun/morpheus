@@ -58,7 +58,7 @@ export default function DrawerButton({
 
         <View style={{ flexShrink: 1 }}>
           <Text
-            className="text-xl font-sf-medium"
+            className="text-xl font-medium"
             style={{
               color: textColor,
               fontSize: 18,

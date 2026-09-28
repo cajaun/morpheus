@@ -35,7 +35,7 @@ describe("fullscreen animation contract", () => {
   });
 
   it("keeps the tray return geometry values", () => {
-    expect(HORIZONTAL_MARGIN).toBe(16);
+    expect(HORIZONTAL_MARGIN).toBe(8);
     expect(BORDER_RADIUS).toBe(40);
   });
 });

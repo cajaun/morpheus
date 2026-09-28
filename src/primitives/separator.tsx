@@ -12,7 +12,7 @@ export const TraySeparator: React.FC<{
 const styles = StyleSheet.create({
   separator: {
     height: 1,
-    backgroundColor: "#F2F2F2",
+    backgroundColor: "#F6F6F6",
   },
 });
 

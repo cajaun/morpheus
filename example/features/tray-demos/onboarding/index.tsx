@@ -64,7 +64,7 @@ const OnboardingFooter = () => {
 };
 
 const ContinueButtonLabel = () => (
-  <Text className="text-white font-sf-bold" style={trayDemoText.button}>
+  <Text className="text-white font-bold" style={trayDemoText.Button}>
     Continue
   </Text>
 );
@@ -130,7 +130,7 @@ const OnboardingContinueTrayContent = () => {
         }}
       >
         <Text
-          className="font-sf-semibold"
+          className="font-semibold"
           style={{
             color: trayDemoColors.headingText,
             fontSize: 28,
@@ -143,7 +143,7 @@ const OnboardingContinueTrayContent = () => {
 
         <View style={{ gap: 12 }}>
           <Text
-            className="font-sf-medium"
+            className="font-medium"
             style={{
               color: trayDemoColors.mutedText,
               fontSize: 20,
@@ -156,7 +156,7 @@ const OnboardingContinueTrayContent = () => {
           </Text>
 
           <Text
-            className="font-sf-medium"
+            className="font-medium"
             style={{
               color: trayDemoColors.mutedText,
               fontSize: 20,
@@ -191,7 +191,7 @@ const OnboardingContinueTrayFooter = () => {
             width: "100%",
           }}
         >
-          <Text className="text-white font-sf-bold" style={trayDemoText.button}>
+          <Text className="text-white font-bold" style={trayDemoText.Button}>
             Continue
           </Text>
         </PressableScale>
@@ -262,7 +262,7 @@ const OnboardingWalletsInfoStep = () => {
 
             <View style={{ gap: 2 }}>
               <Text
-                className="font-sf-semibold text-white"
+                className="font-semibold text-white"
                 style={{
                   fontSize: 28,
                   letterSpacing: 0.3,
@@ -272,7 +272,7 @@ const OnboardingWalletsInfoStep = () => {
                 Onboarding guide
               </Text>
               <Text
-                className="font-sf-medium"
+                className="font-medium"
                 style={{
                   color: trayDemoColors.white,
                   fontSize: 18,
@@ -287,7 +287,7 @@ const OnboardingWalletsInfoStep = () => {
 
           <View style={{ paddingHorizontal: 28, paddingTop: 24 }}>
             <Text
-              className="font-sf-medium"
+              className="font-medium"
               style={{
                 color: trayDemoColors.mutedText,
                 fontSize: 21,
@@ -378,13 +378,13 @@ const FirstStep = () => {
   return (
     <Tray.Body>
       <Tray.Section>
-        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+        <Text className="font-bold" style={trayDemoText.Title2}>
           This is a test title
         </Text>
 
         <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
+          className="text-black font-normal"
+          style={trayDemoText.Title2}
         >
           This is some example test that spans over multiple lines bla bla bla
           test test test many wods. this is a new sentence and we'll see how
@@ -399,13 +399,13 @@ const SecondStep = () => {
   return (
     <Tray.Body>
       <Tray.Section>
-       <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+       <Text className="font-bold" style={trayDemoText.Title2}>
           Different heading
         </Text>
 
         <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
+          className="text-black font-normal"
+          style={trayDemoText.Title2}
         >
           Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
           amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
@@ -413,8 +413,8 @@ const SecondStep = () => {
         </Text>
 
         <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
+          className="text-black font-normal"
+          style={trayDemoText.Title2}
         >
           This is some example test that spans over multiple lines bla bla bla
           test test test many wods. this is a new sentence and we'll see how
@@ -435,19 +435,19 @@ const ThirdStep = () => {
       <Tray.Page className="flex-1">
         <Tray.Body style={{ flex: 1 }}>
           <Tray.Section>
-            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+            <Text className="font-bold" style={trayDemoText.Title2}>
               Content Three A
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
               amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laborum
               hic ut excepturi, aut eum obcaecati repudiandae! Aliquam expedita,
@@ -455,8 +455,8 @@ const ThirdStep = () => {
             </Text>
 
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               Lorem ipsum dolor sit amet, consectetur adipisicing elit. Atque,
               esse blanditiis. Est ipsum temporibus quis esse dolores similique
@@ -471,33 +471,33 @@ const ThirdStep = () => {
       <Tray.Page className="flex-1">
         <Tray.Body style={{  flex: 1 }}>
           <Tray.Section>
-            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+            <Text className="font-bold" style={trayDemoText.Title2}>
               Content Three B
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               This is the second fullscreen page. Keep tapping Continue to move
               through the built-in tray pages flow.
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               Quisquam placeat praesentium at delectus veritatis, adipisci sint
               atque deserunt velit rem laborum neque minus doloribus.
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               Each page keeps the same structure so the progress indicator is
               easy to follow while the content changes underneath it.
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               Take a moment to read through the details before moving on to the
               next part of the onboarding flow.
@@ -509,35 +509,35 @@ const ThirdStep = () => {
       <Tray.Page className="flex-1">
         <Tray.Body style={{ flex: 1 }}>
           <Tray.Section>
-            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+            <Text className="font-bold" style={trayDemoText.Title2}>
               Content Three C
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               Final fullscreen page before returning to shell and going to
               Content Four.
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               This is some example test that spans over multiple lines bla bla
               bla test test many words. This is a new sentence and we'll see how
               that fares too.
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               The extra room on this page gives the shell a more substantial
               content change when the fullscreen pages move from one to the
               next.
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               When you're ready, continue to the final page and review the
               information before returning to the regular tray.
@@ -549,32 +549,32 @@ const ThirdStep = () => {
       <Tray.Page className="flex-1">
         <Tray.Body style={{ flex: 1 }}>
           <Tray.Section>
-            <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+            <Text className="font-bold" style={trayDemoText.Title2}>
               Content Three D
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               This is the fourth fullscreen page in the onboarding sequence.
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               The progress indicator should now show four items and keep the
               active page emphasized as you continue through the flow.
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               This final page closes out the fullscreen portion of onboarding
               and leaves the next action ready at the bottom of the tray.
             </Text>
             <Text
-              className="text-black font-sf-regular"
-              style={trayDemoText.bodyLarge}
+              className="text-black font-normal"
+              style={trayDemoText.Title2}
             >
               Review the summary, then continue when the setup looks right.
             </Text>
@@ -589,13 +589,13 @@ const FourthStep = () => {
   return (
     <Tray.Body>
       <Tray.Section>
-        <Text className="font-sf-bold" style={trayDemoText.bodyLarge}>
+        <Text className="font-bold" style={trayDemoText.Title2}>
           Last Heading
         </Text>
 
         <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
+          className="text-black font-normal"
+          style={trayDemoText.Title2}
         >
           Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
           amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
@@ -603,8 +603,8 @@ const FourthStep = () => {
         </Text>
 
         <Text
-          className="text-black font-sf-regular"
-          style={trayDemoText.bodyLarge}
+          className="text-black font-normal"
+          style={trayDemoText.Title2}
         >
           Lorem ipsum dolor sit amet, consectetur adipisicing elit. Laborum hic
           ut excepturi, aut eum obcaecati repudiandae! Aliquam expedita, minima,
@@ -656,7 +656,7 @@ const BackgroundScalePreview = () => (
       }}
     />
     <Text
-      className="font-sf-semibold"
+      className="font-semibold"
       style={{
         color: trayDemoColors.primaryAction,
         fontSize: 14,

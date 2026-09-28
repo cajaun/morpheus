@@ -95,6 +95,8 @@ export const useActionTrayFrameStyles = ({
       : EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET;
   const targetBottomInset =
     transition?.origin === "fullScreenFooter" ? collapsedBottomInset : 0;
+  const originBottomAnchor =
+    transition?.origin === "fullScreenFooter" ? HORIZONTAL_MARGIN : bottom;
   const hasPreparedSheetFrame = isSheetFrameForTransition(
     preparedSheetFrame,
     transitionGeneration,
@@ -230,7 +232,7 @@ export const useActionTrayFrameStyles = ({
           left: HORIZONTAL_MARGIN,
           right: HORIZONTAL_MARGIN,
           top: "auto" as const,
-          bottom: bottom + targetBottomInset,
+          bottom: HORIZONTAL_MARGIN + targetBottomInset,
           height: preparedSheetHeight,
         }
       : undefined;
@@ -317,7 +319,11 @@ export const useActionTrayFrameStyles = ({
           : resolvedSheetHeight;
     const targetLeft = fullScreen ? 0 : HORIZONTAL_MARGIN;
     const targetRight = fullScreen ? 0 : HORIZONTAL_MARGIN;
-    const targetBottom = fullScreen ? 0 : bottom + targetBottomInset;
+    const targetBottom = fullScreen
+      ? 0
+      : shouldUseOriginTransition
+        ? originBottomAnchor + targetBottomInset
+        : HORIZONTAL_MARGIN + targetBottomInset;
     // keep the same rounded shell while fullscreen expands the frame
     const targetRadius = BORDER_RADIUS;
     const targetTop = fullScreen
@@ -362,7 +368,6 @@ export const useActionTrayFrameStyles = ({
         targetFullScreen,
         sourceHeight,
         targetHeight,
-        bottom,
         bottomInset: targetBottomInset,
       });
     }
@@ -381,7 +386,7 @@ export const useActionTrayFrameStyles = ({
       ]);
       const collapsedTop =
         SCREEN_HEIGHT -
-        (bottom + collapsedBottomInset) -
+        (originBottomAnchor + collapsedBottomInset) -
         EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT;
 
       return {
@@ -427,6 +432,7 @@ export const useActionTrayFrameStyles = ({
     fullScreenBoundarySourceFullScreen,
     fullScreenBoundaryTargetFullScreen,
     originProgress,
+    originBottomAnchor,
     originTargetContentHeight,
     preparedSheetFrame,
     shouldUseOriginTransition,
@@ -618,7 +624,9 @@ export const useActionTrayFrameStyles = ({
     const resolvedFooterBottom =
       !shouldUseOriginTransition && keyboardHeight.value > 0
         ? keyboardHeight.value
-        : bottom + targetBottomInset;
+        : shouldUseOriginTransition
+          ? originBottomAnchor + targetBottomInset
+          : HORIZONTAL_MARGIN + targetBottomInset;
     const targetRadius = BORDER_RADIUS;
 
     if (shouldUseOriginTransition) {
@@ -643,7 +651,7 @@ export const useActionTrayFrameStyles = ({
         SCREEN_HEIGHT - resolvedFooterBottom - targetFooterHeight;
       const collapsedTop =
         SCREEN_HEIGHT -
-        (bottom + collapsedBottomInset) -
+        (originBottomAnchor + collapsedBottomInset) -
         EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT;
 
       return {
@@ -701,7 +709,7 @@ export const useActionTrayFrameStyles = ({
         transitionCompletedGeneration?.value,
         fullScreenBoundaryTransition,
       );
-      // anchor the detached footer to safe area bottom so its fullscreen and sheet frames share an edge
+      // keep the detached footer on the same bottom anchor throughout the boundary transition
       const sourceBottom = resolvedFooterBottom;
       const targetBoundaryBottom = resolvedFooterBottom;
 
@@ -750,6 +758,7 @@ export const useActionTrayFrameStyles = ({
     keyboardHeight,
     morphProgress,
     originProgress,
+    originBottomAnchor,
     shouldUseOriginTransition,
     targetBottomInset,
     transitionGeneration,

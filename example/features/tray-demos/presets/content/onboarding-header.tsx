@@ -104,7 +104,7 @@ export default function Header({
           ]}
         >
           {typeof leftLabel === "string" ? (
-            <Text className="text-2xl font-sfMedium">
+            <Text className="text-2xl font-medium">
               {leftLabel}
             </Text>
           ) : (

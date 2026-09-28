@@ -96,7 +96,7 @@ const IdentityRateBoostStep = () => {
             </View>
 
             <Text
-              className="font-sf-bold"
+              className="font-bold"
               style={{
                 fontSize: 28,
                 lineHeight: 34,
@@ -115,7 +115,7 @@ const IdentityRateBoostStep = () => {
                 weight="semibold"
               />
               <Text
-                className="font-sf-bold"
+                className="font-bold"
                 style={{
                   fontSize: 18,
                   lineHeight: 25,
@@ -141,7 +141,7 @@ const IdentityRateBoostStep = () => {
         >
           <View style={{ gap: 16 }}>
             <Text
-              className="font-sf-semibold"
+              className="font-semibold"
               style={{
                 fontSize: 18,
                 lineHeight: 25,
@@ -155,7 +155,7 @@ const IdentityRateBoostStep = () => {
 
             <View style={{ gap: 8 }}>
               <Text
-                className="font-sf-bold"
+                className="font-bold"
                 style={{
                   fontSize: 19,
                   lineHeight: 24,
@@ -167,7 +167,7 @@ const IdentityRateBoostStep = () => {
               </Text>
 
               <Text
-                className="font-sf-semibold"
+                className="font-semibold"
                 style={{
                   fontSize: 18,
                   lineHeight: 25,
@@ -185,7 +185,7 @@ const IdentityRateBoostStep = () => {
             <ConsentCheck />
 
             <Text
-              className="font-sf-medium"
+              className="font-medium"
               style={{
                 flex: 1,
                 fontSize: 14,
@@ -195,11 +195,11 @@ const IdentityRateBoostStep = () => {
               }}
             >
               I agree to Push by Aave Labs'{" "}
-              <Text className="font-sf-semibold" style={{ color: SECONDARY_TEXT }}>
+              <Text className="font-semibold" style={{ color: SECONDARY_TEXT }}>
                 Customer Agreement
               </Text>{" "}
               and{" "}
-              <Text className="font-sf-semibold" style={{ color: SECONDARY_TEXT }}>
+              <Text className="font-semibold" style={{ color: SECONDARY_TEXT }}>
                 Privacy Policy.
               </Text>
             </Text>
@@ -225,7 +225,7 @@ const IdentityRateBoostStep = () => {
             }}
           >
             <Text
-              className="font-sf-bold text-white"
+              className="font-bold text-white"
               style={{
                 fontSize: 21,
                 lineHeight: 28,
