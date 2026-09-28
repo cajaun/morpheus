@@ -6,7 +6,7 @@ import Animated, { Easing, FadeIn, FadeOut } from "react-native-reanimated";
 import {
   Tray,
   useTrayFlow,
-} from "morpheus";
+} from "react-native-morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import {

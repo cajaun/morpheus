@@ -1,12 +1,12 @@
 import { Text, View } from "react-native";
 import { Link } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayFlow } from "morpheus";
+import { Tray, useTrayFlow } from "react-native-morpheus";
 import {
   EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
   SCREEN_WIDTH,
-} from "morpheus/constants";
+} from "react-native-morpheus/constants";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

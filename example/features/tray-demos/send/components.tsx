@@ -8,7 +8,7 @@ import Animated, {
   useDerivedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTrayFlow, useTrayPages } from "morpheus";
+import { useTrayFlow, useTrayPages } from "react-native-morpheus";
 import { AnimatedFlowButton } from "@/features/tray-demos/presets/animated-flow-button";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { trayDemoText } from "@/shared/theme/tokens";

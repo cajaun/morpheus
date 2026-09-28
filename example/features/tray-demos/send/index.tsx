@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Tray } from "morpheus";
+import { Tray } from "react-native-morpheus";
 import { ExampleTrigger } from "../shared/example-trigger";
 import { SendEntryStep, SendFlowStep } from "./steps";
 import type { SendAction } from "./types";

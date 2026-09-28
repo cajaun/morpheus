@@ -4,7 +4,7 @@ import { SymbolView } from "expo-symbols";
 import {
   Tray,
   useTrayFlow,
-} from "morpheus";
+} from "react-native-morpheus";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { ExampleTrigger } from "../shared/example-trigger";
 

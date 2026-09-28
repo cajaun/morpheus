@@ -2,7 +2,7 @@ import { Text, View } from "react-native";
 import {
   Tray,
   useTrayFlow,
-} from "morpheus";
+} from "react-native-morpheus";
 import { BUTTON_HEIGHT } from "@/features/tray-demos/presets/animated-flow-button";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";

@@ -1,11 +1,11 @@
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayOriginProgress, useTrayFlow } from "morpheus";
+import { Tray, useTrayOriginProgress, useTrayFlow } from "react-native-morpheus";
 import {
   EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
   SCREEN_WIDTH,
-} from "morpheus/constants";
+} from "react-native-morpheus/constants";
 import { AnimatedFlowButton } from "@/features/tray-demos/presets/animated-flow-button";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { PressableScale } from "@/shared/ui/pressable-scale";

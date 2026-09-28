@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Image, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayFlow } from "morpheus";
+import { Tray, useTrayFlow } from "react-native-morpheus";
 import { trayDemoText } from "@/shared/theme/tokens";
 import { FieldShell } from "../shared/field-shell";
 import { PrimaryButton } from "../shared/primary-button";

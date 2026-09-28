@@ -7,12 +7,12 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import { SymbolView } from "expo-symbols";
-import { useTrayFlow, useTrayPages } from "morpheus";
+import { useTrayFlow, useTrayPages } from "react-native-morpheus";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import {
   FULL_SCREEN_CONTROL_SIZE,
   FULL_SCREEN_HEADER_PADDING_TOP,
-} from "morpheus/constants";
+} from "react-native-morpheus/constants";
 
 const PageProgressItem = ({
   index,

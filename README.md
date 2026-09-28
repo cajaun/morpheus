@@ -5,7 +5,7 @@ A morphing, multi-step action tray for React Native and Expo. Morpheus supports 
 ## Installation
 
 ```sh
-npm install morpheus \
+npm install react-native-morpheus \
   expo-haptics \
   react-native-gesture-handler \
   react-native-keyboard-controller \
@@ -23,7 +23,7 @@ Place `TrayProvider` inside the gesture-handler and keyboard providers. The pres
 ```tsx
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import { TrayProvider } from "morpheus";
+import { TrayProvider } from "react-native-morpheus";
 
 export function App() {
   return (
@@ -42,7 +42,7 @@ Ensure Reanimated and Worklets are configured for the versions used by your appl
 
 ```tsx
 import { Button, Text } from "react-native";
-import { Tray, useTrayFlow } from "morpheus";
+import { Tray, useTrayFlow } from "react-native-morpheus";
 
 function TrayFooter() {
   const { next, close, index, total } = useTrayFlow();
@@ -106,7 +106,7 @@ that step's `options` prop. `Tray.Root` and `Tray.Nested` no longer accept a
 
 Flow and integration hooks include `useTrayFlow`, `useTrayPages`, `useOptionalTrayPages`, `useTrayOriginProgress`, `useTrayHost`, and `useTrayTransitionLifecycle`.
 
-Package-level layout constants that are intentionally public are available from `morpheus/constants`.
+Package-level layout constants that are intentionally public are available from `react-native-morpheus/constants`.
 
 ## Repository structure
 
@@ -122,7 +122,7 @@ scripts/              Package verification tooling
 lib/                  Generated JavaScript and declarations (not committed)
 ```
 
-The example application imports from `morpheus`, not from internal source paths. This keeps local development on the same package boundary consumers use.
+The example application imports from `react-native-morpheus`, not from internal source paths. This keeps local development on the same package boundary consumers use.
 
 ## Development
 
@@ -138,4 +138,4 @@ npm run pack:check
 
 `npm run quality` runs the complete release gate: linting, type checking, coverage tests, package compilation, and tarball-content verification.
 
-The npm build is generated with [React Native Builder Bob](https://oss.callstack.com/react-native-builder-bob/build). Before a public release, choose the final npm package name and replace the current `UNLICENSED` package metadata with the intended license.
+The npm build is generated with [React Native Builder Bob](https://oss.callstack.com/react-native-builder-bob/build). Before a public release, replace the current `UNLICENSED` package metadata with the intended license.

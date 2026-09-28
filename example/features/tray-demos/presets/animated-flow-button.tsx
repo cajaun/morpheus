@@ -17,7 +17,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { PressableScale } from "@/shared/ui/pressable-scale";
-import { TRAY_PRIMARY_BUTTON_HEIGHT } from "morpheus/constants";
+import { TRAY_PRIMARY_BUTTON_HEIGHT } from "react-native-morpheus/constants";
 import {
   trayDemoColors,
   trayDemoText,

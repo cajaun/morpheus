@@ -4,7 +4,7 @@ import { SymbolView } from "expo-symbols";
 import {
   Tray,
   useTrayFlow,
-} from "morpheus";
+} from "react-native-morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { ExampleTrigger } from "../shared/example-trigger";
 

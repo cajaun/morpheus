@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Tray, useTrayFlow } from "morpheus";
+import { Tray, useTrayFlow } from "react-native-morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { ExampleTrigger } from "../shared/example-trigger";
 import {

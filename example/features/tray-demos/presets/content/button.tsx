@@ -6,7 +6,7 @@ import Animated, {
   useDerivedValue,
   useSharedValue,
 } from "react-native-reanimated";
-import { useTrayMorphProgress } from "morpheus";
+import { useTrayMorphProgress } from "react-native-morpheus";
 import { Laminar } from "react-native-laminar";
 import { PressableScale } from "@/components/ui/utils/pressable-scale";
 import * as Haptics from "expo-haptics";

@@ -1,6 +1,6 @@
 import React from "react";
 import { Text } from "react-native";
-import { Tray } from "morpheus";
+import { Tray } from "react-native-morpheus";
 import {
   trayDemoColors,
   trayDemoText,

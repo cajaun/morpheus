@@ -2,11 +2,11 @@ import React from "react";
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import * as Haptics from "expo-haptics";
-import { Tray } from "morpheus";
+import { Tray } from "react-native-morpheus";
 import { trayDemoText } from "@/shared/theme/tokens";
 import {
   TRAY_HEADER_CLOSE_ICON_SIZE,
-} from "morpheus/constants";
+} from "react-native-morpheus/constants";
 
 type TitleWeight =
   | "thin"

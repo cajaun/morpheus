@@ -2,7 +2,7 @@ import type { ComponentProps } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayFlow } from "morpheus";
+import { Tray, useTrayFlow } from "react-native-morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { AnimatedOnboardingButton } from "@/features/tray-demos/presets/content/button";
 import { PressableScale } from "@/shared/ui/pressable-scale";

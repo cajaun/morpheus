@@ -1,5 +1,5 @@
 import { Text } from "react-native";
-import { Tray, useTrayFlow } from "morpheus";
+import { Tray, useTrayFlow } from "react-native-morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { AnimatedOnboardingButton } from "@/features/tray-demos/presets/content/button";
 import { trayDemoText } from "@/shared/theme/tokens";

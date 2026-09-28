@@ -8,7 +8,7 @@ import {
   Tray,
   useTrayFlow,
   useTrayMorphProgress,
-} from "morpheus";
+} from "react-native-morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { ExampleTrigger } from "../shared/example-trigger";

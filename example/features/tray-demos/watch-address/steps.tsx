@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayFlow } from "morpheus";
+import { Tray, useTrayFlow } from "react-native-morpheus";
 import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { FieldShell } from "../shared/field-shell";

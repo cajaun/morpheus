@@ -1,7 +1,7 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayFlow, useTrayPages } from "morpheus";
+import { Tray, useTrayFlow, useTrayPages } from "react-native-morpheus";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { trayDemoText } from "@/shared/theme/tokens";
 import { ActionRow, SendFlowFooter, SendFlowHeader } from "./components";

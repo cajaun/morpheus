@@ -2,10 +2,10 @@ import React, { useMemo } from "react";
 import { Text, View } from "react-native";
 import { SymbolView, type SFSymbol } from "expo-symbols";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTrayFlow, useTrayPages } from "morpheus";
+import { useTrayFlow, useTrayPages } from "react-native-morpheus";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
-import { TRAY_ITEM_RADIUS } from "morpheus/constants";
+import { TRAY_ITEM_RADIUS } from "react-native-morpheus/constants";
 
 export const CREATE_WALLET_COLORS = [
   "#F24160",

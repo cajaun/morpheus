@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import { TrayProvider } from "morpheus";
+import { TrayProvider } from "react-native-morpheus";
 import "../global.css";
 
 export default function RootLayout() {
