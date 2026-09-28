@@ -76,8 +76,8 @@ export const trayDemoText = {
     letterSpacing: 0,
   } satisfies TextStyle,
   Button: {
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: 21,
+    lineHeight: 28,
     letterSpacing: 0.2,
   } satisfies TextStyle,
   Status: {
