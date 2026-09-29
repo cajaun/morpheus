@@ -5,7 +5,7 @@ import {
   Tray,
   useTrayFlow,
 } from "react-native-morpheus";
-import FlowHeader from "@/features/tray-demos/presets/flow-header";
+import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
@@ -51,27 +51,50 @@ const wallets = [
  
 ];
 
-const WalletSelectionStep = ({
+const WalletSelectionHeader = () => {
+  const { close, back } = useTrayFlow();
+
+  return (
+    <Tray.Header withSeparator returnButton={
+      <Tray.HeaderCloseButton onPress={back}>
+        <SymbolView
+          name="chevron.left"
+          type="palette"
+          tintColor="#787878"
+          size={TRAY_HEADER_CLOSE_ICON_SIZE}
+          weight="semibold"
+        />
+      </Tray.HeaderCloseButton>
+    }>
+      <Tray.HeaderRow>
+        <Text className="font-medium" style={trayDemoText.Title1}>
+          Pay From
+        </Text>
+        <Tray.HeaderCloseButton onPress={close}>
+          <SymbolView
+            name="xmark"
+            type="palette"
+            tintColor="#787878"
+            size={TRAY_HEADER_CLOSE_ICON_SIZE}
+            weight="bold"
+          />
+        </Tray.HeaderCloseButton>
+      </Tray.HeaderRow>
+    </Tray.Header>
+  );
+};
+
+const WalletSelectionBody = ({
   selectedId,
   onSelect,
 }: {
   selectedId: string;
   onSelect: (id: string) => void;
 }) => {
-  const { close, back, next, index } = useTrayFlow();
+  const { next } = useTrayFlow();
 
   return (
     <Tray.Body>
-      <Tray.Header withSeparator>
-        <FlowHeader
-          step={index}
-          leftLabel="Pay From"
-          shouldClose
-          onBack={back}
-          onClose={close}
-        />
-      </Tray.Header>
-
       <Tray.Section style={{gap: 16}}>
         {wallets.map((wallet) => {
           const isSelected = wallet.id === selectedId;
@@ -147,20 +170,42 @@ const WalletSelectionStep = ({
   );
 };
 
-const InsufficientTokensStep = () => {
-  const { close, back, index } = useTrayFlow();
+const InsufficientTokensHeader = () => {
+  const { close, back } = useTrayFlow();
 
   return (
-    <Tray.Body>
-      <Tray.Header withSeparator>
-        <FlowHeader
-          step={index}
-          leftLabel="Insufficient Tokens"
-          shouldClose
-          onBack={back}
-          onClose={close}
+    <Tray.Header withSeparator returnButton={
+      <Tray.HeaderCloseButton onPress={back}>
+        <SymbolView
+          name="chevron.left"
+          type="palette"
+          tintColor="#787878"
+          size={TRAY_HEADER_CLOSE_ICON_SIZE}
+          weight="semibold"
         />
-      </Tray.Header>
+      </Tray.HeaderCloseButton>
+    }>
+      <Tray.HeaderRow>
+        <Text className="font-medium" style={trayDemoText.Title1}>
+          Insufficient Tokens
+        </Text>
+        <Tray.HeaderCloseButton onPress={close}>
+          <SymbolView
+            name="xmark"
+            type="palette"
+            tintColor="#787878"
+            size={TRAY_HEADER_CLOSE_ICON_SIZE}
+            weight="bold"
+          />
+        </Tray.HeaderCloseButton>
+      </Tray.HeaderRow>
+    </Tray.Header>
+  );
+};
+
+const InsufficientTokensBody = () => {
+  return (
+    <Tray.Body>
 
       <Tray.Section>
         <Text
@@ -184,10 +229,12 @@ const PayFromTray = () => {
         <ExampleTrigger label="Pay From" />
       </Tray.Trigger>
       <Tray.Step key="wallet-selection">
-        <WalletSelectionStep selectedId={selectedId} onSelect={setSelectedId} />
+        <WalletSelectionHeader />
+        <WalletSelectionBody selectedId={selectedId} onSelect={setSelectedId} />
       </Tray.Step>
       <Tray.Step key="insufficient-tokens">
-        <InsufficientTokensStep />
+        <InsufficientTokensHeader />
+        <InsufficientTokensBody />
       </Tray.Step>
     </Tray.Root>
   );

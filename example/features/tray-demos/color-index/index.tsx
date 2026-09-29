@@ -4,13 +4,14 @@ import Animated, {
   interpolateColor,
   useAnimatedStyle,
 } from "react-native-reanimated";
+import { SymbolView } from "expo-symbols";
 import {
   Tray,
   useTrayFlow,
   useTrayMorphProgress,
 } from "react-native-morpheus";
-import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { PressableScale } from "@/shared/ui/pressable-scale";
+import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { ExampleTrigger } from "../shared/example-trigger";
 import { trayDemoText } from "@/shared/theme/tokens";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -55,22 +56,35 @@ const COLOR_STEPS: ColorStep[] = [
 
 const ColorIndexHeader = ({ step }: { step: ColorStep }) => {
   const { close, back, index } = useTrayFlow();
+  const returnButton =
+    index > 0 ? (
+      <Tray.HeaderCloseButton onPress={back}>
+        <SymbolView
+          name="chevron.left"
+          type="palette"
+          tintColor="#787878"
+          size={TRAY_HEADER_CLOSE_ICON_SIZE}
+          weight="semibold"
+        />
+      </Tray.HeaderCloseButton>
+    ) : undefined;
 
   return (
-    <Tray.Header withSeparator>
-      <FlowHeader
-        step={index}
-        leftLabel={
-          <View>
-            <Text className="font-semibold" style={trayDemoText.Title1}>
-              {step.name}
-            </Text>
-          </View>
-        }
-        shouldClose
-        onClose={close}
-        onBack={index > 0 ? back : undefined}
-      />
+    <Tray.Header withSeparator returnButton={returnButton}>
+      <Tray.HeaderRow>
+        <Text className="font-semibold" style={trayDemoText.Title1}>
+          {step.name}
+        </Text>
+        <Tray.HeaderCloseButton onPress={close}>
+          <SymbolView
+            name="xmark"
+            type="palette"
+            tintColor="#787878"
+            size={TRAY_HEADER_CLOSE_ICON_SIZE}
+            weight="bold"
+          />
+        </Tray.HeaderCloseButton>
+      </Tray.HeaderRow>
     </Tray.Header>
   );
 };

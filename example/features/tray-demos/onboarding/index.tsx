@@ -1,10 +1,11 @@
+import type { ReactNode } from "react";
 import { Text, View } from "react-native";
 import {
   Tray,
   useTrayFlow,
 } from "react-native-morpheus";
+import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { BUTTON_HEIGHT } from "@/features/tray-demos/presets/animated-flow-button";
-import FlowHeader from "@/features/tray-demos/presets/flow-header";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
 import { OnboardingPageHeader as SharedOnboardingPageHeader } from "../shared/onboarding-page-header";
@@ -318,18 +319,47 @@ const OnboardingWalletsInfoStep = () => {
   );
 };
 
-const OnboardingHeader = ({ title }: { title: string }) => {
-  const { close, back, index } = useTrayFlow();
+const OnboardingReturnButton = () => {
+  const { back } = useTrayFlow();
 
   return (
-    <Tray.Header withSeparator>
-      <FlowHeader
-        step={index}
-        leftLabel={title}
-        shouldClose
-        onClose={close}
-        onBack={index > 0 ? back : undefined}
+    <Tray.HeaderCloseButton onPress={back}>
+      <SymbolView
+        name="chevron.left"
+        type="palette"
+        tintColor="#787878"
+        size={TRAY_HEADER_CLOSE_ICON_SIZE}
+        weight="semibold"
       />
+    </Tray.HeaderCloseButton>
+  );
+};
+
+const OnboardingHeader = ({
+  title,
+  returnButton,
+}: {
+  title: string;
+  returnButton?: ReactNode;
+}) => {
+  const { close } = useTrayFlow();
+
+  return (
+    <Tray.Header withSeparator returnButton={returnButton}>
+      <Tray.HeaderRow>
+        <Text className="font-medium" style={trayDemoText.Title1}>
+          {title}
+        </Text>
+        <Tray.HeaderCloseButton onPress={close}>
+          <SymbolView
+            name="xmark"
+            type="palette"
+            tintColor="#787878"
+            size={TRAY_HEADER_CLOSE_ICON_SIZE}
+            weight="bold"
+          />
+        </Tray.HeaderCloseButton>
+      </Tray.HeaderRow>
     </Tray.Header>
   );
 };
@@ -695,7 +725,10 @@ const OnboardingExample = () => {
         </Tray.Step>
 
         <Tray.Step>
-          <OnboardingHeader title="Content Two" />
+          <OnboardingHeader
+            title="Content Two"
+            returnButton={<OnboardingReturnButton />}
+          />
           <SecondStep />
         </Tray.Step>
 
@@ -713,7 +746,10 @@ const OnboardingExample = () => {
         </Tray.Step>
 
         <Tray.Step>
-          <OnboardingHeader title="Content Four" />
+          <OnboardingHeader
+            title="Content Four"
+            returnButton={<OnboardingReturnButton />}
+          />
           <FourthStep />
         </Tray.Step>
 

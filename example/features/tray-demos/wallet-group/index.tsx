@@ -7,7 +7,7 @@ import {
   Tray,
   useTrayFlow,
 } from "react-native-morpheus";
-import FlowHeader from "@/features/tray-demos/presets/flow-header";
+import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import {
   trayDemoColors,
@@ -272,27 +272,38 @@ const NewGroupRow = () => {
   );
 };
 
-const ChooseWalletGroupStep = ({
+const ChooseWalletGroupHeader = () => {
+  const { close } = useTrayFlow();
+
+  return (
+    <Tray.Header withSeparator>
+      <Tray.HeaderRow>
+        <Text className="font-semibold" style={trayDemoText.Title1}>
+          Choose Wallet Group
+        </Text>
+        <Tray.HeaderCloseButton onPress={close}>
+          <SymbolView
+            name="xmark"
+            type="palette"
+            tintColor="#787878"
+            size={TRAY_HEADER_CLOSE_ICON_SIZE}
+            weight="bold"
+          />
+        </Tray.HeaderCloseButton>
+      </Tray.HeaderRow>
+    </Tray.Header>
+  );
+};
+
+const ChooseWalletGroupBody = ({
   selectedGroupId,
   onSelectGroup,
 }: {
   selectedGroupId: string;
   onSelectGroup: (groupId: string) => void;
 }) => {
-  const { close, index } = useTrayFlow();
-
   return (
     <Tray.Body>
-      <Tray.Header withSeparator>
-        <FlowHeader
-          step={index}
-          leftLabel="Choose Wallet Group"
-          shouldClose
-          onClose={close}
-          titleWeight="semibold"
-        />
-      </Tray.Header>
-
       <Tray.Section
         style={{
           gap: 18,
@@ -499,7 +510,8 @@ const WalletGroupTray = () => {
         <ExampleTrigger label="Wallet Group" />
       </Tray.Trigger>
       <Tray.Step key="choose-wallet-group">
-        <ChooseWalletGroupStep
+        <ChooseWalletGroupHeader />
+        <ChooseWalletGroupBody
           selectedGroupId={selectedGroupId}
           onSelectGroup={setSelectedGroupId}
         />

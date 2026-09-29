@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import { Tray, useTrayFlow } from "react-native-morpheus";
-import FlowHeader from "@/features/tray-demos/presets/flow-header";
+import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { FieldShell } from "../shared/field-shell";
 import { PrimaryButton } from "../shared/primary-button";
@@ -26,17 +26,35 @@ export const WatchAddressHeader = ({
   title: string;
   showBack?: boolean;
 }) => {
-  const { close, back, index } = useTrayFlow();
+  const { close, back } = useTrayFlow();
+  const returnButton = showBack ? (
+    <Tray.HeaderCloseButton onPress={back}>
+      <SymbolView
+        name="chevron.left"
+        type="palette"
+        tintColor="#787878"
+        size={TRAY_HEADER_CLOSE_ICON_SIZE}
+        weight="semibold"
+      />
+    </Tray.HeaderCloseButton>
+  ) : undefined;
 
   return (
-    <Tray.Header withSeparator>
-      <FlowHeader
-        step={index}
-        leftLabel={title}
-        shouldClose
-        onClose={close}
-        onBack={showBack ? back : undefined}
-      />
+    <Tray.Header withSeparator returnButton={returnButton}>
+      <Tray.HeaderRow>
+        <Text className="font-medium" style={trayDemoText.Title1}>
+          {title}
+        </Text>
+        <Tray.HeaderCloseButton onPress={close}>
+          <SymbolView
+            name="xmark"
+            type="palette"
+            tintColor="#787878"
+            size={TRAY_HEADER_CLOSE_ICON_SIZE}
+            weight="bold"
+          />
+        </Tray.HeaderCloseButton>
+      </Tray.HeaderRow>
     </Tray.Header>
   );
 };

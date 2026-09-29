@@ -1,6 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 import AboutAaveTray from "./about-aave";
+import ChangeAvatarTray from "./change-avatar";
 import type { UsageVariant } from "./component-presentation/types";
 import CreatingWalletsInfoTray from "./creating-wallets-info";
 import ColorIndexTray from "./color-index";
@@ -67,6 +68,15 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     content: (
       <TrayExampleFrame>
         <NotificationsTray />
+      </TrayExampleFrame>
+    ),
+  },
+  {
+    value: "change-avatar",
+    label: "Change Avatar",
+    content: (
+      <TrayExampleFrame>
+        <ChangeAvatarTray />
       </TrayExampleFrame>
     ),
   },

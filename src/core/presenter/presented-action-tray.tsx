@@ -1,6 +1,7 @@
 // adapt runtime payloads into the animated native shell
 import React, { useCallback } from "react";
 import { TrayStepContent } from "../../tray-step-content";
+import { TrayHeaderTransitionProvider } from "../../primitives/header-transition-context";
 import {
   TrayScopeProvider,
   TrayStepOptionsProvider,
@@ -42,14 +43,15 @@ const PresentedActionTray = ({
   const header = payload.header ? (
     <TrayScopeProvider value={payload.rootTrayId}>
       <TrayStepOptionsProvider value={payload.stepOptions}>
-        <TrayStepContent
-          stepKey={`${payload.trayId}-header`}
-          scale={false}
-          fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
-          skipEntering={payload.isFirstRender}
+        <TrayHeaderTransitionProvider
+          value={{
+            stepKey: payload.trayId,
+            skipEntering: payload.isFirstRender,
+            fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
+          }}
         >
           {payload.header}
-        </TrayStepContent>
+        </TrayHeaderTransitionProvider>
       </TrayStepOptionsProvider>
     </TrayScopeProvider>
   ) : null;

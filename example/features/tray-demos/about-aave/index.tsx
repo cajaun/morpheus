@@ -5,7 +5,8 @@ import {
   Tray,
   useTrayFlow,
 } from "react-native-morpheus";
-import FlowHeader from "@/features/tray-demos/presets/flow-header";
+import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
+import { trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
 
 const InsightBars = () => {
@@ -150,21 +151,32 @@ const FeatureBlock = ({
   );
 };
 
-const AboutAaveStep = () => {
-  const { close, index } = useTrayFlow();
+const AboutAaveHeader = () => {
+  const { close } = useTrayFlow();
 
   return (
+    <Tray.Header withSeparator>
+      <Tray.HeaderRow>
+        <Text className="font-bold" style={trayDemoText.Title1}>
+          About Aave
+        </Text>
+        <Tray.HeaderCloseButton onPress={close}>
+          <SymbolView
+            name="xmark"
+            type="palette"
+            tintColor="#787878"
+            size={TRAY_HEADER_CLOSE_ICON_SIZE}
+            weight="bold"
+          />
+        </Tray.HeaderCloseButton>
+      </Tray.HeaderRow>
+    </Tray.Header>
+  );
+};
+
+const AboutAaveBody = () => {
+  return (
     <Tray.Body>
-      <Tray.Header withSeparator>
-        <FlowHeader
-          step={index}
-          leftLabel="About Aave"
-          shouldClose
-          onClose={close}
-          titleWeight="bold"
-        
-        />
-      </Tray.Header>
 
       <Tray.Section
         style={{ gap: 40, paddingVertical: 40, paddingHorizontal: 12 }}
@@ -198,7 +210,8 @@ const AboutAaveTray = () => {
         <ExampleTrigger label="About Aave" />
       </Tray.Trigger>
       <Tray.Step>
-        <AboutAaveStep />
+        <AboutAaveHeader />
+        <AboutAaveBody />
       </Tray.Step>
     </Tray.Root>
   );

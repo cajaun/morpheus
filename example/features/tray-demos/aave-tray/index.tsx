@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
 import { Text } from "react-native";
+import { SymbolView } from "expo-symbols";
 import { Tray, useTrayFlow } from "react-native-morpheus";
-import FlowHeader from "@/features/tray-demos/presets/flow-header";
+import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { AnimatedOnboardingButton } from "@/features/tray-demos/presets/content/button";
 import { trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
@@ -22,18 +24,48 @@ const AaveFooter = () => {
   );
 };
 
-const AaveHeader = ({ title }: { title: string }) => {
-  const { close, back, index } = useTrayFlow();
+const AaveReturnButton = () => {
+  const { back } = useTrayFlow();
 
   return (
-    <Tray.Header withSeparator>
-      <FlowHeader
-        step={index}
-        leftLabel={title}
-        shouldClose
-        onClose={close}
-        onBack={index > 0 ? back : undefined}
+    <Tray.HeaderCloseButton onPress={back}>
+      <SymbolView
+        name="chevron.left"
+        type="palette"
+        tintColor="#787878"
+        size={TRAY_HEADER_CLOSE_ICON_SIZE}
+        weight="semibold"
       />
+    </Tray.HeaderCloseButton>
+  );
+};
+
+const AaveHeader = ({
+  title,
+  returnButton,
+}: {
+  title: string;
+  returnButton?: ReactNode;
+}) => {
+  const { close } = useTrayFlow();
+
+  return (
+    <Tray.Header withSeparator returnButton={returnButton}>
+      <Tray.HeaderRow>
+        <Text className="font-semibold text-black" style={trayDemoText.Title1}>
+          {title}
+        </Text>
+
+        <Tray.HeaderCloseButton onPress={close}>
+          <SymbolView
+            name="xmark"
+            type="palette"
+            tintColor="#787878"
+            size={TRAY_HEADER_CLOSE_ICON_SIZE}
+            weight="bold"
+          />
+        </Tray.HeaderCloseButton>
+      </Tray.HeaderRow>
     </Tray.Header>
   );
 };
@@ -73,7 +105,10 @@ const AaveExample = () => {
       </Tray.Step>
 
       <Tray.Step>
-        <AaveHeader title="Content Two" />
+        <AaveHeader
+          title="Content Two"
+          returnButton={<AaveReturnButton />}
+        />
         <Tray.Body>
           <Tray.Section>
             <Text className="font-bold" style={trayDemoText.Title2}>
@@ -102,7 +137,10 @@ const AaveExample = () => {
       </Tray.Step>
 
       <Tray.Step>
-        <AaveHeader title="Content Three" />
+        <AaveHeader
+          title="Content Three"
+          returnButton={<AaveReturnButton />}
+        />
         <Tray.Body>
           <Tray.Section>
             <Text className="font-bold" style={trayDemoText.Title2}>
@@ -130,7 +168,10 @@ const AaveExample = () => {
       </Tray.Step>
 
       <Tray.Step>
-        <AaveHeader title="Content Four" />
+        <AaveHeader
+          title="Content Four"
+          returnButton={<AaveReturnButton />}
+        />
         <Tray.Body>
           <Tray.Section>
             <Text className="font-bold" style={trayDemoText.Title2}>

@@ -1,6 +1,6 @@
 {
   "name": "react-native-morpheus",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A production-grade morphing action tray for React Native.",
   "license": "UNLICENSED",
   "repository": {
