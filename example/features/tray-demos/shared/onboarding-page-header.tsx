@@ -7,11 +7,11 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import { SymbolView } from "expo-symbols";
-import { useTrayFlow, useTrayPages } from "react-native-morpheus";
-import { PressableScale } from "@/shared/ui/pressable-scale";
+import { Tray, useTrayFlow, useTrayPages } from "react-native-morpheus";
 import {
-  FULL_SCREEN_CONTROL_SIZE,
   FULL_SCREEN_HEADER_PADDING_TOP,
+  TRAY_HEADER_CLOSE_BUTTON_SIZE,
+  TRAY_HEADER_CLOSE_ICON_SIZE,
 } from "react-native-morpheus/constants";
 
 const PageProgressItem = ({
@@ -90,23 +90,17 @@ export const OnboardingPageHeader = ({
         alignItems: "center",
       }}
     >
-      <PressableScale
+      <Tray.HeaderCloseButton
         onPress={isFirstPage ? requestClose : backPage}
-        style={{
-          width: FULL_SCREEN_CONTROL_SIZE,
-          height: FULL_SCREEN_CONTROL_SIZE,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
       >
         <SymbolView
           name="xmark"
           type="palette"
-          weight="regular"
-          tintColor="#222222"
-          size={20}
+          weight="bold"
+          tintColor="#787878"
+          size={TRAY_HEADER_CLOSE_ICON_SIZE}
         />
-      </PressableScale>
+      </Tray.HeaderCloseButton>
 
       {showProgress ? (
         <PageProgress totalPages={totalPages} progress={progress} />
@@ -116,19 +110,21 @@ export const OnboardingPageHeader = ({
 
       <View
         style={{
-          width: FULL_SCREEN_CONTROL_SIZE,
-          height: FULL_SCREEN_CONTROL_SIZE,
+          width: TRAY_HEADER_CLOSE_BUTTON_SIZE,
+          height: TRAY_HEADER_CLOSE_BUTTON_SIZE,
+          borderRadius: TRAY_HEADER_CLOSE_BUTTON_SIZE / 2,
+          backgroundColor: "#F2F2F2",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
         {rightAccessory ?? (
           <SymbolView
-            name="questionmark.circle"
+            name="questionmark"
             type="palette"
-            tintColor="#222222"
-            size={24}
-            weight="regular"
+            tintColor="#787878"
+            size={TRAY_HEADER_CLOSE_ICON_SIZE}
+            weight="bold"
           />
         )}
       </View>

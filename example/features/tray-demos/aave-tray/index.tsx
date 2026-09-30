@@ -167,45 +167,7 @@ const AaveExample = () => {
         </Tray.Body>
       </Tray.Step>
 
-      <Tray.Step>
-        <AaveHeader
-          title="Content Four"
-          returnButton={<AaveReturnButton />}
-        />
-        <Tray.Body>
-          <Tray.Section>
-            <Text className="font-bold" style={trayDemoText.Title2}>
-              Some heading
-            </Text>
-
-            <Text
-              className="text-black font-normal"
-              style={trayDemoText.Title2}
-            >
-              Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum dolor
-              amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
-            </Text>
-
-            <Text
-              className="text-black font-normal"
-              style={trayDemoText.Title2}
-            >
-              Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
-              amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum
-              dolor amet. Lorem ipsum dolor amet.
-            </Text>
-
-            <Text
-              className="text-black font-normal"
-              style={trayDemoText.Title2}
-            >
-              This is some example test that spans over multiple lines bla bla
-              bla test test test many wods. this is a new sentence and we'll see
-              how that fares too.
-            </Text>
-          </Tray.Section>
-        </Tray.Body>
-      </Tray.Step>
+    
     </Tray.Root>
   );
 };

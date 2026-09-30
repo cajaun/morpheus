@@ -390,6 +390,7 @@ export const TrayHeaderTransitionRow: React.FC<
   returnButton,
 }) => {
   const morphProgress = useOptionalTrayMorphProgress();
+  const transitionStart = useTrayTransitionStart();
   const rowWidth = useSharedValue(0);
   const titleStartWidth = useSharedValue(0);
   const titleWidth = useSharedValue(0);
@@ -397,6 +398,9 @@ export const TrayHeaderTransitionRow: React.FC<
   const previousReturnButtonRef = useRef<React.ReactNode>(null);
   const centered = returnButton != null;
   const sourceCentered = previousCenteredRef.current ?? centered;
+  const wholeHeaderBoundaryAnimation =
+    transition.fullScreenBoundaryExit &&
+    transitionStart?.fullScreenChanged === true;
 
   useEffect(() => {
     previousCenteredRef.current = centered;
@@ -489,7 +493,10 @@ export const TrayHeaderTransitionRow: React.FC<
             stepKey={`${transition.stepKey}-header-title`}
             scale={false}
             fullScreenBoundaryExit={transition.fullScreenBoundaryExit}
-            skipEntering={transition.skipEntering}
+            skipEntering={
+              transition.skipEntering || wholeHeaderBoundaryAnimation
+            }
+            skipExiting={wholeHeaderBoundaryAnimation}
           >
             {title}
           </TrayStepContent>

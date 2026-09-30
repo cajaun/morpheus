@@ -4,7 +4,10 @@ import {
   Tray,
   useTrayFlow,
 } from "react-native-morpheus";
-import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
+import {
+  TRAY_HEADER_CLOSE_BUTTON_SIZE,
+  TRAY_HEADER_CLOSE_ICON_SIZE,
+} from "react-native-morpheus/constants";
 import { BUTTON_HEIGHT } from "@/features/tray-demos/presets/animated-flow-button";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
@@ -380,24 +383,26 @@ export const OnboardingPageHeader = () => {
     <SharedOnboardingPageHeader
       rightAccessory={
         <Tray.Nested
-          stepOptions={{ className: "bg-white" }}
-          style={{
-            width: 32,
-            height: 32,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+        stepOptions={{ className: "bg-white" }}
+        style={{
+          width: TRAY_HEADER_CLOSE_BUTTON_SIZE,
+          height: TRAY_HEADER_CLOSE_BUTTON_SIZE,
+          borderRadius: TRAY_HEADER_CLOSE_BUTTON_SIZE / 2,
+          backgroundColor: "#F2F2F2",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
         >
           <Tray.Step>
             <OnboardingWalletsInfoStep />
           </Tray.Step>
           <SymbolView
-            name="questionmark.circle"
-            type="palette"
-            size={28}
-            tintColor="#222222"
-            weight="regular"
-          />
+          name="questionmark"
+          type="palette"
+          size={TRAY_HEADER_CLOSE_ICON_SIZE}
+          tintColor="#787878"
+          weight="bold"
+        />
         </Tray.Nested>
       }
     />

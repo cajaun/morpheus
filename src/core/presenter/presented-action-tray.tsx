@@ -40,18 +40,28 @@ const PresentedActionTray = ({
     [payload.rootTrayId, payload.trayId],
   );
 
+  const headerTransitionContent = payload.header ? (
+    <TrayHeaderTransitionProvider
+      value={{
+        stepKey: payload.trayId,
+        skipEntering: payload.isFirstRender,
+        fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
+      }}
+    >
+      {payload.header}
+    </TrayHeaderTransitionProvider>
+  ) : null;
   const header = payload.header ? (
     <TrayScopeProvider value={payload.rootTrayId}>
       <TrayStepOptionsProvider value={payload.stepOptions}>
-        <TrayHeaderTransitionProvider
-          value={{
-            stepKey: payload.trayId,
-            skipEntering: payload.isFirstRender,
-            fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
-          }}
+        <TrayStepContent
+          stepKey={payload.fullScreen ? "fullscreen-header" : "fixed-header"}
+          scale={false}
+          fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
+          skipEntering={payload.isFirstRender}
         >
-          {payload.header}
-        </TrayHeaderTransitionProvider>
+          {headerTransitionContent}
+        </TrayStepContent>
       </TrayStepOptionsProvider>
     </TrayScopeProvider>
   ) : null;
