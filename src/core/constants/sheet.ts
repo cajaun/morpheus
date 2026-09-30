@@ -6,7 +6,7 @@ export const BACKDROP_OPACITY = 1 / 3;
 export const TRAY_HEADER_HORIZONTAL_PADDING = 28;
 export const TRAY_SHEET_BODY_HORIZONTAL_PADDING = 28;
 export const TRAY_FULL_SCREEN_BODY_HORIZONTAL_PADDING = 32;
-// The reference header measures 29pt above and 21pt below its 40pt content row.
+
 export const TRAY_HEADER_PADDING_TOP = 29;
 export const TRAY_HEADER_PADDING_BOTTOM = 21;
 export const TRAY_HEADER_CONTENT_HEIGHT = 40;
@@ -26,6 +26,6 @@ export const TRAY_KEYBOARD_GAP = 0;
 
 export const FULL_SCREEN_HEADER_HORIZONTAL_PADDING =
   TRAY_HEADER_HORIZONTAL_PADDING;
-export const FULL_SCREEN_HEADER_PADDING_TOP = 24;
+export const FULL_SCREEN_HEADER_PADDING_TOP = 29;
 export const FULL_SCREEN_HEADER_BOTTOM_GAP = 16;
 export const FULL_SCREEN_CONTROL_SIZE = 44;
