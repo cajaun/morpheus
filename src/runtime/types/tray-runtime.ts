@@ -122,6 +122,7 @@ export type TrayHostActionsValue = {
     toPageIndex: number,
   ) => number | null;
   anticipateKeyboard: () => void;
+  prepareKeyboardHandoff: () => void;
   dismissKeyboardForTray: (trayId?: string | null) => void;
   registerFocusable: (
     trayId: string,
@@ -138,6 +139,7 @@ export type TrayRuntimeStore = {
   setDependencies: (params: {
     keyboardHeight: SharedValue<number>;
     anticipateKeyboard: () => void;
+    prepareKeyboardHandoff: () => void;
     dismissFocusedInputs: (trayId?: string | null) => void | Promise<void>;
     registerFocusable: TrayHostActionsValue["registerFocusable"];
   }) => void;

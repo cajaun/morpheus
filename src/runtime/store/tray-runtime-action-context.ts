@@ -10,6 +10,7 @@ import type {
 export type TrayRuntimeDependencies = {
   keyboardHeight: SharedValue<number>;
   anticipateKeyboard: () => void;
+  prepareKeyboardHandoff: () => void;
   dismissFocusedInputs: (trayId?: string | null) => void | Promise<void>;
   registerFocusable: TrayHostActionsValue["registerFocusable"];
 };

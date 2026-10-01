@@ -46,6 +46,7 @@ describe("tray registration equality", () => {
     const store = createTrayRuntimeStore({
       keyboardHeight: { value: 0 } as SharedValue<number>,
       anticipateKeyboard: jest.fn(),
+      prepareKeyboardHandoff: jest.fn(),
       dismissFocusedInputs: () => undefined,
       registerFocusable: () => () => undefined,
     });

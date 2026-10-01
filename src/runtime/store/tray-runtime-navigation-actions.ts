@@ -1,4 +1,4 @@
-import type { TrayHostActionsValue } from "../types";
+import type { TrayHostActionsValue, TrayHostStateValue } from "../types";
 import { markTrayOpenRequested } from "../../telemetry/tray-open-timing";
 import { createTrayTransitionContract } from "../transition-contract";
 import {
@@ -9,6 +9,7 @@ import {
   withActiveTrayFromStack,
   withTrayTransition,
 } from "./tray-runtime-state";
+import { resolveTrayStepOptions } from "../tray-step-options";
 import type { TrayRuntimeActionContext } from "./tray-runtime-action-context";
 
 type NavigationActions = Pick<
@@ -21,6 +22,33 @@ type NavigationActions = Pick<
   | "previousStep"
   | "requestPageTransition"
 >;
+
+// Native keyboard visibility is owned by the focused input. For a sheet to
+// sheet keyboard transition, transfer that ownership before replacing the
+// current step subtree so iOS never observes a no-first-responder interval.
+const shouldPrepareKeyboardHandoff = (
+  state: TrayHostStateValue,
+  nextIndex: number,
+) => {
+  const activeEntry = state.stack[state.stack.length - 1];
+  const tray = activeEntry ? state.registry[activeEntry.trayId] : undefined;
+  const currentStep = tray?.steps[activeEntry?.index ?? -1];
+  const nextStep = tray?.steps[nextIndex];
+
+  if (!currentStep || !nextStep || currentStep.key === nextStep.key) {
+    return false;
+  }
+
+  const currentOptions = resolveTrayStepOptions(currentStep.options);
+  const nextOptions = resolveTrayStepOptions(nextStep.options);
+
+  return (
+    currentOptions.keyboardAware &&
+    nextOptions.keyboardAware &&
+    !currentOptions.fullScreen &&
+    !nextOptions.fullScreen
+  );
+};
 
 // navigation commands own stack changes and transition contract creation
 export const createTrayRuntimeNavigationActions = ({
@@ -166,6 +194,10 @@ export const createTrayRuntimeNavigationActions = ({
       total,
     );
 
+    if (shouldPrepareKeyboardHandoff(state, nextIndex)) {
+      getDependencies().prepareKeyboardHandoff();
+    }
+
     setState((current) => {
       const activeStackIndex = current.stack.length - 1;
       const currentEntry = current.stack[activeStackIndex];
@@ -193,6 +225,10 @@ export const createTrayRuntimeNavigationActions = ({
     const state = getState();
     const activeEntry = state.stack[state.stack.length - 1];
     const nextIndex = Math.max((activeEntry?.index ?? 0) - 1, 0);
+
+    if (shouldPrepareKeyboardHandoff(state, nextIndex)) {
+      getDependencies().prepareKeyboardHandoff();
+    }
 
     setState((current) => {
       const activeStackIndex = current.stack.length - 1;

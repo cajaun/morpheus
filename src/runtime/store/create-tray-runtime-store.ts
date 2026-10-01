@@ -109,6 +109,9 @@ export const createTrayRuntimeStore = (
     anticipateKeyboard: () => {
       dependencies.anticipateKeyboard();
     },
+    prepareKeyboardHandoff: () => {
+      dependencies.prepareKeyboardHandoff();
+    },
     dismissKeyboardForTray: (trayId?: string | null) => {
       void dependencies.dismissFocusedInputs(trayId);
     },

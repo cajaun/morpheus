@@ -182,7 +182,8 @@ export const reconcileTransitionAfterRegistration = (
   const targetChanged =
     existingTransition.to.stepKey !== nextTarget.stepKey ||
     existingTransition.to.mode !== nextTarget.mode ||
-    existingTransition.to.pageIndex !== nextTarget.pageIndex;
+    existingTransition.to.pageIndex !== nextTarget.pageIndex ||
+    existingTransition.to.keyboardAware !== nextTarget.keyboardAware;
 
   if (!targetChanged) {
     return next;

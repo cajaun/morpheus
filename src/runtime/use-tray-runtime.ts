@@ -7,6 +7,7 @@ import { createTrayRuntimeStore } from "./store/create-tray-runtime-store";
 type Params = {
   keyboardHeight: SharedValue<number>;
   anticipateKeyboard: () => void;
+  prepareKeyboardHandoff: () => void;
   dismissFocusedInputs: (trayId?: string | null) => void | Promise<void>;
   registerFocusable: TrayHostActionsValue["registerFocusable"];
 };
@@ -15,6 +16,7 @@ type Params = {
 export const useTrayRuntime = ({
   keyboardHeight,
   anticipateKeyboard,
+  prepareKeyboardHandoff,
   dismissFocusedInputs,
   registerFocusable,
 }: Params) => {
@@ -25,6 +27,7 @@ export const useTrayRuntime = ({
     runtimeRef.current = createTrayRuntimeStore({
       keyboardHeight,
       anticipateKeyboard,
+      prepareKeyboardHandoff,
       dismissFocusedInputs,
       registerFocusable,
     });
@@ -35,11 +38,13 @@ export const useTrayRuntime = ({
     runtimeRef.current?.setDependencies({
       keyboardHeight,
       anticipateKeyboard,
+      prepareKeyboardHandoff,
       dismissFocusedInputs,
       registerFocusable,
     });
   }, [
     anticipateKeyboard,
+    prepareKeyboardHandoff,
     dismissFocusedInputs,
     keyboardHeight,
     registerFocusable,

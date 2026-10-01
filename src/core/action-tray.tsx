@@ -168,9 +168,26 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
 
     const presentationFullScreen = renderedFullScreen;
     const { top: safeAreaTopInset } = useSafeAreaInsets();
+    const isFullScreenBoundaryTransition =
+      transitionContract?.fullScreenChanged ?? false;
+    const isSheetStepTransition =
+      transitionContract?.stepChanged === true &&
+      !isFullScreenBoundaryTransition &&
+      transitionContract?.from?.trayId === transitionContract?.to?.trayId &&
+      transitionContract?.from?.mode === "sheet" &&
+      transitionContract?.to?.mode === "sheet";
+    const keyboardStepTransition =
+      isKeyboardAwareSheetStepTransition(transitionContract);
+    const targetKeyboardAware =
+      !isFullScreenBoundaryTransition &&
+      transitionContract?.to?.mode === "sheet" &&
+      transitionContract?.to?.keyboardAware === true;
     const keyboard = useSheetActionTrayKeyboard({
       visible,
-      keyboardAware: keyboardAware ?? false,
+      keyboardAware: !fullScreen && (keyboardAware ?? false),
+      targetKeyboardAware,
+      sheetStepTransition: isSheetStepTransition,
+      transitionGeneration: transitionContract?.generation,
     });
     const providerBackgroundScale = useTrayBackgroundScale();
     const fallbackBackgroundScale = useSharedValue(1);
@@ -199,10 +216,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       onRequestClose: handleRequestClose,
     });
 
-    const isFullScreenBoundaryTransition =
-      transitionContract?.fullScreenChanged ?? false;
-    const keyboardStepTransition =
-      isKeyboardAwareSheetStepTransition(transitionContract);
     const hasValidBoundarySheetFrame = isSheetFrameForTransition(
       preparedSheetFrame,
       transitionContract?.generation,

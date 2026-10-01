@@ -41,6 +41,9 @@ export const useActionTrayKeyboard = () => {
 type SheetKeyboardParams = {
   visible: boolean;
   keyboardAware: boolean;
+  targetKeyboardAware: boolean;
+  sheetStepTransition: boolean;
+  transitionGeneration?: number;
 };
 
 // Keep the sticky host enabled during the native dismissal handoff. This hook
@@ -48,42 +51,85 @@ type SheetKeyboardParams = {
 export const useSheetActionTrayKeyboard = ({
   visible,
   keyboardAware,
+  targetKeyboardAware,
+  sheetStepTransition,
+  transitionGeneration,
 }: SheetKeyboardParams) => {
   const keyboardVisible = useKeyboardState((state) => state.isVisible);
-  const previousKeyboardAwareRef = useRef<boolean | undefined>(undefined);
+  const keyboardOwnershipRef = useRef(false);
+  const lastTransitionGenerationRef = useRef<number | undefined>(
+    transitionGeneration,
+  );
+  const dismissIssuedRef = useRef(false);
   const [keyboardLease, setKeyboardLease] = useState(false);
-  const stickyEnabled = keyboardAware || keyboardLease;
+  // Either source carries the target's resolved keyboard intent. Keeping the
+  // values additive protects the handoff while a provisional transition
+  // contract is being reconciled with the registered step options.
+  const targetOwnsKeyboard = keyboardAware || targetKeyboardAware;
+  const stickyEnabled = targetOwnsKeyboard || keyboardLease;
 
   useEffect(() => {
     log("SHEET KEYBOARD STATE", {
       visible,
       keyboardAware,
+      targetKeyboardAware,
+      sheetStepTransition,
       keyboardVisible,
+      keyboardOwnership: keyboardOwnershipRef.current,
       keyboardLease,
       stickyEnabled,
     });
-  }, [keyboardAware, keyboardLease, keyboardVisible, stickyEnabled, visible]);
+  }, [
+    keyboardAware,
+    keyboardLease,
+    sheetStepTransition,
+    keyboardVisible,
+    stickyEnabled,
+    targetKeyboardAware,
+    visible,
+  ]);
 
   useLayoutEffect(() => {
-    const wasKeyboardAware = previousKeyboardAwareRef.current === true;
-    const leavingKeyboardStep = wasKeyboardAware && !keyboardAware;
-    const closingTray = wasKeyboardAware && !visible;
+    if (lastTransitionGenerationRef.current !== transitionGeneration) {
+      lastTransitionGenerationRef.current = transitionGeneration;
+      dismissIssuedRef.current = false;
+    }
 
-    previousKeyboardAwareRef.current = keyboardAware;
+    const wasKeyboardOwned = keyboardOwnershipRef.current;
+    const leavingKeyboardStep = wasKeyboardOwned && !targetOwnsKeyboard;
+    const closingTray = wasKeyboardOwned && !visible;
 
-    if (keyboardAware) {
+    keyboardOwnershipRef.current = visible && targetOwnsKeyboard;
+
+    if (targetOwnsKeyboard) {
       setKeyboardLease(true);
     } else if (!keyboardVisible) {
       setKeyboardLease(false);
     }
 
-    if (leavingKeyboardStep || closingTray) {
+    // A sheet step-to-step transition must never explicitly dismiss the
+    // keyboard. The focused input/native handoff owns that lifecycle; an
+    // imperative dismissal here creates the visible close/reopen correction
+    // when the next keyboard-aware step is still being committed.
+    const shouldDismiss =
+      closingTray || (leavingKeyboardStep && !sheetStepTransition);
+
+    if (shouldDismiss && !dismissIssuedRef.current) {
+      dismissIssuedRef.current = true;
       void KeyboardController.dismiss({
         keepFocus: false,
         animated: true,
       });
     }
-  }, [keyboardAware, keyboardVisible, visible]);
+  }, [
+    keyboardAware,
+    sheetStepTransition,
+    keyboardVisible,
+    targetKeyboardAware,
+    targetOwnsKeyboard,
+    transitionGeneration,
+    visible,
+  ]);
 
   return {
     stickyEnabled,

@@ -8,10 +8,11 @@ import type { TrayPagesRegistration, TrayRegistration } from "../types";
 const sharedValue = (value: number) => ({ value }) as SharedValue<number>;
 
 // build a store with inert external dependencies
-const createStore = () =>
+const createStore = (prepareKeyboardHandoff: () => void = () => undefined) =>
   createTrayRuntimeStore({
     keyboardHeight: sharedValue(0),
     anticipateKeyboard: () => undefined,
+    prepareKeyboardHandoff,
     dismissFocusedInputs: () => undefined,
     registerFocusable: () => () => undefined,
   });
@@ -199,6 +200,32 @@ describe("tray runtime transition ownership", () => {
 
     expect(store.getState().lastTransition).toBe(transition);
     expect(store.getState().transitionGeneration).toBe(generation);
+  });
+
+  it("hands native focus across adjacent sheet keyboard steps before navigation commits", () => {
+    const prepareKeyboardHandoff = jest.fn();
+    const store = createStore(prepareKeyboardHandoff);
+
+    store.actions.registerTray("keyboard", {
+      steps: [
+        {
+          key: "first-input",
+          content: null,
+          options: { keyboardAware: true },
+        },
+        {
+          key: "second-input",
+          content: null,
+          options: { keyboardAware: true },
+        },
+      ],
+    });
+    store.actions.openTray("keyboard");
+
+    store.actions.nextStep();
+
+    expect(prepareKeyboardHandoff).toHaveBeenCalledTimes(1);
+    expect(store.getState().activeIndex).toBe(1);
   });
 
   it("creates page intent before commit and reuses its generation", () => {

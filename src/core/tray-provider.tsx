@@ -1,5 +1,5 @@
-import React from "react";
-import { StyleSheet } from "react-native";
+import React, { useCallback, useRef } from "react";
+import { StyleSheet, TextInput } from "react-native";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import Animated, {
   useAnimatedStyle,
@@ -17,13 +17,21 @@ import { useTrayRuntime } from "../runtime/use-tray-runtime";
 export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const keyboardHandoffRef = useRef<TextInput>(null);
   const { keyboardHeight, dismissKeyboard, anticipateKeyboard } =
     useActionTrayKeyboard();
   const { registerFocusable, dismissFocusedInputs } =
     useTrayFocusManager(dismissKeyboard);
+  const prepareKeyboardHandoff = useCallback(() => {
+    // Keep a native first responder alive while the outgoing input subtree is
+    // replaced. The next TrayTextInput can immediately take focus without
+    // allowing iOS to begin a keyboard dismissal animation in between.
+    keyboardHandoffRef.current?.focus();
+  }, []);
   const runtime = useTrayRuntime({
     keyboardHeight,
     anticipateKeyboard,
+    prepareKeyboardHandoff,
     dismissFocusedInputs,
     registerFocusable,
   });
@@ -37,6 +45,15 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
     <KeyboardProvider>
       <TrayStoreProvider value={runtime}>
         <TrayBackgroundScaleProvider value={backgroundScale}>
+          <TextInput
+            ref={keyboardHandoffRef}
+            accessible={false}
+            pointerEvents="none"
+            caretHidden
+            contextMenuHidden
+            defaultValue=""
+            style={styles.keyboardHandoff}
+          />
           <Animated.View style={[styles.background, backgroundStyle]}>
             {children}
           </Animated.View>
@@ -52,5 +69,13 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
 const styles = StyleSheet.create({
   background: {
     flex: 1,
+  },
+  keyboardHandoff: {
+    position: "absolute",
+    left: -8,
+    top: -8,
+    width: 1,
+    height: 1,
+    opacity: 0,
   },
 });
