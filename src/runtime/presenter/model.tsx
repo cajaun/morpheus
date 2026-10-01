@@ -106,6 +106,7 @@ export const createPresentedTray = ({
     rootTrayId: entry.trayId,
     trayId: `${entry.trayId}-${step.key}`,
     keyboardTransitionMode,
+    keyboardAware: stepOptions.keyboardAware,
     stepOptions: contextualStepOptions,
     header: step.header ?? null,
     content: step.content,

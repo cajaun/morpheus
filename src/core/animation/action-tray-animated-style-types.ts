@@ -13,7 +13,6 @@ export type ActionTrayAnimatedStyleParams = {
   hasFooter: AnimatedValue<boolean>;
   surfaceOpacity: AnimatedValue<number>;
   footerHeight: AnimatedValue<number>;
-  keyboardHeight: AnimatedValue<number>;
   frameFullScreen: boolean;
   fullScreen: boolean;
   preparedSheetFrame?: ActionTraySheetFrame;

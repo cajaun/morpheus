@@ -11,6 +11,7 @@ type TraySnapshot = {
   content?: React.ReactNode;
   footer?: React.ReactNode;
   trayId?: string;
+  keyboardAware?: boolean;
   fullScreen?: boolean;
   fullScreenBackgroundScale?: number;
   fullScreenSafeAreaTop?: boolean;
@@ -30,6 +31,7 @@ const toRenderedTrayState = ({
   content,
   footer,
   trayId,
+  keyboardAware,
   fullScreen,
   fullScreenBackgroundScale,
   fullScreenSafeAreaTop,
@@ -44,6 +46,7 @@ const toRenderedTrayState = ({
   content: content ?? null,
   footer: footer ?? null,
   trayId,
+  keyboardAware,
   fullScreen,
   fullScreenBackgroundScale,
   fullScreenSafeAreaTop,
@@ -64,6 +67,7 @@ const areTrayStatesEqual = (
   current.content === next.content &&
   current.footer === next.footer &&
   current.trayId === next.trayId &&
+  current.keyboardAware === next.keyboardAware &&
   current.fullScreen === next.fullScreen &&
   current.fullScreenBackgroundScale === next.fullScreenBackgroundScale &&
   current.fullScreenSafeAreaTop === next.fullScreenSafeAreaTop &&
@@ -122,6 +126,7 @@ export const useActionTrayRenderState = ({
   content,
   footer,
   trayId,
+  keyboardAware,
   fullScreen,
   fullScreenBackgroundScale,
   fullScreenSafeAreaTop,
@@ -143,6 +148,9 @@ export const useActionTrayRenderState = ({
 
   const trayIdRef = useRef(trayId);
   trayIdRef.current = trayId;
+
+  const keyboardAwareRef = useRef(keyboardAware);
+  keyboardAwareRef.current = keyboardAware;
 
   const fullScreenRef = useRef(fullScreen);
   fullScreenRef.current = fullScreen;
@@ -178,6 +186,7 @@ export const useActionTrayRenderState = ({
         header,
         footer,
         trayId,
+        keyboardAware,
         fullScreen,
         fullScreenBackgroundScale,
         fullScreenSafeAreaTop,
@@ -197,6 +206,7 @@ export const useActionTrayRenderState = ({
       header: headerRef.current,
       footer: footerRef.current,
       trayId: trayIdRef.current,
+      keyboardAware: keyboardAwareRef.current,
       fullScreen: fullScreenRef.current,
       fullScreenBackgroundScale: fullScreenBackgroundScaleRef.current,
       fullScreenSafeAreaTop: fullScreenSafeAreaTopRef.current,
@@ -246,6 +256,7 @@ export const useActionTrayRenderState = ({
             : null),
         footer: footerRef.current ?? null,
         trayId: current.trayId,
+        keyboardAware: keyboardAwareRef.current,
         fullScreen: fullScreenRef.current,
         fullScreenBackgroundScale: fullScreenBackgroundScaleRef.current,
         fullScreenSafeAreaTop: fullScreenSafeAreaTopRef.current,
@@ -275,6 +286,7 @@ export const useActionTrayRenderState = ({
         header: null,
         footer: null,
         trayId: undefined,
+        keyboardAware: undefined,
         fullScreen: undefined,
         fullScreenBackgroundScale: undefined,
         fullScreenSafeAreaTop: undefined,
@@ -294,6 +306,7 @@ export const useActionTrayRenderState = ({
       renderedHeader: renderedTray.header,
       renderedFooter: renderedTray.footer,
       renderedTrayId: renderedTray.trayId,
+      renderedKeyboardAware: renderedTray.keyboardAware ?? false,
       renderedFullScreen: renderedTray.fullScreen ?? false,
       renderedFullScreenBackgroundScale:
         renderedTray.fullScreenBackgroundScale ?? 1,

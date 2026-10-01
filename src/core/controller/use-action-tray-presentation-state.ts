@@ -3,7 +3,6 @@ import {
   useAnimatedReaction,
   useDerivedValue,
   useSharedValue,
-  type SharedValue,
 } from "react-native-reanimated";
 import { HORIZONTAL_MARGIN, SCREEN_HEIGHT } from "../constants";
 
@@ -12,7 +11,6 @@ type Params = {
   visible: boolean;
   renderedFooter?: ReactNode;
   presentationFullScreen: boolean;
-  keyboardHeight: SharedValue<number>;
 };
 
 // own shared geometry values consumed by gesture and animation worklets
@@ -20,7 +18,6 @@ export const useActionTrayPresentationState = ({
   visible,
   renderedFooter,
   presentationFullScreen,
-  keyboardHeight,
 }: Params) => {
   // Sheets sit 8pt above the screen edge so the system home indicator can
   // remain over the surface, matching the reference tray.
@@ -49,18 +46,11 @@ export const useActionTrayPresentationState = ({
         return measuredHeight;
       }
 
-      // fullscreen should dock to the keyboard instead of preserving sheet gap
-      const keyboardInset =
-        keyboardHeight.value > 0
-          ? keyboardHeight.value
-          : 0;
-
-      return Math.max(
-        0,
-        SCREEN_HEIGHT - footerHeight.value - keyboardInset,
-      );
+      // fullscreen owns the viewport; keyboard-aware sheet motion is handled
+      // by the native sticky host, not by fullscreen geometry.
+      return Math.max(0, SCREEN_HEIGHT - footerHeight.value);
     },
-    [footerHeight, keyboardHeight, presentationFullScreen],
+    [footerHeight, presentationFullScreen],
   );
 
   const totalHeight = useDerivedValue(() => {
@@ -70,7 +60,7 @@ export const useActionTrayPresentationState = ({
     }
 
     return contentHeight.value + footerHeight.value + sheetBottomInset;
-  }, [keyboardHeight, presentationFullScreen, sheetBottomInset]);
+  }, [presentationFullScreen, sheetBottomInset]);
 
   const resolveClosedTranslateY = useCallback(
     (

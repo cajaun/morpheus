@@ -1,5 +1,5 @@
 // keep diagnostic logging isolated so investigation does not change animation behavior
-const DEBUG = true;
+const DEBUG = false;
 
 let sequence = 0;
 

@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleSheet } from "react-native";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -33,16 +34,18 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
   }));
 
   return (
-    <TrayStoreProvider value={runtime}>
-      <TrayBackgroundScaleProvider value={backgroundScale}>
-        <Animated.View style={[styles.background, backgroundStyle]}>
-          {children}
-        </Animated.View>
+    <KeyboardProvider>
+      <TrayStoreProvider value={runtime}>
+        <TrayBackgroundScaleProvider value={backgroundScale}>
+          <Animated.View style={[styles.background, backgroundStyle]}>
+            {children}
+          </Animated.View>
 
-        {/* presenter stays outside the scaled background so trays keep exact geometry */}
-        <TrayPresenter renderHost={PresentedActionTray} />
-      </TrayBackgroundScaleProvider>
-    </TrayStoreProvider>
+          {/* presenter stays outside the scaled background so trays keep exact geometry */}
+          <TrayPresenter renderHost={PresentedActionTray} />
+        </TrayBackgroundScaleProvider>
+      </TrayStoreProvider>
+    </KeyboardProvider>
   );
 };
 

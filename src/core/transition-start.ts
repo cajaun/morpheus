@@ -18,6 +18,9 @@ export type TrayTransitionStart = {
   startedGeneration: SharedValue<number>;
   layoutStartedGeneration: SharedValue<number>;
   completedGeneration: SharedValue<number>;
+  // Immutable policy captured with the transition so sheet keyboard handoffs
+  // cannot race a late shared-value update on the UI thread.
+  keyboardStepTransition?: boolean;
 };
 
 export type TrayTransitionParticipant = "incoming" | "outgoing" | "layout";

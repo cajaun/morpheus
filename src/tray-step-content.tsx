@@ -20,6 +20,7 @@ import {
   FULL_SCREEN_EXITING_DURATION,
   MORPH_ENTERING_DURATION,
   MORPH_EXITING_DURATION,
+  MORPH_LAYOUT_DURATION,
 } from "./core/constants";
 import {
   type TrayTransitionStart,
@@ -236,9 +237,15 @@ const createMorphExiting = (
         fullScreenBoundaryExit,
         synchronizedFullScreen,
       );
-    const duration = activeFullScreenBoundaryExit
-      ? FULL_SCREEN_EXITING_DURATION
-      : MORPH_EXITING_DURATION;
+    const keyboardStepTransition =
+      transitionStart?.keyboardStepTransition === true;
+    const duration = keyboardStepTransition
+      ? activeFullScreenBoundaryExit
+        ? FULL_SCREEN_EXITING_DURATION
+        : MORPH_LAYOUT_DURATION
+      : activeFullScreenBoundaryExit
+        ? FULL_SCREEN_EXITING_DURATION
+        : MORPH_EXITING_DURATION;
     const easing = activeFullScreenBoundaryExit
       ? FULL_SCREEN_CONTENT_EASING
       : SHEET_EASING;
@@ -331,6 +338,11 @@ export const TrayStepContent: React.FC<Props> = ({
   return (
     <Animated.View
       key={stepKey}
+      // Keep only keyboard sheet handoffs as real native layers while the
+      // sheet is relaid out; fullscreen retains its existing path on main.
+      collapsable={
+        transitionStart?.keyboardStepTransition === true ? false : undefined
+      }
       // scale fullscreen layers from the body boundary so they stay below the header
       style={
         anchorScaleToTop

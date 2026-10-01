@@ -1,7 +1,6 @@
 import React from "react";
 import { StyleProp, StyleSheet, ViewStyle } from "react-native";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import { useTrayHost, useTrayStepOptions } from "../../runtime/tray-context";
+import Animated from "react-native-reanimated";
 
 // separate page chrome slots from page content children
 export const TrayPagesHeaderSlot: React.FC<{
@@ -13,22 +12,14 @@ export const TrayPagesHeaderSlot: React.FC<{
 
 TrayPagesHeaderSlot.displayName = "TrayPagesHeader";
 
-// render footer content with fullscreen keyboard compensation
+// render footer content with its authored visual styling
 export const TrayPagesFooterSlot: React.FC<{
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   className?: string;
 }> = ({ children, style, className }) => {
-  const { keyboardHeight } = useTrayHost();
-  const { fullScreen } = useTrayStepOptions();
   const flattenedStyle = StyleSheet.flatten(style);
   const hasBackgroundColor = flattenedStyle?.backgroundColor != null;
-  const keyboardAwareStyle = useAnimatedStyle(
-    () => ({
-      transform: [{ translateY: fullScreen ? -keyboardHeight.value : 0 }],
-    }),
-    [fullScreen, keyboardHeight],
-  );
 
   return (
     <Animated.View
@@ -36,7 +27,6 @@ export const TrayPagesFooterSlot: React.FC<{
       style={[
         !hasBackgroundColor && styles.footerTransparentBackground,
         style,
-        keyboardAwareStyle,
       ]}
     >
       {children}

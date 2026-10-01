@@ -32,15 +32,15 @@ export const resolveTrayPresentationEndpoint = ({
 
   const pages = registration.pages;
   const pageIndex = pages?.stepKey === step.key ? pages.pageIndex : undefined;
+  const stepOptions = resolveTrayStepOptions(step.options);
 
   return {
     trayId: entry.trayId,
     stepIndex,
     stepKey: step.key,
     pageIndex,
-    mode: resolveTrayStepOptions(step.options).fullScreen
-      ? "fullScreen"
-      : "sheet",
+    mode: stepOptions.fullScreen ? "fullScreen" : "sheet",
+    keyboardAware: stepOptions.keyboardAware,
   };
 };
 

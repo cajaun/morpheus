@@ -1,6 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 import AboutAaveTray from "./about-aave";
+import AddPaymentMethodTray from "./add-payment-method";
 import ChangeAvatarTray from "./change-avatar";
 import type { UsageVariant } from "./component-presentation/types";
 import CreatingWalletsInfoTray from "./creating-wallets-info";
@@ -68,6 +69,15 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     content: (
       <TrayExampleFrame>
         <NotificationsTray />
+      </TrayExampleFrame>
+    ),
+  },
+  {
+    value: "add-payment-method",
+    label: "Add Payment Method",
+    content: (
+      <TrayExampleFrame>
+        <AddPaymentMethodTray />
       </TrayExampleFrame>
     ),
   },

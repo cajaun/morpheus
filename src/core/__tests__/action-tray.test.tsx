@@ -12,6 +12,14 @@ jest.mock("react-native-gesture-handler", () => ({
 }));
 
 jest.mock("react-native-keyboard-controller", () => ({
+  KeyboardController: {
+    preload: jest.fn(),
+    dismiss: jest.fn(),
+  },
+  useKeyboardState: () => false,
+  useReanimatedKeyboardAnimation: () => ({
+    height: { value: 0 },
+  }),
   KeyboardStickyView: ({
     children,
     ...props
@@ -47,6 +55,10 @@ jest.mock("../animation/use-action-tray-animated-styles", () => ({
 
 jest.mock("../input/use-action-tray-gesture", () => ({
   useActionTrayGesture: () => ({}),
+}));
+
+jest.mock("../input/use-action-tray-keyboard", () => ({
+  useSheetActionTrayKeyboard: () => ({ stickyEnabled: false }),
 }));
 
 jest.mock("../use-action-tray-controller", () => ({

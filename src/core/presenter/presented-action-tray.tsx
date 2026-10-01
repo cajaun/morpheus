@@ -100,6 +100,7 @@ const PresentedActionTray = ({
       onClose={payload.interactive ? onRequestClose : () => {}}
       onCloseComplete={onCloseComplete}
       trayId={payload.trayId}
+      keyboardAware={payload.keyboardAware ?? payload.stepOptions.keyboardAware}
       fullScreen={payload.fullScreen}
       fullScreenBackgroundScale={payload.fullScreenBackgroundScale}
       fullScreenSafeAreaTop={payload.fullScreenSafeAreaTop}

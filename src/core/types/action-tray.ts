@@ -23,6 +23,7 @@ export type ActionTrayProps = {
   header?: React.ReactNode;
   footer?: React.ReactNode;
   trayId?: string;
+  keyboardAware?: boolean;
   fullScreen?: boolean;
   fullScreenBackgroundScale?: number;
   fullScreenSafeAreaTop?: boolean;
@@ -59,6 +60,7 @@ export type RenderedTrayState = {
   content: React.ReactNode;
   footer: React.ReactNode;
   trayId?: string;
+  keyboardAware?: boolean;
   fullScreen?: boolean;
   fullScreenBackgroundScale?: number;
   fullScreenSafeAreaTop?: boolean;

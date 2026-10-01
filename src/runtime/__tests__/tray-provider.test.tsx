@@ -17,6 +17,10 @@ import {
   type TrayStepOptions,
 } from "../..";
 
+jest.mock("react-native-keyboard-controller", () => ({
+  KeyboardProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 // tests isolate runtime behavior by replacing the animated shell with a dumb host
 jest.mock("../../core/action-tray", () => {
   const ReactNative = require("react-native");

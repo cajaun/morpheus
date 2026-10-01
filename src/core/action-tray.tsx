@@ -27,6 +27,8 @@ import {
 import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animated-styles";
 import { useTrayBoundaryMotionState } from "./animation/use-tray-boundary-motion-state";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
+import { useSheetActionTrayKeyboard } from "./input/use-action-tray-keyboard";
+import { isKeyboardAwareSheetStepTransition } from "./input/keyboard-transition";
 import { useActionTrayController } from "./use-action-tray-controller";
 import {
   isSheetFrameForTransition,
@@ -39,7 +41,6 @@ import {
   TRAY_FOOTER_PADDING_BOTTOM,
   TRAY_FOOTER_PADDING_TOP,
   TRAY_HEADER_HORIZONTAL_PADDING,
-  TRAY_KEYBOARD_GAP,
   TRAY_VERTICAL_PADDING,
 } from "./constants";
 import {
@@ -71,12 +72,11 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       visible,
       interactive = true,
       keyboardTransitionMode = "idle",
+      keyboardAware,
       containerStyle,
       className,
       footerClassName,
       footerStyle,
-      keyboardHeight: trayKeyboardHeight,
-      dismissKeyboard,
     },
     ref,
   ) => {
@@ -96,6 +96,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       onCloseComplete,
       rootTrayId,
       trayId,
+      keyboardAware,
       fullScreen,
       fullScreenBackgroundScale,
       fullScreenSafeAreaTop,
@@ -107,8 +108,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       className,
       footerStyle,
       footerClassName,
-      keyboardHeight: trayKeyboardHeight,
-      dismissKeyboard,
       onClose,
     });
 
@@ -169,6 +168,10 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
 
     const presentationFullScreen = renderedFullScreen;
     const { top: safeAreaTopInset } = useSafeAreaInsets();
+    const keyboard = useSheetActionTrayKeyboard({
+      visible,
+      keyboardAware: keyboardAware ?? false,
+    });
     const providerBackgroundScale = useTrayBackgroundScale();
     const fallbackBackgroundScale = useSharedValue(1);
     // nested test shells may render without a provider so keep a local scale value
@@ -193,13 +196,13 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       interactive: interactive && isSurfaceReady && dismissible,
       fullScreen: presentationFullScreen,
       fullScreenDraggable: renderedFullScreenDraggable,
-      keyboardHeight: trayKeyboardHeight,
-      dismissKeyboard,
       onRequestClose: handleRequestClose,
     });
 
     const isFullScreenBoundaryTransition =
       transitionContract?.fullScreenChanged ?? false;
+    const keyboardStepTransition =
+      isKeyboardAwareSheetStepTransition(transitionContract);
     const hasValidBoundarySheetFrame = isSheetFrameForTransition(
       preparedSheetFrame,
       transitionContract?.generation,
@@ -212,6 +215,31 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       hasValidBoundarySheetFrame;
     const shouldUseLayoutAnimation =
       layoutEnabled && !isFullScreenBoundaryTransition;
+
+    useEffect(() => {
+      log("KEYBOARD STEP CLASSIFICATION", {
+        trayId,
+        fromStep: transitionContract?.from?.stepKey,
+        toStep: transitionContract?.to?.stepKey,
+        fromKeyboardAware: transitionContract?.from?.keyboardAware ?? false,
+        toKeyboardAware: transitionContract?.to?.keyboardAware ?? false,
+        fromMode: transitionContract?.from?.mode,
+        toMode: transitionContract?.to?.mode,
+        fullScreenChanged: isFullScreenBoundaryTransition,
+        keyboardStepTransition,
+        visible,
+        presentationFullScreen,
+        stickyEnabled: keyboard.stickyEnabled,
+      });
+    }, [
+      isFullScreenBoundaryTransition,
+      keyboard.stickyEnabled,
+      keyboardStepTransition,
+      presentationFullScreen,
+      trayId,
+      transitionContract,
+      visible,
+    ]);
 
     useEffect(() => {
       log("SHELL LAYOUT POLICY", {
@@ -272,7 +300,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       hasFooter,
       surfaceOpacity,
       footerHeight,
-      keyboardHeight: trayKeyboardHeight,
       frameFullScreen,
       fullScreen: presentationFullScreen,
       preparedSheetFrame,
@@ -356,6 +383,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       () => ({
         generation: transitionContract?.generation ?? 0,
         fullScreenChanged: transitionContract?.fullScreenChanged ?? false,
+        keyboardStepTransition,
         generationValue: transitionGenerationValue,
         fullScreenChangedValue,
         morphProgress,
@@ -367,6 +395,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       [
         transitionContract?.generation,
         transitionContract?.fullScreenChanged,
+        transitionContract,
+        keyboardStepTransition,
         transitionGenerationValue,
         fullScreenChangedValue,
         transitionStartedAt,
@@ -386,14 +416,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
           ? { backgroundColor: flattenedContainerStyle.backgroundColor }
           : undefined,
       [flattenedContainerStyle],
-    );
-    // keyboard sticky view wants a closed and opened offset even when the gap is zero
-    const keyboardStickyOffset = useMemo(
-      () => ({
-        closed: 0,
-        opened: -TRAY_KEYBOARD_GAP,
-      }),
-      [],
     );
     const traySurface = (
       <>
@@ -523,10 +545,15 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         )}
 
         {renderedTrayId !== undefined && (
-          // fullscreen owns the viewport so sheet keyboard stickiness must pause
+          // Only sheet endpoints participate in this native keyboard handoff.
+          // Fullscreen keyboard behavior is intentionally not carried to main.
           <KeyboardStickyView
-            enabled={!presentationFullScreen}
-            offset={keyboardStickyOffset}
+            enabled={
+              !presentationFullScreen &&
+              !isFullScreenBoundaryTransition &&
+              keyboard.stickyEnabled
+            }
+            offset={{ opened: 2 }}
             pointerEvents="box-none"
             style={StyleSheet.absoluteFillObject}
           >

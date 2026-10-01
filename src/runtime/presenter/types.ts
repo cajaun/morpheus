@@ -13,6 +13,7 @@ export type PresentedTray = {
   rootTrayId: string;
   trayId: string;
   keyboardTransitionMode: KeyboardTransitionMode;
+  keyboardAware?: boolean;
   stepOptions: ResolvedTrayStepOptions;
   header: ReactNode;
   content: ReactNode;
