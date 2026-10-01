@@ -112,7 +112,12 @@ export const createTrayLayoutTransition = ({
                 transitionCompletedGeneration,
                 transitionGeneration,
                 "layout",
-                isGeometryClock ? onStart : undefined,
+                isGeometryClock && onStart
+                  ? (startedAt, callbackGeneration) => {
+                      "worklet";
+                      scheduleOnRN(onStart, startedAt, callbackGeneration);
+                    }
+                  : undefined,
               ) as unknown as AnimationObject)
             : (progressAnimation as unknown as AnimationObject);
       }

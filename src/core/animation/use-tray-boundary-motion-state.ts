@@ -10,7 +10,7 @@ import {
 import { scheduleOnRN } from "react-native-worklets";
 import { FULL_SCREEN_LAYOUT_DURATION } from "../constants";
 import { describeTrayTransition } from "../diagnostics/action-tray-transition-diagnostics";
-import { log } from "../logger";
+import { log, logWorklet } from "../logger";
 import { withTrayTransitionStart } from "../transition-start";
 import type { TrayTransitionContract } from "../../runtime/types";
 
@@ -193,7 +193,7 @@ export const useTrayBoundaryMotionState = ({
       }
 
       morphStartedGeneration.value = transitionGeneration;
-      scheduleOnRN(log, "BOUNDARY CLOCK START", {
+      logWorklet("BOUNDARY CLOCK START", {
         generation: transitionGeneration,
         startedAt: transitionStartedAt.value,
         startedGeneration: state.startedGeneration,
@@ -201,6 +201,12 @@ export const useTrayBoundaryMotionState = ({
         completedGeneration: state.completedGeneration,
         morphProgress: morphProgress.value,
       });
+      const onTransitionStartSignal = onTransitionStart
+        ? (startedAt: number, generation: number) => {
+            "worklet";
+            scheduleOnRN(onTransitionStart, startedAt, generation);
+          }
+        : undefined;
       morphProgress.value = withTrayTransitionStart(
         withTiming(
           1,
@@ -226,7 +232,7 @@ export const useTrayBoundaryMotionState = ({
         transitionCompletedGeneration,
         transitionGeneration,
         "layout",
-        onTransitionStart,
+        onTransitionStartSignal,
       );
     },
     [
@@ -261,7 +267,7 @@ export const useTrayBoundaryMotionState = ({
         progress >= 1 &&
         (!previous || previous.progress < 1)
       ) {
-        scheduleOnRN(log, "BOUNDARY CLOCK REACHED END", {
+        logWorklet("BOUNDARY CLOCK REACHED END", {
           generation: transitionGeneration,
           progress,
           presentationFullScreen,
@@ -274,7 +280,7 @@ export const useTrayBoundaryMotionState = ({
       }
 
       if (previous?.active && !state.active) {
-        scheduleOnRN(log, "BOUNDARY CLOCK INACTIVE", {
+        logWorklet("BOUNDARY CLOCK INACTIVE", {
           generation: transitionGeneration,
           progress,
           presentationFullScreen,

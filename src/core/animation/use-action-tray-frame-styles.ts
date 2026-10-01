@@ -4,7 +4,6 @@ import {
   useAnimatedReaction,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import { scheduleOnRN } from "react-native-worklets";
 import {
   BORDER_RADIUS,
   EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
@@ -24,7 +23,7 @@ import type {
   ActionTrayAnimationState,
 } from "./action-tray-animated-style-types";
 import { isSheetFrameForTransition } from "../controller/action-tray-sheet-frame";
-import { log } from "../logger";
+import { log, logWorklet } from "../logger";
 import {
   isBoundaryClockStarted,
   isTargetSheetMeasurementPending,
@@ -159,7 +158,6 @@ export const useActionTrayFrameStyles = ({
       hasPreparedSheetFrame: hasPreparedSheetFrame ? 1 : 0,
       preparedFrameGeneration,
       preparedFrameHeight,
-      morphProgress: morphProgress.value,
       targetSheetMeasurementPending: isTargetSheetMeasurementPending({
         fullScreenBoundaryTransition,
         sourceFullScreen: fullScreenBoundarySourceFullScreen === true,
@@ -199,7 +197,7 @@ export const useActionTrayFrameStyles = ({
         return;
       }
 
-      scheduleOnRN(log, "FRAME STYLE UI STATE", state);
+      logWorklet("FRAME STYLE UI STATE", state);
     },
     [
       fullScreen,
@@ -207,7 +205,6 @@ export const useActionTrayFrameStyles = ({
       fullScreenBoundarySourceFullScreen,
       fullScreenBoundaryTargetFullScreen,
       hasPreparedSheetFrame,
-      morphProgress,
       preparedFrameGeneration,
       preparedFrameHeight,
       transitionCompletedGeneration,

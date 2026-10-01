@@ -6,8 +6,7 @@ import {
   type AnimationObject,
   type SharedValue,
 } from "react-native-reanimated";
-import { scheduleOnRN } from "react-native-worklets";
-import { log } from "./logger";
+import { logWorklet } from "./logger";
 
 export type TrayTransitionStart = {
   generation: number;
@@ -202,7 +201,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
 
         if (!animation.diagnosticStarted) {
           animation.diagnosticStarted = true;
-          scheduleOnRN(log, "TRANSITION PARTICIPANT START", {
+          logWorklet("TRANSITION PARTICIPANT START", {
             generation,
             participant,
             waitForClock,
@@ -217,7 +216,10 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         }
 
         if (onStartSignal) {
-          scheduleOnRN(onStartSignal, innerStartedAt, generation);
+          // Start signals are worklet callbacks. Each caller is responsible
+          // for scheduling its JS-side work, if needed; sending the callback
+          // itself through scheduleOnRN makes Worklets look up a stale hash.
+          onStartSignal(innerStartedAt, generation);
         }
       };
 
@@ -251,7 +253,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         ) {
           if (!animation.diagnosticCompleted) {
             animation.diagnosticCompleted = true;
-            scheduleOnRN(log, "TRANSITION PARTICIPANT COMPLETE", {
+            logWorklet("TRANSITION PARTICIPANT COMPLETE", {
               generation,
               participant,
               clockStartedGeneration: startedGeneration.value,

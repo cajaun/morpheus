@@ -133,11 +133,10 @@ describe("createTrayLayoutTransition", () => {
     ).toBe(
       "layout",
     );
-    expect(
-      transitionStartTestState.mockWithTrayTransitionStart.mock.calls[0]?.[7],
-    ).toBe(
-      onStart,
-    );
+    const layoutStartSignal =
+      transitionStartTestState.mockWithTrayTransitionStart.mock.calls[0]?.[7];
+    expect(layoutStartSignal).toEqual(expect.any(Function));
+    expect(layoutStartSignal).not.toBe(onStart);
     expect(
       transitionStartTestState.mockWithTrayTransitionStart.mock.calls[1]?.[6],
     ).toBe(

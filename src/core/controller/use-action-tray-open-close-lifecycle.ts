@@ -17,7 +17,7 @@ import {
   SCREEN_HEIGHT,
   TRAY_SPRING_CONFIG,
 } from "../constants";
-import { log } from "../logger";
+import { log, logWorklet } from "../logger";
 import {
   markTrayOpenFinished,
   markTrayOpenStarted,
@@ -166,7 +166,7 @@ export const useActionTrayOpenCloseLifecycle = ({
                   rootTrayId ?? trayId ?? "unknown",
                   trayId,
                 );
-                scheduleOnRN(log, "EXPAND OPEN FINISHED");
+                logWorklet("EXPAND OPEN FINISHED");
                 scheduleOnRN(handleOpenTransitionCompleted);
               }
             },
@@ -185,7 +185,7 @@ export const useActionTrayOpenCloseLifecycle = ({
                 rootTrayId ?? trayId ?? "unknown",
                 trayId,
               );
-              scheduleOnRN(log, "OPEN SPRING FINISHED");
+              logWorklet("OPEN SPRING FINISHED");
               scheduleOnRN(enableLayout);
               scheduleOnRN(handleOpenTransitionCompleted);
             }
@@ -280,11 +280,12 @@ export const useActionTrayOpenCloseLifecycle = ({
             if (shared.closeGeneration.value === myGeneration) {
               scheduleOnRN(handleCloseSpringFinished);
             } else {
-              scheduleOnRN(
-                log,
+              logWorklet(
                 "COLLAPSE CLOSE — stale, skipping reset",
-                myGeneration,
-                shared.closeGeneration.value,
+                {
+                  generation: myGeneration,
+                  currentGeneration: shared.closeGeneration.value,
+                },
               );
             }
           },
@@ -304,11 +305,12 @@ export const useActionTrayOpenCloseLifecycle = ({
           if (shared.closeGeneration.value === myGeneration) {
             scheduleOnRN(handleCloseSpringFinished);
           } else {
-            scheduleOnRN(
-              log,
+            logWorklet(
               "CLOSE SPRING — stale, skipping reset",
-              myGeneration,
-              shared.closeGeneration.value,
+              {
+                generation: myGeneration,
+                currentGeneration: shared.closeGeneration.value,
+              },
             );
           }
         },

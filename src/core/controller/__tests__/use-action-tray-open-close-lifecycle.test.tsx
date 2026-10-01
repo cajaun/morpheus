@@ -26,6 +26,7 @@ jest.mock("react-native-worklets", () => ({
 
 jest.mock("../../logger", () => ({
   log: jest.fn(),
+  logWorklet: jest.fn(),
 }));
 
 // create a mutable shared value for the lifecycle harness
