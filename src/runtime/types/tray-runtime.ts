@@ -5,6 +5,8 @@ import type { SharedValue } from "react-native-reanimated";
 import type { TrayTransitionContract } from "./tray-transition";
 import type { TrayTransitionLifecycle } from "./tray-transition";
 
+// retained as a public compatibility type; transition contracts now carry the
+// immutable keyboard ownership decision directly.
 export type KeyboardTransitionMode = "idle" | "entering" | "exiting";
 
 // keep runtime contracts separate from context hook implementation
@@ -99,7 +101,6 @@ export type TrayHostStateValue = {
   transitionGeneration: number;
   // retained descriptor used by the presenter lifecycle activity is exposed separately by traytransitionlifecyclegetactive()
   lastTransition: TrayTransitionContract | null;
-  keyboardHeight: SharedValue<number>;
 };
 
 export type TrayHostActionsValue = {
@@ -137,7 +138,6 @@ export type TrayRuntimeStore = {
   justOpenedRef: RefObject<boolean>;
   transitions: TrayTransitionLifecycle;
   setDependencies: (params: {
-    keyboardHeight: SharedValue<number>;
     anticipateKeyboard: () => void;
     prepareKeyboardHandoff: () => void;
     dismissFocusedInputs: (trayId?: string | null) => void | Promise<void>;

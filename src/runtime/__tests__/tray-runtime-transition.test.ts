@@ -13,7 +13,6 @@ const createStore = (
   anticipateKeyboard: () => void = () => undefined,
 ) =>
   createTrayRuntimeStore({
-    keyboardHeight: sharedValue(0),
     anticipateKeyboard,
     prepareKeyboardHandoff,
     dismissFocusedInputs: () => undefined,

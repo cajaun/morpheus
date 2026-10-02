@@ -12,8 +12,6 @@ import {
   resolveSharedRegions,
 } from "../tray-runtime-state";
 
-const keyboardHeight = { value: 0 } as never;
-
 // build an endpoint for shared region derivation tests
 const endpoint = (
   stepIndex: number,
@@ -41,7 +39,7 @@ describe("tray runtime state", () => {
 
   it("removes unregistered stack entries and clamps retained entries", () => {
     const state: TrayHostStateValue = {
-      ...createInitialTrayHostState(keyboardHeight),
+      ...createInitialTrayHostState(),
       registry: { tray: registration },
       activeTrayId: "removed",
       activeIndex: 8,
@@ -60,7 +58,7 @@ describe("tray runtime state", () => {
 
   it("preserves state identity when registration reconciliation is a no-op", () => {
     const state: TrayHostStateValue = {
-      ...createInitialTrayHostState(keyboardHeight),
+      ...createInitialTrayHostState(),
       registry: { tray: registration },
       activeTrayId: "tray",
       activeIndex: 1,
@@ -72,7 +70,7 @@ describe("tray runtime state", () => {
 
   it("keeps footer and header ownership explicit across a boundary", () => {
     const current: TrayHostStateValue = {
-      ...createInitialTrayHostState(keyboardHeight),
+      ...createInitialTrayHostState(),
       registry: {
         tray: { ...registration, footer: "footer" },
       },

@@ -16,6 +16,9 @@ type TrayStepTimingTrace = {
   layoutStartedAt?: number;
   contentReleasedAt?: number;
   layoutFinishedAt?: number;
+  keyboardIntentAt?: number;
+  keyboardFocusAt?: number;
+  keyboardWillShowAt?: number;
 };
 
 export type TrayStepTimingSummary = {
@@ -37,6 +40,9 @@ export type TrayStepTimingSummary = {
   requestToLayoutStartMs: number;
   layoutStartToContentReleaseMs: number;
   layoutStartToFinishMs: number;
+  keyboardIntentToFocusMs?: number;
+  keyboardFocusToWillShowMs?: number;
+  keyboardWillShowToLayoutStartMs?: number;
 };
 
 const MAX_RECORDED_SUMMARIES = 50;
@@ -111,6 +117,20 @@ const tryFinishTrace = (rootTrayId: string) => {
       trace.contentReleasedAt - trace.layoutStartedAt,
     layoutStartToFinishMs:
       trace.layoutFinishedAt - trace.layoutStartedAt,
+    keyboardIntentToFocusMs:
+      trace.keyboardIntentAt !== undefined &&
+      trace.keyboardFocusAt !== undefined
+        ? trace.keyboardFocusAt - trace.keyboardIntentAt
+        : undefined,
+    keyboardFocusToWillShowMs:
+      trace.keyboardFocusAt !== undefined &&
+      trace.keyboardWillShowAt !== undefined
+        ? trace.keyboardWillShowAt - trace.keyboardFocusAt
+        : undefined,
+    keyboardWillShowToLayoutStartMs:
+      trace.keyboardWillShowAt !== undefined
+        ? trace.layoutStartedAt - trace.keyboardWillShowAt
+        : undefined,
   };
 
   writeSummary(summary);
@@ -166,7 +186,56 @@ const tryFinishTrace = (rootTrayId: string) => {
     layoutStartToFinishMs: Number(
       summary.layoutStartToFinishMs.toFixed(2),
     ),
+    keyboardIntentToFocusMs: summary.keyboardIntentToFocusMs,
+    keyboardFocusToWillShowMs: summary.keyboardFocusToWillShowMs,
+    keyboardWillShowToLayoutStartMs:
+      summary.keyboardWillShowToLayoutStartMs,
   });
+};
+
+// record the first point where navigation knows the next step will need the keyboard
+export const markTrayStepKeyboardIntent = (
+  rootTrayId?: string | null,
+) => {
+  if (!isActionTrayInstrumentationEnabled() || !rootTrayId) {
+    return;
+  }
+
+  const trace = tracesByRootTrayId.get(rootTrayId);
+
+  if (trace && trace.keyboardIntentAt === undefined) {
+    trace.keyboardIntentAt = now();
+  }
+};
+
+// record native input focus without logging every keyboard frame
+export const markTrayStepKeyboardFocus = (
+  rootTrayId?: string | null,
+) => {
+  if (!isActionTrayInstrumentationEnabled() || !rootTrayId) {
+    return;
+  }
+
+  const trace = tracesByRootTrayId.get(rootTrayId);
+
+  if (trace && trace.keyboardFocusAt === undefined) {
+    trace.keyboardFocusAt = now();
+  }
+};
+
+// record the native keyboard animation boundary used by KeyboardStickyView
+export const markTrayStepKeyboardWillShow = (
+  rootTrayId?: string | null,
+) => {
+  if (!isActionTrayInstrumentationEnabled() || !rootTrayId) {
+    return;
+  }
+
+  const trace = tracesByRootTrayId.get(rootTrayId);
+
+  if (trace && trace.keyboardWillShowAt === undefined) {
+    trace.keyboardWillShowAt = now();
+  }
 };
 
 // start a step trace at the navigation request boundary

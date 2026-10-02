@@ -123,7 +123,6 @@ describe("ActionTray", () => {
         <ActionTray
           visible
           onClose={jest.fn()}
-          keyboardHeight={{ value: 0 } as never}
           dismissKeyboard={jest.fn()}
         />,
       );
@@ -146,7 +145,6 @@ describe("ActionTray", () => {
           visible
           dismissible={false}
           onClose={jest.fn()}
-          keyboardHeight={{ value: 0 } as never}
           dismissKeyboard={jest.fn()}
         />,
       );

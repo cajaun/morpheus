@@ -1,5 +1,6 @@
 import type { TrayHostActionsValue, TrayHostStateValue } from "../types";
 import { markTrayOpenRequested } from "../../telemetry/tray-open-timing";
+import { markTrayStepKeyboardIntent } from "../../telemetry/tray-step-timing";
 import { createTrayTransitionContract } from "../transition-contract";
 import {
   clampTrayStepIndex,
@@ -225,6 +226,7 @@ export const createTrayRuntimeNavigationActions = ({
       getDependencies().prepareKeyboardHandoff();
     }
     if (shouldAnticipateKeyboard(state, nextIndex)) {
+      markTrayStepKeyboardIntent(activeEntry?.trayId);
       getDependencies().anticipateKeyboard();
     }
 
@@ -260,6 +262,7 @@ export const createTrayRuntimeNavigationActions = ({
       getDependencies().prepareKeyboardHandoff();
     }
     if (shouldAnticipateKeyboard(state, nextIndex)) {
+      markTrayStepKeyboardIntent(activeEntry?.trayId);
       getDependencies().anticipateKeyboard();
     }
 

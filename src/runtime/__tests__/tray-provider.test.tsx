@@ -50,26 +50,8 @@ jest.mock("../../core/action-tray", () => {
 });
 
 jest.mock("../../core/input/use-action-tray-keyboard", () => {
-  const createSharedValue = (initialValue: number) => ({
-    value: initialValue,
-    get() {
-      return this.value;
-    },
-    set(nextValue: number) {
-      this.value = nextValue;
-    },
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
-    modify: jest.fn((modifier: (current: number) => number) => {
-      const nextValue = modifier(initialValue);
-      initialValue = nextValue;
-      return nextValue;
-    }),
-  });
-
   return {
     useActionTrayKeyboard: () => ({
-      keyboardHeight: createSharedValue(0),
       anticipateKeyboard: jest.fn(),
       dismissKeyboard: jest.fn(),
     }),

@@ -12,7 +12,6 @@ import {
 import { useSharedValue } from "react-native-reanimated";
 import { log } from "./logger";
 import { SCREEN_HEIGHT } from "./constants";
-import { KeyboardTransitionMode } from "./types";
 import type {
   TrayTransitionContract,
   TrayTransitionLifecycle,
@@ -38,7 +37,6 @@ type Params = {
   assignmentId?: number;
   visible: boolean;
   interactive?: boolean;
-  keyboardTransitionMode?: KeyboardTransitionMode;
   header?: React.ReactNode;
   content?: React.ReactNode;
   footer?: React.ReactNode;
@@ -65,7 +63,6 @@ export const useActionTrayController = ({
   assignmentId = 0,
   visible,
   interactive = true,
-  keyboardTransitionMode = "idle",
   header,
   content,
   footer,

@@ -1,8 +1,6 @@
 import React from "react";
 import { StyleProp, ViewStyle } from "react-native";
-import type { SharedValue } from "react-native-reanimated";
 import type {
-  KeyboardTransitionMode,
   TrayTransitionContract,
   TrayTransitionLifecycle,
   TrayTransitionOptions,
@@ -14,7 +12,6 @@ export type ActionTrayProps = {
   assignmentId?: number;
   visible: boolean;
   interactive?: boolean;
-  keyboardTransitionMode?: KeyboardTransitionMode;
   style?: StyleProp<ViewStyle>;
   onClose: () => void;
   onCloseComplete?: () => void;
@@ -36,7 +33,6 @@ export type ActionTrayProps = {
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
   footerClassName?: string;
-  keyboardHeight: SharedValue<number>;
   dismissKeyboard: () => void;
 };
 

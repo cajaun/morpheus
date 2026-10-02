@@ -16,7 +16,6 @@ import type { PresentedActionTrayProps } from "../../runtime/presenter/types";
 const PresentedActionTray = ({
   payload,
   assignmentId,
-  keyboardHeight,
   onRequestClose,
   onCloseComplete,
   dismissKeyboardForTray,
@@ -92,7 +91,6 @@ const PresentedActionTray = ({
       assignmentId={assignmentId}
       visible={payload.visible}
       interactive={payload.interactive}
-      keyboardTransitionMode={payload.keyboardTransitionMode}
       rootTrayId={payload.rootTrayId}
       content={content}
       header={header}
@@ -113,7 +111,6 @@ const PresentedActionTray = ({
       className={payload.className}
       footerStyle={payload.footerStyle}
       footerClassName={payload.footerClassName}
-      keyboardHeight={keyboardHeight}
       dismissKeyboard={() => dismissKeyboardForTray(payload.rootTrayId)}
     />
   );

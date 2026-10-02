@@ -19,8 +19,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const keyboardHandoffRef = useRef<TextInput>(null);
-  const { keyboardHeight, dismissKeyboard, anticipateKeyboard } =
-    useActionTrayKeyboard();
+  const { dismissKeyboard, anticipateKeyboard } = useActionTrayKeyboard();
   const { registerFocusable, dismissFocusedInputs } =
     useTrayFocusManager(dismissKeyboard);
   const prepareKeyboardHandoff = useCallback(() => {
@@ -30,7 +29,6 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
     keyboardHandoffRef.current?.focus();
   }, []);
   const runtime = useTrayRuntime({
-    keyboardHeight,
     anticipateKeyboard,
     prepareKeyboardHandoff,
     dismissFocusedInputs,

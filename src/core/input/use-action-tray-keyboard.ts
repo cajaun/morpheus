@@ -3,23 +3,20 @@ import {
   useEffect,
   useLayoutEffect,
   useRef,
-  useState,
 } from "react";
 import { Platform } from "react-native";
-import { useDerivedValue } from "react-native-reanimated";
 import {
   KeyboardController,
+  KeyboardEvents,
   useKeyboardState,
-  useReanimatedKeyboardAnimation,
 } from "react-native-keyboard-controller";
+import {
+  markTrayStepKeyboardWillShow,
+} from "../../telemetry/tray-step-timing";
+import { isActionTrayInstrumentationEnabled } from "../../telemetry/config";
 import { log } from "../logger";
 
-// Legacy runtime values remain available for the existing focus API.
 export const useActionTrayKeyboard = () => {
-  const { height: rawKeyboardHeight } = useReanimatedKeyboardAnimation();
-  const keyboardHeight = useDerivedValue(() =>
-    Math.max(0, -rawKeyboardHeight.value),
-  );
   const keyboardPreloadedRef = useRef(false);
 
   const anticipateKeyboard = useCallback(() => {
@@ -36,13 +33,13 @@ export const useActionTrayKeyboard = () => {
   }, []);
 
   return {
-    keyboardHeight,
     anticipateKeyboard,
     dismissKeyboard,
   };
 };
 
 type SheetKeyboardParams = {
+  rootTrayId?: string;
   visible: boolean;
   keyboardAware: boolean;
   targetKeyboardAware: boolean;
@@ -53,6 +50,7 @@ type SheetKeyboardParams = {
 // Keep the sticky host enabled during the native dismissal handoff. This hook
 // is rendered inside KeyboardProvider by the tray shell.
 export const useSheetActionTrayKeyboard = ({
+  rootTrayId,
   visible,
   keyboardAware,
   targetKeyboardAware,
@@ -65,12 +63,43 @@ export const useSheetActionTrayKeyboard = ({
     transitionGeneration,
   );
   const dismissIssuedRef = useRef(false);
-  const [keyboardLease, setKeyboardLease] = useState(false);
+  const keyboardLeaseRef = useRef(false);
+  const keyboardIntentRef = useRef({
+    rootTrayId,
+    targetOwnsKeyboard: false,
+    sheetStepTransition: false,
+  });
   // Either source carries the target's resolved keyboard intent. Keeping the
   // values additive protects the handoff while a provisional transition
   // contract is being reconciled with the registered step options.
   const targetOwnsKeyboard = keyboardAware || targetKeyboardAware;
-  const stickyEnabled = targetOwnsKeyboard || keyboardLease;
+  // The lease is a native-dismissal handoff, not UI state. Derive its visible
+  // lifetime from keyboard visibility so hiding the keyboard does not require
+  // a second React render just to disable the sticky host.
+  const stickyEnabled =
+    targetOwnsKeyboard || (keyboardLeaseRef.current && keyboardVisible);
+
+  keyboardIntentRef.current = {
+    rootTrayId,
+    targetOwnsKeyboard,
+    sheetStepTransition,
+  };
+
+  useEffect(() => {
+    if (!isActionTrayInstrumentationEnabled()) {
+      return;
+    }
+
+    const subscription = KeyboardEvents.addListener("keyboardWillShow", () => {
+      const intent = keyboardIntentRef.current;
+
+      if (intent.sheetStepTransition && intent.targetOwnsKeyboard) {
+        markTrayStepKeyboardWillShow(intent.rootTrayId);
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     log("SHEET KEYBOARD STATE", {
@@ -80,12 +109,11 @@ export const useSheetActionTrayKeyboard = ({
       sheetStepTransition,
       keyboardVisible,
       keyboardOwnership: keyboardOwnershipRef.current,
-      keyboardLease,
+      keyboardLease: keyboardLeaseRef.current,
       stickyEnabled,
     });
   }, [
     keyboardAware,
-    keyboardLease,
     sheetStepTransition,
     keyboardVisible,
     stickyEnabled,
@@ -106,12 +134,11 @@ export const useSheetActionTrayKeyboard = ({
     keyboardOwnershipRef.current = visible && targetOwnsKeyboard;
 
     // The target intent enables motion immediately. Only acquire the lease
-    // after native visibility is confirmed, avoiding an extra React render on
-    // the cold regular-to-keyboard path while retaining the close handoff.
+    // after native visibility is confirmed while retaining the close handoff.
     if (targetOwnsKeyboard && keyboardVisible) {
-      setKeyboardLease(true);
+      keyboardLeaseRef.current = true;
     } else if (!keyboardVisible) {
-      setKeyboardLease(false);
+      keyboardLeaseRef.current = false;
     }
 
     // A sheet step-to-step transition must never explicitly dismiss the
@@ -130,6 +157,7 @@ export const useSheetActionTrayKeyboard = ({
     }
   }, [
     keyboardAware,
+    keyboardLeaseRef,
     sheetStepTransition,
     keyboardVisible,
     targetKeyboardAware,

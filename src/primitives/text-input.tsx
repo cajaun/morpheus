@@ -11,6 +11,7 @@ import {
   useTrayHostActions,
   useTrayScope,
 } from "../runtime/tray-context";
+import { markTrayStepKeyboardFocus } from "../telemetry/tray-step-timing";
 
 // wrap textinput so focus behavior participates in tray keyboard policy
 export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
@@ -45,9 +46,10 @@ export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
       (event) => {
         // manual focus should follow the same pre keyboard path as autofocus
         anticipateKeyboard();
+        markTrayStepKeyboardFocus(trayId);
         props.onFocus?.(event);
       },
-      [anticipateKeyboard, props],
+      [anticipateKeyboard, props, trayId],
     );
 
     return (

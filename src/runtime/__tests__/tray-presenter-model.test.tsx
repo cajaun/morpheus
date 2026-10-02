@@ -29,7 +29,6 @@ const step = (
 const presented = (rootTrayId: string): PresentedTray => ({
   rootTrayId,
   trayId: `${rootTrayId}-one`,
-  keyboardTransitionMode: "idle",
   stepOptions: {
     ...resolveTrayStepOptions(),
     hasFooter: false,

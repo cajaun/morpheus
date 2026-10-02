@@ -1,5 +1,4 @@
 // define the services shared by runtime action modules
-import type { SharedValue } from "react-native-reanimated";
 import type {
   TrayHostActionsValue,
   TrayHostStateValue,
@@ -8,7 +7,6 @@ import type {
 } from "../types";
 
 export type TrayRuntimeDependencies = {
-  keyboardHeight: SharedValue<number>;
   anticipateKeyboard: () => void;
   prepareKeyboardHandoff: () => void;
   dismissFocusedInputs: (trayId?: string | null) => void | Promise<void>;

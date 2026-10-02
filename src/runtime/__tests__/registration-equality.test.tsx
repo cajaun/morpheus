@@ -1,7 +1,6 @@
 // verify authored registration changes use value and reference rules
 import React from "react";
 import { describe, expect, it, jest } from "@jest/globals";
-import type { SharedValue } from "react-native-reanimated";
 import { areTrayRegistrationsEquivalent } from "../registration-equality";
 import { createTrayRuntimeStore } from "../store/create-tray-runtime-store";
 import type { TrayRegistration } from "../types";
@@ -44,7 +43,6 @@ describe("tray registration equality", () => {
 
   it("does not republish the runtime store for equivalent inline definitions", () => {
     const store = createTrayRuntimeStore({
-      keyboardHeight: { value: 0 } as SharedValue<number>,
       anticipateKeyboard: jest.fn(),
       prepareKeyboardHandoff: jest.fn(),
       dismissFocusedInputs: () => undefined,

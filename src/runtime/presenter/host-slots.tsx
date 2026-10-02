@@ -22,13 +22,11 @@ import type {
   PresentedActionTrayRenderer,
   PresentedTray,
   TrayHostSlot,
-  TrayKeyboardHeight,
 } from "./types";
 import type { TrayTransitionContract } from "../types";
 
 // root slots keep replacement trays pending until the outgoing slot finishes
 type HostCommonProps = {
-  keyboardHeight: TrayKeyboardHeight;
   requestCloseActiveTray: () => void;
   dismissKeyboardForTray: (trayId?: string | null) => void;
   transitionContract: TrayTransitionContract | null;
@@ -38,7 +36,6 @@ type HostCommonProps = {
 // keep root hosts in two slots so outgoing and incoming shells can overlap
 export const RootTraySlots = ({
   activeHost,
-  keyboardHeight,
   requestCloseActiveTray,
   dismissKeyboardForTray,
   transitionContract,
@@ -286,7 +283,6 @@ export const RootTraySlots = ({
               interactive: slot.interactive,
             }}
             assignmentId={slot.assignmentId}
-            keyboardHeight={keyboardHeight}
             onRequestClose={requestCloseActiveTray}
             onCloseComplete={() =>
               handleSlotCloseComplete(index, slot.assignmentId)
@@ -302,7 +298,6 @@ export const RootTraySlots = ({
 // retain nested hosts in stack order while the active root changes
 export const NestedTrayStack = ({
   hosts,
-  keyboardHeight,
   requestCloseActiveTray,
   dismissKeyboardForTray,
   transitionContract,
@@ -350,7 +345,6 @@ export const NestedTrayStack = ({
           key={`tray-nested-host-${payload.rootTrayId}`}
           payload={payload}
           assignmentId={payload.stackIndex + 1}
-          keyboardHeight={keyboardHeight}
           onRequestClose={requestCloseActiveTray}
           onCloseComplete={() => handleCloseComplete(payload.rootTrayId)}
           dismissKeyboardForTray={dismissKeyboardForTray}

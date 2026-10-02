@@ -28,7 +28,7 @@ import { useActionTrayAnimatedStyles } from "./animation/use-action-tray-animate
 import { useTrayBoundaryMotionState } from "./animation/use-tray-boundary-motion-state";
 import { useActionTrayGesture } from "./input/use-action-tray-gesture";
 import { useSheetActionTrayKeyboard } from "./input/use-action-tray-keyboard";
-import { isKeyboardAwareSheetStepTransition } from "./input/keyboard-transition";
+import { resolveKeyboardSheetTransitionIntent } from "./input/keyboard-transition";
 import { useActionTrayController } from "./use-action-tray-controller";
 import {
   isSheetFrameForTransition,
@@ -72,7 +72,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       transitionLifecycle,
       visible,
       interactive = true,
-      keyboardTransitionMode = "idle",
       keyboardAware,
       containerStyle,
       className,
@@ -90,7 +89,6 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       assignmentId,
       visible,
       interactive,
-      keyboardTransitionMode,
       content,
       header,
       footer,
@@ -171,19 +169,19 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
     const { top: safeAreaTopInset } = useSafeAreaInsets();
     const isFullScreenBoundaryTransition =
       transitionContract?.fullScreenChanged ?? false;
-    const isSheetStepTransition =
-      transitionContract?.stepChanged === true &&
-      !isFullScreenBoundaryTransition &&
-      transitionContract?.from?.trayId === transitionContract?.to?.trayId &&
-      transitionContract?.from?.mode === "sheet" &&
-      transitionContract?.to?.mode === "sheet";
+    const keyboardTransitionIntent = resolveKeyboardSheetTransitionIntent(
+      transitionContract,
+    );
+    const { isSheetStepTransition, targetOwnsKeyboard } =
+      keyboardTransitionIntent;
     const keyboardStepTransition =
-      isKeyboardAwareSheetStepTransition(transitionContract);
+      keyboardTransitionIntent.isSheetStepTransition &&
+      (keyboardTransitionIntent.sourceOwnsKeyboard ||
+        keyboardTransitionIntent.targetOwnsKeyboard);
     const targetKeyboardAware =
-      !isFullScreenBoundaryTransition &&
-      transitionContract?.to?.mode === "sheet" &&
-      transitionContract?.to?.keyboardAware === true;
+      isSheetStepTransition && targetOwnsKeyboard;
     const keyboard = useSheetActionTrayKeyboard({
+      rootTrayId,
       visible,
       keyboardAware: !fullScreen && (keyboardAware ?? false),
       targetKeyboardAware,

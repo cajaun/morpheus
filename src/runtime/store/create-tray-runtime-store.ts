@@ -18,7 +18,7 @@ export const createTrayRuntimeStore = (
   initialDependencies: TrayRuntimeDependencies,
 ): TrayRuntimeStore => {
   let dependencies = initialDependencies;
-  let state = createInitialTrayHostState(initialDependencies.keyboardHeight);
+  let state = createInitialTrayHostState();
   const listeners = new Set<() => void>();
   const justOpenedRef = { current: false };
   const transitions = createTrayTransitionLifecycle();
@@ -133,16 +133,6 @@ export const createTrayRuntimeStore = (
     transitions,
     setDependencies: (nextDependencies) => {
       dependencies = nextDependencies;
-
-      if (state.keyboardHeight === nextDependencies.keyboardHeight) {
-        return;
-      }
-
-      // mutable dependencies let the store survive provider rerenders
-      setState({
-        ...state,
-        keyboardHeight: nextDependencies.keyboardHeight,
-      });
     },
   };
 };
