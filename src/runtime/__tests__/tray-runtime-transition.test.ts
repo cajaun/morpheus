@@ -8,10 +8,13 @@ import type { TrayPagesRegistration, TrayRegistration } from "../types";
 const sharedValue = (value: number) => ({ value }) as SharedValue<number>;
 
 // build a store with inert external dependencies
-const createStore = (prepareKeyboardHandoff: () => void = () => undefined) =>
+const createStore = (
+  prepareKeyboardHandoff: () => void = () => undefined,
+  anticipateKeyboard: () => void = () => undefined,
+) =>
   createTrayRuntimeStore({
     keyboardHeight: sharedValue(0),
-    anticipateKeyboard: () => undefined,
+    anticipateKeyboard,
     prepareKeyboardHandoff,
     dismissFocusedInputs: () => undefined,
     registerFocusable: () => () => undefined,
@@ -226,6 +229,53 @@ describe("tray runtime transition ownership", () => {
 
     expect(prepareKeyboardHandoff).toHaveBeenCalledTimes(1);
     expect(store.getState().activeIndex).toBe(1);
+  });
+
+  it("preloads before entering a keyboard-aware sheet step", () => {
+    const anticipateKeyboard = jest.fn();
+    const store = createStore(() => undefined, anticipateKeyboard);
+
+    store.actions.registerTray("keyboard", {
+      steps: [
+        { key: "intro", content: null },
+        {
+          key: "input",
+          content: null,
+          options: { keyboardAware: true },
+        },
+      ],
+    });
+    store.actions.openTray("keyboard");
+
+    store.actions.nextStep();
+
+    expect(anticipateKeyboard).toHaveBeenCalledTimes(1);
+    expect(store.getState().activeIndex).toBe(1);
+  });
+
+  it("does not preload when moving between keyboard-aware steps", () => {
+    const anticipateKeyboard = jest.fn();
+    const store = createStore(() => undefined, anticipateKeyboard);
+
+    store.actions.registerTray("keyboard", {
+      steps: [
+        {
+          key: "first-input",
+          content: null,
+          options: { keyboardAware: true },
+        },
+        {
+          key: "second-input",
+          content: null,
+          options: { keyboardAware: true },
+        },
+      ],
+    });
+    store.actions.openTray("keyboard");
+
+    store.actions.nextStep();
+
+    expect(anticipateKeyboard).not.toHaveBeenCalled();
   });
 
   it("creates page intent before commit and reuses its generation", () => {

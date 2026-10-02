@@ -22,7 +22,8 @@ export const TRAY_FOOTER_PADDING_BOTTOM = 28;
 export const TRAY_SECTION_ACTION_GAP = TRAY_FOOTER_PADDING_TOP;
 export const TRAY_SECTION_ACTION_PADDING_BOTTOM = TRAY_FOOTER_PADDING_BOTTOM;
 export const TRAY_PRIMARY_BUTTON_HEIGHT = 50;
-export const TRAY_KEYBOARD_GAP = 0;
+// preserve the established two-point visual clearance above the keyboard
+export const TRAY_KEYBOARD_GAP = 2;
 
 export const FULL_SCREEN_HEADER_HORIZONTAL_PADDING =
   TRAY_HEADER_HORIZONTAL_PADDING;

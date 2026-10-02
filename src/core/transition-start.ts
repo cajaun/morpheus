@@ -79,6 +79,18 @@ export const resolveTrayTransitionFullScreenChanged = (
   );
 };
 
+// Every rendered participant waits for the shell layout participant. Publishing
+// a keyboard snapshot early is only a mount/measurement optimization; it must
+// not create a second animation clock for the incoming or outgoing content.
+export const shouldWaitForTrayLayoutStart = (
+  transitionStart: TrayTransitionStart | null,
+  generation: number,
+) => {
+  "worklet";
+
+  return transitionStart !== null && generation > 0;
+};
+
 // publish the timestamp before the generation for joining participants
 export const publishTrayTransitionStart = (
   startedGeneration: SharedValue<number>,

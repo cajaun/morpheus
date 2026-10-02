@@ -26,6 +26,7 @@ import {
   type TrayTransitionStart,
   resolveTrayTransitionFullScreenChanged,
   resolveTrayTransitionGeneration,
+  shouldWaitForTrayLayoutStart,
   useTrayTransitionStart,
   withTrayTransitionStart,
 } from "./core/transition-start";
@@ -107,9 +108,10 @@ const createMorphEntering = (
       resolveTrayTransitionFullScreenChanged(transitionStart);
     const transitionGeneration =
       resolveTrayTransitionGeneration(transitionStart);
-    // content must not become the transition clock owner the shell layout participant establishes the existing clock for every real transition
-    const waitForLayoutStart =
-      transitionStart !== null && transitionGeneration > 0;
+    const waitForLayoutStart = shouldWaitForTrayLayoutStart(
+      transitionStart,
+      transitionGeneration,
+    );
     const duration = synchronizedFullScreen
       ? FULL_SCREEN_ENTERING_DURATION
       : MORPH_ENTERING_DURATION;
@@ -230,8 +232,10 @@ const createMorphExiting = (
       resolveTrayTransitionFullScreenChanged(transitionStart);
     const transitionGeneration =
       resolveTrayTransitionGeneration(transitionStart);
-    const waitForLayoutStart =
-      transitionStart !== null && transitionGeneration > 0;
+    const waitForLayoutStart = shouldWaitForTrayLayoutStart(
+      transitionStart,
+      transitionGeneration,
+    );
     const activeFullScreenBoundaryExit =
       resolveActiveFullScreenBoundaryExit(
         fullScreenBoundaryExit,

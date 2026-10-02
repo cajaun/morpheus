@@ -50,6 +50,33 @@ const shouldPrepareKeyboardHandoff = (
   );
 };
 
+// Warm the native keyboard path from navigation intent. This must happen
+// before the step commit so the first regular-to-keyboard transition does not
+// pay the controller startup cost after the new step has mounted.
+const shouldAnticipateKeyboard = (
+  state: TrayHostStateValue,
+  nextIndex: number,
+) => {
+  const activeEntry = state.stack[state.stack.length - 1];
+  const tray = activeEntry ? state.registry[activeEntry.trayId] : undefined;
+  const currentStep = tray?.steps[activeEntry?.index ?? -1];
+  const nextStep = tray?.steps[nextIndex];
+
+  if (!currentStep || !nextStep || currentStep.key === nextStep.key) {
+    return false;
+  }
+
+  const currentOptions = resolveTrayStepOptions(currentStep.options);
+  const nextOptions = resolveTrayStepOptions(nextStep.options);
+
+  return (
+    !currentOptions.keyboardAware &&
+    nextOptions.keyboardAware &&
+    !currentOptions.fullScreen &&
+    !nextOptions.fullScreen
+  );
+};
+
 // navigation commands own stack changes and transition contract creation
 export const createTrayRuntimeNavigationActions = ({
   getState,
@@ -197,6 +224,9 @@ export const createTrayRuntimeNavigationActions = ({
     if (shouldPrepareKeyboardHandoff(state, nextIndex)) {
       getDependencies().prepareKeyboardHandoff();
     }
+    if (shouldAnticipateKeyboard(state, nextIndex)) {
+      getDependencies().anticipateKeyboard();
+    }
 
     setState((current) => {
       const activeStackIndex = current.stack.length - 1;
@@ -228,6 +258,9 @@ export const createTrayRuntimeNavigationActions = ({
 
     if (shouldPrepareKeyboardHandoff(state, nextIndex)) {
       getDependencies().prepareKeyboardHandoff();
+    }
+    if (shouldAnticipateKeyboard(state, nextIndex)) {
+      getDependencies().anticipateKeyboard();
     }
 
     setState((current) => {

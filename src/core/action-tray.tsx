@@ -41,6 +41,7 @@ import {
   TRAY_FOOTER_PADDING_BOTTOM,
   TRAY_FOOTER_PADDING_TOP,
   TRAY_HEADER_HORIZONTAL_PADDING,
+  TRAY_KEYBOARD_GAP,
   TRAY_VERTICAL_PADDING,
 } from "./constants";
 import {
@@ -566,7 +567,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
               !isFullScreenBoundaryTransition &&
               keyboard.stickyEnabled
             }
-            offset={{ opened: 2 }}
+            offset={{ opened: TRAY_KEYBOARD_GAP }}
             pointerEvents="box-none"
             style={StyleSheet.absoluteFillObject}
           >

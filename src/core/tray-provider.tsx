@@ -1,6 +1,5 @@
 import React, { useCallback, useRef } from "react";
 import { StyleSheet, TextInput } from "react-native";
-import { KeyboardProvider } from "react-native-keyboard-controller";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -13,7 +12,9 @@ import { TrayPresenter } from "../runtime/tray-presenter";
 import { useTrayFocusManager } from "../runtime/use-tray-focus-manager";
 import { useTrayRuntime } from "../runtime/use-tray-runtime";
 
-// integration boundary between runtime state and the native animated renderer
+// KeyboardProvider is owned by the application root (see README setup). Keep
+// this provider focused on tray state so every keyboard consumer shares one
+// native context and one animation clock.
 export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -42,27 +43,25 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
   }));
 
   return (
-    <KeyboardProvider>
-      <TrayStoreProvider value={runtime}>
-        <TrayBackgroundScaleProvider value={backgroundScale}>
-          <TextInput
-            ref={keyboardHandoffRef}
-            accessible={false}
-            pointerEvents="none"
-            caretHidden
-            contextMenuHidden
-            defaultValue=""
-            style={styles.keyboardHandoff}
-          />
-          <Animated.View style={[styles.background, backgroundStyle]}>
-            {children}
-          </Animated.View>
+    <TrayStoreProvider value={runtime}>
+      <TrayBackgroundScaleProvider value={backgroundScale}>
+        <TextInput
+          ref={keyboardHandoffRef}
+          accessible={false}
+          pointerEvents="none"
+          caretHidden
+          contextMenuHidden
+          defaultValue=""
+          style={styles.keyboardHandoff}
+        />
+        <Animated.View style={[styles.background, backgroundStyle]}>
+          {children}
+        </Animated.View>
 
-          {/* presenter stays outside the scaled background so trays keep exact geometry */}
-          <TrayPresenter renderHost={PresentedActionTray} />
-        </TrayBackgroundScaleProvider>
-      </TrayStoreProvider>
-    </KeyboardProvider>
+        {/* presenter stays outside the scaled background so trays keep exact geometry */}
+        <TrayPresenter renderHost={PresentedActionTray} />
+      </TrayBackgroundScaleProvider>
+    </TrayStoreProvider>
   );
 };
 

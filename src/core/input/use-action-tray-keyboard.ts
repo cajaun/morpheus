@@ -20,11 +20,15 @@ export const useActionTrayKeyboard = () => {
   const keyboardHeight = useDerivedValue(() =>
     Math.max(0, -rawKeyboardHeight.value),
   );
+  const keyboardPreloadedRef = useRef(false);
 
   const anticipateKeyboard = useCallback(() => {
-    if (Platform.OS === "ios") {
-      KeyboardController.preload();
+    if (Platform.OS !== "ios" || keyboardPreloadedRef.current) {
+      return;
     }
+
+    keyboardPreloadedRef.current = true;
+    KeyboardController.preload();
   }, []);
 
   const dismissKeyboard = useCallback(() => {
@@ -101,7 +105,10 @@ export const useSheetActionTrayKeyboard = ({
 
     keyboardOwnershipRef.current = visible && targetOwnsKeyboard;
 
-    if (targetOwnsKeyboard) {
+    // The target intent enables motion immediately. Only acquire the lease
+    // after native visibility is confirmed, avoiding an extra React render on
+    // the cold regular-to-keyboard path while retaining the close handoff.
+    if (targetOwnsKeyboard && keyboardVisible) {
       setKeyboardLease(true);
     } else if (!keyboardVisible) {
       setKeyboardLease(false);

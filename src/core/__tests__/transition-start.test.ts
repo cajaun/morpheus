@@ -9,6 +9,7 @@ import {
   publishTrayTransitionStart,
   resolveTrayTransitionFullScreenChanged,
   resolveTrayTransitionGeneration,
+  shouldWaitForTrayLayoutStart,
   withTrayTransitionStart,
 } from "../transition-start";
 
@@ -62,6 +63,29 @@ const createAnimation = () => {
 };
 
 describe("tray transition start synchronization", () => {
+  it("keeps keyboard content on the shell layout clock", () => {
+    const transitionStart = {
+      generation: 4,
+      fullScreenChanged: false,
+      generationValue: shared(4),
+      fullScreenChangedValue: shared(0),
+      startedAt: shared(0),
+      startedGeneration: shared(0),
+      layoutStartedGeneration: shared(0),
+      completedGeneration: shared(0),
+      keyboardStepTransition: true,
+    };
+
+    expect(shouldWaitForTrayLayoutStart(transitionStart, 4)).toBe(true);
+    expect(
+      shouldWaitForTrayLayoutStart(
+        { ...transitionStart, keyboardStepTransition: false },
+        4,
+      ),
+    ).toBe(true);
+    expect(shouldWaitForTrayLayoutStart(null, 4)).toBe(false);
+  });
+
   it("lets the first participant establish the clock and later participants join it", () => {
     const startedGeneration = shared(0);
     const startedAt = shared(0);
