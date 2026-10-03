@@ -26,17 +26,8 @@ export const TrayHeader: React.FC<{
   style?: StyleProp<ViewStyle>;
   className?: string;
   withSeparator?: boolean;
-  // Supplying this prop enables the optional centered-title/back-button
-  // choreography. An undefined value keeps the title left-aligned.
-  returnButton?: React.ReactNode;
 }> = (props) => {
-  const {
-    children,
-    style,
-    className,
-    withSeparator = false,
-    returnButton,
-  } = props;
+  const { children, style, className, withSeparator = false } = props;
   const parentTransition = useTrayHeaderTransition();
 
   return (
@@ -46,7 +37,6 @@ export const TrayHeader: React.FC<{
         skipEntering: parentTransition?.skipEntering ?? false,
         fullScreenBoundaryExit:
           parentTransition?.fullScreenBoundaryExit ?? false,
-        returnButton,
       }}
     >
       <View
@@ -64,20 +54,38 @@ export const TrayHeader: React.FC<{
   );
 };
 
-// HeaderRow uses the shared title participant for every tray header. Supplying
-// returnButton only changes the optional control choreography and title
-// centering; ordinary fixed headers still keep their title fade.
+// HeaderRow owns the positional controls while the library owns their shared
+// transition. A left control centers the title; a right control never changes
+// title placement.
 export const TrayHeaderRow: React.FC<{
   children: React.ReactNode;
+  left?: React.ReactNode;
+  right?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   className?: string;
-}> = ({ children, style, className }) => {
+}> = ({ children, left, right, style, className }) => {
   const transition = useTrayHeaderTransition();
 
   if (!transition) {
     return (
       <View className={className} style={[styles.headerRow, style]}>
-        {children}
+        <View
+          pointerEvents="box-none"
+          style={[
+            styles.titleViewport,
+            left != null && styles.titleViewportCentered,
+          ]}
+        >
+          <View style={styles.titleLayer}>
+            {children}
+          </View>
+        </View>
+        <View pointerEvents={left != null ? "auto" : "none"} style={styles.leadingControlSlot}>
+          {left}
+        </View>
+        <View pointerEvents={right != null ? "auto" : "none"} style={styles.trailingControlSlot}>
+          {right}
+        </View>
       </View>
     );
   }
@@ -87,6 +95,8 @@ export const TrayHeaderRow: React.FC<{
       className={className}
       style={style}
       transition={transition}
+      left={left}
+      right={right}
     >
       {children}
     </HeaderTransitionRow>
@@ -98,6 +108,8 @@ type HeaderTransitionRowProps = {
   style?: StyleProp<ViewStyle>;
   className?: string;
   transition: NonNullable<ReturnType<typeof useTrayHeaderTransition>>;
+  left?: React.ReactNode;
+  right?: React.ReactNode;
 };
 
 const HeaderTransitionRow: React.FC<HeaderTransitionRowProps> = ({
@@ -105,49 +117,24 @@ const HeaderTransitionRow: React.FC<HeaderTransitionRowProps> = ({
   style,
   className,
   transition,
+  left,
+  right,
 }) => {
-  const childrenArray = React.Children.toArray(children);
-  let closeButtonIndex = -1;
-
-  childrenArray.forEach((child, index) => {
-    if (isTrayHeaderCloseButton(child)) {
-      closeButtonIndex = index;
-    }
-  });
-  const closeButton =
-    closeButtonIndex >= 0 ? childrenArray[closeButtonIndex] : null;
-  const titleChildren = childrenArray.filter(
-    (_child, index) => index !== closeButtonIndex,
-  );
-  const titleNode =
-    titleChildren.length === 1 ? titleChildren[0] : <>{titleChildren}</>;
-
   return (
     <TrayHeaderTransitionRow
       className={className}
       style={style}
-      title={titleNode}
-      closeButton={closeButton}
-      returnButton={transition.returnButton}
+      title={children}
+      left={left}
+      right={right}
       transition={transition}
     />
   );
 };
 
-const isTrayHeaderCloseButton = (child: React.ReactNode) => {
-  if (!React.isValidElement(child)) {
-    return false;
-  }
-
-  const childType = child.type as { displayName?: string };
-  return (
-    child.type === TrayHeaderCloseButton ||
-    childType.displayName === "TrayHeaderCloseButton"
-  );
-};
-
-// standardized close control so every tray header shares the same hit target
-export const TrayHeaderCloseButton: React.FC<
+// Standardized positional control so every tray header shares the same hit
+// target regardless of what the control does.
+export const TrayHeaderButton: React.FC<
   Omit<PressableProps, "children" | "style"> & {
     children: React.ReactNode;
     style?: StyleProp<ViewStyle>;
@@ -157,13 +144,13 @@ export const TrayHeaderCloseButton: React.FC<
   <Pressable
     {...props}
     className={className}
-    style={[styles.closeButton, style]}
+    style={[styles.headerButton, style]}
   >
     {children}
   </Pressable>
 );
 
-TrayHeaderCloseButton.displayName = "TrayHeaderCloseButton";
+TrayHeaderButton.displayName = "TrayHeaderButton";
 
 const styles = StyleSheet.create({
   headerRow: {
@@ -172,7 +159,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  closeButton: {
+  headerButton: {
     width: TRAY_HEADER_CLOSE_BUTTON_SIZE,
     height: TRAY_HEADER_CLOSE_BUTTON_SIZE,
     borderRadius: TRAY_HEADER_CLOSE_BUTTON_SIZE / 2,
@@ -185,6 +172,41 @@ const styles = StyleSheet.create({
   },
   headerWithSeparator: {
     gap: TRAY_HEADER_PADDING_BOTTOM,
+  },
+  titleViewport: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    justifyContent: "center",
+  },
+  titleViewportCentered: {
+    alignItems: "center",
+  },
+  titleLayer: {
+    height: "100%",
+    justifyContent: "center",
+  },
+  leadingControlSlot: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: TRAY_HEADER_CLOSE_BUTTON_SIZE,
+    zIndex: 2,
+    alignItems: "flex-start",
+    justifyContent: "center",
+  },
+  trailingControlSlot: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: TRAY_HEADER_CLOSE_BUTTON_SIZE,
+    zIndex: 2,
+    alignItems: "flex-end",
+    justifyContent: "center",
   },
 });
 

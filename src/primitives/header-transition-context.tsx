@@ -4,7 +4,6 @@ export type TrayHeaderTransitionValue = {
   stepKey: string;
   skipEntering: boolean;
   fullScreenBoundaryExit: boolean;
-  returnButton?: React.ReactNode;
 };
 
 const TrayHeaderTransitionContext =

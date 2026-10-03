@@ -40,36 +40,41 @@ const AVATAR_COLORS = [
 
 const ChangeAvatarHeader = ({
   title,
-  returnButton,
+  left,
 }: {
   title: string;
-  returnButton?: ReactNode;
+  left?: ReactNode;
 }) => {
   const { close } = useTrayFlow();
 
   return (
-    <Tray.Header withSeparator returnButton={returnButton}>
-      <Tray.HeaderRow>
+    <Tray.Header withSeparator>
+      <Tray.HeaderRow
+        left={left}
+        right={
+          left == null ? (
+            <Tray.HeaderButton onPress={close}>
+              <SymbolView
+                name="xmark"
+                type="palette"
+                tintColor="#787878"
+                size={TRAY_HEADER_CLOSE_ICON_SIZE}
+                weight="bold"
+              />
+            </Tray.HeaderButton>
+          ) : undefined
+        }
+      >
         <Text className="font-semibold text-black" style={trayDemoText.Title1}>
           {title}
         </Text>
-
-        <Tray.HeaderCloseButton onPress={close}>
-          <SymbolView
-            name="xmark"
-            type="palette"
-            tintColor="#787878"
-            size={TRAY_HEADER_CLOSE_ICON_SIZE}
-            weight="bold"
-          />
-        </Tray.HeaderCloseButton>
       </Tray.HeaderRow>
     </Tray.Header>
   );
 };
 
 const AvatarBackButton = ({ onPress }: { onPress: () => void }) => (
-  <Tray.HeaderCloseButton onPress={onPress}>
+  <Tray.HeaderButton onPress={onPress}>
     <SymbolView
       name="chevron.left"
       type="palette"
@@ -77,10 +82,10 @@ const AvatarBackButton = ({ onPress }: { onPress: () => void }) => (
       size={TRAY_HEADER_CLOSE_ICON_SIZE}
       weight="semibold"
     />
-  </Tray.HeaderCloseButton>
+  </Tray.HeaderButton>
 );
 
-const AvatarReturnButton = () => {
+const AvatarBackAction = () => {
   const { back } = useTrayFlow();
 
   return <AvatarBackButton onPress={back} />;
@@ -226,7 +231,7 @@ const ChangeAvatarTray = () => (
     <Tray.Step>
       <ChangeAvatarHeader
         title="Use Emoji"
-        returnButton={<AvatarReturnButton />}
+        left={<AvatarBackAction />}
       />
       <UseEmojiBody />
     </Tray.Step>

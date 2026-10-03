@@ -52,33 +52,26 @@ const wallets = [
 ];
 
 const WalletSelectionHeader = () => {
-  const { close, back } = useTrayFlow();
+  const { back } = useTrayFlow();
 
   return (
-    <Tray.Header withSeparator returnButton={
-      <Tray.HeaderCloseButton onPress={back}>
-        <SymbolView
-          name="chevron.left"
-          type="palette"
-          tintColor="#787878"
-          size={TRAY_HEADER_CLOSE_ICON_SIZE}
-          weight="semibold"
-        />
-      </Tray.HeaderCloseButton>
-    }>
-      <Tray.HeaderRow>
+    <Tray.Header withSeparator>
+      <Tray.HeaderRow
+        left={
+          <Tray.HeaderButton onPress={back}>
+            <SymbolView
+              name="chevron.left"
+              type="palette"
+              tintColor="#787878"
+              size={TRAY_HEADER_CLOSE_ICON_SIZE}
+              weight="semibold"
+            />
+          </Tray.HeaderButton>
+        }
+      >
         <Text className="font-medium" style={trayDemoText.Title1}>
           Pay From
         </Text>
-        <Tray.HeaderCloseButton onPress={close}>
-          <SymbolView
-            name="xmark"
-            type="palette"
-            tintColor="#787878"
-            size={TRAY_HEADER_CLOSE_ICON_SIZE}
-            weight="bold"
-          />
-        </Tray.HeaderCloseButton>
       </Tray.HeaderRow>
     </Tray.Header>
   );
@@ -171,33 +164,26 @@ const WalletSelectionBody = ({
 };
 
 const InsufficientTokensHeader = () => {
-  const { close, back } = useTrayFlow();
+  const { back } = useTrayFlow();
 
   return (
-    <Tray.Header withSeparator returnButton={
-      <Tray.HeaderCloseButton onPress={back}>
-        <SymbolView
-          name="chevron.left"
-          type="palette"
-          tintColor="#787878"
-          size={TRAY_HEADER_CLOSE_ICON_SIZE}
-          weight="semibold"
-        />
-      </Tray.HeaderCloseButton>
-    }>
-      <Tray.HeaderRow>
+    <Tray.Header withSeparator>
+      <Tray.HeaderRow
+        left={
+          <Tray.HeaderButton onPress={back}>
+            <SymbolView
+              name="chevron.left"
+              type="palette"
+              tintColor="#787878"
+              size={TRAY_HEADER_CLOSE_ICON_SIZE}
+              weight="semibold"
+            />
+          </Tray.HeaderButton>
+        }
+      >
         <Text className="font-medium" style={trayDemoText.Title1}>
           Insufficient Tokens
         </Text>
-        <Tray.HeaderCloseButton onPress={close}>
-          <SymbolView
-            name="xmark"
-            type="palette"
-            tintColor="#787878"
-            size={TRAY_HEADER_CLOSE_ICON_SIZE}
-            weight="bold"
-          />
-        </Tray.HeaderCloseButton>
       </Tray.HeaderRow>
     </Tray.Header>
   );

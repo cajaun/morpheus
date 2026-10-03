@@ -24,11 +24,11 @@ const AaveFooter = () => {
   );
 };
 
-const AaveReturnButton = () => {
+const AaveBackAction = () => {
   const { back } = useTrayFlow();
 
   return (
-    <Tray.HeaderCloseButton onPress={back}>
+    <Tray.HeaderButton onPress={back}>
       <SymbolView
         name="chevron.left"
         type="palette"
@@ -36,35 +36,40 @@ const AaveReturnButton = () => {
         size={TRAY_HEADER_CLOSE_ICON_SIZE}
         weight="semibold"
       />
-    </Tray.HeaderCloseButton>
+    </Tray.HeaderButton>
   );
 };
 
 const AaveHeader = ({
   title,
-  returnButton,
+  left,
 }: {
   title: string;
-  returnButton?: ReactNode;
+  left?: ReactNode;
 }) => {
   const { close } = useTrayFlow();
 
   return (
-    <Tray.Header withSeparator returnButton={returnButton}>
-      <Tray.HeaderRow>
+    <Tray.Header withSeparator>
+      <Tray.HeaderRow
+        left={left}
+        right={
+          left == null ? (
+            <Tray.HeaderButton onPress={close}>
+              <SymbolView
+                name="xmark"
+                type="palette"
+                tintColor="#787878"
+                size={TRAY_HEADER_CLOSE_ICON_SIZE}
+                weight="bold"
+              />
+            </Tray.HeaderButton>
+          ) : undefined
+        }
+      >
         <Text className="font-semibold text-black" style={trayDemoText.Title1}>
           {title}
         </Text>
-
-        <Tray.HeaderCloseButton onPress={close}>
-          <SymbolView
-            name="xmark"
-            type="palette"
-            tintColor="#787878"
-            size={TRAY_HEADER_CLOSE_ICON_SIZE}
-            weight="bold"
-          />
-        </Tray.HeaderCloseButton>
       </Tray.HeaderRow>
     </Tray.Header>
   );
@@ -107,7 +112,7 @@ const AaveExample = () => {
       <Tray.Step>
         <AaveHeader
           title="Content Two"
-          returnButton={<AaveReturnButton />}
+          left={<AaveBackAction />}
         />
         <Tray.Body>
           <Tray.Section>
@@ -139,7 +144,7 @@ const AaveExample = () => {
       <Tray.Step>
         <AaveHeader
           title="Content Three"
-          returnButton={<AaveReturnButton />}
+          left={<AaveBackAction />}
         />
         <Tray.Body>
           <Tray.Section>

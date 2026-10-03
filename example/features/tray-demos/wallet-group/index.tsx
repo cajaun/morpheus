@@ -277,19 +277,22 @@ const ChooseWalletGroupHeader = () => {
 
   return (
     <Tray.Header withSeparator>
-      <Tray.HeaderRow>
+      <Tray.HeaderRow
+        right={
+          <Tray.HeaderButton onPress={close}>
+            <SymbolView
+              name="xmark"
+              type="palette"
+              tintColor="#787878"
+              size={TRAY_HEADER_CLOSE_ICON_SIZE}
+              weight="bold"
+            />
+          </Tray.HeaderButton>
+        }
+      >
         <Text className="font-semibold" style={trayDemoText.Title1}>
           Choose Wallet Group
         </Text>
-        <Tray.HeaderCloseButton onPress={close}>
-          <SymbolView
-            name="xmark"
-            type="palette"
-            tintColor="#787878"
-            size={TRAY_HEADER_CLOSE_ICON_SIZE}
-            weight="bold"
-          />
-        </Tray.HeaderCloseButton>
       </Tray.HeaderRow>
     </Tray.Header>
   );

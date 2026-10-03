@@ -386,11 +386,11 @@ export const TrayStepContent: React.FC<Props> = ({
 
 type TrayHeaderTransitionRowProps = {
   title: React.ReactNode;
-  closeButton: React.ReactNode;
+  left?: React.ReactNode;
+  right?: React.ReactNode;
   transition: TrayHeaderTransitionValue;
   style?: StyleProp<ViewStyle>;
   className?: string;
-  returnButton?: React.ReactNode;
 };
 
 // Header motion is a step-content participant, so its controls and title use
@@ -399,31 +399,59 @@ export const TrayHeaderTransitionRow: React.FC<
   TrayHeaderTransitionRowProps
 > = ({
   title,
-  closeButton,
+  left,
+  right,
   transition,
   style,
   className,
-  returnButton,
 }) => {
   const morphProgress = useOptionalTrayMorphProgress();
   const transitionStart = useTrayTransitionStart();
   const rowWidth = useSharedValue(0);
   const titleStartWidth = useSharedValue(0);
   const titleWidth = useSharedValue(0);
-  const previousCenteredRef = useRef<boolean | null>(null);
-  const previousReturnButtonRef = useRef<React.ReactNode>(null);
-  const centered = returnButton != null;
-  const sourceCentered = previousCenteredRef.current ?? centered;
+  const previousLeftVisibleRef = useRef<boolean | null>(null);
+  const previousRightVisibleRef = useRef<boolean | null>(null);
+  const previousLeftRef = useRef<React.ReactNode>(null);
+  const previousRightRef = useRef<React.ReactNode>(null);
+  const previousLeftIdentityRef = useRef<string | null>(null);
+  const previousRightIdentityRef = useRef<string | null>(null);
+  const centered = left != null;
+  const sourceCentered = previousLeftVisibleRef.current ?? centered;
+  const sourceRightVisible = previousRightVisibleRef.current ?? right != null;
+  const previousLeft = previousLeftRef.current;
+  const previousRight = previousRightRef.current;
+  const leftIdentity = resolveHeaderActionIdentity(left);
+  const rightIdentity = resolveHeaderActionIdentity(right);
+  const leftReplacement =
+    previousLeftVisibleRef.current === true &&
+    centered &&
+    previousLeftIdentityRef.current !== null &&
+    leftIdentity !== null &&
+    previousLeftIdentityRef.current !== leftIdentity;
+  const rightReplacement =
+    previousRightVisibleRef.current === true &&
+    previousRightRef.current != null &&
+    right != null &&
+    previousRightIdentityRef.current !== null &&
+    rightIdentity !== null &&
+    previousRightIdentityRef.current !== rightIdentity;
   const wholeHeaderBoundaryAnimation =
     transition.fullScreenBoundaryExit &&
     transitionStart?.fullScreenChanged === true;
 
   useEffect(() => {
-    previousCenteredRef.current = centered;
-    if (returnButton != null) {
-      previousReturnButtonRef.current = returnButton;
+    previousLeftVisibleRef.current = centered;
+    previousRightVisibleRef.current = right != null;
+    if (left != null) {
+      previousLeftRef.current = left;
+      previousLeftIdentityRef.current = leftIdentity;
     }
-  }, [centered, returnButton]);
+    if (right != null) {
+      previousRightRef.current = right;
+      previousRightIdentityRef.current = rightIdentity;
+    }
+  }, [centered, left, leftIdentity, right, rightIdentity]);
 
   const titlePositionStyle = useAnimatedStyle(() => {
     const progress = morphProgress?.value ?? 1;
@@ -445,30 +473,59 @@ export const TrayHeaderTransitionRow: React.FC<
     };
   });
 
-  const returnButtonStyle = useAnimatedStyle(() => {
+  const leftActionStyle = useAnimatedStyle(() => {
     const progress = morphProgress?.value ?? 1;
     const startOpacity = sourceCentered ? 1 : 0;
     const endOpacity = centered ? 1 : 0;
 
     return {
       opacity: interpolate(progress, [0, 1], [startOpacity, endOpacity]),
-      transform: [
-        {
-          // the reference fades the return control in place; title motion
-          // provides the horizontal choreography
-          translateX: 0,
-        },
-      ],
     };
   });
 
-  const closeButtonStyle = useAnimatedStyle(() => {
+  const leftPreviousActionStyle = useAnimatedStyle(() => {
     const progress = morphProgress?.value ?? 1;
-    const startOpacity = sourceCentered ? 0 : 1;
-    const endOpacity = centered ? 0 : 1;
 
     return {
-      opacity: interpolate(progress, [0, 1], [startOpacity, endOpacity]),
+      opacity: interpolate(progress, [0, 1], [1, 0]),
+    };
+  });
+
+  const leftCurrentActionStyle = useAnimatedStyle(() => {
+    const progress = morphProgress?.value ?? 1;
+
+    return {
+      opacity: interpolate(progress, [0, 1], [0, 1]),
+    };
+  });
+
+  const rightActionStyle = useAnimatedStyle(() => {
+    const progress = morphProgress?.value ?? 1;
+    const sourceVisible = sourceRightVisible;
+    const targetVisible = right != null;
+
+    return {
+      opacity: interpolate(
+        progress,
+        [0, 1],
+        [sourceVisible ? 1 : 0, targetVisible ? 1 : 0],
+      ),
+    };
+  });
+
+  const rightPreviousActionStyle = useAnimatedStyle(() => {
+    const progress = morphProgress?.value ?? 1;
+
+    return {
+      opacity: interpolate(progress, [0, 1], [1, 0]),
+    };
+  });
+
+  const rightCurrentActionStyle = useAnimatedStyle(() => {
+    const progress = morphProgress?.value ?? 1;
+
+    return {
+      opacity: interpolate(progress, [0, 1], [0, 1]),
     };
   });
 
@@ -521,19 +578,64 @@ export const TrayHeaderTransitionRow: React.FC<
 
       <Animated.View
         pointerEvents={centered ? "auto" : "none"}
-        style={[headerMotionStyles.leadingControlSlot, returnButtonStyle]}
+        style={[
+          headerMotionStyles.leadingControlSlot,
+          leftReplacement ? leftCurrentActionStyle : leftActionStyle,
+        ]}
       >
-        {returnButton ?? previousReturnButtonRef.current}
+        {leftReplacement ? left : left ?? previousLeft}
       </Animated.View>
 
+      {leftReplacement ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            headerMotionStyles.leadingControlSlot,
+            leftPreviousActionStyle,
+          ]}
+        >
+          {previousLeft}
+        </Animated.View>
+      ) : null}
+
       <Animated.View
-        pointerEvents={centered ? "none" : "auto"}
-        style={[headerMotionStyles.trailingControlSlot, closeButtonStyle]}
+        pointerEvents={right != null ? "auto" : "none"}
+        style={[
+          headerMotionStyles.trailingControlSlot,
+          rightReplacement ? rightCurrentActionStyle : rightActionStyle,
+        ]}
       >
-        {closeButton}
+        {rightReplacement ? right : right ?? previousRight}
       </Animated.View>
+
+      {rightReplacement ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            headerMotionStyles.trailingControlSlot,
+            rightPreviousActionStyle,
+          ]}
+        >
+          {previousRight}
+        </Animated.View>
+      ) : null}
     </Animated.View>
   );
+};
+
+const resolveHeaderActionIdentity = (
+  action: React.ReactNode,
+): string | null => {
+  if (!React.isValidElement(action)) {
+    return action == null ? null : "anonymous-action";
+  }
+
+  if (action.key != null) {
+    return String(action.key);
+  }
+
+  const actionType = action.type as { displayName?: string; name?: string };
+  return actionType.displayName ?? actionType.name ?? "anonymous-action";
 };
 
 const headerMotionStyles = StyleSheet.create({

@@ -90,7 +90,7 @@ export const OnboardingPageHeader = ({
         alignItems: "center",
       }}
     >
-      <Tray.HeaderCloseButton
+      <Tray.HeaderButton
         onPress={isFirstPage ? requestClose : backPage}
       >
         <SymbolView
@@ -100,7 +100,7 @@ export const OnboardingPageHeader = ({
           tintColor="#787878"
           size={TRAY_HEADER_CLOSE_ICON_SIZE}
         />
-      </Tray.HeaderCloseButton>
+      </Tray.HeaderButton>
 
       {showProgress ? (
         <PageProgress totalPages={totalPages} progress={progress} />

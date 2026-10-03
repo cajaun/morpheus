@@ -44,9 +44,9 @@ const DynamicHeightsFooter = () => {
 
 const DynamicHeightsHeader = ({ title }: { title: string }) => {
   const { close, back, index } = useTrayFlow();
-  const returnButton =
+  const left =
     index > 0 ? (
-      <Tray.HeaderCloseButton onPress={back}>
+      <Tray.HeaderButton onPress={back}>
         <SymbolView
           name="chevron.left"
           type="palette"
@@ -54,24 +54,30 @@ const DynamicHeightsHeader = ({ title }: { title: string }) => {
           size={TRAY_HEADER_CLOSE_ICON_SIZE}
           weight="semibold"
         />
-      </Tray.HeaderCloseButton>
+      </Tray.HeaderButton>
     ) : undefined;
 
   return (
-    <Tray.Header withSeparator returnButton={returnButton}>
-      <Tray.HeaderRow>
+    <Tray.Header withSeparator>
+      <Tray.HeaderRow
+        left={left}
+        right={
+          left == null ? (
+            <Tray.HeaderButton onPress={close}>
+              <SymbolView
+                name="xmark"
+                type="palette"
+                tintColor="#787878"
+                size={TRAY_HEADER_CLOSE_ICON_SIZE}
+                weight="bold"
+              />
+            </Tray.HeaderButton>
+          ) : undefined
+        }
+      >
         <Text className="font-medium" style={trayDemoText.Title1}>
           {title}
         </Text>
-        <Tray.HeaderCloseButton onPress={close}>
-          <SymbolView
-            name="xmark"
-            type="palette"
-            tintColor="#787878"
-            size={TRAY_HEADER_CLOSE_ICON_SIZE}
-            weight="bold"
-          />
-        </Tray.HeaderCloseButton>
       </Tray.HeaderRow>
     </Tray.Header>
   );

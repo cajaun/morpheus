@@ -53,8 +53,8 @@ const PaymentMethodHeader = ({
   showBack?: boolean;
 }) => {
   const { back, close } = useTrayFlow();
-  const leadingAccessory: ReactNode = showBack ? (
-    <Tray.HeaderCloseButton onPress={back}>
+  const left = showBack ? (
+    <Tray.HeaderButton onPress={back}>
       <SymbolView
         name="chevron.left"
         type="palette"
@@ -62,25 +62,30 @@ const PaymentMethodHeader = ({
         size={TRAY_HEADER_CLOSE_ICON_SIZE}
         weight="semibold"
       />
-    </Tray.HeaderCloseButton>
+    </Tray.HeaderButton>
   ) : undefined;
 
   return (
-    <Tray.Header withSeparator returnButton={leadingAccessory}>
-      <Tray.HeaderRow>
+    <Tray.Header withSeparator>
+      <Tray.HeaderRow
+        left={left}
+        right={
+          left == null ? (
+            <Tray.HeaderButton onPress={close}>
+              <SymbolView
+                name="xmark"
+                type="palette"
+                tintColor="#787878"
+                size={TRAY_HEADER_CLOSE_ICON_SIZE}
+                weight="bold"
+              />
+            </Tray.HeaderButton>
+          ) : undefined
+        }
+      >
         <Text className="text-[25px] leading-7.5 tracking-[0.2px] font-semibold text-black">
           {title}
         </Text>
-
-        <Tray.HeaderCloseButton onPress={close}>
-          <SymbolView
-            name="xmark"
-            type="palette"
-            tintColor="#787878"
-            size={TRAY_HEADER_CLOSE_ICON_SIZE}
-            weight="bold"
-          />
-        </Tray.HeaderCloseButton>
       </Tray.HeaderRow>
     </Tray.Header>
   );
