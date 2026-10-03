@@ -27,12 +27,10 @@ const PresentedActionTray = ({
       _phase,
       actualDuration,
       _baseDuration,
-      startTime,
     ) => {
       markTrayStepReactRenderStarted(
         payload.rootTrayId,
         payload.trayId,
-        startTime,
         actualDuration,
       );
     },

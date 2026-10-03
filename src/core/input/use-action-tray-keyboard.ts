@@ -19,7 +19,7 @@ import { log } from "../logger";
 export const useActionTrayKeyboard = () => {
   const keyboardPreloadedRef = useRef(false);
 
-  const anticipateKeyboard = useCallback(() => {
+  const preloadKeyboard = useCallback(() => {
     if (Platform.OS !== "ios" || keyboardPreloadedRef.current) {
       return;
     }
@@ -27,6 +27,18 @@ export const useActionTrayKeyboard = () => {
     keyboardPreloadedRef.current = true;
     KeyboardController.preload();
   }, []);
+
+  // Pay the native keyboard startup cost while the tray provider is mounting,
+  // never on the user's first keyboard-step press. KeyboardController guards
+  // this natively, so this remains safe when the app's KeyboardProvider also
+  // has its default preload enabled.
+  useEffect(() => {
+    preloadKeyboard();
+  }, [preloadKeyboard]);
+
+  const anticipateKeyboard = useCallback(() => {
+    preloadKeyboard();
+  }, [preloadKeyboard]);
 
   const dismissKeyboard = useCallback(() => {
     return KeyboardController.dismiss();

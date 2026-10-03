@@ -81,16 +81,16 @@ const logStepEnterFinished = (stepKey: string, finishedAt: number) => {
 };
 
 // record when incoming content releases its visibility latch
-const logStepEnterStarted = (stepKey: string, startedAt: number) => {
+const logStepEnterStarted = (stepKey: string) => {
   if (!isActionTrayInstrumentationEnabled()) {
     return;
   }
 
-  markTrayStepContentReleased(stepKey, startedAt);
+  markTrayStepContentReleased(stepKey);
 
   console.log("[step-enter-started]", {
     stepKey,
-    startedAt: Number(startedAt.toFixed(2)),
+    startedAt: Number(performance.now().toFixed(2)),
   });
 };
 
@@ -161,9 +161,9 @@ const createMorphEntering = (
         logRelease &&
           __DEV__ &&
           ACTION_TRAY_INSTRUMENTATION_ENABLED
-          ? (startedAt: number) => {
+          ? () => {
               "worklet";
-              scheduleOnRN(logStepEnterStarted, stepKey, startedAt);
+              scheduleOnRN(logStepEnterStarted, stepKey);
             }
           : undefined,
       );

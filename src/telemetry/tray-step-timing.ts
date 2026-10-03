@@ -298,7 +298,6 @@ export const markTrayStepSlotCommitted = (rootTrayId?: string) => {
 export const markTrayStepReactRenderStarted = (
   rootTrayId: string | undefined,
   trayId: string | undefined,
-  startedAt: number,
   actualDurationMs: number,
 ) => {
   if (!isActionTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
@@ -312,7 +311,9 @@ export const markTrayStepReactRenderStarted = (
     trace.trayId === trayId &&
     trace.reactRenderStartedAt === undefined
   ) {
-    trace.reactRenderStartedAt = startedAt;
+    // React Profiler's startTime uses a renderer-specific time origin. Read
+    // the timestamp here so it shares the same JS clock as every other mark.
+    trace.reactRenderStartedAt = now();
     trace.reactActualDurationMs = actualDurationMs;
   }
 };
@@ -424,7 +425,6 @@ export const markTrayStepRenderedCommit = (
 // record when incoming content releases its entering transition
 export const markTrayStepContentReleased = (
   trayId: string,
-  releasedAt: number,
 ) => {
   if (!isActionTrayInstrumentationEnabled()) {
     return;
@@ -439,7 +439,10 @@ export const markTrayStepContentReleased = (
   const trace = tracesByRootTrayId.get(rootTrayId);
 
   if (trace && trace.contentReleasedAt === undefined) {
-    trace.contentReleasedAt = releasedAt;
+    // The worklet timestamp has a different time origin from JS. This
+    // callback is already scheduled on RN, so mark the observable release
+    // boundary with the same clock used by the rest of this trace.
+    trace.contentReleasedAt = now();
     tryFinishTrace(rootTrayId);
   }
 };

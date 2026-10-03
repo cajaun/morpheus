@@ -37,8 +37,10 @@ describe("tray step timing", () => {
       .mockReturnValueOnce(105)
       .mockReturnValueOnce(110)
       .mockReturnValueOnce(120)
+      .mockReturnValueOnce(124)
       .mockReturnValueOnce(130)
-      .mockReturnValueOnce(132);
+      .mockReturnValueOnce(132)
+      .mockReturnValueOnce(145);
     const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
 
     markTrayStepRequested("root-tray");
@@ -48,7 +50,6 @@ describe("tray step timing", () => {
     markTrayStepReactRenderStarted(
       "root-tray",
       "root-tray-fullscreen",
-      124,
       4,
     );
     markTrayStepRenderedCommit("root-tray", "root-tray-fullscreen");
@@ -63,7 +64,7 @@ describe("tray step timing", () => {
       "root-tray-fullscreen",
       135,
     );
-    markTrayStepContentReleased("root-tray-fullscreen", 145);
+    markTrayStepContentReleased("root-tray-fullscreen");
     markTrayStepLayoutFinished(
       "root-tray",
       "root-tray-fullscreen",
@@ -90,6 +91,9 @@ describe("tray step timing", () => {
         requestToLayoutStartMs: 35,
         layoutStartToContentReleaseMs: 10,
         layoutStartToFinishMs: 270,
+        keyboardIntentToFocusMs: undefined,
+        keyboardFocusToWillShowMs: undefined,
+        keyboardWillShowToLayoutStartMs: undefined,
       },
     ]);
     expect(consoleSpy).toHaveBeenCalledWith("[ActionTrayStepPerf]", {
@@ -111,6 +115,9 @@ describe("tray step timing", () => {
       requestToLayoutStartMs: 35,
       layoutStartToContentReleaseMs: 10,
       layoutStartToFinishMs: 270,
+      keyboardIntentToFocusMs: undefined,
+      keyboardFocusToWillShowMs: undefined,
+      keyboardWillShowToLayoutStartMs: undefined,
     });
   });
 });
