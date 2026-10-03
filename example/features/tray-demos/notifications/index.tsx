@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Switch, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayFlow } from "react-native-morpheus";
+import { Tray, useTrayNavigation } from "react-native-morpheus";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
@@ -9,7 +9,7 @@ import { ExampleTrigger } from "../shared/example-trigger";
 const PURPLE = "#9896F8";
 
 const NotificationsHeader = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Header withSeparator>
@@ -35,7 +35,7 @@ const NotificationsHeader = () => {
 };
 
 const NotificationsBody = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
   const [enabled, setEnabled] = useState(true);
 
   return (

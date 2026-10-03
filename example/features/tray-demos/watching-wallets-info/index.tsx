@@ -2,14 +2,14 @@ import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import {
   Tray,
-  useTrayFlow,
+  useTrayNavigation,
 } from "react-native-morpheus";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { ExampleTrigger } from "../shared/example-trigger";
 import { PrimaryButton } from "../shared/primary-button";
 
 const WatchingWalletsInfoStep = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Body style={{ paddingHorizontal: 0,  }}>

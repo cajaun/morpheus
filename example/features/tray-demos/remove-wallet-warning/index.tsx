@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayOriginProgress, useTrayFlow } from "react-native-morpheus";
+import { Tray, useTrayOriginProgress, useTrayNavigation } from "react-native-morpheus";
 import {
   EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
@@ -20,7 +20,7 @@ const WARNING_BUTTON_WIDTH =
   SCREEN_WIDTH - EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN * 2 - 32;
 
 const WarningFooter = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
   const originProgress = useTrayOriginProgress();
 
   return (
@@ -262,7 +262,7 @@ const BackupWarning = () => {
 };
 
 const RemoveWalletInfoStep = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Body style={{ paddingHorizontal: 0 }}>

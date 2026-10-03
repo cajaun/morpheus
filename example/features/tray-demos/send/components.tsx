@@ -8,7 +8,7 @@ import Animated, {
   useDerivedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTrayFlow, useTrayPages } from "react-native-morpheus";
+import { useTrayNavigation, useTrayPages } from "react-native-morpheus";
 import { AnimatedFlowButton } from "@/features/tray-demos/presets/animated-flow-button";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { trayDemoText } from "@/shared/theme/tokens";
@@ -136,7 +136,7 @@ const FlowProgressDots = () => {
 };
 
 export const SendFlowHeader = ({ action }: { action: SendAction }) => {
-  const { requestClose } = useTrayFlow();
+  const { requestClose } = useTrayNavigation();
   const { top } = useSafeAreaInsets();
 
   return (
@@ -155,7 +155,7 @@ export const SendFlowHeader = ({ action }: { action: SendAction }) => {
 };
 
 export const SendFlowFooter = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
   const { pageIndex, totalPages, nextPage, backPage } = useTrayPages();
   const { bottom } = useSafeAreaInsets();
 

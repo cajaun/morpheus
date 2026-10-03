@@ -3,7 +3,7 @@ import { Image, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import {
   Tray,
-  useTrayFlow,
+  useTrayNavigation,
 } from "react-native-morpheus";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { PressableScale } from "@/shared/ui/pressable-scale";
@@ -52,7 +52,7 @@ const wallets = [
 ];
 
 const WalletSelectionHeader = () => {
-  const { back } = useTrayFlow();
+  const { back } = useTrayNavigation();
 
   return (
     <Tray.Header withSeparator>
@@ -84,7 +84,7 @@ const WalletSelectionBody = ({
   selectedId: string;
   onSelect: (id: string) => void;
 }) => {
-  const { next } = useTrayFlow();
+  const { next } = useTrayNavigation();
 
   return (
     <Tray.Body>
@@ -164,7 +164,7 @@ const WalletSelectionBody = ({
 };
 
 const InsufficientTokensHeader = () => {
-  const { back } = useTrayFlow();
+  const { back } = useTrayNavigation();
 
   return (
     <Tray.Header withSeparator>

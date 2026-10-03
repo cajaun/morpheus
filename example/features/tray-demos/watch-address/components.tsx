@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { Text, View } from "react-native";
 import { SymbolView, type SFSymbol } from "expo-symbols";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTrayFlow, useTrayPages } from "react-native-morpheus";
+import { useTrayNavigation, useTrayPages } from "react-native-morpheus";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { TRAY_ITEM_RADIUS } from "react-native-morpheus/constants";
@@ -464,7 +464,7 @@ export const CreateWalletAvatarPicker = ({
 
 export const CreateWalletFlowFooter = () => {
   const { pageIndex, totalPages, nextPage } = useTrayPages();
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
   const { bottom } = useSafeAreaInsets();
   const isLastPage = pageIndex === totalPages - 1;
 

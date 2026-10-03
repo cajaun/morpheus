@@ -7,7 +7,7 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayFlow, useTrayPages } from "react-native-morpheus";
+import { Tray, useTrayNavigation, useTrayPages } from "react-native-morpheus";
 import {
   FULL_SCREEN_HEADER_PADDING_TOP,
   TRAY_HEADER_CLOSE_BUTTON_SIZE,
@@ -78,7 +78,7 @@ export const OnboardingPageHeader = ({
   rightAccessory?: React.ReactNode;
   showProgress?: boolean;
 }) => {
-  const { requestClose } = useTrayFlow();
+  const { requestClose } = useTrayNavigation();
   const { pageIndex, totalPages, backPage, progress } = useTrayPages();
   const isFirstPage = pageIndex === 0;
 

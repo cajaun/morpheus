@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 import { Link } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayFlow } from "react-native-morpheus";
+import { Tray, useTrayNavigation } from "react-native-morpheus";
 import {
   EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
@@ -43,7 +43,7 @@ const BackupTriggerButton = ({
 );
 
 const BackupInfoStep = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Body style={{ paddingHorizontal: 0 }}>
@@ -140,7 +140,7 @@ const BackupInfoStep = () => {
 };
 
 const BackupInfoFooter = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Footer style={{ width: "100%" }}>

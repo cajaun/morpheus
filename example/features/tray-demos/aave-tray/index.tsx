@@ -1,14 +1,14 @@
 import type { ReactNode } from "react";
 import { Text } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayFlow } from "react-native-morpheus";
+import { Tray, useTrayNavigation } from "react-native-morpheus";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { AnimatedOnboardingButton } from "@/features/tray-demos/presets/content/button";
 import { trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
 
 const AaveFooter = () => {
-  const { next, index, total, close, back } = useTrayFlow();
+  const { next, index, total, close, back } = useTrayNavigation();
 
   return (
     <Tray.Footer style={{ width: "100%", alignItems: "center" }}>
@@ -25,7 +25,7 @@ const AaveFooter = () => {
 };
 
 const AaveBackAction = () => {
-  const { back } = useTrayFlow();
+  const { back } = useTrayNavigation();
 
   return (
     <Tray.HeaderButton onPress={back}>
@@ -47,7 +47,7 @@ const AaveHeader = ({
   title: string;
   left?: ReactNode;
 }) => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Header withSeparator>

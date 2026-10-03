@@ -3,7 +3,7 @@ import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
 import {
   Tray,
-  useTrayFlow,
+  useTrayNavigation,
 } from "react-native-morpheus";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { trayDemoText } from "@/shared/theme/tokens";
@@ -152,7 +152,7 @@ const FeatureBlock = ({
 };
 
 const AboutAaveHeader = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Header withSeparator>

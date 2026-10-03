@@ -14,7 +14,8 @@ export {
   DEFAULT_TRAY_STEP_OPTIONS,
   resolveTrayStepOptions,
 } from "./tray-store-context";
-export { useTrayFlow } from "./use-tray-flow";
+export { useTrayKeyboard } from "./use-tray-keyboard";
+export { useTrayNavigation } from "./use-tray-navigation";
 export type {
   ResolvedTrayStepOptions,
   TrayCloseTransition,

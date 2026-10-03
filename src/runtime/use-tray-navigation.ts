@@ -6,10 +6,10 @@ import {
   useTrayScope,
 } from "./tray-store-context";
 
-// connect scoped navigation actions to the active tray and page state
-export const useTrayFlow = () => {
+// connect the nearest tray to step navigation and presentation actions
+export const useTrayNavigation = () => {
   const trayId = useTrayScope();
-  // flow state follows the nearest root so nested trays keep independent navigation
+  // navigation state follows the nearest root so nested trays stay independent
   const registration = useTrayHostSelector((state) =>
     trayId ? state.registry[trayId] : undefined,
   );
@@ -43,8 +43,6 @@ export const useTrayFlow = () => {
     requestCloseActiveTray,
     nextStep,
     previousStep,
-    anticipateKeyboard,
-    dismissKeyboardForTray,
   } = useTrayHostActions();
 
   if (!trayId) {
@@ -134,7 +132,5 @@ export const useTrayFlow = () => {
         previousStep();
       }
     },
-    anticipateKeyboard,
-    dismissKeyboard: () => dismissKeyboardForTray(trayId),
   };
 };

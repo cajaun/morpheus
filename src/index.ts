@@ -20,13 +20,15 @@ import { TrayStep } from "./runtime/tray-step";
 export { TrayProvider } from "./core/tray-provider";
 export { useTrayOriginProgress } from "./core/tray-origin-progress";
 export { useTrayMorphProgress } from "./core/tray-morph-progress";
+export { useTrayProgress } from "./core/tray-progress";
 export type {
   TrayTriggerHaptics,
   TrayTriggerProps,
 } from "./primitives/trigger";
 export {
-  useTrayFlow,
+  useTrayKeyboard,
   useTrayHost,
+  useTrayNavigation,
   useTrayTransitionLifecycle,
   type TrayRegistration,
   type TrayStepProps,

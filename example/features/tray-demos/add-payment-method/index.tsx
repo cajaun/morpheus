@@ -4,7 +4,7 @@ import {
   View,
 } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayFlow } from "react-native-morpheus";
+import { Tray, useTrayNavigation } from "react-native-morpheus";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { ExampleTrigger } from "../shared/example-trigger";
@@ -52,7 +52,7 @@ const PaymentMethodHeader = ({
   title: string;
   showBack?: boolean;
 }) => {
-  const { back, close } = useTrayFlow();
+  const { back, close } = useTrayNavigation();
   const left = showBack ? (
     <Tray.HeaderButton onPress={back}>
       <SymbolView
@@ -155,7 +155,7 @@ const PaymentMethodCard = ({
 );
 
 const AddPaymentMethodStep = () => {
-  const { next } = useTrayFlow();
+  const { next } = useTrayNavigation();
 
   return (
     <Tray.Body>
@@ -285,7 +285,7 @@ const AddWalletAddressStep = ({
   address: string;
   onChangeAddress: (value: string) => void;
 }) => {
-  const { next } = useTrayFlow();
+  const { next } = useTrayNavigation();
 
   return (
     <Tray.Body>
@@ -329,7 +329,7 @@ const AddressDetailsStep = ({
   address: string;
   onChangeAddress: (value: string) => void;
 }) => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Body>

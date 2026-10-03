@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Image, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayFlow } from "react-native-morpheus";
+import { Tray, useTrayNavigation } from "react-native-morpheus";
 import { trayDemoText } from "@/shared/theme/tokens";
 import { FieldShell } from "../shared/field-shell";
 import { PrimaryButton } from "../shared/primary-button";
@@ -15,7 +15,7 @@ export const SupportChooserStep = ({
 }: {
   onSelect: (nextFlow: HelpKind) => void;
 }) => {
-  const { next } = useTrayFlow();
+  const { next } = useTrayNavigation();
 
   return (
     <Tray.Body>
@@ -39,7 +39,7 @@ export const SupportChooserStep = ({
 };
 
 export const ChooseAreasStep = () => {
-  const { next } = useTrayFlow();
+  const { next } = useTrayNavigation();
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
 
   const toggleArea = (areaKey: string) => {
@@ -78,7 +78,7 @@ export const ChooseAreasStep = () => {
 };
 
 export const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
-  const { next } = useTrayFlow();
+  const { next } = useTrayNavigation();
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
 
@@ -161,7 +161,7 @@ export const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
 };
 
 export const AttachMediaStep = ({ flow }: { flow: HelpKind }) => {
-  const { next } = useTrayFlow();
+  const { next } = useTrayNavigation();
   const helperCopy = flowAttachmentCopy[flow];
 
   return (
@@ -220,7 +220,7 @@ export const AttachMediaStep = ({ flow }: { flow: HelpKind }) => {
 };
 
 export const YourDetailsStep = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
   const [name, setName] = useState("Test");
   const [email, setEmail] = useState("valmiera.com");
 

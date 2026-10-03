@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SymbolView } from "expo-symbols";
 import { Text } from "react-native";
-import { Tray, useTrayFlow } from "react-native-morpheus";
+import { Tray, useTrayNavigation } from "react-native-morpheus";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
@@ -15,7 +15,7 @@ import {
 import type { HelpKind } from "./types";
 
 const SupportFlowHeader = ({ title }: { title: string }) => {
-  const { close, back, index } = useTrayFlow();
+  const { close, back, index } = useTrayNavigation();
   const left =
     index > 0 ? (
       <Tray.HeaderButton onPress={back}>

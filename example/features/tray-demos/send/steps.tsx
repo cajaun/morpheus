@@ -1,7 +1,7 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayFlow, useTrayPages } from "react-native-morpheus";
+import { Tray, useTrayNavigation, useTrayPages } from "react-native-morpheus";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { trayDemoText } from "@/shared/theme/tokens";
 import { ActionRow, SendFlowFooter, SendFlowHeader } from "./components";
@@ -12,7 +12,7 @@ export const SendEntryStep = ({
 }: {
   onSelectAction: (action: SendAction) => void;
 }) => {
-  const { next } = useTrayFlow();
+  const { next } = useTrayNavigation();
 
   return (
     <Tray.Body style={{ paddingHorizontal: 0 }}>

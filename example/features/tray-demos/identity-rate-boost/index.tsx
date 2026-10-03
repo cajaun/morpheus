@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SymbolView } from "expo-symbols";
 import {
   Tray,
-  useTrayFlow,
+  useTrayNavigation,
 } from "react-native-morpheus";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { ExampleTrigger } from "../shared/example-trigger";
@@ -42,7 +42,7 @@ const ConsentCheck = () => {
 };
 
 const IdentityRateBoostStep = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Body style={{ paddingHorizontal: 0, backgroundColor: PANEL_BACKGROUND }}>

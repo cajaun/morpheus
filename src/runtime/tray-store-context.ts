@@ -100,7 +100,7 @@ export const useTrayHost = () => {
   };
 };
 
-// read the nearest tray scope used by triggers and flow hooks
+// read the nearest tray scope used by triggers and navigation hooks
 export const useTrayScope = () => useContext(TrayScopeContext);
 
 // read normalized options for the current tray step subtree

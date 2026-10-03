@@ -5,7 +5,7 @@ import { SymbolView } from "expo-symbols";
 import Animated, { Easing, FadeIn, FadeOut } from "react-native-reanimated";
 import {
   Tray,
-  useTrayFlow,
+  useTrayNavigation,
 } from "react-native-morpheus";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { PressableScale } from "@/shared/ui/pressable-scale";
@@ -273,7 +273,7 @@ const NewGroupRow = () => {
 };
 
 const ChooseWalletGroupHeader = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Header withSeparator>
@@ -331,7 +331,7 @@ const ChooseWalletGroupBody = ({
 };
 
 const CreateWalletGroupConfirmationStep = () => {
-  const { back } = useTrayFlow();
+  const { back } = useTrayNavigation();
 
   const handleClose = async () => {
     await Haptics.selectionAsync();
@@ -446,7 +446,7 @@ const CreateWalletGroupConfirmationStep = () => {
 };
 
 const WalletGroupFooter = () => {
-  const { index, total, next, close } = useTrayFlow();
+  const { index, total, next, close } = useTrayNavigation();
   const isLastStep = total > 0 && index === total - 1;
   const label = isLastStep ? "Continue" : "Next";
 

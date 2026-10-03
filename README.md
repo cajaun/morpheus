@@ -42,10 +42,10 @@ Ensure Reanimated and Worklets are configured for the versions used by your appl
 
 ```tsx
 import { Button, Text } from "react-native";
-import { Tray, useTrayFlow } from "react-native-morpheus";
+import { Tray, useTrayNavigation } from "react-native-morpheus";
 
 function TrayFooter() {
-  const { next, close, index, total } = useTrayFlow();
+  const { next, close, index, total } = useTrayNavigation();
 
   return (
     <Tray.Footer>
@@ -104,7 +104,10 @@ Root `stepOptions` are inherited by every step and can be overridden by
 that step's `options` prop. `Tray.Root` and `Tray.Nested` no longer accept a
 `steps` prop.
 
-Flow and integration hooks include `useTrayFlow`, `useTrayPages`, `useOptionalTrayPages`, `useTrayOriginProgress`, `useTrayHost`, and `useTrayTransitionLifecycle`.
+Consumer hooks include `useTrayNavigation`, `useTrayKeyboard`, `useTrayPages`,
+`useOptionalTrayPages`, and `useTrayProgress`. Focused animation hooks include
+`useTrayMorphProgress` and `useTrayOriginProgress`. Advanced integrations can
+use `useTrayHost` and `useTrayTransitionLifecycle`.
 
 Package-level layout constants that are intentionally public are available from `react-native-morpheus/constants`.
 

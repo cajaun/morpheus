@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Text, View } from "react-native";
-import { Tray, useTrayFlow } from "react-native-morpheus";
+import { Tray, useTrayNavigation } from "react-native-morpheus";
 import {
   TRAY_HEADER_CLOSE_BUTTON_SIZE,
   TRAY_HEADER_CLOSE_ICON_SIZE,
@@ -16,7 +16,7 @@ import { PrimaryButton } from "../shared/primary-button";
 const ONBOARDING_INFO_ICON = "rgba(255,255,255,0.24)";
 
 const OnboardingFooter = () => {
-  const { next, index, total, close, pageIndex } = useTrayFlow();
+  const { next, index, total, close, pageIndex } = useTrayNavigation();
   const handlePrimaryPress = index >= total - 1 ? close : next;
   const shouldOpenNestedInfo = index === 2 && pageIndex === 1;
 
@@ -71,7 +71,7 @@ const ContinueButtonLabel = () => (
 );
 
 const OnboardingContinueTrayContent = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Body style={{ paddingHorizontal: 0 }}>
@@ -174,7 +174,7 @@ const OnboardingContinueTrayContent = () => {
 };
 
 const OnboardingContinueTrayFooter = () => {
-  const { closeAndNextParentPage } = useTrayFlow();
+  const { closeAndNextParentPage } = useTrayNavigation();
 
   return (
     <Tray.Footer style={{ width: "100%" }}>
@@ -206,7 +206,7 @@ const ONBOARDING_FOOTER_STYLE = {
 const ONBOARDING_CONTINUE_TRAY_FOOTER = <OnboardingContinueTrayFooter />;
 
 const OnboardingWalletsInfoStep = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Body style={{ paddingHorizontal: 0 }}>
@@ -317,7 +317,7 @@ const OnboardingWalletsInfoStep = () => {
 };
 
 const OnboardingBackAction = () => {
-  const { back } = useTrayFlow();
+  const { back } = useTrayNavigation();
 
   return (
     <Tray.HeaderButton onPress={back}>
@@ -339,7 +339,7 @@ const OnboardingHeader = ({
   title: string;
   left?: ReactNode;
 }) => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Header withSeparator>

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayFlow } from "react-native-morpheus";
+import { Tray, useTrayNavigation } from "react-native-morpheus";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { FieldShell } from "../shared/field-shell";
@@ -26,7 +26,7 @@ export const WatchAddressHeader = ({
   title: string;
   showBack?: boolean;
 }) => {
-  const { close, back } = useTrayFlow();
+  const { close, back } = useTrayNavigation();
   const left = showBack ? (
     <Tray.HeaderButton onPress={back}>
       <SymbolView
@@ -70,7 +70,7 @@ export const WatchAddressChooserStep = ({
 }: {
   onSelectAction: (action: WalletAction) => void;
 }) => {
-  const { next } = useTrayFlow();
+  const { next } = useTrayNavigation();
 
   return (
     <Tray.Body>
@@ -197,7 +197,7 @@ export const AddExistingWalletStep = () => {
 };
 
 export const WatchAddressInputStep = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
   const [address, setAddress] = useState("");
   const canContinue = address.trim().length > 0;
 

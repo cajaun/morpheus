@@ -60,7 +60,7 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
   );
 
   return (
-    // scope lets triggers and flow hooks resolve the nearest tray registration
+    // scope lets triggers and navigation hooks resolve the nearest tray registration
     <TrayScopeProvider value={trayId}>{children}</TrayScopeProvider>
   );
 };

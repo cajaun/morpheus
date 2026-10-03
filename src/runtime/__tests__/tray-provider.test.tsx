@@ -12,7 +12,7 @@ import TestRenderer, { act } from "react-test-renderer";
 import {
   Tray,
   TrayProvider,
-  useTrayFlow,
+  useTrayNavigation,
   useTrayHost,
   type TrayStepOptions,
 } from "../..";
@@ -59,7 +59,7 @@ jest.mock("../../core/input/use-action-tray-keyboard", () => {
 });
 
 let latestHost: ReturnType<typeof useTrayHost> | null = null;
-let latestFlow: ReturnType<typeof useTrayFlow> | null = null;
+let latestNavigation: ReturnType<typeof useTrayNavigation> | null = null;
 let activeRenderer: TestRenderer.ReactTestRenderer | null = null;
 
 // test spies surface hook state without coupling assertions to rendered text
@@ -68,9 +68,9 @@ const HostSpy = () => {
   return null;
 };
 
-// expose flow state so navigation assertions can inspect it
+// expose navigation state so assertions can inspect it
 const FlowSpy = () => {
-  latestFlow = useTrayFlow();
+  latestNavigation = useTrayNavigation();
   return null;
 };
 
@@ -94,7 +94,7 @@ const step = (key: string, options?: TrayStepOptions) => (
 describe("TrayProvider runtime", () => {
   beforeEach(() => {
     latestHost = null;
-    latestFlow = null;
+    latestNavigation = null;
     activeRenderer = null;
   });
 
@@ -123,10 +123,10 @@ describe("TrayProvider runtime", () => {
     expect(Object.keys(latestHost!.registry)).toHaveLength(1);
 
     act(() => {
-      latestHost!.openTray(latestFlow!.trayId);
+      latestHost!.openTray(latestNavigation!.trayId);
     });
 
-    expect(latestHost!.activeTrayId).toBe(latestFlow!.trayId);
+      expect(latestHost!.activeTrayId).toBe(latestNavigation!.trayId);
 
     act(() => {
       activeRenderer!.update(
@@ -154,10 +154,10 @@ describe("TrayProvider runtime", () => {
     });
 
     act(() => {
-      latestHost!.openTray(latestFlow!.trayId);
+      latestHost!.openTray(latestNavigation!.trayId);
     });
 
-    expect(latestHost!.activeTrayId).toBe(latestFlow!.trayId);
+      expect(latestHost!.activeTrayId).toBe(latestNavigation!.trayId);
     expect(latestHost!.activeIndex).toBe(0);
     expect(latestHost!.lastTransition).toMatchObject({
       generation: 1,
@@ -216,7 +216,7 @@ describe("TrayProvider runtime", () => {
     });
 
     act(() => {
-      latestHost!.openTray(latestFlow!.trayId);
+      latestHost!.openTray(latestNavigation!.trayId);
       latestHost!.nextStep();
     });
 
@@ -226,7 +226,7 @@ describe("TrayProvider runtime", () => {
       latestHost!.requestCloseActiveTray();
     });
 
-    expect(latestHost!.activeTrayId).toBe(latestFlow!.trayId);
+      expect(latestHost!.activeTrayId).toBe(latestNavigation!.trayId);
     expect(latestHost!.activeIndex).toBe(0);
     expect(latestHost!.lastTransition).toMatchObject({
       reason: "returnToShell",
@@ -273,21 +273,21 @@ describe("TrayProvider runtime", () => {
       );
     });
 
-    expect(latestFlow!.total).toBe(1);
+    expect(latestNavigation!.total).toBe(1);
 
     act(() => {
       setExpanded(true);
     });
 
-    expect(latestFlow!.total).toBe(2);
+    expect(latestNavigation!.total).toBe(2);
 
     act(() => {
-      latestHost!.openTray(latestFlow!.trayId);
+      latestHost!.openTray(latestNavigation!.trayId);
       latestHost!.nextStep();
     });
 
     expect(latestHost!.activeIndex).toBe(1);
-    expect(latestHost!.registry[latestFlow!.trayId]?.steps).toHaveLength(2);
+    expect(latestHost!.registry[latestNavigation!.trayId]?.steps).toHaveLength(2);
   });
 
   it("keeps the mounted tray host pool bounded during tray switches", () => {

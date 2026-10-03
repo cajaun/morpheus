@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { SymbolView } from "expo-symbols";
 import { Text, View } from "react-native";
-import { Tray, useTrayFlow } from "react-native-morpheus";
+import { Tray, useTrayNavigation } from "react-native-morpheus";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import {
@@ -45,7 +45,7 @@ const ChangeAvatarHeader = ({
   title: string;
   left?: ReactNode;
 }) => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Header withSeparator>
@@ -86,7 +86,7 @@ const AvatarBackButton = ({ onPress }: { onPress: () => void }) => (
 );
 
 const AvatarBackAction = () => {
-  const { back } = useTrayFlow();
+  const { back } = useTrayNavigation();
 
   return <AvatarBackButton onPress={back} />;
 };
@@ -109,7 +109,7 @@ const AvatarActionRow = ({
 );
 
 const ChangeAvatarOptionsStep = () => {
-  const { next } = useTrayFlow();
+  const { next } = useTrayNavigation();
 
   return (
     <Tray.Body>
@@ -168,7 +168,7 @@ const EmojiPreview = ({ color }: { color: string }) => (
 );
 
 const UseEmojiBody = () => {
-  const { close } = useTrayFlow();
+  const { close } = useTrayNavigation();
   const [selectedColor, setSelectedColor] = useState<string>(AVATAR_COLORS[7]);
 
   return (

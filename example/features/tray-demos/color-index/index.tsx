@@ -7,7 +7,7 @@ import Animated, {
 import { SymbolView } from "expo-symbols";
 import {
   Tray,
-  useTrayFlow,
+  useTrayNavigation,
   useTrayMorphProgress,
 } from "react-native-morpheus";
 import { PressableScale } from "@/shared/ui/pressable-scale";
@@ -55,7 +55,7 @@ const COLOR_STEPS: ColorStep[] = [
 ];
 
 const ColorIndexHeader = ({ step }: { step: ColorStep }) => {
-  const { close, back, index } = useTrayFlow();
+  const { close, back, index } = useTrayNavigation();
   const left =
     index > 0 ? (
       <Tray.HeaderButton onPress={back}>
@@ -227,7 +227,7 @@ const ColorIndexStep = ({
   onNext: () => void;
   onSelectColor: (colorIndex: number) => void;
 }) => {
-  const { next } = useTrayFlow();
+  const { next } = useTrayNavigation();
 
   return (
     <Tray.Body>
@@ -329,7 +329,7 @@ const ColorDetailStep = ({
   step: ColorStep;
   colorIndex: number;
 }) => {
-  const { requestClose } = useTrayFlow();
+  const { requestClose } = useTrayNavigation();
   const morphProgress = useTrayMorphProgress();
   const { bottom } = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
