@@ -8,6 +8,7 @@ import {
   useTrayRuntimeStore,
 } from "../../runtime/tray-context";
 import { isActionTrayInstrumentationEnabled } from "../../telemetry/config";
+import { logActionTrayProfilerCommit } from "../../telemetry/action-tray-profiler";
 import { markTrayStepReactRenderStarted } from "../../telemetry/tray-step-timing";
 import { ActionTray } from "../action-tray";
 import type { PresentedActionTrayProps } from "../../runtime/presenter/types";
@@ -24,17 +25,40 @@ const PresentedActionTray = ({
   const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
     (
       _id,
-      _phase,
+      phase,
       actualDuration,
-      _baseDuration,
+      baseDuration,
+      startTime,
+      commitTime,
     ) => {
+      logActionTrayProfilerCommit(
+        `action-tray-host:${payload.trayId}`,
+        phase,
+        actualDuration,
+        baseDuration,
+        startTime,
+        commitTime,
+        {
+          rootTrayId: payload.rootTrayId,
+          trayId: payload.trayId,
+          assignmentId,
+          visible: payload.visible,
+          interactive: payload.interactive,
+        },
+      );
       markTrayStepReactRenderStarted(
         payload.rootTrayId,
         payload.trayId,
         actualDuration,
       );
     },
-    [payload.rootTrayId, payload.trayId],
+    [
+      assignmentId,
+      payload.interactive,
+      payload.rootTrayId,
+      payload.trayId,
+      payload.visible,
+    ],
   );
 
   const headerTransitionContent = payload.header ? (

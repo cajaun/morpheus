@@ -41,7 +41,7 @@ Ensure Reanimated and Worklets are configured for the versions used by your appl
 ## Basic tray
 
 ```tsx
-import { Button, Text } from "react-native";
+import { Text } from "react-native";
 import { Tray, useTrayNavigation } from "react-native-morpheus";
 
 function TrayFooter() {
@@ -49,11 +49,70 @@ function TrayFooter() {
 
   return (
     <Tray.Footer>
-      <Button
-        title={index === total - 1 ? "Done" : "Continue"}
-        onPress={index === total - 1 ? close : next}
-      />
+      <Tray.PrimaryButton
+        onPress={isLastStep ? close : next}
+        style={{ backgroundColor: "#9896FF" }}
+      >
+        <Text
+          style={{
+            color: "white",
+            fontSize: 23,
+            lineHeight: 28,
+            fontWeight: "700",
+          }}
+        >
+          Continue
+        </Text>
+      </Tray.PrimaryButton>
     </Tray.Footer>
+  );
+}
+
+function BackAction() {
+  const { back } = useTrayNavigation();
+
+  return (
+    <Tray.HeaderButton onPress={back}>
+      <Text style={{ color: "#787878", fontSize: 28, lineHeight: 28 }}>
+        ‹
+      </Text>
+    </Tray.HeaderButton>
+  );
+}
+
+function StepHeader({
+  title,
+  canGoBack = false,
+}: {
+  title: string;
+  canGoBack?: boolean;
+}) {
+  const { close } = useTrayNavigation();
+
+  return (
+    <Tray.Header withSeparator>
+      <Tray.HeaderRow
+        left={canGoBack ? <BackAction /> : undefined}
+        right={
+          canGoBack ? undefined : (
+            <Tray.HeaderButton onPress={close}>
+              <Text style={{ color: "#787878", fontSize: 24 }}>×</Text>
+            </Tray.HeaderButton>
+          )
+        }
+      >
+        <Text
+          style={{
+            fontSize: 25,
+            lineHeight: 30,
+            letterSpacing: 0.2,
+            fontWeight: "600",
+          }}
+        >
+          {title}
+        </Text>
+      </Tray.HeaderRow>
+    </Tray.Header>
   );
 }
 
@@ -64,24 +123,59 @@ export function ProfileTray() {
         <Text>Open profile</Text>
       </Tray.Trigger>
 
-      <Tray.Step key="profile">
-        <Tray.Header withSeparator>
-          <Text>Profile</Text>
-        </Tray.Header>
+      <Tray.Step>
+        <StepHeader title="Content One" />
         <Tray.Body>
           <Tray.Section>
-            <Text>Choose your profile settings.</Text>
+            <Text style={{ fontSize: 23, lineHeight: 28, fontWeight: "700" }}>
+              This is a test title
+            </Text>
+            <Text style={{ fontSize: 23, lineHeight: 28 }}>
+              This is some example test that spans over multiple lines bla bla
+              bla test test test many words. This is a new sentence and we'll
+              see how that fares too.
+            </Text>
           </Tray.Section>
         </Tray.Body>
       </Tray.Step>
 
-      <Tray.Step
-        key="confirmation"
-        options={{ fullScreen: true, fullScreenSafeAreaTop: true }}
-      >
+      <Tray.Step>
+        <StepHeader title="Content Two" canGoBack />
         <Tray.Body>
           <Tray.Section>
-            <Text>Ready to continue.</Text>
+            <Text style={{ fontSize: 23, lineHeight: 28, fontWeight: "700" }}>
+              Different heading
+            </Text>
+            <Text style={{ fontSize: 23, lineHeight: 28 }}>
+              Here's a lot more text. Lorem ipsum dolor amet. Lorem ipsum dolor
+              amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem
+              ipsum dolor amet. Lorem ipsum dolor amet.
+            </Text>
+            <Text style={{ fontSize: 23, lineHeight: 28 }}>
+              This is some example test that spans over multiple lines bla bla
+              bla test test test many words. This is a new sentence and we'll
+              see how that fares too.
+            </Text>
+          </Tray.Section>
+        </Tray.Body>
+      </Tray.Step>
+
+      <Tray.Step>
+        <StepHeader title="Content Three" canGoBack />
+        <Tray.Body>
+          <Tray.Section>
+            <Text style={{ fontSize: 23, lineHeight: 28, fontWeight: "700" }}>
+              Another heading
+            </Text>
+            <Text style={{ fontSize: 23, lineHeight: 28 }}>
+              Lorem ipsum dolor amet. Lorem ipsum dolor amet. Lorem ipsum dolor
+              amet. Lorem ipsum dolor amet. Lorem ipsum dolor amet.
+            </Text>
+            <Text style={{ fontSize: 23, lineHeight: 28 }}>
+              This is some example test that spans over multiple lines bla bla
+              bla test test test many words. This is a new sentence and we'll
+              see how that fares too.
+            </Text>
           </Tray.Section>
         </Tray.Body>
       </Tray.Step>

@@ -54,6 +54,8 @@ import {
 // content transitions live here so every step swap shares the same motion language
 type Props = {
   children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+  pointerEvents?: "auto" | "none" | "box-none" | "box-only";
   scale?: boolean;
   anchorScaleToTop?: boolean;
   fullScreenBoundaryExit?: boolean;
@@ -321,6 +323,8 @@ const createMorphExiting = (
 // render keyed step content with synchronized entering and exiting motion
 export const TrayStepContent: React.FC<Props> = ({
   children,
+  style,
+  pointerEvents,
   scale = true,
   anchorScaleToTop = false,
   fullScreenBoundaryExit = false,
@@ -349,14 +353,18 @@ export const TrayStepContent: React.FC<Props> = ({
       }
       // scale fullscreen layers from the body boundary so they stay below the header
       style={
-        anchorScaleToTop
-          ? {
-              // the parent content frame owns boundary geometry this layer only establishes the fullscreen viewport required by tray pages
-              flex: 1,
-              transformOrigin: ["50%", "0%", 0],
-            }
-          : undefined
+        [
+          anchorScaleToTop
+            ? {
+                // the parent content frame owns boundary geometry this layer only establishes the fullscreen viewport required by tray pages
+                flex: 1,
+                transformOrigin: ["50%", "0%", 0],
+              }
+            : undefined,
+          style,
+        ]
       }
+      pointerEvents={pointerEvents}
       // first render can skip enter because shell open already provides the arrival cue
       entering={
         skipEntering
@@ -393,8 +401,8 @@ type TrayHeaderTransitionRowProps = {
   className?: string;
 };
 
-// Header motion is a step-content participant, so its controls and title use
-// the same transition lifecycle and morph progress as the incoming body.
+// Header motion is a step-content participant, so its title and action group
+// use the same transition lifecycle as the incoming body.
 export const TrayHeaderTransitionRow: React.FC<
   TrayHeaderTransitionRowProps
 > = ({
@@ -411,47 +419,18 @@ export const TrayHeaderTransitionRow: React.FC<
   const titleStartWidth = useSharedValue(0);
   const titleWidth = useSharedValue(0);
   const previousLeftVisibleRef = useRef<boolean | null>(null);
-  const previousRightVisibleRef = useRef<boolean | null>(null);
-  const previousLeftRef = useRef<React.ReactNode>(null);
-  const previousRightRef = useRef<React.ReactNode>(null);
-  const previousLeftIdentityRef = useRef<string | null>(null);
-  const previousRightIdentityRef = useRef<string | null>(null);
   const centered = left != null;
   const sourceCentered = previousLeftVisibleRef.current ?? centered;
-  const sourceRightVisible = previousRightVisibleRef.current ?? right != null;
-  const previousLeft = previousLeftRef.current;
-  const previousRight = previousRightRef.current;
   const leftIdentity = resolveHeaderActionIdentity(left);
   const rightIdentity = resolveHeaderActionIdentity(right);
-  const leftReplacement =
-    previousLeftVisibleRef.current === true &&
-    centered &&
-    previousLeftIdentityRef.current !== null &&
-    leftIdentity !== null &&
-    previousLeftIdentityRef.current !== leftIdentity;
-  const rightReplacement =
-    previousRightVisibleRef.current === true &&
-    previousRightRef.current != null &&
-    right != null &&
-    previousRightIdentityRef.current !== null &&
-    rightIdentity !== null &&
-    previousRightIdentityRef.current !== rightIdentity;
+  const actionTransitionKey = `${left == null ? "none" : leftIdentity ?? "left"}:${right == null ? "none" : rightIdentity ?? "right"}`;
   const wholeHeaderBoundaryAnimation =
     transition.fullScreenBoundaryExit &&
     transitionStart?.fullScreenChanged === true;
 
   useEffect(() => {
     previousLeftVisibleRef.current = centered;
-    previousRightVisibleRef.current = right != null;
-    if (left != null) {
-      previousLeftRef.current = left;
-      previousLeftIdentityRef.current = leftIdentity;
-    }
-    if (right != null) {
-      previousRightRef.current = right;
-      previousRightIdentityRef.current = rightIdentity;
-    }
-  }, [centered, left, leftIdentity, right, rightIdentity]);
+  }, [centered]);
 
   const titlePositionStyle = useAnimatedStyle(() => {
     const progress = morphProgress?.value ?? 1;
@@ -470,62 +449,6 @@ export const TrayHeaderTransitionRow: React.FC<
           translateX: interpolate(progress, [0, 1], [startOffset, endOffset]),
         },
       ],
-    };
-  });
-
-  const leftActionStyle = useAnimatedStyle(() => {
-    const progress = morphProgress?.value ?? 1;
-    const startOpacity = sourceCentered ? 1 : 0;
-    const endOpacity = centered ? 1 : 0;
-
-    return {
-      opacity: interpolate(progress, [0, 1], [startOpacity, endOpacity]),
-    };
-  });
-
-  const leftPreviousActionStyle = useAnimatedStyle(() => {
-    const progress = morphProgress?.value ?? 1;
-
-    return {
-      opacity: interpolate(progress, [0, 1], [1, 0]),
-    };
-  });
-
-  const leftCurrentActionStyle = useAnimatedStyle(() => {
-    const progress = morphProgress?.value ?? 1;
-
-    return {
-      opacity: interpolate(progress, [0, 1], [0, 1]),
-    };
-  });
-
-  const rightActionStyle = useAnimatedStyle(() => {
-    const progress = morphProgress?.value ?? 1;
-    const sourceVisible = sourceRightVisible;
-    const targetVisible = right != null;
-
-    return {
-      opacity: interpolate(
-        progress,
-        [0, 1],
-        [sourceVisible ? 1 : 0, targetVisible ? 1 : 0],
-      ),
-    };
-  });
-
-  const rightPreviousActionStyle = useAnimatedStyle(() => {
-    const progress = morphProgress?.value ?? 1;
-
-    return {
-      opacity: interpolate(progress, [0, 1], [1, 0]),
-    };
-  });
-
-  const rightCurrentActionStyle = useAnimatedStyle(() => {
-    const progress = morphProgress?.value ?? 1;
-
-    return {
-      opacity: interpolate(progress, [0, 1], [0, 1]),
     };
   });
 
@@ -576,49 +499,30 @@ export const TrayHeaderTransitionRow: React.FC<
         </Animated.View>
       </Animated.View>
 
-      <Animated.View
-        pointerEvents={centered ? "auto" : "none"}
-        style={[
-          headerMotionStyles.leadingControlSlot,
-          leftReplacement ? leftCurrentActionStyle : leftActionStyle,
-        ]}
+      <TrayStepContent
+        stepKey={`header-actions-${actionTransitionKey}`}
+        scale={false}
+        fullScreenBoundaryExit={transition.fullScreenBoundaryExit}
+        skipEntering={
+          transition.skipEntering || wholeHeaderBoundaryAnimation
+        }
+        skipExiting={wholeHeaderBoundaryAnimation}
+        style={headerMotionStyles.actionTransitionLayer}
+        pointerEvents="box-none"
       >
-        {leftReplacement ? left : left ?? previousLeft}
-      </Animated.View>
-
-      {leftReplacement ? (
         <Animated.View
-          pointerEvents="none"
-          style={[
-            headerMotionStyles.leadingControlSlot,
-            leftPreviousActionStyle,
-          ]}
+          pointerEvents={centered ? "auto" : "none"}
+          style={headerMotionStyles.leadingControlSlot}
         >
-          {previousLeft}
+          {left}
         </Animated.View>
-      ) : null}
-
-      <Animated.View
-        pointerEvents={right != null ? "auto" : "none"}
-        style={[
-          headerMotionStyles.trailingControlSlot,
-          rightReplacement ? rightCurrentActionStyle : rightActionStyle,
-        ]}
-      >
-        {rightReplacement ? right : right ?? previousRight}
-      </Animated.View>
-
-      {rightReplacement ? (
         <Animated.View
-          pointerEvents="none"
-          style={[
-            headerMotionStyles.trailingControlSlot,
-            rightPreviousActionStyle,
-          ]}
+          pointerEvents={right != null ? "auto" : "none"}
+          style={headerMotionStyles.trailingControlSlot}
         >
-          {previousRight}
+          {right}
         </Animated.View>
-      ) : null}
+      </TrayStepContent>
     </Animated.View>
   );
 };
@@ -647,6 +551,13 @@ const headerMotionStyles = StyleSheet.create({
   },
   animatedHeaderRow: {
     position: "relative",
+  },
+  actionTransitionLayer: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
   },
   titleViewport: {
     position: "absolute",

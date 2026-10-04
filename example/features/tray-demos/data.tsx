@@ -1,6 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 import AboutAaveTray from "./about-aave";
+import AddStablecoinsTray from "./add-stablecoins";
 import AddPaymentMethodTray from "./add-payment-method";
 import ChangeAvatarTray from "./change-avatar";
 import type { UsageVariant } from "./component-presentation/types";
@@ -60,6 +61,15 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     content: (
       <TrayExampleFrame>
         <AaveExample />
+      </TrayExampleFrame>
+    ),
+  },
+  {
+    value: "add-stablecoins",
+    label: "Add Stablecoins",
+    content: (
+      <TrayExampleFrame>
+        <AddStablecoinsTray />
       </TrayExampleFrame>
     ),
   },

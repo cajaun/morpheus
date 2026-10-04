@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   useTrayHostActions,
   useTrayHostSelector,
 } from "./tray-context";
+import { logActionTrayProfilerCommit } from "../telemetry/action-tray-profiler";
+import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
 import {
   createPresentedTray,
   NestedTrayStack,
@@ -21,6 +23,19 @@ export const TrayPresenter: React.FC<{
   const transition = useTrayHostSelector((state) => state.lastTransition);
   const { dismissKeyboardForTray, requestCloseActiveTray } = useTrayHostActions();
   const previousIndexByTrayRef = useRef<Record<string, number>>({});
+  const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
+    (id, phase, actualDuration, baseDuration, startTime, commitTime) => {
+      logActionTrayProfilerCommit(
+        id,
+        phase,
+        actualDuration,
+        baseDuration,
+        startTime,
+        commitTime,
+      );
+    },
+    [],
+  );
 
   const rootHost = useMemo<PresentedTray | null>(() => {
     const entry = stack[0];
@@ -76,22 +91,54 @@ export const TrayPresenter: React.FC<{
     previousIndexByTrayRef.current = nextIndexes;
   }, [stack]);
 
-  return (
+  const rootSlots = (
+    <RootTraySlots
+      activeHost={rootHost}
+      requestCloseActiveTray={requestCloseActiveTray}
+      dismissKeyboardForTray={dismissKeyboardForTray}
+      transitionContract={transition}
+      renderHost={renderHost}
+    />
+  );
+  const nestedStack = (
+    <NestedTrayStack
+      hosts={nestedHosts}
+      requestCloseActiveTray={requestCloseActiveTray}
+      dismissKeyboardForTray={dismissKeyboardForTray}
+      transitionContract={transition}
+      renderHost={renderHost}
+    />
+  );
+  const instrumentationEnabled = isActionTrayInstrumentationEnabled();
+  const presenterTree = instrumentationEnabled ? (
     <>
-      <RootTraySlots
-        activeHost={rootHost}
-        requestCloseActiveTray={requestCloseActiveTray}
-        dismissKeyboardForTray={dismissKeyboardForTray}
-        transitionContract={transition}
-        renderHost={renderHost}
-      />
-      <NestedTrayStack
-        hosts={nestedHosts}
-        requestCloseActiveTray={requestCloseActiveTray}
-        dismissKeyboardForTray={dismissKeyboardForTray}
-        transitionContract={transition}
-        renderHost={renderHost}
-      />
+      <React.Profiler id="action-tray-root-slots" onRender={handleProfileRender}>
+        {rootSlots}
+      </React.Profiler>
+      <React.Profiler
+        id="action-tray-nested-stack"
+        onRender={handleProfileRender}
+      >
+        {nestedStack}
+      </React.Profiler>
     </>
+  ) : (
+    <>
+      {rootSlots}
+      {nestedStack}
+    </>
+  );
+
+  if (!instrumentationEnabled) {
+    return presenterTree;
+  }
+
+  return (
+    <React.Profiler
+      id="action-tray-presenter"
+      onRender={handleProfileRender}
+    >
+      {presenterTree}
+    </React.Profiler>
   );
 };
