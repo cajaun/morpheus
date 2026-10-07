@@ -1,5 +1,6 @@
 // adapt runtime payloads into the animated native shell
 import React, { useCallback, useMemo } from "react";
+import { TrayStepContent } from "../../tray-step-content";
 import { TrayHeaderTransitionProvider } from "../../primitives/header-transition-context";
 import {
   TrayScopeProvider,
@@ -12,10 +13,6 @@ import { markTrayStepReactRenderStarted } from "../../telemetry/tray-step-timing
 import { ActionTray } from "../action-tray";
 import type { PresentedActionTrayProps } from "../../runtime/presenter/types";
 import { arePresentedTraysEquivalent } from "../../runtime/presenter/model";
-import {
-  PresentedStepWindow,
-  type PresentedStepLayer,
-} from "./presented-step-window";
 
 // render one resolved payload through the animated shell and content layers
 const PresentedActionTray = ({
@@ -86,52 +83,48 @@ const PresentedActionTray = ({
     ],
   );
   const header = useMemo(
-    () => (
-      <PresentedStepWindow
-        region="header"
-        active={
-          {
-            key: payload.trayId,
-            rootTrayId: payload.rootTrayId,
-            content: headerTransitionContent,
-            stepOptions: payload.stepOptions,
-            fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
-            isFirstRender: payload.isFirstRender,
-            transitionContract: payload.transitionContract,
-            scale: false,
-            anchorScaleToTop: false,
-          } satisfies PresentedStepLayer
-        }
-      />
-    ),
+    () =>
+      payload.header ? (
+        <TrayScopeProvider value={payload.rootTrayId}>
+          <TrayStepOptionsProvider value={payload.stepOptions}>
+            <TrayStepContent
+              stepKey={
+                payload.fullScreen ? "fullscreen-header" : "fixed-header"
+              }
+              scale={false}
+              fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
+              skipEntering={payload.isFirstRender}
+            >
+              {headerTransitionContent}
+            </TrayStepContent>
+          </TrayStepOptionsProvider>
+        </TrayScopeProvider>
+      ) : null,
     [
       headerTransitionContent,
+      payload.fullScreen,
       payload.fullScreenBoundaryExit,
+      payload.header,
       payload.isFirstRender,
       payload.rootTrayId,
       payload.stepOptions,
-      payload.trayId,
-      payload.transitionContract,
     ],
   );
   const content = useMemo(
     () => (
-      <PresentedStepWindow
-        region="content"
-        active={
-          {
-            key: payload.trayId,
-            rootTrayId: payload.rootTrayId,
-            content: payload.content,
-            stepOptions: payload.stepOptions,
-            fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
-            isFirstRender: payload.isFirstRender,
-            transitionContract: payload.transitionContract,
-            scale: payload.stepOptions.scale,
-            anchorScaleToTop: payload.fullScreen,
-          } satisfies PresentedStepLayer
-        }
-      />
+      <TrayScopeProvider value={payload.rootTrayId}>
+        <TrayStepOptionsProvider value={payload.stepOptions}>
+          <TrayStepContent
+            stepKey={payload.trayId}
+            scale={payload.stepOptions.scale}
+            anchorScaleToTop={payload.fullScreen}
+            fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
+            skipEntering={payload.isFirstRender}
+          >
+            {payload.content}
+          </TrayStepContent>
+        </TrayStepOptionsProvider>
+      </TrayScopeProvider>
     ),
     [
       payload.content,
@@ -141,7 +134,6 @@ const PresentedActionTray = ({
       payload.rootTrayId,
       payload.stepOptions,
       payload.trayId,
-      payload.transitionContract,
     ],
   );
   const footer = useMemo(

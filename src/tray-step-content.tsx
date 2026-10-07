@@ -62,7 +62,6 @@ type Props = {
   stepKey?: string;
   skipEntering?: boolean;
   skipExiting?: boolean;
-  onExitComplete?: () => void;
 };
 
 export const MORPH_EASING = Easing.bezier(0.25, 1.0, 0.5, 1);
@@ -228,7 +227,6 @@ const createMorphExiting = (
   fullScreenBoundaryExit: boolean,
   transitionStart: TrayTransitionStart | null,
   motionDirection: TrayContentMotionDirection | null,
-  onExitComplete?: () => void,
 ): EntryExitAnimationFunction => {
   return () => {
     "worklet";
@@ -318,11 +316,6 @@ const createMorphExiting = (
           },
         ],
       },
-      callback: (finished: boolean) => {
-        if (finished && onExitComplete) {
-          scheduleOnRN(onExitComplete);
-        }
-      },
     };
   };
 };
@@ -338,7 +331,6 @@ export const TrayStepContent: React.FC<Props> = ({
   stepKey,
   skipEntering = false,
   skipExiting = false,
-  onExitComplete,
 }) => {
   const transitionStart = useTrayTransitionStart();
   const motionDirection = useTrayContentMotionDirection();
@@ -392,7 +384,6 @@ export const TrayStepContent: React.FC<Props> = ({
               fullScreenBoundaryExit,
               transitionStart,
               motionDirection,
-              onExitComplete,
             )
       }
     >
