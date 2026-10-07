@@ -69,36 +69,24 @@ describe("useTrayHeightCache QA coverage", () => {
     expect(harness.contentHeight.value).toBe(275);
   });
 
-  it("does not use a source fullscreen measurement as a sheet fallback", () => {
-    const harness = renderHeightCache();
+  it.each([866, 356])(
+    "rejects stale fullscreen or shared height %s as an uncached sheet fallback",
+    (staleHeight) => {
+      const harness = renderHeightCache();
 
-    harness.contentHeight.value = 866;
-    expect(
-      harness.cache.actions.restoreContentHeight(
-        "content-four",
-        866,
-        "sheet",
-        false,
-      ),
-    ).toBeUndefined();
-    expect(harness.contentHeight.value).toBe(0);
-  });
+      harness.contentHeight.value = staleHeight;
 
-  it("clears a stale shared height before measuring an uncached sheet", () => {
-    const harness = renderHeightCache();
-
-    harness.contentHeight.value = 356;
-
-    expect(
-      harness.cache.actions.restoreContentHeight(
-        "content-four",
-        356,
-        "sheet",
-        false,
-      ),
-    ).toBeUndefined();
-    expect(harness.contentHeight.value).toBe(0);
-  });
+      expect(
+        harness.cache.actions.restoreContentHeight(
+          "content-four",
+          staleHeight,
+          "sheet",
+          false,
+        ),
+      ).toBeUndefined();
+      expect(harness.contentHeight.value).toBe(0);
+    },
+  );
 
   it("does not reuse a cached sheet frame for a fullscreen-origin handoff", () => {
     const harness = renderHeightCache();

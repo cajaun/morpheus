@@ -646,6 +646,7 @@ const FourthStep = () => {
           ducimus obcaecati excepturi maiores porro rerum ipsam doloremque error
           numquam omnis.
         </Text>
+
       </Tray.Section>
     </Tray.Body>
   );
