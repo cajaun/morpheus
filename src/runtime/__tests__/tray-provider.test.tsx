@@ -31,6 +31,7 @@ jest.mock("../../core/action-tray", () => {
       content,
       footer,
       rootTrayId,
+      trayId,
       interactive,
       covered,
       onCloseComplete,
@@ -38,6 +39,7 @@ jest.mock("../../core/action-tray", () => {
       <ReactNative.View
         testID="action-tray-host"
         rootTrayId={rootTrayId}
+        trayId={trayId}
         visible={visible}
         interactive={interactive}
         covered={covered}
@@ -245,6 +247,36 @@ describe("TrayProvider runtime", () => {
       boundary: "closing",
       to: null,
     });
+  });
+
+  it("closes from the latest same-root step without reverting the host payload", () => {
+    act(() => {
+      activeRenderer = TestRenderer.create(
+        <TrayProvider>
+          <HostSpy />
+          <Tray.Root>
+            {[step("one"), step("two")]}
+            <FlowSpy />
+          </Tray.Root>
+        </TrayProvider>,
+      );
+    });
+
+    act(() => {
+      latestHost!.openTray(latestNavigation!.trayId);
+      latestHost!.nextStep();
+    });
+
+    const activeHost = getRenderedTrayHosts()[0];
+    expect(activeHost.props.trayId).toBe(`${latestNavigation!.trayId}-two`);
+
+    act(() => {
+      latestHost!.requestCloseActiveTray();
+    });
+
+    const closingHost = getRenderedTrayHosts()[0];
+    expect(closingHost.props.visible).toBe(false);
+    expect(closingHost.props.trayId).toBe(`${latestNavigation!.trayId}-two`);
   });
 
   it("updates tray definitions when step data changes without changing keys", () => {

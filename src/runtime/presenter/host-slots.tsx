@@ -14,6 +14,7 @@ import {
 import { describeTrayTransition } from "../transition-diagnostics";
 import { log } from "../logger";
 import {
+  arePresentedTraysEquivalent,
   arePresentedTrayListsEquivalent,
   areTrayHostSlotsEquivalent,
   createIdleSlot,
@@ -40,8 +41,20 @@ type HostCommonProps = {
   renderHost: PresentedActionTrayRenderer;
 };
 
+// Presenter boundaries may skip unrelated parent renders, but a transition
+// descriptor remains identity-sensitive: a new descriptor is a new lifecycle
+// delivery even when its endpoint fields happen to be equal.
+const areHostCommonPropsEquivalent = (
+  previous: HostCommonProps,
+  next: HostCommonProps,
+) =>
+  previous.requestCloseActiveTray === next.requestCloseActiveTray &&
+  previous.dismissKeyboardForTray === next.dismissKeyboardForTray &&
+  previous.transitionContract === next.transitionContract &&
+  previous.renderHost === next.renderHost;
+
 // keep root hosts in two slots so outgoing and incoming shells can overlap
-export const RootTraySlots = ({
+const RootTraySlotsImpl = ({
   activeHost,
   requestCloseActiveTray,
   dismissKeyboardForTray,
@@ -54,42 +67,14 @@ export const RootTraySlots = ({
   const nextAssignmentIdRef = useRef(0);
   const activeSlotIndexRef = useRef<number | null>(null);
   const pendingPresentedHostRef = useRef<PresentedTray | null>(null);
-  const previousActiveHostRef = useRef<PresentedTray | null>(null);
   const [hostSlots, setHostSlots] = useState<[TrayHostSlot, TrayHostSlot]>([
     createIdleSlot(),
     createIdleSlot(),
   ]);
 
-  // Same-root step changes do not need a second state commit. The slot state
-  // remains the lifecycle record for close/replacement, while this render
-  // projection carries the newest active payload immediately.
-  const renderedHostSlots = useMemo(() => {
-    const activeSlotIndex = activeSlotIndexRef.current;
-
-    if (
-      activeHost === null ||
-      activeSlotIndex === null ||
-      hostSlots[activeSlotIndex]?.payload?.rootTrayId !== activeHost.rootTrayId
-    ) {
-      return hostSlots;
-    }
-
-    const next = [...hostSlots] as [TrayHostSlot, TrayHostSlot];
-    const activeSlot = next[activeSlotIndex];
-
-    next[activeSlotIndex] = {
-      ...activeSlot,
-      payload: activeHost,
-      visible: true,
-      interactive: activeHost.interactive,
-    };
-
-    return areTrayHostSlotsEquivalent(hostSlots, next) ? hostSlots : next;
-  }, [activeHost, hostSlots]);
-
   const orderedHostSlots = useMemo(
-    () => resolveOrderedHostSlots(renderedHostSlots),
-    [renderedHostSlots],
+    () => resolveOrderedHostSlots(hostSlots),
+    [hostSlots],
   );
 
   const handleSlotCloseComplete = useCallback(
@@ -167,11 +152,7 @@ export const RootTraySlots = ({
         if (closingSlotPayload === null) {
           return current;
         }
-        const closingPayload =
-          previousActiveHostRef.current?.rootTrayId ===
-          closingSlotPayload.rootTrayId
-            ? previousActiveHostRef.current
-            : closingSlotPayload;
+        const closingPayload = closingSlotPayload;
 
         next[currentActiveSlotIndex] = {
           assignmentId: closingActiveSlot.assignmentId,
@@ -196,11 +177,24 @@ export const RootTraySlots = ({
       }
 
       if (currentRootTrayId === nextRootTrayId) {
-        // same-root step changes are projected during render; committing a new
-        // hostSlots array here would create a second full shell render.
         const targetSlotIndex = currentActiveSlotIndex ?? 0;
+        const targetSlot = next[targetSlotIndex];
+
+        next[targetSlotIndex] = {
+          assignmentId:
+            targetSlot.assignmentId || nextAssignmentIdRef.current + 1,
+          payload: activeHost,
+          visible: true,
+          interactive: activeHost.interactive,
+        };
+
+        if (targetSlot.assignmentId === 0) {
+          nextAssignmentIdRef.current += 1;
+          next[targetSlotIndex].assignmentId = nextAssignmentIdRef.current;
+        }
+
         activeSlotIndexRef.current = targetSlotIndex;
-        return current;
+        return commitHostSlots(current, next);
       }
 
       if (
@@ -214,11 +208,7 @@ export const RootTraySlots = ({
         if (closingSlotPayload === null) {
           return current;
         }
-        const closingPayload =
-          previousActiveHostRef.current?.rootTrayId ===
-          closingSlotPayload.rootTrayId
-            ? previousActiveHostRef.current
-            : closingSlotPayload;
+        const closingPayload = closingSlotPayload;
 
         pendingPresentedHostRef.current = activeHost;
         next[currentActiveSlotIndex] = {
@@ -259,14 +249,6 @@ export const RootTraySlots = ({
   }, [activeHost, transitionContract]);
 
   useLayoutEffect(() => {
-    if (activeHost !== null) {
-      // Run after the slot reconciliation effect so root replacement still
-      // sees the outgoing payload before this ref advances.
-      previousActiveHostRef.current = activeHost;
-    }
-  }, [activeHost]);
-
-  useLayoutEffect(() => {
     log("HOST SLOT STATE", {
       activeHost: activeHost
         ? {
@@ -286,7 +268,7 @@ export const RootTraySlots = ({
             fullScreen: pendingPresentedHostRef.current.fullScreen,
           }
         : null,
-      slots: renderedHostSlots.map((slot) => ({
+      slots: hostSlots.map((slot) => ({
         assignmentId: slot.assignmentId,
         visible: slot.visible,
         interactive: slot.interactive,
@@ -295,7 +277,7 @@ export const RootTraySlots = ({
         fullScreen: slot.payload?.fullScreen,
       })),
     });
-  }, [activeHost, renderedHostSlots, transitionContract]);
+  }, [activeHost, hostSlots, transitionContract]);
 
   useLayoutEffect(() => {
     if (!isActionTrayInstrumentationEnabled()) {
@@ -304,10 +286,10 @@ export const RootTraySlots = ({
 
     const activeSlotIndex = activeSlotIndexRef.current;
     const activeSlot =
-      activeSlotIndex === null ? null : renderedHostSlots[activeSlotIndex];
+      activeSlotIndex === null ? null : hostSlots[activeSlotIndex];
 
     markTrayStepSlotCommitted(activeSlot?.payload?.rootTrayId);
-  }, [renderedHostSlots]);
+  }, [hostSlots]);
 
   return (
     <>
@@ -339,8 +321,29 @@ export const RootTraySlots = ({
   );
 };
 
+type RootTraySlotsProps = HostCommonProps & {
+  activeHost: PresentedTray | null;
+};
+
+const areRootTraySlotsPropsEquivalent = (
+  previous: RootTraySlotsProps,
+  next: RootTraySlotsProps,
+) =>
+  areHostCommonPropsEquivalent(previous, next) &&
+  (previous.activeHost === next.activeHost ||
+    arePresentedTraysEquivalent(previous.activeHost, next.activeHost));
+
+const MemoizedRootTraySlots = React.memo(
+  RootTraySlotsImpl,
+  areRootTraySlotsPropsEquivalent,
+);
+
+MemoizedRootTraySlots.displayName = "RootTraySlots";
+
+export const RootTraySlots = MemoizedRootTraySlots;
+
 // retain nested hosts in stack order while the active root changes
-export const NestedTrayStack = ({
+const NestedTrayStackImpl = ({
   hosts,
   requestCloseActiveTray,
   dismissKeyboardForTray,
@@ -403,3 +406,24 @@ export const NestedTrayStack = ({
     </>
   );
 };
+
+type NestedTrayStackProps = HostCommonProps & {
+  hosts: PresentedTray[];
+};
+
+const areNestedTrayStackPropsEquivalent = (
+  previous: NestedTrayStackProps,
+  next: NestedTrayStackProps,
+) =>
+  areHostCommonPropsEquivalent(previous, next) &&
+  (previous.hosts === next.hosts ||
+    arePresentedTrayListsEquivalent(previous.hosts, next.hosts));
+
+const MemoizedNestedTrayStack = React.memo(
+  NestedTrayStackImpl,
+  areNestedTrayStackPropsEquivalent,
+);
+
+MemoizedNestedTrayStack.displayName = "NestedTrayStack";
+
+export const NestedTrayStack = MemoizedNestedTrayStack;

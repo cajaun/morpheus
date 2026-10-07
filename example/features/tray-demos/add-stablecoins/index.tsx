@@ -148,12 +148,13 @@ const AddStablecoinsTray = () => (
       className: "bg-white",
       footerStyle: { backgroundColor: "#FFFFFF" },
     }}
+    footer={<AddStablecoinsFooter />}
   >
     <Tray.Trigger haptics="feedback">
       <ExampleTrigger label="Add Stablecoins" />
     </Tray.Trigger>
 
-    <Tray.Step footer={<AddStablecoinsFooter />}>
+    <Tray.Step >
       <AddStablecoinsHeader />
       <AddStablecoinsStep />
     </Tray.Step>

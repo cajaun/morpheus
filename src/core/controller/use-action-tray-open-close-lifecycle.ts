@@ -237,6 +237,10 @@ export const useActionTrayOpenCloseLifecycle = ({
       log("OPEN — waiting for measurement");
     } else {
       setIsSurfaceReady(true);
+      // Closing is a terminal snapshot boundary. If a step update is still
+      // waiting for the passive content publication, commit the latest props
+      // before the shell starts moving so the previous step cannot reappear.
+      showLatestSnapshot();
       // close travel must never be shorter than the current drag offset
       const closeTravel = resolveActionTrayCloseTravel(
         resolveClosedTranslateY,

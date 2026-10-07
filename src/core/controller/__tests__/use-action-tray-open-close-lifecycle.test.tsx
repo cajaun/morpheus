@@ -106,6 +106,69 @@ const renderOpeningLifecycle = (open?: "slide" | "expandFromTrigger") => {
 };
 
 describe("useActionTrayOpenCloseLifecycle", () => {
+  it("publishes the latest snapshot before starting a close", () => {
+    const showLatestSnapshot = jest.fn();
+    const params = {
+      visible: false,
+      rootTrayId: "root",
+      trayId: "root-two",
+      footer: "footer",
+      renderState: {
+        state: {
+          renderedTrayId: "root-one",
+          renderedFooter: "footer",
+        },
+        actions: {
+          showLatestSnapshot,
+          clear: jest.fn(),
+        },
+      },
+      measurements: {
+        shared: {
+          resolvedContentHeight: shared(311),
+          measuredFooterHeight: shared(90),
+        },
+        refs: {
+          latestResolvedContentHeightRef: { current: 311 },
+          latestMeasuredFooterHeightRef: { current: 90 },
+        },
+        state: { isReadyToOpen: false },
+        actions: {
+          beginOpenMeasurement: jest.fn(),
+          enableLayout: jest.fn(),
+          completePendingOpen: jest.fn(),
+          prepareForClose: jest.fn(),
+          reset: jest.fn(),
+        },
+      },
+      originGeometryLeaseRef: { current: false },
+      shared: {
+        translateY: shared(0),
+        contentHeight: shared(311),
+        footerHeight: shared(90),
+        active: shared(true),
+        animationTravel: shared(401),
+        closeGeneration: shared(0),
+        surfaceOpacity: shared(1),
+        originProgress: shared(1),
+        originTargetContentHeight: shared(0),
+      },
+      resolveClosedTranslateY: jest.fn(() => 401),
+      transition: undefined,
+    };
+
+    const Probe = () => {
+      useActionTrayOpenCloseLifecycle(params);
+      return null;
+    };
+
+    act(() => {
+      create(<Probe />);
+    });
+
+    expect(showLatestSnapshot).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps trigger expansion as the only opening geometry owner", () => {
     const lifecycle = renderOpeningLifecycle("expandFromTrigger");
 
