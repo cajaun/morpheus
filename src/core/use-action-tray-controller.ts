@@ -492,8 +492,11 @@ export const useActionTrayController = ({
     [handleRequestClose, presentation.shared.active],
   );
 
-  return {
-    shared: {
+  // Keep the controller boundary referentially stable. The host owns the
+  // controller lifecycle, while the visual surface can now skip a render
+  // when none of its actual inputs changed.
+  const shared = useMemo(
+    () => ({
       translateY: presentation.shared.translateY,
       contentHeight: presentation.shared.contentHeight,
       footerHeight: presentation.shared.footerHeight,
@@ -512,14 +515,37 @@ export const useActionTrayController = ({
       transitionLayoutStartedGeneration,
       transitionCompletedGeneration,
       originTargetContentHeight: presentation.shared.originTargetContentHeight,
-    },
-    state: {
+    }),
+    [
+      presentation.shared.active,
+      presentation.shared.contentHeight,
+      presentation.shared.context,
+      presentation.shared.footerHeight,
+      presentation.shared.hasFooter,
+      presentation.shared.originProgress,
+      presentation.shared.originTargetContentHeight,
+      presentation.shared.progress,
+      presentation.shared.surfaceOpacity,
+      presentation.shared.totalHeight,
+      presentation.shared.translateY,
+      morphProgress,
+      transitionCompletedGeneration,
+      transitionGenerationValue,
+      transitionLayoutStartedGeneration,
+      transitionStartedAt,
+      transitionStartedGeneration,
+      fullScreenChangedValue,
+    ],
+  );
+  const contentHeightSnapshot =
+    measurements.refs.latestResolvedContentHeightRef.current;
+  const state = useMemo(
+    () => ({
       layoutEnabled: measurements.state.layoutEnabled,
       footerMeasured: measurements.state.footerMeasured,
       contentMeasured: measurements.state.contentMeasured,
       pendingOpen: measurements.state.pendingOpen,
-      contentHeightSnapshot:
-        measurements.refs.latestResolvedContentHeightRef.current,
+      contentHeightSnapshot,
       preparedSheetFrame: geometry.state.preparedSheetFrame,
       isSurfaceReady: openCloseLifecycle.state.isSurfaceReady,
       renderedFooter: renderState.state.renderedFooter,
@@ -541,15 +567,65 @@ export const useActionTrayController = ({
       measureFooter: measurements.state.shouldMeasureFooter
         ? renderState.state.renderedFooter
         : null,
-    },
-    handlers: {
-      ...measurements.handlers,
+    }),
+    [
+      contentHeightSnapshot,
+      frameFullScreen,
+      geometry.state.preparedSheetFrame,
+      measurements.state.contentMeasured,
+      measurements.state.footerMeasured,
+      measurements.state.layoutEnabled,
+      measurements.state.pendingOpen,
+      measurements.state.shouldMeasureFooter,
+      openCloseLifecycle.state.isSurfaceReady,
+      renderState.state.renderedClassName,
+      renderState.state.renderedContainerStyle,
+      renderState.state.renderedContent,
+      renderState.state.renderedFooter,
+      renderState.state.renderedFooterClassName,
+      renderState.state.renderedFooterStyle,
+      renderState.state.renderedFullScreen,
+      renderState.state.renderedFullScreenBackgroundScale,
+      renderState.state.renderedFullScreenDraggable,
+      renderState.state.renderedFullScreenSafeAreaTop,
+      renderState.state.renderedHeader,
+      renderState.state.renderedTrayId,
+    ],
+  );
+  const {
+    handleContentLayout,
+    handleVisibleFooterLayout,
+    handleMeasureFooterLayout,
+  } = measurements.handlers;
+  const handlers = useMemo(
+    () => ({
+      handleContentLayout,
+      handleVisibleFooterLayout,
+      handleMeasureFooterLayout,
       handleShellLayout,
       handleLayoutTransitionConfigured,
       handleLayoutTransitionStart,
       handleLayoutTransitionComplete,
       handleRequestClose,
-    },
+    }),
+    [
+      handleLayoutTransitionComplete,
+      handleLayoutTransitionConfigured,
+      handleLayoutTransitionStart,
+      handleRequestClose,
+      handleShellLayout,
+      handleContentLayout,
+      handleMeasureFooterLayout,
+      handleVisibleFooterLayout,
+    ],
+  );
+
+  return {
+    shared,
+    state,
+    handlers,
     imperativeApi,
   };
 };
+
+export type ActionTrayController = ReturnType<typeof useActionTrayController>;
