@@ -7,6 +7,9 @@ import type {
 } from "../tray-context";
 import { resolveTrayStepOptions } from "../tray-step-options";
 import {
+  arePresentedTrayListsEquivalent,
+  arePresentedTraysEquivalent,
+  areTrayHostSlotsEquivalent,
   createIdleSlot,
   createPresentedTray,
   resolveNextActiveSlotIndex,
@@ -162,5 +165,29 @@ describe("tray presenter model", () => {
       "closing",
       "active",
     ]);
+  });
+
+  it("recognizes equivalent presenter payloads without requiring object identity", () => {
+    const current = presented("active");
+    const next = {
+      ...current,
+      stepOptions: { ...current.stepOptions },
+    };
+
+    expect(arePresentedTraysEquivalent(current, next)).toBe(true);
+    expect(
+      areTrayHostSlotsEquivalent(
+        [slot(current, true, true), createIdleSlot()],
+        [slot(next, true, true), createIdleSlot()],
+      ),
+    ).toBe(true);
+    expect(arePresentedTrayListsEquivalent([current], [next])).toBe(true);
+  });
+
+  it("detects presentation changes that require a host rerender", () => {
+    const current = presented("active");
+    const next = { ...current, trayId: "active-two" };
+
+    expect(arePresentedTraysEquivalent(current, next)).toBe(false);
   });
 });

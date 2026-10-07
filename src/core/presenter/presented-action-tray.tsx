@@ -1,5 +1,5 @@
 // adapt runtime payloads into the animated native shell
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { TrayStepContent } from "../../tray-step-content";
 import { TrayHeaderTransitionProvider } from "../../primitives/header-transition-context";
 import {
@@ -12,6 +12,7 @@ import { logActionTrayProfilerCommit } from "../../telemetry/action-tray-profile
 import { markTrayStepReactRenderStarted } from "../../telemetry/tray-step-timing";
 import { ActionTray } from "../action-tray";
 import type { PresentedActionTrayProps } from "../../runtime/presenter/types";
+import { arePresentedTraysEquivalent } from "../../runtime/presenter/model";
 
 // render one resolved payload through the animated shell and content layers
 const PresentedActionTray = ({
@@ -61,53 +62,100 @@ const PresentedActionTray = ({
     ],
   );
 
-  const headerTransitionContent = payload.header ? (
-    <TrayHeaderTransitionProvider
-      value={{
-        stepKey: payload.trayId,
-        skipEntering: payload.isFirstRender,
-        fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
-      }}
-    >
-      {payload.header}
-    </TrayHeaderTransitionProvider>
-  ) : null;
-  const header = payload.header ? (
-    <TrayScopeProvider value={payload.rootTrayId}>
-      <TrayStepOptionsProvider value={payload.stepOptions}>
-        <TrayStepContent
-          stepKey={payload.fullScreen ? "fullscreen-header" : "fixed-header"}
-          scale={false}
-          fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
-          skipEntering={payload.isFirstRender}
+  const headerTransitionContent = useMemo(
+    () =>
+      payload.header ? (
+        <TrayHeaderTransitionProvider
+          value={{
+            stepKey: payload.trayId,
+            skipEntering: payload.isFirstRender,
+            fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
+          }}
         >
-          {headerTransitionContent}
-        </TrayStepContent>
-      </TrayStepOptionsProvider>
-    </TrayScopeProvider>
-  ) : null;
-  const content = (
-    <TrayScopeProvider value={payload.rootTrayId}>
-      <TrayStepOptionsProvider value={payload.stepOptions}>
-        <TrayStepContent
-          stepKey={payload.trayId}
-          scale={payload.stepOptions.scale}
-          anchorScaleToTop={payload.fullScreen}
-          fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
-          skipEntering={payload.isFirstRender}
-        >
-          {payload.content}
-        </TrayStepContent>
-      </TrayStepOptionsProvider>
-    </TrayScopeProvider>
+          {payload.header}
+        </TrayHeaderTransitionProvider>
+      ) : null,
+    [
+      payload.fullScreenBoundaryExit,
+      payload.header,
+      payload.isFirstRender,
+      payload.trayId,
+    ],
   );
-  const footer = payload.footer ? (
-    <TrayScopeProvider value={payload.rootTrayId}>
-      <TrayStepOptionsProvider value={payload.stepOptions}>
-        {payload.footer}
-      </TrayStepOptionsProvider>
-    </TrayScopeProvider>
-  ) : null;
+  const header = useMemo(
+    () =>
+      payload.header ? (
+        <TrayScopeProvider value={payload.rootTrayId}>
+          <TrayStepOptionsProvider value={payload.stepOptions}>
+            <TrayStepContent
+              stepKey={
+                payload.fullScreen ? "fullscreen-header" : "fixed-header"
+              }
+              scale={false}
+              fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
+              skipEntering={payload.isFirstRender}
+            >
+              {headerTransitionContent}
+            </TrayStepContent>
+          </TrayStepOptionsProvider>
+        </TrayScopeProvider>
+      ) : null,
+    [
+      headerTransitionContent,
+      payload.fullScreen,
+      payload.fullScreenBoundaryExit,
+      payload.header,
+      payload.isFirstRender,
+      payload.rootTrayId,
+      payload.stepOptions,
+    ],
+  );
+  const content = useMemo(
+    () => (
+      <TrayScopeProvider value={payload.rootTrayId}>
+        <TrayStepOptionsProvider value={payload.stepOptions}>
+          <TrayStepContent
+            stepKey={payload.trayId}
+            scale={payload.stepOptions.scale}
+            anchorScaleToTop={payload.fullScreen}
+            fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
+            skipEntering={payload.isFirstRender}
+          >
+            {payload.content}
+          </TrayStepContent>
+        </TrayStepOptionsProvider>
+      </TrayScopeProvider>
+    ),
+    [
+      payload.content,
+      payload.fullScreen,
+      payload.fullScreenBoundaryExit,
+      payload.isFirstRender,
+      payload.rootTrayId,
+      payload.stepOptions,
+      payload.trayId,
+    ],
+  );
+  const footer = useMemo(
+    () =>
+      payload.footer ? (
+        <TrayScopeProvider value={payload.rootTrayId}>
+          <TrayStepOptionsProvider value={payload.stepOptions}>
+            {payload.footer}
+          </TrayStepOptionsProvider>
+        </TrayScopeProvider>
+      ) : null,
+    [payload.footer, payload.rootTrayId, payload.stepOptions],
+  );
+  const handleDismissKeyboard = useCallback(
+    () => dismissKeyboardForTray(payload.rootTrayId),
+    [dismissKeyboardForTray, payload.rootTrayId],
+  );
+  const handleRequestClose = useCallback(() => {
+    if (payload.interactive) {
+      onRequestClose();
+    }
+  }, [onRequestClose, payload.interactive]);
   const tray = (
     <ActionTray
       assignmentId={assignmentId}
@@ -117,7 +165,7 @@ const PresentedActionTray = ({
       content={content}
       header={header}
       footer={footer}
-      onClose={payload.interactive ? onRequestClose : () => {}}
+      onClose={handleRequestClose}
       onCloseComplete={onCloseComplete}
       trayId={payload.trayId}
       keyboardAware={payload.keyboardAware ?? payload.stepOptions.keyboardAware}
@@ -133,7 +181,7 @@ const PresentedActionTray = ({
       className={payload.className}
       footerStyle={payload.footerStyle}
       footerClassName={payload.footerClassName}
-      dismissKeyboard={() => dismissKeyboardForTray(payload.rootTrayId)}
+      dismissKeyboard={handleDismissKeyboard}
     />
   );
 
@@ -151,4 +199,20 @@ const PresentedActionTray = ({
   );
 };
 
-export { PresentedActionTray };
+const arePresentedActionTrayPropsEqual = (
+  previous: PresentedActionTrayProps,
+  next: PresentedActionTrayProps,
+) =>
+  previous.assignmentId === next.assignmentId &&
+  previous.onRequestClose === next.onRequestClose &&
+  previous.dismissKeyboardForTray === next.dismissKeyboardForTray &&
+  arePresentedTraysEquivalent(previous.payload, next.payload);
+
+const MemoizedPresentedActionTray = React.memo(
+  PresentedActionTray,
+  arePresentedActionTrayPropsEqual,
+);
+
+MemoizedPresentedActionTray.displayName = "PresentedActionTray";
+
+export { MemoizedPresentedActionTray as PresentedActionTray };

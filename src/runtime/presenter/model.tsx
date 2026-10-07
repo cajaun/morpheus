@@ -1,5 +1,6 @@
 import {
   resolveTrayStepOptions,
+  type ResolvedTrayStepOptions,
   type TrayRegistration,
   type TrayStackEntry,
   type TrayTransitionContract,
@@ -17,6 +18,82 @@ export const createIdleSlot = (): TrayHostSlot => ({
   visible: false,
   interactive: false,
 });
+
+// Presenter state is derived from the runtime store. Preserve existing
+// objects when the derived payload is semantically unchanged so an unrelated
+// store notification cannot force every host shell through React again.
+const areStepOptionsEquivalent = (
+  left: ResolvedTrayStepOptions,
+  right: ResolvedTrayStepOptions,
+) =>
+  left === right ||
+  (left.hasFooter === right.hasFooter &&
+    left.scale === right.scale &&
+    left.keyboardAware === right.keyboardAware &&
+    left.fullScreen === right.fullScreen &&
+    left.shouldScaleBackground === right.shouldScaleBackground &&
+    left.fullScreenBackgroundScale === right.fullScreenBackgroundScale &&
+    left.fullScreenDraggable === right.fullScreenDraggable &&
+    left.fullScreenCloseBehavior === right.fullScreenCloseBehavior &&
+    left.fullScreenTransition === right.fullScreenTransition &&
+    left.fullScreenSafeAreaTop === right.fullScreenSafeAreaTop &&
+    left.style === right.style &&
+    left.className === right.className &&
+    left.footerStyle === right.footerStyle &&
+    left.footerClassName === right.footerClassName);
+
+export const arePresentedTraysEquivalent = (
+  left: PresentedTray | null,
+  right: PresentedTray | null,
+) =>
+  left === right ||
+  (left !== null &&
+    right !== null &&
+    left.rootTrayId === right.rootTrayId &&
+    left.trayId === right.trayId &&
+    left.keyboardAware === right.keyboardAware &&
+    areStepOptionsEquivalent(left.stepOptions, right.stepOptions) &&
+    left.header === right.header &&
+    left.content === right.content &&
+    left.footer === right.footer &&
+    left.fullScreenBoundaryExit === right.fullScreenBoundaryExit &&
+    left.isFirstRender === right.isFirstRender &&
+    left.fullScreen === right.fullScreen &&
+    left.fullScreenBackgroundScale === right.fullScreenBackgroundScale &&
+    left.fullScreenSafeAreaTop === right.fullScreenSafeAreaTop &&
+    left.fullScreenDraggable === right.fullScreenDraggable &&
+    left.dismissible === right.dismissible &&
+    left.transitionContract === right.transitionContract &&
+    left.transition === right.transition &&
+    left.containerStyle === right.containerStyle &&
+    left.className === right.className &&
+    left.footerStyle === right.footerStyle &&
+    left.footerClassName === right.footerClassName &&
+    left.stackIndex === right.stackIndex &&
+    left.visible === right.visible &&
+    left.interactive === right.interactive);
+
+export const areTrayHostSlotsEquivalent = (
+  left: [TrayHostSlot, TrayHostSlot],
+  right: [TrayHostSlot, TrayHostSlot],
+) =>
+  left.every((slot, index) => {
+    const nextSlot = right[index];
+
+    return (
+      slot.assignmentId === nextSlot.assignmentId &&
+      slot.visible === nextSlot.visible &&
+      slot.interactive === nextSlot.interactive &&
+      arePresentedTraysEquivalent(slot.payload, nextSlot.payload)
+    );
+  });
+
+export const arePresentedTrayListsEquivalent = (
+  left: PresentedTray[],
+  right: PresentedTray[],
+) =>
+  left.length === right.length &&
+  left.every((host, index) => arePresentedTraysEquivalent(host, right[index]!));
 
 // choose the next host slot without reusing the current visible slot
 export const resolveNextActiveSlotIndex = (
