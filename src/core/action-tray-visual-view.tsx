@@ -14,7 +14,10 @@ import { styles as trayStyles } from "./animation/action-tray-styles";
 import { TrayOriginProgressProvider } from "./tray-origin-progress";
 import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
 import { TrayMorphProgressProvider } from "./tray-morph-progress";
-import { TrayTransitionStartProvider } from "./transition-start";
+import {
+  TrayTransitionStartProvider,
+  type TrayTransitionStart,
+} from "./transition-start";
 import {
   resolveTrayContentMotionDirection,
   TrayContentMotionDirectionProvider,
@@ -98,6 +101,191 @@ type ActionTrayVisualViewProps = Pick<
   >;
   handlers: ActionTrayController["handlers"];
 };
+
+type ActionTrayAnimatedStyles = ReturnType<
+  typeof useActionTrayAnimatedStyles
+>;
+
+type ActionTrayBoundaryStyles = ReturnType<typeof useTrayBoundaryMotionState>;
+
+type ActionTraySurfaceProps = Pick<
+  ActionTrayAnimatedStyles,
+  | "contentBoundarySourceStyle"
+  | "contentBoundarySourceViewportStyle"
+  | "contentFrameStyle"
+  | "contentPaddingStyle"
+  | "contentRevealStyle"
+  | "contentViewportStyle"
+  | "dragStyle"
+  | "footerContainerStyle"
+  | "footerContentFrameStyle"
+  | "footerSpacerStyle"
+  | "footerVisibilityStyle"
+  | "headerFrameStyle"
+  | "presentationFrameStyle"
+  | "surfaceVisibilityStyle"
+  | "originSurfaceVisibilityStyle"
+  | "trayLayoutStyle"
+> &
+  Pick<
+    ActionTrayBoundaryStyles,
+    "fullScreenSafeAreaContentStyle"
+  > &
+  Pick<
+    ActionTrayController["handlers"],
+    | "handleContentLayout"
+    | "handleVisibleFooterLayout"
+    | "handleShellLayout"
+  > & {
+    gesture: ReturnType<typeof useActionTrayGesture>;
+    style?: ActionTrayProps["style"];
+    renderedClassName?: string;
+    renderedContainerStyle?: ActionTrayProps["containerStyle"];
+    renderedHeader: React.ReactNode;
+    renderedContent: React.ReactNode;
+    renderedFooter: React.ReactNode;
+    renderedFooterClassName?: string;
+    renderedFooterStyle?: ActionTrayProps["footerStyle"];
+    contentMotionDirection: ReturnType<
+      typeof resolveTrayContentMotionDirection
+    >;
+    trayTransitionStart: TrayTransitionStart;
+    layoutAnimationConfig: ReturnType<typeof createTrayLayoutTransition>;
+    originProgress: ActionTrayController["shared"]["originProgress"];
+    instrumentationEnabled: boolean;
+    shouldUseLayoutAnimation: boolean;
+    interactive: boolean;
+    isSurfaceReady: boolean;
+    isFullScreenBoundaryTransition: boolean;
+  };
+
+// Keep the native surface and its content reconciliation behind a second
+// boundary. Reanimated shared values continue to update the same animated
+// styles on the UI thread; this only skips React work when a controller update
+// does not change anything consumed by this surface.
+const ActionTraySurface = React.memo(
+  ({
+    gesture,
+    style,
+    renderedClassName,
+    renderedContainerStyle,
+    renderedHeader,
+    renderedContent,
+    renderedFooter,
+    renderedFooterClassName,
+    renderedFooterStyle,
+    contentMotionDirection,
+    trayTransitionStart,
+    layoutAnimationConfig,
+    instrumentationEnabled,
+    shouldUseLayoutAnimation,
+    interactive,
+    isSurfaceReady,
+    isFullScreenBoundaryTransition,
+    handleContentLayout,
+    handleVisibleFooterLayout,
+    handleShellLayout,
+    footerSpacerStyle,
+    contentBoundarySourceStyle,
+    contentBoundarySourceViewportStyle,
+    contentFrameStyle,
+    contentPaddingStyle,
+    contentRevealStyle,
+    contentViewportStyle,
+    headerFrameStyle,
+    presentationFrameStyle,
+    trayLayoutStyle,
+    footerContainerStyle,
+    dragStyle,
+    surfaceVisibilityStyle,
+    originSurfaceVisibilityStyle,
+    footerVisibilityStyle,
+    footerContentFrameStyle,
+    fullScreenSafeAreaContentStyle,
+    originProgress,
+  }: ActionTraySurfaceProps) => (
+    <>
+      <GestureDetector gesture={gesture}>
+        <Animated.View
+          className={renderedClassName}
+          style={[
+            trayStyles.container,
+            trayLayoutStyle,
+            presentationFrameStyle,
+            renderedContainerStyle,
+            surfaceVisibilityStyle,
+            originSurfaceVisibilityStyle,
+            dragStyle,
+            style,
+          ]}
+          onLayout={instrumentationEnabled ? handleShellLayout : undefined}
+          layout={shouldUseLayoutAnimation ? layoutAnimationConfig : undefined}
+        >
+          <Animated.View
+            style={[
+              trayStyles.content,
+              // apply the clock aware frame last so target topology wins
+              ...(isFullScreenBoundaryTransition
+                ? [contentBoundarySourceStyle, contentFrameStyle]
+                : [contentFrameStyle]),
+              contentRevealStyle,
+            ]}
+          >
+            <Animated.View
+              style={[
+                contentPaddingStyle,
+                contentBoundarySourceViewportStyle,
+                contentViewportStyle,
+                fullScreenSafeAreaContentStyle,
+              ]}
+              onLayout={handleContentLayout}
+            >
+              <TrayContentMotionDirectionProvider
+                value={contentMotionDirection}
+              >
+                <TrayTransitionStartProvider value={trayTransitionStart}>
+                  {renderedHeader ? (
+                    <Animated.View
+                      style={[localStyles.headerContainer, headerFrameStyle]}
+                    >
+                      {renderedHeader}
+                    </Animated.View>
+                  ) : null}
+                  {renderedContent}
+                </TrayTransitionStartProvider>
+              </TrayContentMotionDirectionProvider>
+            </Animated.View>
+            {/* reserve footer space the footer itself is absolute and does not participate in content measurement */}
+            <Animated.View style={footerSpacerStyle} />
+          </Animated.View>
+        </Animated.View>
+      </GestureDetector>
+      {/* fixed footers stay outside the layout animated shell only a fullscreen boundary may move this layer and then it follows the shell s explicit morph clock rather than content layout */}
+      <Animated.View
+        className={renderedFooterClassName}
+        onLayout={handleVisibleFooterLayout}
+        style={[
+          trayStyles.footer,
+          dragStyle,
+          renderedFooterStyle,
+          footerContainerStyle,
+          footerVisibilityStyle,
+        ]}
+        pointerEvents={
+          renderedFooter && interactive && isSurfaceReady ? "auto" : "none"
+        }
+      >
+        <Animated.View style={footerContentFrameStyle}>
+          <TrayOriginProgressProvider value={originProgress}>
+            {renderedFooter ?? null}
+          </TrayOriginProgressProvider>
+        </Animated.View>
+      </Animated.View>
+    </>
+  ),
+);
+
+ActionTraySurface.displayName = "ActionTraySurface";
 
 // Own the visual/native subtree separately from the controller host. The
 // controller must still run for lifecycle and measurement state, but stable
@@ -448,87 +636,6 @@ const ActionTrayVisualView = React.memo(
           : undefined,
       [flattenedContainerStyle],
     );
-    const traySurface = (
-      <>
-        <GestureDetector gesture={gesture}>
-          <Animated.View
-            className={renderedClassName}
-            style={[
-              trayStyles.container,
-              trayLayoutStyle,
-              presentationFrameStyle,
-              renderedContainerStyle,
-              surfaceVisibilityStyle,
-              originSurfaceVisibilityStyle,
-              dragStyle,
-              style,
-            ]}
-            onLayout={instrumentationEnabled ? handleShellLayout : undefined}
-            layout={shouldUseLayoutAnimation ? layoutAnimationConfig : undefined}
-          >
-            <Animated.View
-              style={[
-                trayStyles.content,
-                // apply the clock aware frame last so target topology wins
-                ...(isFullScreenBoundaryTransition
-                  ? [contentBoundarySourceStyle, contentFrameStyle]
-                  : [contentFrameStyle]),
-                contentRevealStyle,
-              ]}
-            >
-              <Animated.View
-                style={[
-                  contentPaddingStyle,
-                  contentBoundarySourceViewportStyle,
-                  contentViewportStyle,
-                  fullScreenSafeAreaContentStyle,
-                ]}
-                onLayout={handleContentLayout}
-              >
-                <TrayContentMotionDirectionProvider
-                  value={contentMotionDirection}
-                >
-                  <TrayTransitionStartProvider value={trayTransitionStart}>
-                    {renderedHeader ? (
-                      <Animated.View
-                        style={[localStyles.headerContainer, headerFrameStyle]}
-                      >
-                        {renderedHeader}
-                      </Animated.View>
-                    ) : null}
-                    {renderedContent}
-                  </TrayTransitionStartProvider>
-                </TrayContentMotionDirectionProvider>
-              </Animated.View>
-              {/* reserve footer space the footer itself is absolute and does not participate in content measurement */}
-              <Animated.View style={footerSpacerStyle} />
-            </Animated.View>
-          </Animated.View>
-        </GestureDetector>
-        {/* fixed footers stay outside the layout animated shell only a fullscreen boundary may move this layer and then it follows the shell s explicit morph clock rather than content layout */}
-        <Animated.View
-          className={renderedFooterClassName}
-          onLayout={handleVisibleFooterLayout}
-          style={[
-            trayStyles.footer,
-            dragStyle,
-            renderedFooterStyle,
-            footerContainerStyle,
-            footerVisibilityStyle,
-          ]}
-          pointerEvents={
-            renderedFooter && interactive && isSurfaceReady ? "auto" : "none"
-          }
-        >
-          <Animated.View style={footerContentFrameStyle}>
-            <TrayOriginProgressProvider value={originProgress}>
-              {renderedFooter ?? null}
-            </TrayOriginProgressProvider>
-          </Animated.View>
-        </Animated.View>
-      </>
-    );
-
     return (
       <TrayMorphProgressProvider value={morphProgress}>
         {measureFooter && (
@@ -585,7 +692,50 @@ const ActionTrayVisualView = React.memo(
             pointerEvents="box-none"
             style={StyleSheet.absoluteFillObject}
           >
-            {traySurface}
+            <ActionTraySurface
+              gesture={gesture}
+              style={style}
+              renderedClassName={renderedClassName}
+              renderedContainerStyle={renderedContainerStyle}
+              renderedHeader={renderedHeader}
+              renderedContent={renderedContent}
+              renderedFooter={renderedFooter}
+              renderedFooterClassName={renderedFooterClassName}
+              renderedFooterStyle={renderedFooterStyle}
+              contentMotionDirection={contentMotionDirection}
+              trayTransitionStart={trayTransitionStart}
+              layoutAnimationConfig={layoutAnimationConfig}
+              instrumentationEnabled={instrumentationEnabled}
+              shouldUseLayoutAnimation={shouldUseLayoutAnimation}
+              interactive={interactive}
+              isSurfaceReady={isSurfaceReady}
+              isFullScreenBoundaryTransition={
+                isFullScreenBoundaryTransition
+              }
+              handleContentLayout={handleContentLayout}
+              handleVisibleFooterLayout={handleVisibleFooterLayout}
+              handleShellLayout={handleShellLayout}
+              footerSpacerStyle={footerSpacerStyle}
+              contentBoundarySourceStyle={contentBoundarySourceStyle}
+              contentBoundarySourceViewportStyle={
+                contentBoundarySourceViewportStyle
+              }
+              contentFrameStyle={contentFrameStyle}
+              contentPaddingStyle={contentPaddingStyle}
+              contentRevealStyle={contentRevealStyle}
+              contentViewportStyle={contentViewportStyle}
+              headerFrameStyle={headerFrameStyle}
+              presentationFrameStyle={presentationFrameStyle}
+              trayLayoutStyle={trayLayoutStyle}
+              footerContainerStyle={footerContainerStyle}
+              dragStyle={dragStyle}
+              surfaceVisibilityStyle={surfaceVisibilityStyle}
+              originSurfaceVisibilityStyle={originSurfaceVisibilityStyle}
+              footerVisibilityStyle={footerVisibilityStyle}
+              footerContentFrameStyle={footerContentFrameStyle}
+              fullScreenSafeAreaContentStyle={fullScreenSafeAreaContentStyle}
+              originProgress={originProgress}
+            />
           </KeyboardStickyView>
         )}
       </TrayMorphProgressProvider>
