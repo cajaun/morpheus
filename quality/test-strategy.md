@@ -6,7 +6,7 @@ The goal is evidence-based confidence that Morpheus behaves correctly, remains
 usable, and does not regress as its native animation and interaction systems
 evolve. Testing is a product-risk control, not a code-coverage contest.
 
-The current highest-risk subsystem is ActionTray because it coordinates React
+The current highest-risk subsystem is Tray because it coordinates React
 state, native layout, Reanimated worklets, gestures, keyboard state, safe-area
 geometry, nested presentation, and paged navigation.
 
@@ -58,7 +58,7 @@ the transition sequences most likely to regress while refactoring ownership.
 
 Jest cannot prove native frame timing, keyboard synchronization, gesture feel,
 safe-area placement, accessibility focus, or visual continuity. These require
-device/simulator execution and evidence from the ActionTray checklist.
+device/simulator execution and evidence from the Tray checklist.
 
 Automation should eventually cover stable end-to-end paths, but frame-by-frame
 animation review remains an intentional human test until a reliable visual
@@ -100,7 +100,7 @@ They are related but not interchangeable.
 
 ## 7. Coverage policy
 
-The initial ActionTray baseline was approximately 53% statements/lines, 54%
+The initial Tray baseline was approximately 53% statements/lines, 54%
 functions, and 46% branches. CI begins with a conservative ratchet:
 
 - Statements: 50%

@@ -6,7 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { isActionTrayInstrumentationEnabled } from "../../telemetry/config";
+import { isTrayInstrumentationEnabled } from "../../telemetry/config";
 import {
   markTrayStepPresenterResolved,
   markTrayStepSlotCommitted,
@@ -22,7 +22,7 @@ import {
   resolveOrderedHostSlots,
 } from "./model";
 import type {
-  PresentedActionTrayRenderer,
+  PresentedTrayRenderer,
   PresentedTray,
   TrayHostSlot,
 } from "./types";
@@ -38,7 +38,7 @@ type HostCommonProps = {
   requestCloseActiveTray: () => void;
   dismissKeyboardForTray: (trayId?: string | null) => void;
   transitionContract: TrayTransitionContract | null;
-  renderHost: PresentedActionTrayRenderer;
+  renderHost: PresentedTrayRenderer;
 };
 
 // Presenter boundaries may skip unrelated parent renders, but a transition
@@ -117,7 +117,7 @@ const RootTraySlotsImpl = ({
   );
 
   useLayoutEffect(() => {
-    if (isActionTrayInstrumentationEnabled()) {
+    if (isTrayInstrumentationEnabled()) {
       markTrayStepPresenterResolved(activeHost?.rootTrayId);
     }
 
@@ -280,7 +280,7 @@ const RootTraySlotsImpl = ({
   }, [activeHost, hostSlots, transitionContract]);
 
   useLayoutEffect(() => {
-    if (!isActionTrayInstrumentationEnabled()) {
+    if (!isTrayInstrumentationEnabled()) {
       return;
     }
 

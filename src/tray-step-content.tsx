@@ -40,8 +40,8 @@ import {
   useTrayContentMotionDirection,
 } from "./core/transition-motion-direction";
 import {
-  ACTION_TRAY_INSTRUMENTATION_ENABLED,
-  isActionTrayInstrumentationEnabled,
+  TRAY_INSTRUMENTATION_ENABLED,
+  isTrayInstrumentationEnabled,
 } from "./telemetry/config";
 import { markTrayStepContentReleased } from "./telemetry/tray-step-timing";
 import { useOptionalTrayMorphProgress } from "./core/tray-morph-progress";
@@ -72,7 +72,7 @@ export const FULL_SCREEN_CONTENT_EASING = Easing.bezier(
 
 // record the end of an entering content animation for timing inspection
 const logStepEnterFinished = (stepKey: string, finishedAt: number) => {
-  if (!isActionTrayInstrumentationEnabled()) {
+  if (!isTrayInstrumentationEnabled()) {
     return;
   }
 
@@ -84,7 +84,7 @@ const logStepEnterFinished = (stepKey: string, finishedAt: number) => {
 
 // record when incoming content releases its visibility latch
 const logStepEnterStarted = (stepKey: string) => {
-  if (!isActionTrayInstrumentationEnabled()) {
+  if (!isTrayInstrumentationEnabled()) {
     return;
   }
 
@@ -162,7 +162,7 @@ const createMorphEntering = (
         animation,
         logRelease &&
           __DEV__ &&
-          ACTION_TRAY_INSTRUMENTATION_ENABLED
+          TRAY_INSTRUMENTATION_ENABLED
           ? () => {
               "worklet";
               scheduleOnRN(logStepEnterStarted, stepKey);
@@ -212,7 +212,7 @@ const createMorphEntering = (
         if (
           finished &&
           __DEV__ &&
-          ACTION_TRAY_INSTRUMENTATION_ENABLED
+          TRAY_INSTRUMENTATION_ENABLED
         ) {
           scheduleOnRN(logStepEnterFinished, stepKey, performance.now());
         }

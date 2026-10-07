@@ -11,23 +11,23 @@ import {
 
 // keep the disabled-path test explicit while repository diagnostics are enabled
 jest.mock("../config", () => ({
-  ACTION_TRAY_INSTRUMENTATION_ENABLED: false,
-  isActionTrayInstrumentationEnabled: () => false,
+  TRAY_INSTRUMENTATION_ENABLED: false,
+  isTrayInstrumentationEnabled: () => false,
 }));
 
 // verify disabled diagnostics leave globals and console untouched
 const timingGlobal = globalThis as typeof globalThis & {
-  __ACTION_TRAY_OPEN_TIMINGS__?: unknown[];
-  __ACTION_TRAY_STEP_TIMINGS__?: unknown[];
+  __TRAY_OPEN_TIMINGS__?: unknown[];
+  __TRAY_STEP_TIMINGS__?: unknown[];
 };
 
 afterEach(() => {
   jest.restoreAllMocks();
-  delete timingGlobal.__ACTION_TRAY_OPEN_TIMINGS__;
-  delete timingGlobal.__ACTION_TRAY_STEP_TIMINGS__;
+  delete timingGlobal.__TRAY_OPEN_TIMINGS__;
+  delete timingGlobal.__TRAY_STEP_TIMINGS__;
 });
 
-describe("disabled action tray instrumentation", () => {
+describe("disabled tray instrumentation", () => {
   it("does not record or log timing data", () => {
     const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
 
@@ -37,8 +37,8 @@ describe("disabled action tray instrumentation", () => {
     markTrayStepRequested("root-tray");
     markTrayStepSnapshotPublished("root-tray", "root-tray-step");
 
-    expect(timingGlobal.__ACTION_TRAY_OPEN_TIMINGS__).toBeUndefined();
-    expect(timingGlobal.__ACTION_TRAY_STEP_TIMINGS__).toBeUndefined();
+    expect(timingGlobal.__TRAY_OPEN_TIMINGS__).toBeUndefined();
+    expect(timingGlobal.__TRAY_STEP_TIMINGS__).toBeUndefined();
     expect(consoleSpy).not.toHaveBeenCalled();
   });
 });

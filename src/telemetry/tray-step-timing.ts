@@ -1,4 +1,4 @@
-import { isActionTrayInstrumentationEnabled } from "./config";
+import { isTrayInstrumentationEnabled } from "./config";
 
 // trace one step transition from request through layout finish
 type TrayStepTimingTrace = {
@@ -55,11 +55,11 @@ const now = () => globalThis.performance?.now?.() ?? Date.now();
 // retain only the latest step timing summaries for inspection
 const writeSummary = (summary: TrayStepTimingSummary) => {
   const timingGlobal = globalThis as typeof globalThis & {
-    __ACTION_TRAY_STEP_TIMINGS__?: TrayStepTimingSummary[];
+    __TRAY_STEP_TIMINGS__?: TrayStepTimingSummary[];
   };
-  const existing = timingGlobal.__ACTION_TRAY_STEP_TIMINGS__ ?? [];
+  const existing = timingGlobal.__TRAY_STEP_TIMINGS__ ?? [];
 
-  timingGlobal.__ACTION_TRAY_STEP_TIMINGS__ = [
+  timingGlobal.__TRAY_STEP_TIMINGS__ = [
     ...existing,
     summary,
   ].slice(-MAX_RECORDED_SUMMARIES);
@@ -137,7 +137,7 @@ const tryFinishTrace = (rootTrayId: string) => {
   tracesByRootTrayId.delete(rootTrayId);
   rootTrayIdByPresentedTrayId.delete(trace.trayId);
 
-  console.log("[ActionTrayStepPerf]", {
+  console.log("[TrayStepPerf]", {
     rootTrayId,
     trayId: trace.trayId,
     requestToPresenterResolvedMs: Number(
@@ -197,7 +197,7 @@ const tryFinishTrace = (rootTrayId: string) => {
 export const markTrayStepKeyboardIntent = (
   rootTrayId?: string | null,
 ) => {
-  if (!isActionTrayInstrumentationEnabled() || !rootTrayId) {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId) {
     return;
   }
 
@@ -212,7 +212,7 @@ export const markTrayStepKeyboardIntent = (
 export const markTrayStepKeyboardFocus = (
   rootTrayId?: string | null,
 ) => {
-  if (!isActionTrayInstrumentationEnabled() || !rootTrayId) {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId) {
     return;
   }
 
@@ -227,7 +227,7 @@ export const markTrayStepKeyboardFocus = (
 export const markTrayStepKeyboardWillShow = (
   rootTrayId?: string | null,
 ) => {
-  if (!isActionTrayInstrumentationEnabled() || !rootTrayId) {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId) {
     return;
   }
 
@@ -240,7 +240,7 @@ export const markTrayStepKeyboardWillShow = (
 
 // start a step trace at the navigation request boundary
 export const markTrayStepRequested = (rootTrayId?: string) => {
-  if (!isActionTrayInstrumentationEnabled() || !rootTrayId) {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId) {
     return;
   }
 
@@ -255,7 +255,7 @@ export const markTrayStepSnapshotPublished = (
   rootTrayId?: string,
   trayId?: string,
 ) => {
-  if (!isActionTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
@@ -270,7 +270,7 @@ export const markTrayStepSnapshotPublished = (
 
 // record when the presenter resolves the new step payload
 export const markTrayStepPresenterResolved = (rootTrayId?: string) => {
-  if (!isActionTrayInstrumentationEnabled() || !rootTrayId) {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId) {
     return;
   }
 
@@ -283,7 +283,7 @@ export const markTrayStepPresenterResolved = (rootTrayId?: string) => {
 
 // record when the host slot commits the resolved payload
 export const markTrayStepSlotCommitted = (rootTrayId?: string) => {
-  if (!isActionTrayInstrumentationEnabled() || !rootTrayId) {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId) {
     return;
   }
 
@@ -300,7 +300,7 @@ export const markTrayStepReactRenderStarted = (
   trayId: string | undefined,
   actualDurationMs: number,
 ) => {
-  if (!isActionTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
@@ -324,7 +324,7 @@ export const markTrayStepLayoutStarted = (
   trayId: string | undefined,
   startedAt: number,
 ) => {
-  if (!isActionTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
@@ -344,7 +344,7 @@ export const markTrayStepLayoutConfigured = (
   trayId: string | undefined,
   configuredAt: number,
 ) => {
-  if (!isActionTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
@@ -364,7 +364,7 @@ export const markTrayStepShellLayout = (
   rootTrayId?: string,
   trayId?: string,
 ) => {
-  if (!isActionTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
@@ -385,7 +385,7 @@ export const markTrayStepLayoutFinished = (
   trayId: string | undefined,
   finishedAt: number,
 ) => {
-  if (!isActionTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
@@ -406,7 +406,7 @@ export const markTrayStepRenderedCommit = (
   rootTrayId?: string,
   trayId?: string,
 ) => {
-  if (!isActionTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
@@ -426,7 +426,7 @@ export const markTrayStepRenderedCommit = (
 export const markTrayStepContentReleased = (
   trayId: string,
 ) => {
-  if (!isActionTrayInstrumentationEnabled()) {
+  if (!isTrayInstrumentationEnabled()) {
     return;
   }
 

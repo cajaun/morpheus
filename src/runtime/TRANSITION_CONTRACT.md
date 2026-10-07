@@ -1,4 +1,4 @@
-# Action tray transition contract
+# Tray transition contract
 
 The runtime creates one transition contract before presentation work begins.
 Its `generation` is the immutable transaction identity used by navigation,

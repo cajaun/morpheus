@@ -1,9 +1,9 @@
 import { describe, expect, it } from "@jest/globals";
-import { ACTION_TRAY_INSTRUMENTATION_ENABLED } from "../config";
+import { TRAY_INSTRUMENTATION_ENABLED } from "../config";
 
 // guard the default diagnostics switch so timing logs stay opt in
-describe("action tray instrumentation config", () => {
+describe("tray instrumentation config", () => {
   it("keeps diagnostics opt in by default", () => {
-    expect(ACTION_TRAY_INSTRUMENTATION_ENABLED).toBe(false);
+    expect(TRAY_INSTRUMENTATION_ENABLED).toBe(false);
   });
 });

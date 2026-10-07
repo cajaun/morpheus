@@ -2,6 +2,6 @@
 export { NestedTrayStack, RootTraySlots } from "./host-slots";
 export { createPresentedTray, resolvePresenterTransitionScope } from "./model";
 export type {
-  PresentedActionTrayRenderer,
+  PresentedTrayRenderer,
   PresentedTray,
 } from "./types";

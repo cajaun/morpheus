@@ -40,7 +40,7 @@ export type TrayHostSlot = {
   interactive: boolean;
 };
 
-export type PresentedActionTrayProps = {
+export type PresentedTrayProps = {
   payload: PresentedTray;
   assignmentId: number;
   onRequestClose: () => void;
@@ -48,4 +48,4 @@ export type PresentedActionTrayProps = {
   dismissKeyboardForTray: (trayId?: string | null) => void;
 };
 
-export type PresentedActionTrayRenderer = ComponentType<PresentedActionTrayProps>;
+export type PresentedTrayRenderer = ComponentType<PresentedTrayProps>;

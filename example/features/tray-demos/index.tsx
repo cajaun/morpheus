@@ -1,17 +1,17 @@
 import { UsageVariantFlatList } from "./component-presentation/usage-variant-flatlist";
 import { TRAY_EXAMPLE_VARIANTS } from "./data";
 
-type ActionTrayExamplesProps = {
+type TrayExamplesProps = {
   initialVariantValue?: string;
 };
 
-const ActionTrayExamples = ({
+const TrayExamples = ({
   initialVariantValue,
-}: ActionTrayExamplesProps) => (
+}: TrayExamplesProps) => (
   <UsageVariantFlatList
     data={TRAY_EXAMPLE_VARIANTS}
     initialVariantValue={initialVariantValue}
   />
 );
 
-export default ActionTrayExamples;
+export default TrayExamples;

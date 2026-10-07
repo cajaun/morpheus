@@ -3,21 +3,21 @@ import {
   useTrayHostActions,
   useTrayHostSelector,
 } from "./tray-context";
-import { logActionTrayProfilerCommit } from "../telemetry/action-tray-profiler";
-import { isActionTrayInstrumentationEnabled } from "../telemetry/config";
+import { logTrayProfilerCommit } from "../telemetry/tray-profiler";
+import { isTrayInstrumentationEnabled } from "../telemetry/config";
 import {
   createPresentedTray,
   NestedTrayStack,
   RootTraySlots,
   resolvePresenterTransitionScope,
   type PresentedTray,
-  type PresentedActionTrayRenderer,
+  type PresentedTrayRenderer,
 } from "./presenter";
 
 // resolve runtime stack entries into root and nested host groups
 // resolve runtime stack entries into root and nested host presentations
 export const TrayPresenter: React.FC<{
-  renderHost: PresentedActionTrayRenderer;
+  renderHost: PresentedTrayRenderer;
 }> = ({ renderHost }) => {
   const registry = useTrayHostSelector((state) => state.registry);
   const stack = useTrayHostSelector((state) => state.stack);
@@ -27,7 +27,7 @@ export const TrayPresenter: React.FC<{
   const previousStackTrayIdsRef = useRef<readonly string[]>([]);
   const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
     (id, phase, actualDuration, baseDuration, startTime, commitTime) => {
-      logActionTrayProfilerCommit(
+      logTrayProfilerCommit(
         id,
         phase,
         actualDuration,
@@ -122,14 +122,14 @@ export const TrayPresenter: React.FC<{
       renderHost={renderHost}
     />
   );
-  const instrumentationEnabled = isActionTrayInstrumentationEnabled();
+  const instrumentationEnabled = isTrayInstrumentationEnabled();
   const presenterTree = instrumentationEnabled ? (
     <>
-      <React.Profiler id="action-tray-root-slots" onRender={handleProfileRender}>
+      <React.Profiler id="tray-root-slots" onRender={handleProfileRender}>
         {rootSlots}
       </React.Profiler>
       <React.Profiler
-        id="action-tray-nested-stack"
+        id="tray-nested-stack"
         onRender={handleProfileRender}
       >
         {nestedStack}
@@ -148,7 +148,7 @@ export const TrayPresenter: React.FC<{
 
   return (
     <React.Profiler
-      id="action-tray-presenter"
+      id="tray-presenter"
       onRender={handleProfileRender}
     >
       {presenterTree}

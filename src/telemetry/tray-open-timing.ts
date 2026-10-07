@@ -1,4 +1,4 @@
-import { isActionTrayInstrumentationEnabled } from "./config";
+import { isTrayInstrumentationEnabled } from "./config";
 
 type TrayOpenTrace = {
   attemptId: number;
@@ -37,17 +37,17 @@ const now = () => globalThis.performance?.now?.() ?? Date.now();
 const writeSummary = (summary: TrayOpenTimingSummary) => {
   const existing =
     ((globalThis as typeof globalThis & {
-      __ACTION_TRAY_OPEN_TIMINGS__?: TrayOpenTimingSummary[];
-    }).__ACTION_TRAY_OPEN_TIMINGS__ ?? []);
+      __TRAY_OPEN_TIMINGS__?: TrayOpenTimingSummary[];
+    }).__TRAY_OPEN_TIMINGS__ ?? []);
 
   const nextSummaries = [...existing, summary].slice(-MAX_RECORDED_SUMMARIES);
 
   // bound retained samples so repeated manual testing does not grow global state
   (
     globalThis as typeof globalThis & {
-      __ACTION_TRAY_OPEN_TIMINGS__?: TrayOpenTimingSummary[];
+      __TRAY_OPEN_TIMINGS__?: TrayOpenTimingSummary[];
     }
-  ).__ACTION_TRAY_OPEN_TIMINGS__ = nextSummaries;
+  ).__TRAY_OPEN_TIMINGS__ = nextSummaries;
 };
 
 // create the mutable record for one tray open attempt
@@ -79,7 +79,7 @@ const logSummary = (summary: TrayOpenTimingSummary) => {
   // console logging is the lowest friction place to inspect timing while iterating
   console.log(
     [
-      "[ActionTrayPerf]",
+      "[TrayPerf]",
       `open "${summary.rootTrayId}"`,
       `attempt=${summary.attemptId}`,
       `total(trigger->open)=${formatDuration(summary.totalFromTriggerMs)}`,
@@ -99,7 +99,7 @@ const logSummary = (summary: TrayOpenTimingSummary) => {
 
 // start an open trace at the user press boundary
 export const markTrayTriggerPressed = (rootTrayId: string) => {
-  if (!isActionTrayInstrumentationEnabled()) {
+  if (!isTrayInstrumentationEnabled()) {
     return;
   }
 
@@ -111,7 +111,7 @@ export const markTrayTriggerPressed = (rootTrayId: string) => {
 
 // record when navigation requests the tray to open
 export const markTrayOpenRequested = (rootTrayId: string) => {
-  if (!isActionTrayInstrumentationEnabled()) {
+  if (!isTrayInstrumentationEnabled()) {
     return;
   }
 
@@ -124,7 +124,7 @@ export const markTrayOpenStarted = (
   rootTrayId: string,
   presentedTrayId?: string,
 ) => {
-  if (!isActionTrayInstrumentationEnabled()) {
+  if (!isTrayInstrumentationEnabled()) {
     return;
   }
 
@@ -138,7 +138,7 @@ export const markTrayReadyToOpen = (
   rootTrayId: string,
   presentedTrayId?: string,
 ) => {
-  if (!isActionTrayInstrumentationEnabled()) {
+  if (!isTrayInstrumentationEnabled()) {
     return;
   }
 
@@ -152,7 +152,7 @@ export const markTrayOpenFinished = (
   rootTrayId: string,
   presentedTrayId?: string,
 ) => {
-  if (!isActionTrayInstrumentationEnabled()) {
+  if (!isTrayInstrumentationEnabled()) {
     return;
   }
 

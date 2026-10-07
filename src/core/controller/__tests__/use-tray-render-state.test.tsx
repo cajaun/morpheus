@@ -1,0 +1,99 @@
+import React from "react";
+import { describe, expect, it } from "@jest/globals";
+import TestRenderer, { act } from "react-test-renderer";
+import { useTrayRenderState } from "../use-tray-render-state";
+
+// probe committed render snapshots without mounting the animated shell
+describe("useTrayRenderState", () => {
+  it("does not rerender when the latest snapshot is already committed", () => {
+    const content = "content";
+    let renderCount = 0;
+    let state: ReturnType<typeof useTrayRenderState> | null = null;
+
+    const Probe = () => {
+      renderCount += 1;
+      state = useTrayRenderState({
+        content,
+        trayId: "tray-step",
+        fullScreen: false,
+      });
+
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    const committedRenderCount = renderCount;
+
+    act(() => {
+      state!.actions.showLatestSnapshot();
+      state!.actions.syncRenderedNodes("tray-step");
+    });
+
+    expect(renderCount).toBe(committedRenderCount);
+  });
+
+  it("uses a neutral fullscreen background scale when no override is set", () => {
+    let state: ReturnType<typeof useTrayRenderState> | null = null;
+
+    const Probe = () => {
+      state = useTrayRenderState({
+        content: "content",
+        trayId: "tray-step",
+        fullScreen: true,
+      });
+
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    expect(state!.state.renderedFullScreenBackgroundScale).toBe(1);
+  });
+
+  it("keeps committed body regions through a transient same-mode prop gap", () => {
+    let state: ReturnType<typeof useTrayRenderState> | null = null;
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+
+    const Probe = ({
+      content,
+      header,
+      footer,
+    }: {
+      content?: React.ReactNode;
+      header?: React.ReactNode;
+      footer?: React.ReactNode;
+    }) => {
+      state = useTrayRenderState({
+        content,
+        header,
+        footer,
+        trayId: "tray-step",
+        fullScreen: false,
+      });
+
+      return null;
+    };
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <Probe content="body" header="header" footer="footer" />,
+      );
+    });
+
+    act(() => {
+      renderer!.update(<Probe />);
+      state!.actions.showLatestSnapshot();
+      state!.actions.syncRenderedNodes("tray-step");
+    });
+
+    expect(state!.state.renderedHeader).toBe("header");
+    expect(state!.state.renderedContent).toBe("body");
+    expect(state!.state.renderedFooter).toBe("footer");
+  });
+
+});

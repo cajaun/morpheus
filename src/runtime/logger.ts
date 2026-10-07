@@ -7,7 +7,7 @@ let sequence = 0;
 export const log = (...args: any[]) => {
   if (DEBUG) {
     sequence += 1;
-    console.log(`[ActionTray#${sequence} @${Date.now()}]`, ...args);
+    console.log(`[Tray#${sequence} @${Date.now()}]`, ...args);
   }
 };
 
@@ -18,6 +18,6 @@ export const logWorklet = (label: string, details?: unknown) => {
   "worklet";
 
   if (DEBUG) {
-    console.log(`[ActionTray UI @${performance.now()}]`, label, details);
+    console.log(`[Tray UI @${performance.now()}]`, label, details);
   }
 };

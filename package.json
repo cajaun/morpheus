@@ -1,7 +1,7 @@
 {
   "name": "react-native-morpheus",
   "version": "2.0.0",
-  "description": "A production-grade morphing action tray for React Native.",
+  "description": "A production-grade morphing tray for React Native.",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
@@ -121,7 +121,7 @@
   "keywords": [
     "react-native",
     "expo",
-    "action-tray",
+    "tray",
     "bottom-sheet",
     "animation",
     "reanimated"

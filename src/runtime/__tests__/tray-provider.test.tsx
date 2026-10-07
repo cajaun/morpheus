@@ -22,11 +22,11 @@ jest.mock("react-native-keyboard-controller", () => ({
 }));
 
 // tests isolate runtime behavior by replacing the animated shell with a dumb host
-jest.mock("../../core/action-tray", () => {
+jest.mock("../../core/tray", () => {
   const ReactNative = require("react-native");
 
   return {
-    ActionTray: ({
+    Tray: ({
       visible,
       content,
       footer,
@@ -37,7 +37,7 @@ jest.mock("../../core/action-tray", () => {
       onCloseComplete,
     }: any) => (
       <ReactNative.View
-        testID="action-tray-host"
+        testID="tray-host"
         rootTrayId={rootTrayId}
         trayId={trayId}
         visible={visible}
@@ -51,9 +51,9 @@ jest.mock("../../core/action-tray", () => {
   };
 });
 
-jest.mock("../../core/input/use-action-tray-keyboard", () => {
+jest.mock("../../core/input/use-tray-keyboard", () => {
   return {
-    useActionTrayKeyboard: () => ({
+    useTrayKeyboard: () => ({
       anticipateKeyboard: jest.fn(),
       dismissKeyboard: jest.fn(),
     }),
@@ -81,7 +81,7 @@ const getRenderedTrayHosts = () =>
   activeRenderer!.root.findAll(
     (node) =>
       typeof node.type === "string" &&
-      node.props.testID === "action-tray-host",
+      node.props.testID === "tray-host",
   );
 
 // create a declarative step for provider navigation scenarios

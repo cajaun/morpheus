@@ -1,6 +1,6 @@
 # Morpheus
 
-A morphing, multi-step action tray for React Native and Expo. Morpheus supports sheet-to-sheet transitions, fullscreen flows, nested trays, keyboard-aware steps, tray pages, shared headers and footers, trigger-origin expansion, and explicit transition lifecycle contracts.
+A morphing, multi-step tray for React Native and Expo. Morpheus supports sheet-to-sheet transitions, fullscreen flows, nested trays, keyboard-aware steps, tray pages, shared headers and footers, trigger-origin expansion, and explicit transition lifecycle contracts.
 
 ## Installation
 

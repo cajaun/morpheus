@@ -4,8 +4,8 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
-import { useActionTrayKeyboard } from "./input/use-action-tray-keyboard";
-import { PresentedActionTray } from "./presenter/presented-action-tray";
+import { useTrayKeyboard } from "./input/use-tray-keyboard";
+import { PresentedTray } from "./presenter/presented-tray";
 import { TrayBackgroundScaleProvider } from "../runtime/tray-background-scale";
 import { TrayStoreProvider } from "../runtime/tray-context";
 import { TrayPresenter } from "../runtime/tray-presenter";
@@ -19,7 +19,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const keyboardHandoffRef = useRef<TextInput>(null);
-  const { dismissKeyboard, anticipateKeyboard } = useActionTrayKeyboard();
+  const { dismissKeyboard, anticipateKeyboard } = useTrayKeyboard();
   const { registerFocusable, dismissFocusedInputs } =
     useTrayFocusManager(dismissKeyboard);
   const prepareKeyboardHandoff = useCallback(() => {
@@ -57,7 +57,7 @@ export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
         </Animated.View>
 
         {/* presenter stays outside the scaled background so trays keep exact geometry */}
-        <TrayPresenter renderHost={PresentedActionTray} />
+        <TrayPresenter renderHost={PresentedTray} />
       </TrayBackgroundScaleProvider>
     </TrayStoreProvider>
   );

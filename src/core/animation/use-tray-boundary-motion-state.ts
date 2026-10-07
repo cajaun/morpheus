@@ -9,7 +9,7 @@ import {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { FULL_SCREEN_LAYOUT_DURATION } from "../constants";
-import { describeTrayTransition } from "../diagnostics/action-tray-transition-diagnostics";
+import { describeTrayTransition } from "../diagnostics/tray-transition-diagnostics";
 import { log, logWorklet } from "../logger";
 import { withTrayTransitionStart } from "../transition-start";
 import type { TrayTransitionContract } from "../../runtime/types";

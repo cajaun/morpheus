@@ -16,17 +16,17 @@ import {
 
 // probe full step timing summaries through the public mark functions
 jest.mock("../config", () => ({
-  ACTION_TRAY_INSTRUMENTATION_ENABLED: true,
-  isActionTrayInstrumentationEnabled: () => true,
+  TRAY_INSTRUMENTATION_ENABLED: true,
+  isTrayInstrumentationEnabled: () => true,
 }));
 
 const timingGlobal = globalThis as typeof globalThis & {
-  __ACTION_TRAY_STEP_TIMINGS__?: TrayStepTimingSummary[];
+  __TRAY_STEP_TIMINGS__?: TrayStepTimingSummary[];
 };
 
 afterEach(() => {
   jest.restoreAllMocks();
-  delete timingGlobal.__ACTION_TRAY_STEP_TIMINGS__;
+  delete timingGlobal.__TRAY_STEP_TIMINGS__;
 });
 
 describe("tray step timing", () => {
@@ -71,7 +71,7 @@ describe("tray step timing", () => {
       405,
     );
 
-    expect(timingGlobal.__ACTION_TRAY_STEP_TIMINGS__).toEqual([
+    expect(timingGlobal.__TRAY_STEP_TIMINGS__).toEqual([
       {
         rootTrayId: "root-tray",
         trayId: "root-tray-fullscreen",
@@ -96,7 +96,7 @@ describe("tray step timing", () => {
         keyboardWillShowToLayoutStartMs: undefined,
       },
     ]);
-    expect(consoleSpy).toHaveBeenCalledWith("[ActionTrayStepPerf]", {
+    expect(consoleSpy).toHaveBeenCalledWith("[TrayStepPerf]", {
       rootTrayId: "root-tray",
       trayId: "root-tray-fullscreen",
       requestToPresenterResolvedMs: 5,
