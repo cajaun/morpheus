@@ -82,6 +82,62 @@ describe("useTrayContentSync", () => {
     expect(onContentHeightResolved).not.toHaveBeenCalled();
   });
 
+  it("keeps a prepared intrinsic floor when the return layout is short", () => {
+    const contentHeight = shared(255);
+    const footerHeight = shared(64);
+    const onContentHeightResolved = jest.fn();
+    const preparedSheetFrameRef = {
+      current: {
+        endpointKey: "sheet-step::step::step::sheet",
+        generation: 4,
+        totalHeight: 319,
+        contentHeight: 255,
+      },
+    };
+    let handleContentLayout: ((event: never) => void) | null = null;
+
+    const Probe = () => {
+      const measurements = useTrayMeasurements({
+        contentHeight,
+        footerHeight,
+        renderedTrayId: "sheet-step",
+        renderedFullScreen: false,
+        hasRenderedBody: true,
+        contentMeasurementLeaseActive: true,
+        allowIntrinsicSheetMeasurementDuringLease: true,
+        preparedSheetFrameRef,
+        measurementOwner: {
+          rootTrayId: "root",
+          trayId: "sheet-step",
+          stepKey: "step",
+          stepIndex: 0,
+          mode: "sheet",
+          generation: 4,
+          presentationKey: "root::sheet-step::step::sheet::4",
+        },
+        onContentHeightResolved,
+      });
+
+      handleContentLayout = measurements.handlers.handleContentLayout as (
+        event: never,
+      ) => void;
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    act(() => {
+      handleContentLayout?.({
+        nativeEvent: { layout: { height: 248 } },
+      } as never);
+    });
+
+    expect(contentHeight.value).toBe(255);
+    expect(onContentHeightResolved).not.toHaveBeenCalled();
+  });
+
   it("quarantines transient layouts during trigger origin geometry", () => {
     const contentHeight = shared(506);
     const footerHeight = shared(90);
@@ -211,12 +267,74 @@ describe("useTrayContentSync", () => {
 
     act(() => {
       handleContentLayout?.({
-        nativeEvent: { layout: { height: 356 } },
+        nativeEvent: { layout: { height: 180 } },
       } as never);
     });
 
     expect(contentHeight.value).toBe(224);
     expect(onContentHeightResolved).not.toHaveBeenCalled();
+  });
+
+  it("reconciles a larger intrinsic layout after a sheet frame completes", () => {
+    const contentHeight = shared(224);
+    const footerHeight = shared(90);
+    const committedSheetFrameRef = {
+      current: {
+        endpointKey: "root::content-one::step::sheet",
+        generation: 7,
+        totalHeight: 314,
+        contentHeight: 224,
+      },
+    };
+    const onContentHeightResolved = jest.fn();
+    let handleContentLayout: ((event: never) => void) | null = null;
+
+    const Probe = () => {
+      const measurements = useTrayMeasurements({
+        contentHeight,
+        footerHeight,
+        renderedTrayId: "root-content-one",
+        renderedFullScreen: false,
+        hasRenderedBody: true,
+        measurementOwner: {
+          rootTrayId: "root",
+          trayId: "root",
+          stepKey: "content-one",
+          stepIndex: 0,
+          mode: "sheet",
+          generation: 7,
+          presentationKey: "root::root::content-one::step::sheet::7",
+        },
+        committedSheetFrameRef,
+        onContentHeightResolved,
+      });
+
+      handleContentLayout = measurements.handlers.handleContentLayout as (
+        event: never,
+      ) => void;
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    act(() => {
+      handleContentLayout?.({
+        nativeEvent: { layout: { height: 356 } },
+      } as never);
+    });
+
+    expect(contentHeight.value).toBe(356);
+    expect(onContentHeightResolved).toHaveBeenCalledWith(
+      356,
+      356,
+      "root-content-one",
+      "sheet",
+    );
+    expect(committedSheetFrameRef.current).toMatchObject({
+      contentHeight: 356,
+    });
   });
 
   it("ignores a late layout callback from an older measurement owner", () => {
@@ -431,6 +549,7 @@ describe("useTrayContentSync", () => {
         allowMeasuredFallback = true,
       ) => {
         if (!allowMeasuredFallback) {
+          contentHeight.value = 0;
           return undefined;
         }
 
@@ -488,7 +607,84 @@ describe("useTrayContentSync", () => {
       false,
     );
     expect(onSheetFramePrepared).not.toHaveBeenCalled();
-    expect(contentHeight.value).toBe(866);
+    expect(contentHeight.value).toBe(0);
+  });
+
+  it("does not reuse the previous sheet height for an uncached sheet step", () => {
+    const contentHeight = shared(356);
+    const footerHeight = shared(90);
+    const morphProgress = shared(1);
+    const measuredContentHeight = shared(356);
+    const measuredFooterHeight = shared(90);
+    const showLatestSnapshot = jest.fn();
+    const syncRenderedNodes = jest.fn();
+    const setLayoutAnimationEnabled = jest.fn();
+    const restoreContentHeight = jest.fn(
+      (
+        _trayId: string | undefined,
+        measuredHeight: number,
+        _mode: "sheet" | "fullScreen" | undefined,
+        allowMeasuredFallback = true,
+      ) => {
+        if (!allowMeasuredFallback) {
+          contentHeight.value = 0;
+          return undefined;
+        }
+
+        contentHeight.value = measuredHeight;
+        return measuredHeight;
+      },
+    );
+    const justOpenedRef = { current: false };
+
+    const Probe = () => {
+      useTrayContentSync({
+        visible: true,
+        interactive: true,
+        trayId: "tray-content-four",
+        fullScreen: false,
+        content: "content four",
+        header: "header four",
+        footer: "footer",
+        justOpenedRef,
+        measurements: {
+          state: { layoutEnabled: true },
+          actions: { setLayoutAnimationEnabled },
+          shared: { measuredContentHeight, measuredFooterHeight },
+        },
+        renderState: {
+          state: {
+            renderedTrayId: "tray-content-two",
+            renderedContent: "content two",
+            renderedHeader: "header two",
+            renderedFooter: "footer",
+            renderedFullScreen: true,
+            renderedTransitionContract: null,
+          },
+          actions: { showLatestSnapshot, syncRenderedNodes },
+        },
+        contentHeight,
+        footerHeight,
+        morphProgress,
+        resolveIncomingContentHeight: jest.fn(() => 356),
+        restoreContentHeight,
+      });
+
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    expect(restoreContentHeight).toHaveBeenCalledWith(
+      "tray-content-four",
+      356,
+      "sheet",
+      false,
+    );
+    expect(contentHeight.value).toBe(0);
+    expect(showLatestSnapshot).toHaveBeenCalledTimes(1);
   });
 
   it("publishes a sheet measurement for target frame preparation", () => {
@@ -649,7 +845,7 @@ describe("useTrayContentSync", () => {
     );
   });
 
-  it("leases the next sheet frame after a fullscreen return", () => {
+  it("reuses the last intrinsic sheet frame during a fullscreen return", () => {
     const contentHeight = shared(240);
     const footerHeight = shared(64);
     const morphProgress = shared(1);
@@ -668,6 +864,28 @@ describe("useTrayContentSync", () => {
         interactive: true,
         trayId: "tray-step-two",
         fullScreen: false,
+        transitionContract: {
+          generation: 4,
+          reason: "returnToShell",
+          direction: "backward",
+          boundary: "fullScreenToSheet",
+          from: {
+            trayId: "tray-step-one",
+            stepIndex: 1,
+            stepKey: "step-one",
+            mode: "fullScreen",
+          },
+          to: {
+            trayId: "tray-step-two",
+            stepIndex: 2,
+            stepKey: "step-two",
+            mode: "sheet",
+          },
+          stepChanged: true,
+          pageChanged: false,
+          fullScreenChanged: true,
+          sharedRegions: [],
+        },
         content: "step two",
         header: "header two",
         footer: "footer",
@@ -683,7 +901,7 @@ describe("useTrayContentSync", () => {
             renderedContent: "step one",
             renderedHeader: "header one",
             renderedFooter: "footer",
-            renderedFullScreen: false,
+            renderedFullScreen: true,
             renderedTransitionContract: {
               generation: 4,
               reason: "returnToShell",

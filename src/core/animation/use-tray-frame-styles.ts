@@ -233,7 +233,9 @@ export const useTrayFrameStyles = ({
       : undefined;
 
   // establish the source viewport with the fullscreen snapshot so flex content cannot measure at header height
-  const contentBoundarySourceStyle = fullScreenBoundaryTransition
+  const contentBoundarySourceStyle =
+    fullScreenBoundaryTransition &&
+    !(fullScreenBoundaryTargetFullScreen === false && !fullScreen)
     ? {
         position: "absolute" as const,
         top: 0,
@@ -295,6 +297,10 @@ export const useTrayFrameStyles = ({
       stableOriginContentHeight > 0
         ? Math.max(0, stableOriginContentHeight + resolvedFooterHeight)
         : undefined;
+    const resolvedPreparedSheetHeight =
+      hasPreparedSheetFrame && preparedSheetFrame !== undefined
+        ? preparedSheetFrame.contentHeight + resolvedFooterHeight
+        : preparedSheetHeight;
     const targetSheetMeasurementPending = isTargetSheetMeasurementPending({
       fullScreenBoundaryTransition,
       sourceFullScreen: fullScreenBoundarySourceFullScreen === true,
@@ -308,7 +314,7 @@ export const useTrayFrameStyles = ({
       fullScreenBoundaryTransition &&
       !fullScreen &&
       hasPreparedSheetFrame
-        ? preparedSheetHeight
+        ? resolvedPreparedSheetHeight
         : targetSheetMeasurementPending
           ? SCREEN_HEIGHT
           : resolvedSheetHeight;
@@ -339,12 +345,12 @@ export const useTrayFrameStyles = ({
       const sourceHeight = sourceFullScreen
         ? SCREEN_HEIGHT
         : hasPreparedSheetFrame
-          ? preparedSheetHeight ?? 0
+          ? resolvedPreparedSheetHeight ?? 0
           : resolvedSheetHeight ?? 0;
       const targetHeight = targetFullScreen
         ? SCREEN_HEIGHT
         : hasPreparedSheetFrame
-          ? preparedSheetHeight ?? 0
+          ? resolvedPreparedSheetHeight ?? 0
           : targetSheetMeasurementPending
             ? SCREEN_HEIGHT
             : resolvedSheetHeight ?? 0;
@@ -484,16 +490,31 @@ export const useTrayFrameStyles = ({
       contentHeight.value > 0
         ? contentHeight.value + resolvedFooterHeight
         : 0;
+    const resolvedPreparedSheetHeight =
+      hasPreparedSheetFrame && preparedSheetFrame !== undefined
+        ? preparedSheetFrame.contentHeight + resolvedFooterHeight
+        : preparedSheetHeight;
+    const targetSheetMeasurementPending = isTargetSheetMeasurementPending({
+      fullScreenBoundaryTransition,
+      sourceFullScreen: fullScreenBoundarySourceFullScreen === true,
+      targetFullScreen: fullScreenBoundaryTargetFullScreen === true,
+      transitionGeneration,
+      transitionCompletedGeneration:
+        transitionCompletedGeneration?.value ?? 0,
+      hasPreparedSheetFrame,
+    });
     const sourceHeight = sourceFullScreen
       ? SCREEN_HEIGHT
       : hasPreparedSheetFrame
-        ? preparedSheetHeight
+        ? resolvedPreparedSheetHeight
         : resolvedSheetHeight;
     const targetHeight = targetFullScreen
       ? SCREEN_HEIGHT
       : hasPreparedSheetFrame
-        ? preparedSheetHeight
-        : resolvedSheetHeight;
+        ? resolvedPreparedSheetHeight
+        : targetSheetMeasurementPending
+          ? SCREEN_HEIGHT
+          : resolvedSheetHeight;
     return resolveBoundaryContentStyle({
       progress,
       boundaryClockStarted,
@@ -501,6 +522,7 @@ export const useTrayFrameStyles = ({
       targetFullScreen,
       sourceHeight: sourceHeight ?? 0,
       targetHeight: targetHeight ?? 0,
+      measurementPending: targetSheetMeasurementPending && !fullScreen,
     });
   }, [
     contentHeight,

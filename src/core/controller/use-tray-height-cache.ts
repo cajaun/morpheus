@@ -69,6 +69,14 @@ export const useTrayHeightCache = ({
         return undefined;
       }
 
+      if (!allowMeasuredFallback) {
+        // A fullscreen-origin handoff must validate the sheet endpoint in
+        // sheet topology. This also prevents a previously clipped frame from
+        // surviving a retry as if it were a trusted intrinsic measurement.
+        contentHeight.value = 0;
+        return undefined;
+      }
+
       if (
         cachedMeasurement != null &&
         cachedMeasurement.owner?.mode !== "fullScreen"

@@ -21,7 +21,9 @@ type Params = {
   acceptContentMeasurement?: boolean;
   contentMeasurementLeaseActive?: boolean;
   contentMeasurementLeaseRef?: { current: boolean };
+  allowIntrinsicSheetMeasurementDuringLease?: boolean;
   originGeometryLeaseRef?: { current: boolean };
+  preparedSheetFrameRef?: { current: TraySheetFrame | undefined };
   committedSheetFrameRef?: { current: TraySheetFrame | undefined };
   resolveContentHeight?: (measuredHeight: number) => number;
   onContentHeightResolved?: (
@@ -78,7 +80,9 @@ export const useTrayMeasurements = ({
   acceptContentMeasurement = true,
   contentMeasurementLeaseActive = false,
   contentMeasurementLeaseRef,
+  allowIntrinsicSheetMeasurementDuringLease = false,
   originGeometryLeaseRef,
+  preparedSheetFrameRef,
   committedSheetFrameRef,
   resolveContentHeight,
   onContentHeightResolved,
@@ -276,9 +280,16 @@ export const useTrayMeasurements = ({
         return;
       }
 
+      const canMeasureIntrinsicSheetDuringLease =
+        allowIntrinsicSheetMeasurementDuringLease &&
+        !renderedFullScreen &&
+        measurementOwner?.mode === "sheet" &&
+        measurementOwner.trayId === renderedTrayId;
+
       if (
-        contentMeasurementLeaseActive ||
-        contentMeasurementLeaseRef?.current === true
+        !canMeasureIntrinsicSheetDuringLease &&
+        (contentMeasurementLeaseActive ||
+          contentMeasurementLeaseRef?.current === true)
       ) {
         // ignore animated viewport measurements so intermediate frames cannot become sheet heights
         log("CONTENT onLayout ignored during sheet frame lease", {
@@ -318,7 +329,7 @@ export const useTrayMeasurements = ({
         latestMeasurementOwnerRef.current?.presentationKey;
 
       if (callbackOwnerKey !== currentOwnerKey) {
-      log("CONTENT onLayout ignored — stale measurement owner", {
+        log("CONTENT onLayout ignored — stale measurement owner", {
           height,
           trayId: renderedTrayId,
           callbackOwnerKey,
@@ -352,6 +363,38 @@ export const useTrayMeasurements = ({
         ? resolveContentHeight(height)
         : height;
       const previousResolvedHeight = latestResolvedContentHeightRef.current;
+      const preparedSheetFrame = preparedSheetFrameRef?.current;
+      const preparedFrameMatchesOwner =
+        preparedSheetFrame !== undefined &&
+        measurementOwner !== undefined &&
+        preparedSheetFrame.generation === measurementOwner.generation &&
+        preparedSheetFrame.endpointKey ===
+          [
+            measurementOwner.trayId,
+            measurementOwner.stepKey,
+            measurementOwner.pageIndex ?? "step",
+            measurementOwner.mode,
+          ].join("::");
+
+      if (
+        canMeasureIntrinsicSheetDuringLease &&
+        preparedFrameMatchesOwner &&
+        preparedSheetFrame !== undefined &&
+        resolvedHeight < preparedSheetFrame.contentHeight
+      ) {
+        // A cached intrinsic frame is the conservative floor during the
+        // return handoff. Native can publish a short intermediate layout while
+        // text is being reattached; accepting that frame would recreate the
+        // clipped-footer bug. Larger intrinsic layouts remain eligible below.
+        log("CONTENT onLayout ignored — below prepared intrinsic floor", {
+          height,
+          resolvedHeight,
+          preparedContentHeight: preparedSheetFrame.contentHeight,
+          trayId: renderedTrayId,
+          measurementOwner: measurementOwner?.presentationKey,
+        });
+        return;
+      }
       const layoutSignature: LayoutSignature = {
         ownerKey: currentOwnerKey,
         trayId: renderedTrayId,
@@ -378,7 +421,11 @@ export const useTrayMeasurements = ({
 
       if (
         committedFrameMatchesOwner &&
-        Math.abs(resolvedHeight - committedSheetFrame.contentHeight) >= 0.001
+        Math.abs(resolvedHeight - committedSheetFrame.contentHeight) >= 0.001 &&
+        !(
+          !renderedFullScreen &&
+          resolvedHeight > committedSheetFrame.contentHeight
+        )
       ) {
         log("CONTENT onLayout ignored — completed sheet frame owns geometry", {
           height,
@@ -392,6 +439,22 @@ export const useTrayMeasurements = ({
           renderedFullScreen,
         });
         return;
+      }
+
+      if (
+        committedFrameMatchesOwner &&
+        committedSheetFrame !== undefined &&
+        !renderedFullScreen &&
+        resolvedHeight > committedSheetFrame.contentHeight
+      ) {
+        // A composite body can finish laying out after the boundary commits.
+        // Permit a larger intrinsic endpoint and promote the committed frame
+        // so the next layout pass does not get rejected as stale geometry.
+        committedSheetFrameRef!.current = {
+          ...committedSheetFrame,
+          contentHeight: resolvedHeight,
+          totalHeight: resolvedHeight + footerHeight.value,
+        };
       }
 
       if (areLayoutSignaturesEqual(lastContentLayoutRef.current, layoutSignature)) {
@@ -448,7 +511,9 @@ export const useTrayMeasurements = ({
       acceptContentMeasurement,
       contentMeasurementLeaseActive,
       contentMeasurementLeaseRef,
+      allowIntrinsicSheetMeasurementDuringLease,
       originGeometryLeaseRef,
+      preparedSheetFrameRef,
       committedSheetFrameRef,
       footerHeight,
       hasRenderedBody,

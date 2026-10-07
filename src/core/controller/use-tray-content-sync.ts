@@ -208,24 +208,59 @@ export const useTrayContentSync = ({
         contentHeight.value = incomingHeight;
       }
     } else {
+      const targetStepChanged = renderedTrayId !== trayId;
+      const returningFromFullScreen =
+        transitionContract?.fullScreenChanged === true &&
+        transitionContract.to?.mode === "sheet";
+      const cachedBoundaryReturnHeight = returningFromFullScreen
+        ? readCachedSheetContentHeightRef.current?.(trayId)
+        : undefined;
       const restoredContentHeight = restoreContentHeightRef.current(
         trayId,
         measuredContentHeight.value,
         "sheet",
         // a fullscreen source measurement is a viewport constraint, never a valid fallback for a new sheet endpoint
-        !renderedFullScreen,
+        // A previous step's body height is not an intrinsic measurement for a
+        // new sheet endpoint. Boundary returns may use only the target's last
+        // validated intrinsic frame as a provisional floor; ordinary sheet
+        // changes may reuse a trusted cache directly.
+        !returningFromFullScreen && !renderedFullScreen && !targetStepChanged,
       );
+      const boundaryReturnHeight = cachedBoundaryReturnHeight;
 
-      if (renderedFullScreen && restoredContentHeight !== undefined) {
+      if (
+        renderedFullScreen &&
+        boundaryReturnHeight !== undefined
+      ) {
+        // A fullscreen return must not wait for a new constrained native frame
+        // when this endpoint already owns a validated intrinsic sheet frame.
+        // The target is still measured after its snapshot mounts, and a newer
+        // intrinsic layout may replace this provisional frame.
+        contentHeight.value = boundaryReturnHeight;
+      }
+
+      if (
+        renderedFullScreen &&
+        (boundaryReturnHeight !== undefined ||
+          restoredContentHeight !== undefined)
+      ) {
+        const targetContentHeight =
+          boundaryReturnHeight ?? restoredContentHeight!;
         // sheet return leases the measured frame until the layout transition finishes
         onSheetFramePreparedRef.current?.(
-          restoredContentHeight + nextFooterHeight,
+          targetContentHeight + nextFooterHeight,
           "target",
-          restoredContentHeight,
+          targetContentHeight,
           trayId,
         );
-      } else if (!renderedFullScreen && renderedTrayId !== trayId) {
-        // promote cached target height before publishing the sheet handoff
+      } else if (
+        !returningFromFullScreen &&
+        !renderedFullScreen &&
+        renderedTrayId !== trayId
+      ) {
+        // promote cached target height for ordinary sheet-to-sheet changes;
+        // fullscreen returns use the separate provisional path above so the
+        // target snapshot can be revalidated in sheet topology.
         const cachedContentHeight =
           readCachedSheetContentHeightRef.current?.(trayId);
 

@@ -146,6 +146,7 @@ type TraySurfaceProps = Pick<
     renderedFooter: React.ReactNode;
     renderedFooterClassName?: string;
     renderedFooterStyle?: TrayProps["footerStyle"];
+    renderedFullScreen: boolean;
     contentMotionDirection: ReturnType<
       typeof resolveTrayContentMotionDirection
     >;
@@ -174,6 +175,7 @@ const TraySurface = React.memo(
     renderedFooter,
     renderedFooterClassName,
     renderedFooterStyle,
+    renderedFullScreen,
     contentMotionDirection,
     trayTransitionStart,
     layoutAnimationConfig,
@@ -238,22 +240,29 @@ const TraySurface = React.memo(
                 contentViewportStyle,
                 fullScreenSafeAreaContentStyle,
               ]}
-              onLayout={handleContentLayout}
             >
-              <TrayContentMotionDirectionProvider
-                value={contentMotionDirection}
+              <Animated.View
+                // Measure the content snapshot, not the animated boundary
+                // viewport that can retain the previous endpoint's height.
+                collapsable={false}
+                onLayout={handleContentLayout}
+                style={renderedFullScreen ? { flex: 1 } : undefined}
               >
-                <TrayTransitionStartProvider value={trayTransitionStart}>
-                  {renderedHeader ? (
-                    <Animated.View
-                      style={[localStyles.headerContainer, headerFrameStyle]}
-                    >
-                      {renderedHeader}
-                    </Animated.View>
-                  ) : null}
-                  {renderedContent}
-                </TrayTransitionStartProvider>
-              </TrayContentMotionDirectionProvider>
+                <TrayContentMotionDirectionProvider
+                  value={contentMotionDirection}
+                >
+                  <TrayTransitionStartProvider value={trayTransitionStart}>
+                    {renderedHeader ? (
+                      <Animated.View
+                        style={[localStyles.headerContainer, headerFrameStyle]}
+                      >
+                        {renderedHeader}
+                      </Animated.View>
+                    ) : null}
+                    {renderedContent}
+                  </TrayTransitionStartProvider>
+                </TrayContentMotionDirectionProvider>
+              </Animated.View>
             </Animated.View>
             {/* reserve footer space the footer itself is absolute and does not participate in content measurement */}
             <Animated.View style={footerSpacerStyle} />
@@ -702,6 +711,7 @@ const TrayVisualView = React.memo(
               renderedFooter={renderedFooter}
               renderedFooterClassName={renderedFooterClassName}
               renderedFooterStyle={renderedFooterStyle}
+              renderedFullScreen={presentationFullScreen}
               contentMotionDirection={contentMotionDirection}
               trayTransitionStart={trayTransitionStart}
               layoutAnimationConfig={layoutAnimationConfig}

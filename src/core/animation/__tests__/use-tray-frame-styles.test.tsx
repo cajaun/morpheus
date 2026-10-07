@@ -8,6 +8,7 @@ import {
   SCREEN_WIDTH,
   TRAY_FOOTER_PADDING_BOTTOM,
 } from "../../constants";
+import { resolveFullscreenReturnHeaderPadding } from "../frame-style-math";
 import { useTrayFrameStyles } from "../use-tray-frame-styles";
 
 // probe frame policy by reading returned animated style objects directly
@@ -35,12 +36,14 @@ const renderFrameStyles = ({
   contentHeight = 320,
   contentHeightSnapshot = contentHeight,
   originTargetContentHeight = contentHeight,
+  footerHeight = 80,
   fullScreen = false,
   fullScreenBoundaryTransition = false,
   fullScreenBoundarySourceFullScreen,
   fullScreenBoundaryTargetFullScreen,
   morphProgress = 1,
   preparedSheetFrameHeight,
+  preparedSheetFrameContentHeight,
   preparedSheetFrameGeneration,
   preparedSheetFrameEndpoint = "source",
   originProgress = 1,
@@ -56,12 +59,14 @@ const renderFrameStyles = ({
   contentHeight?: number;
   contentHeightSnapshot?: number;
   originTargetContentHeight?: number;
+  footerHeight?: number;
   fullScreen?: boolean;
   fullScreenBoundaryTransition?: boolean;
   fullScreenBoundarySourceFullScreen?: boolean;
   fullScreenBoundaryTargetFullScreen?: boolean;
   morphProgress?: number;
   preparedSheetFrameHeight?: number;
+  preparedSheetFrameContentHeight?: number;
   preparedSheetFrameGeneration?: number;
   preparedSheetFrameEndpoint?: string;
   originProgress?: number;
@@ -81,7 +86,7 @@ const renderFrameStyles = ({
       bottom: 20,
       contentHeight: shared(contentHeight),
       contentHeightSnapshot,
-      footerHeight: shared(80),
+      footerHeight: shared(footerHeight),
       fullScreen,
       fullScreenBoundaryTransition,
       fullScreenBoundarySourceFullScreen,
@@ -104,7 +109,9 @@ const renderFrameStyles = ({
               generation:
                 preparedSheetFrameGeneration ?? transitionGeneration ?? 1,
               totalHeight: preparedSheetFrameHeight,
-              contentHeight: preparedSheetFrameHeight - 80,
+              contentHeight:
+                preparedSheetFrameContentHeight ??
+                preparedSheetFrameHeight - footerHeight,
             }
           : undefined,
       shouldUseOriginTransition,
@@ -129,6 +136,30 @@ const renderFrameStyles = ({
 };
 
 describe("useTrayFrameStyles", () => {
+  it("removes only transient fullscreen header spacing from a return measurement", () => {
+    expect(
+      resolveFullscreenReturnHeaderPadding({
+        progress: 0,
+        returningToSheet: true,
+        hasHeader: true,
+      }),
+    ).toBe(16);
+    expect(
+      resolveFullscreenReturnHeaderPadding({
+        progress: 1,
+        returningToSheet: true,
+        hasHeader: true,
+      }),
+    ).toBe(0);
+    expect(
+      resolveFullscreenReturnHeaderPadding({
+        progress: 0,
+        returningToSheet: false,
+        hasHeader: true,
+      }),
+    ).toBe(0);
+  });
+
   it("lets an opened sheet derive height from its children", () => {
     const styles = renderFrameStyles({});
 
@@ -552,6 +583,20 @@ describe("useTrayFrameStyles", () => {
 
     expect(styles.trayLayoutStyle.height).toBe(400);
     expect(styles.presentationFrameStyle?.height).toBe(400);
+  });
+
+  it("re-derives a prepared frame when the footer measures larger", () => {
+    const styles = renderFrameStyles({
+      footerHeight: 100,
+      preparedSheetFrameHeight: 400,
+      preparedSheetFrameContentHeight: 320,
+      preparedSheetFrameEndpoint: "target",
+      preparedSheetFrameGeneration: 7,
+      transitionGeneration: 7,
+      transitionTargetKey: "target",
+    });
+
+    expect(styles.trayLayoutStyle.height).toBe(420);
   });
 
   it("holds the fullscreen source frame while an uncached sheet target measures", () => {

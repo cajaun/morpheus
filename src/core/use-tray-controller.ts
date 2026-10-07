@@ -12,6 +12,10 @@ import {
 import { useSharedValue } from "react-native-reanimated";
 import { log } from "./logger";
 import { SCREEN_HEIGHT } from "./constants";
+import {
+  resolveBoundaryProgress,
+  resolveFullscreenReturnHeaderPadding,
+} from "./animation/frame-style-math";
 import type {
   TrayTransitionContract,
   TrayTransitionLifecycle,
@@ -213,11 +217,38 @@ export const useTrayController = ({
       if (!isEnteringFullScreen) {
         const resolvedHeight = resolveRenderedContentHeight(measuredHeight);
 
+        // The fullscreen header transition owns a temporary bottom gap. It
+        // is visual spacing, not intrinsic sheet content. Remove its current
+        // lifecycle-owned contribution before the return frame is cached so a
+        // fullscreen-only 16pt gap cannot become permanent sheet geometry.
+        const returningHeaderPadding =
+          resolveFullscreenReturnHeaderPadding({
+            progress: resolveBoundaryProgress(
+              morphProgress.value,
+              transitionContract?.generation,
+              transitionStartedGeneration.value,
+              transitionLayoutStartedGeneration.value,
+              transitionCompletedGeneration.value,
+              transitionContract?.fullScreenChanged === true,
+            ),
+            returningToSheet:
+              returningToSheetRef.current &&
+              transitionContract?.fullScreenChanged === true &&
+              transitionContract.to?.mode === "sheet",
+            hasHeader: renderState.state.renderedHeader != null,
+          });
+        const intrinsicSheetHeight = Math.max(
+          0,
+          resolvedHeight - returningHeaderPadding,
+        );
+
         // sheet mode trusts measured content and footer policy
         log("RESOLVE CONTENT HEIGHT", {
           trayId,
           measuredHeight,
           resolvedHeight,
+          returningHeaderPadding,
+          intrinsicSheetHeight,
           visible,
           incomingFullScreen: !!fullScreen,
           renderedFullScreen: presentationFullScreen,
@@ -226,7 +257,7 @@ export const useTrayController = ({
           mode: "rendered-presentation",
         });
 
-        return resolvedHeight;
+        return intrinsicSheetHeight;
       }
 
       const resolvedHeight = Math.max(
@@ -252,9 +283,16 @@ export const useTrayController = ({
     [
       isEnteringFullScreen,
       fullScreen,
+      morphProgress,
+      renderState.state.renderedHeader,
       resolveRenderedContentHeight,
       presentationFullScreen,
+      returningToSheetRef,
       presentation.shared.footerHeight,
+      transitionCompletedGeneration,
+      transitionContract,
+      transitionLayoutStartedGeneration,
+      transitionStartedGeneration,
       trayId,
       visible,
     ],
@@ -279,7 +317,11 @@ export const useTrayController = ({
     contentMeasurementLeaseActive:
       geometry.state.preparedSheetFrame !== undefined,
     contentMeasurementLeaseRef,
+    allowIntrinsicSheetMeasurementDuringLease:
+      transitionContract?.fullScreenChanged === true &&
+      transitionContract.to?.mode === "sheet",
     originGeometryLeaseRef,
+    preparedSheetFrameRef,
     committedSheetFrameRef,
     resolveContentHeight: resolveMeasuredContentHeight,
     onContentHeightResolved: heightCache.actions.handleContentHeightResolved,

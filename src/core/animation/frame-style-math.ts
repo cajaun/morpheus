@@ -1,6 +1,7 @@
 import { interpolate } from "react-native-reanimated";
 import {
   BORDER_RADIUS,
+  FULL_SCREEN_HEADER_BOTTOM_GAP,
   HORIZONTAL_MARGIN,
   SCREEN_HEIGHT,
   SCREEN_WIDTH,
@@ -34,6 +35,26 @@ export const resolveBoundaryProgress = (
   }
 
   return progress;
+};
+
+// remove only the transient fullscreen header spacing from a returning sheet measurement
+export const resolveFullscreenReturnHeaderPadding = ({
+  progress,
+  returningToSheet,
+  hasHeader,
+}: {
+  progress: number;
+  returningToSheet: boolean;
+  hasHeader: boolean;
+}) => {
+  "worklet";
+
+  if (!returningToSheet || !hasHeader) {
+    return 0;
+  }
+
+  const settledProgress = Math.min(Math.max(progress, 0), 1);
+  return FULL_SCREEN_HEADER_BOTTOM_GAP * (1 - settledProgress);
 };
 
 // check whether a boundary transition can read its shared clock
@@ -135,6 +156,7 @@ export const resolveBoundaryContentStyle = ({
   targetFullScreen,
   sourceHeight,
   targetHeight,
+  measurementPending = false,
 }: {
   progress: number;
   boundaryClockStarted: boolean;
@@ -142,8 +164,27 @@ export const resolveBoundaryContentStyle = ({
   targetFullScreen: boolean;
   sourceHeight: number;
   targetHeight: number;
+  measurementPending?: boolean;
 }) => {
   "worklet";
+
+  if (measurementPending) {
+    return {
+      // Once the sheet snapshot is rendered, release it from the animated
+      // boundary so native layout can derive the complete intrinsic height.
+      position: "relative" as const,
+      top: 0,
+      bottom: "auto" as const,
+      left: 0,
+      right: 0,
+      width: targetFullScreen
+        ? SCREEN_WIDTH
+        : SCREEN_WIDTH - HORIZONTAL_MARGIN * 2,
+      height: undefined,
+      alignSelf: "stretch" as const,
+      flex: targetFullScreen ? 1 : 0,
+    };
+  }
 
   const contentFullScreen = boundaryClockStarted
     ? targetFullScreen
