@@ -42,6 +42,31 @@ type Params = {
   ) => void;
 };
 
+type LayoutSignature = {
+  ownerKey?: string;
+  trayId?: string;
+  fullScreen: boolean;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  resolvedHeight?: number;
+};
+
+const areLayoutSignaturesEqual = (
+  previous: LayoutSignature | null,
+  next: LayoutSignature,
+) =>
+  previous !== null &&
+  previous.ownerKey === next.ownerKey &&
+  previous.trayId === next.trayId &&
+  previous.fullScreen === next.fullScreen &&
+  previous.x === next.x &&
+  previous.y === next.y &&
+  previous.width === next.width &&
+  previous.height === next.height &&
+  previous.resolvedHeight === next.resolvedHeight;
+
 // collect body and footer measurements used to resolve shell geometry
 export const useActionTrayMeasurements = ({
   contentHeight,
@@ -75,6 +100,9 @@ export const useActionTrayMeasurements = ({
   const resolvedContentHeight = useSharedValue(0);
   const measuredFooterHeight = useSharedValue(0);
   const latestMeasurementOwnerRef = useRef(measurementOwner);
+  const lastContentLayoutRef = useRef<LayoutSignature | null>(null);
+  const lastVisibleFooterLayoutRef = useRef<LayoutSignature | null>(null);
+  const lastMeasuredFooterLayoutRef = useRef<LayoutSignature | null>(null);
   latestMeasurementOwnerRef.current = measurementOwner;
 
   useEffect(() => {
@@ -130,6 +158,9 @@ export const useActionTrayMeasurements = ({
       latestMeasuredContentHeightRef.current = 0;
       latestResolvedContentHeightRef.current = 0;
       latestMeasuredTrayIdRef.current = undefined;
+      lastContentLayoutRef.current = null;
+      lastVisibleFooterLayoutRef.current = null;
+      lastMeasuredFooterLayoutRef.current = null;
       contentHeight.value = 0;
       measuredContentHeight.value = 0;
       resolvedContentHeight.value = 0;
@@ -173,6 +204,9 @@ export const useActionTrayMeasurements = ({
     latestResolvedContentHeightRef.current = 0;
     latestMeasuredFooterHeightRef.current = 0;
     latestMeasuredTrayIdRef.current = undefined;
+    lastContentLayoutRef.current = null;
+    lastVisibleFooterLayoutRef.current = null;
+    lastMeasuredFooterLayoutRef.current = null;
     contentHeight.value = 0;
     footerHeight.value = 0;
     measuredContentHeight.value = 0;
@@ -318,6 +352,16 @@ export const useActionTrayMeasurements = ({
         ? resolveContentHeight(height)
         : height;
       const previousResolvedHeight = latestResolvedContentHeightRef.current;
+      const layoutSignature: LayoutSignature = {
+        ownerKey: currentOwnerKey,
+        trayId: renderedTrayId,
+        fullScreen: renderedFullScreen,
+        x: e.nativeEvent.layout.x,
+        y: e.nativeEvent.layout.y,
+        width: e.nativeEvent.layout.width,
+        height,
+        resolvedHeight,
+      };
 
       const committedSheetFrame = committedSheetFrameRef?.current;
       const committedFrameMatchesOwner =
@@ -349,6 +393,12 @@ export const useActionTrayMeasurements = ({
         });
         return;
       }
+
+      if (areLayoutSignaturesEqual(lastContentLayoutRef.current, layoutSignature)) {
+        return;
+      }
+
+      lastContentLayoutRef.current = layoutSignature;
 
       // measured height is raw content size while resolved height respects tray policy
       latestMeasuredContentHeightRef.current = height;
@@ -422,6 +472,26 @@ export const useActionTrayMeasurements = ({
 
       // visible footer measurement handles late footer changes after the first open
       const height = e.nativeEvent.layout.height;
+      const layoutSignature: LayoutSignature = {
+        ownerKey: measurementOwner?.presentationKey,
+        trayId: renderedTrayId,
+        fullScreen: renderedFullScreen,
+        x: e.nativeEvent.layout.x,
+        y: e.nativeEvent.layout.y,
+        width: e.nativeEvent.layout.width,
+        height,
+      };
+
+      if (
+        areLayoutSignaturesEqual(
+          lastVisibleFooterLayoutRef.current,
+          layoutSignature,
+        )
+      ) {
+        return;
+      }
+
+      lastVisibleFooterLayoutRef.current = layoutSignature;
       // keep the last stable footer height during transient morph out layouts
       if (height <= 1 && latestMeasuredFooterHeightRef.current > 0) {
         return;
@@ -445,8 +515,11 @@ export const useActionTrayMeasurements = ({
     [
       footerHeight,
       measuredFooterHeight,
+      measurementOwner,
       onGeometryMeasured,
+      renderedFullScreen,
       renderedFooter,
+      renderedTrayId,
     ],
   );
 
@@ -454,6 +527,26 @@ export const useActionTrayMeasurements = ({
     (e: LayoutChangeEvent) => {
       // offscreen measurement prevents the first open from guessing footer travel
       const height = e.nativeEvent.layout.height;
+      const layoutSignature: LayoutSignature = {
+        ownerKey: measurementOwner?.presentationKey,
+        trayId: renderedTrayId,
+        fullScreen: renderedFullScreen,
+        x: e.nativeEvent.layout.x,
+        y: e.nativeEvent.layout.y,
+        width: e.nativeEvent.layout.width,
+        height,
+      };
+
+      if (
+        areLayoutSignaturesEqual(
+          lastMeasuredFooterLayoutRef.current,
+          layoutSignature,
+        )
+      ) {
+        return;
+      }
+
+      lastMeasuredFooterLayoutRef.current = layoutSignature;
 
       log("OFFSCREEN FOOTER onLayout", { height });
 
@@ -467,7 +560,14 @@ export const useActionTrayMeasurements = ({
       // offscreen footer measurement is the gate that lets first open begin
       setFooterMeasured(true);
     },
-    [footerHeight, measuredFooterHeight, onGeometryMeasured],
+    [
+      footerHeight,
+      measuredFooterHeight,
+      measurementOwner,
+      onGeometryMeasured,
+      renderedFullScreen,
+      renderedTrayId,
+    ],
   );
 
   return {

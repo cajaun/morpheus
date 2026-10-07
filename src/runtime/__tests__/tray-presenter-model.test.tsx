@@ -126,6 +126,29 @@ describe("tray presenter model", () => {
     expect(tray?.footerClassName).toBe("footer");
   });
 
+  it("reuses contextual step options for repeated presenter derivation", () => {
+    const registration: TrayRegistration = {
+      steps: [step("one")],
+      footer: <Text>continue</Text>,
+    };
+    const entry: TrayStackEntry = { trayId: "onboarding", index: 0 };
+
+    const first = createPresentedTray({
+      entry,
+      registration,
+      stackIndex: 0,
+      stackLength: 1,
+    });
+    const second = createPresentedTray({
+      entry,
+      registration,
+      stackIndex: 0,
+      stackLength: 1,
+    });
+
+    expect(first?.stepOptions).toBe(second?.stepOptions);
+  });
+
   it("chooses the opposite host slot when replacing an active tray", () => {
     const slots: [TrayHostSlot, TrayHostSlot] = [
       slot(presented("alpha"), true, true),

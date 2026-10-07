@@ -403,9 +403,7 @@ type TrayHeaderTransitionRowProps = {
 
 // Header motion is a step-content participant, so its title and action group
 // use the same transition lifecycle as the incoming body.
-export const TrayHeaderTransitionRow: React.FC<
-  TrayHeaderTransitionRowProps
-> = ({
+const TrayHeaderTransitionRowImpl: React.FC<TrayHeaderTransitionRowProps> = ({
   title,
   left,
   right,
@@ -526,6 +524,30 @@ export const TrayHeaderTransitionRow: React.FC<
     </Animated.View>
   );
 };
+
+const areTrayHeaderTransitionRowPropsEqual = (
+  previous: TrayHeaderTransitionRowProps,
+  next: TrayHeaderTransitionRowProps,
+) =>
+  previous.title === next.title &&
+  previous.left === next.left &&
+  previous.right === next.right &&
+  previous.style === next.style &&
+  previous.className === next.className &&
+  previous.transition.stepKey === next.transition.stepKey &&
+  previous.transition.skipEntering === next.transition.skipEntering &&
+  previous.transition.fullScreenBoundaryExit ===
+    next.transition.fullScreenBoundaryExit;
+
+// Header actions are often recreated by the shell while their semantic inputs
+// stay unchanged. Keep the animation participant mounted across those shell
+// notifications; actual transition fields remain part of the comparison.
+export const TrayHeaderTransitionRow = React.memo(
+  TrayHeaderTransitionRowImpl,
+  areTrayHeaderTransitionRowPropsEqual,
+);
+
+TrayHeaderTransitionRow.displayName = "TrayHeaderTransitionRow";
 
 const resolveHeaderActionIdentity = (
   action: React.ReactNode,

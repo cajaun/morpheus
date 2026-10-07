@@ -8,7 +8,62 @@ import {
 import { resolveTrayPresentationEndpoint } from "../transition-contract";
 import { clampTrayStepIndex } from "../tray-step-index";
 import { resolveTrayAnimationContract } from "./animation-contract";
+import type { TrayStepDefinition } from "../types";
 import type { PresentedTray, TrayHostSlot } from "./types";
+
+type ContextualStepOptionsCache = {
+  withFooter?: ResolvedTrayStepOptions;
+  withoutFooter?: ResolvedTrayStepOptions;
+};
+
+// Registered step definitions are immutable runtime descriptors. Cache the
+// resolved options by descriptor so presenter derivation does not allocate a
+// fresh options object on every unrelated store notification.
+const contextualStepOptionsCache = new WeakMap<
+  TrayStepDefinition,
+  ContextualStepOptionsCache
+>();
+
+const resolveContextualStepOptions = (
+  step: TrayStepDefinition,
+  hasFooter: boolean,
+): ResolvedTrayStepOptions => {
+  const cached = contextualStepOptionsCache.get(step) ?? {};
+  const cachedOptions = hasFooter ? cached.withFooter : cached.withoutFooter;
+
+  if (cachedOptions !== undefined) {
+    return cachedOptions;
+  }
+
+  const resolvedOptions = resolveTrayStepOptions(step.options);
+
+  if (resolvedOptions.hasFooter === hasFooter) {
+    if (hasFooter) {
+      cached.withFooter = resolvedOptions;
+    } else {
+      cached.withoutFooter = resolvedOptions;
+    }
+
+    contextualStepOptionsCache.set(step, cached);
+
+    return resolvedOptions;
+  }
+
+  const contextualOptions = {
+    ...resolvedOptions,
+    hasFooter,
+  };
+
+  if (hasFooter) {
+    cached.withFooter = contextualOptions;
+  } else {
+    cached.withoutFooter = contextualOptions;
+  }
+
+  contextualStepOptionsCache.set(step, cached);
+
+  return contextualOptions;
+};
 
 // convert registered tray state into the payload consumed by host slots
 // create an empty host slot that cannot receive input or render content
@@ -159,11 +214,10 @@ export const createPresentedTray = ({
     return null;
   }
 
-  const stepOptions = resolveTrayStepOptions(step.options);
-  const contextualStepOptions = {
-    ...stepOptions,
-    hasFooter: registration.footer != null,
-  };
+  const stepOptions = resolveContextualStepOptions(
+    step,
+    registration.footer != null,
+  );
   const endpoint = resolveTrayPresentationEndpoint({ entry, registration });
 
   if (!endpoint) {
@@ -180,7 +234,7 @@ export const createPresentedTray = ({
     rootTrayId: entry.trayId,
     trayId: `${entry.trayId}-${step.key}`,
     keyboardAware: stepOptions.keyboardAware,
-    stepOptions: contextualStepOptions,
+    stepOptions,
     header: step.header ?? null,
     content: step.content,
     footer: registration.footer ?? null,

@@ -29,16 +29,22 @@ export const TrayHeader: React.FC<{
 }> = (props) => {
   const { children, style, className, withSeparator = false } = props;
   const parentTransition = useTrayHeaderTransition();
+  const transitionValue = React.useMemo(
+    () => ({
+      stepKey: parentTransition?.stepKey ?? "",
+      skipEntering: parentTransition?.skipEntering ?? false,
+      fullScreenBoundaryExit:
+        parentTransition?.fullScreenBoundaryExit ?? false,
+    }),
+    [
+      parentTransition?.fullScreenBoundaryExit,
+      parentTransition?.skipEntering,
+      parentTransition?.stepKey,
+    ],
+  );
 
   return (
-    <TrayHeaderTransitionProvider
-      value={{
-        stepKey: parentTransition?.stepKey ?? "",
-        skipEntering: parentTransition?.skipEntering ?? false,
-        fullScreenBoundaryExit:
-          parentTransition?.fullScreenBoundaryExit ?? false,
-      }}
-    >
+    <TrayHeaderTransitionProvider value={transitionValue}>
       <View
         className={className}
         style={[

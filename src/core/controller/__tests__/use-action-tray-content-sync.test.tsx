@@ -534,6 +534,55 @@ describe("useActionTrayContentSync", () => {
     );
   });
 
+  it("does not republish an identical body layout frame", () => {
+    const contentHeight = shared(240);
+    const footerHeight = shared(64);
+    const onContentHeightResolved = jest.fn();
+    const onGeometryMeasured = jest.fn();
+    let handleContentLayout: ((event: never) => void) | null = null;
+
+    const Probe = () => {
+      const measurements = useActionTrayMeasurements({
+        contentHeight,
+        footerHeight,
+        renderedTrayId: "tray-content-four",
+        renderedFullScreen: false,
+        measurementOwner: {
+          mode: "sheet",
+          presentationKey: "tray-content-four-sheet",
+        } as never,
+        onContentHeightResolved,
+        onGeometryMeasured,
+      });
+
+      handleContentLayout = measurements.handlers.handleContentLayout as (
+        event: never,
+      ) => void;
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    const layoutEvent = {
+      nativeEvent: {
+        layout: { height: 312, width: 320, x: 0, y: 0 },
+      },
+    } as never;
+
+    act(() => {
+      handleContentLayout?.(layoutEvent);
+    });
+
+    act(() => {
+      handleContentLayout?.(layoutEvent);
+    });
+
+    expect(onContentHeightResolved).toHaveBeenCalledTimes(1);
+    expect(onGeometryMeasured).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps a stable footer spacer when the incoming sheet has not measured its footer yet", () => {
     const contentHeight = shared(240);
     const footerHeight = shared(64);
