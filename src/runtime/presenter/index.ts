@@ -1,6 +1,6 @@
 // expose presenter internals through one local boundary
 export { NestedTrayStack, RootTraySlots } from "./host-slots";
-export { createPresentedTray } from "./model";
+export { createPresentedTray, resolvePresenterTransitionScope } from "./model";
 export type {
   PresentedActionTrayRenderer,
   PresentedTray,

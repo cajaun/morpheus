@@ -150,6 +150,57 @@ export const arePresentedTrayListsEquivalent = (
   left.length === right.length &&
   left.every((host, index) => arePresentedTraysEquivalent(host, right[index]!));
 
+export const resolvePresenterTransitionScope = ({
+  transition,
+  currentStack,
+  previousStackTrayIds,
+}: {
+  transition: TrayTransitionContract | null;
+  currentStack: readonly TrayStackEntry[];
+  previousStackTrayIds: readonly string[];
+}) => {
+  if (transition === null) {
+    return { root: null, nested: null };
+  }
+
+  const currentRootTrayId = currentStack[0]?.trayId;
+  const previousRootTrayId = previousStackTrayIds[0];
+  const rootTrayIds = new Set(
+    [currentRootTrayId, previousRootTrayId].filter(
+      (trayId): trayId is string => trayId !== undefined,
+    ),
+  );
+  const nestedTrayIds = new Set([
+    ...currentStack.slice(1).map((entry) => entry.trayId),
+    ...previousStackTrayIds.slice(1),
+  ]);
+  const endpointTrayIds = [transition.from?.trayId, transition.to?.trayId];
+  const nestedHostsWereRemoved = previousStackTrayIds
+    .slice(1)
+    .some(
+      (trayId) =>
+        !currentStack.slice(1).some((entry) => entry.trayId === trayId),
+    );
+  const affectsRoot = endpointTrayIds.some(
+    (trayId) => trayId !== undefined && rootTrayIds.has(trayId),
+  );
+  const affectsNested =
+    transition.reason === "openNested" ||
+    transition.reason === "closeNested" ||
+    endpointTrayIds.some(
+      (trayId) => trayId !== undefined && nestedTrayIds.has(trayId),
+    ) ||
+    nestedHostsWereRemoved;
+  const nestedOnlyTransition =
+    transition.reason === "openNested" ||
+    transition.reason === "closeNested";
+
+  return {
+    root: affectsRoot && !nestedOnlyTransition ? transition : null,
+    nested: affectsNested ? transition : null,
+  };
+};
+
 // choose the next host slot without reusing the current visible slot
 export const resolveNextActiveSlotIndex = (
   slots: [TrayHostSlot, TrayHostSlot],

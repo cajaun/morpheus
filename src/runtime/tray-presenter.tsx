@@ -9,6 +9,7 @@ import {
   createPresentedTray,
   NestedTrayStack,
   RootTraySlots,
+  resolvePresenterTransitionScope,
   type PresentedTray,
   type PresentedActionTrayRenderer,
 } from "./presenter";
@@ -23,6 +24,7 @@ export const TrayPresenter: React.FC<{
   const transition = useTrayHostSelector((state) => state.lastTransition);
   const { dismissKeyboardForTray, requestCloseActiveTray } = useTrayHostActions();
   const previousIndexByTrayRef = useRef<Record<string, number>>({});
+  const previousStackTrayIdsRef = useRef<readonly string[]>([]);
   const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
     (id, phase, actualDuration, baseDuration, startTime, commitTime) => {
       logActionTrayProfilerCommit(
@@ -35,6 +37,16 @@ export const TrayPresenter: React.FC<{
       );
     },
     [],
+  );
+
+  const transitionScope = useMemo(
+    () =>
+      resolvePresenterTransitionScope({
+        transition,
+        currentStack: stack,
+        previousStackTrayIds: previousStackTrayIdsRef.current,
+      }),
+    [stack, transition],
   );
 
   const rootHost = useMemo<PresentedTray | null>(() => {
@@ -54,11 +66,11 @@ export const TrayPresenter: React.FC<{
       entry,
       registration,
       previousIndex: previousIndexByTrayRef.current[entry.trayId],
-      transition,
+      transition: transitionScope.root,
       stackIndex: 0,
       stackLength: stack.length,
     });
-  }, [registry, stack, transition]);
+  }, [registry, stack, transitionScope.root]);
 
   const nestedHosts = useMemo<PresentedTray[]>(() => {
     return stack.slice(1).flatMap((entry, index) => {
@@ -72,14 +84,14 @@ export const TrayPresenter: React.FC<{
         entry,
         registration,
         previousIndex: previousIndexByTrayRef.current[entry.trayId],
-        transition,
+        transition: transitionScope.nested,
         stackIndex: index + 1,
         stackLength: stack.length,
       });
 
       return host ? [host] : [];
     });
-  }, [registry, stack, transition]);
+  }, [registry, stack, transitionScope.nested]);
 
   useEffect(() => {
     const nextIndexes: Record<string, number> = {};
@@ -89,6 +101,7 @@ export const TrayPresenter: React.FC<{
     });
 
     previousIndexByTrayRef.current = nextIndexes;
+    previousStackTrayIdsRef.current = stack.map((entry) => entry.trayId);
   }, [stack]);
 
   const rootSlots = (
@@ -96,7 +109,7 @@ export const TrayPresenter: React.FC<{
       activeHost={rootHost}
       requestCloseActiveTray={requestCloseActiveTray}
       dismissKeyboardForTray={dismissKeyboardForTray}
-      transitionContract={transition}
+      transitionContract={transitionScope.root}
       renderHost={renderHost}
     />
   );
@@ -105,7 +118,7 @@ export const TrayPresenter: React.FC<{
       hosts={nestedHosts}
       requestCloseActiveTray={requestCloseActiveTray}
       dismissKeyboardForTray={dismissKeyboardForTray}
-      transitionContract={transition}
+      transitionContract={transitionScope.nested}
       renderHost={renderHost}
     />
   );

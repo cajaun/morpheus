@@ -4,6 +4,7 @@ import { Text } from "react-native";
 import type {
   TrayRegistration,
   TrayStackEntry,
+  TrayTransitionContract,
 } from "../tray-context";
 import { resolveTrayStepOptions } from "../tray-step-options";
 import {
@@ -12,6 +13,7 @@ import {
   areTrayHostSlotsEquivalent,
   createIdleSlot,
   createPresentedTray,
+  resolvePresenterTransitionScope,
   resolveNextActiveSlotIndex,
   resolveOrderedHostSlots,
 } from "../presenter/model";
@@ -81,6 +83,37 @@ describe("tray presenter model", () => {
     expect(tray?.trayId).toBe("settings-two");
     expect(tray?.fullScreen).toBe(true);
   });
+
+const transition = (
+  reason: TrayTransitionContract["reason"],
+  fromTrayId: string | null,
+  toTrayId: string | null,
+): TrayTransitionContract => ({
+  generation: 1,
+  reason,
+  direction: "forward",
+  boundary: "sheetToSheet",
+  from: fromTrayId
+    ? {
+        trayId: fromTrayId,
+        stepIndex: 0,
+        stepKey: "from",
+        mode: "sheet",
+      }
+    : null,
+  to: toTrayId
+    ? {
+        trayId: toTrayId,
+        stepIndex: 0,
+        stepKey: "to",
+        mode: "sheet",
+      }
+    : null,
+  stepChanged: true,
+  pageChanged: false,
+  fullScreenChanged: false,
+  sharedRegions: [],
+});
 
   it("does not duplicate the active surface onto detached footers", () => {
     const surfaceStyle = { backgroundColor: "white" };
@@ -212,5 +245,48 @@ describe("tray presenter model", () => {
     const next = { ...current, trayId: "active-two" };
 
     expect(arePresentedTraysEquivalent(current, next)).toBe(false);
+  });
+
+  it("scopes root and nested transition contracts to the affected presenter", () => {
+    const rootStepTransition = transition("nextStep", "root", "root");
+    const rootStepScope = resolvePresenterTransitionScope({
+      transition: rootStepTransition,
+      currentStack: [{ trayId: "root", index: 1 }],
+      previousStackTrayIds: ["root"],
+    });
+
+    expect(rootStepScope.root).toBe(rootStepTransition);
+    expect(rootStepScope.nested).toBeNull();
+
+    const nestedStepTransition = transition(
+      "nextStep",
+      "nested",
+      "nested",
+    );
+    const nestedStepScope = resolvePresenterTransitionScope({
+      transition: nestedStepTransition,
+      currentStack: [
+        { trayId: "root", index: 0 },
+        { trayId: "nested", index: 1 },
+      ],
+      previousStackTrayIds: ["root", "nested"],
+    });
+
+    expect(nestedStepScope.root).toBeNull();
+    expect(nestedStepScope.nested).toBe(nestedStepTransition);
+
+    const nestedCloseTransition = transition(
+      "closeNested",
+      "nested",
+      "root",
+    );
+    const nestedCloseScope = resolvePresenterTransitionScope({
+      transition: nestedCloseTransition,
+      currentStack: [{ trayId: "root", index: 0 }],
+      previousStackTrayIds: ["root", "nested"],
+    });
+
+    expect(nestedCloseScope.root).toBeNull();
+    expect(nestedCloseScope.nested).toBe(nestedCloseTransition);
   });
 });
