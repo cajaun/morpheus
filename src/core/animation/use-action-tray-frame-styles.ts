@@ -555,7 +555,12 @@ export const useActionTrayFrameStyles = ({
         sourceContentHeight !== undefined && sourceContentHeight > 0
           ? sourceContentHeight
           : undefined,
-      targetSheetMeasurementPending,
+      // The source fullscreen snapshot must keep its flex viewport until the
+      // target sheet snapshot has committed. Once the rendered mode is sheet,
+      // the same pending state can switch the target content to intrinsic
+      // measurement without clipping the outgoing fullscreen content.
+      targetSheetMeasurementPending:
+        targetSheetMeasurementPending && !fullScreen,
     });
   }, [
     contentHeightSnapshot,

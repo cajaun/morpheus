@@ -55,8 +55,47 @@ type ActionTrayVisualViewProps = Pick<
   | "interactive"
   | "keyboardAware"
 > & {
-  shared: ActionTrayController["shared"];
-  state: ActionTrayController["state"];
+  shared: Pick<
+    ActionTrayController["shared"],
+    | "translateY"
+    | "contentHeight"
+    | "footerHeight"
+    | "context"
+    | "hasFooter"
+    | "surfaceOpacity"
+    | "totalHeight"
+    | "progress"
+    | "originProgress"
+    | "originTargetContentHeight"
+    | "morphProgress"
+    | "transitionGenerationValue"
+    | "fullScreenChangedValue"
+    | "transitionStartedAt"
+    | "transitionStartedGeneration"
+    | "transitionLayoutStartedGeneration"
+    | "transitionCompletedGeneration"
+  >;
+  state: Pick<
+    ActionTrayController["state"],
+    | "layoutEnabled"
+    | "contentHeightSnapshot"
+    | "isSurfaceReady"
+    | "preparedSheetFrame"
+    | "renderedHeader"
+    | "renderedFooter"
+    | "renderedContent"
+    | "renderedTrayId"
+    | "renderedFullScreen"
+    | "renderedFullScreenBackgroundScale"
+    | "frameFullScreen"
+    | "renderedFullScreenSafeAreaTop"
+    | "renderedFullScreenDraggable"
+    | "renderedContainerStyle"
+    | "renderedClassName"
+    | "renderedFooterStyle"
+    | "renderedFooterClassName"
+    | "measureFooter"
+  >;
   handlers: ActionTrayController["handlers"];
 };
 

@@ -572,6 +572,25 @@ describe("useActionTrayFrameStyles", () => {
     expect(styles.contentViewportStyle.flex).toBe(0);
   });
 
+  it("keeps the outgoing fullscreen viewport intact before the sheet snapshot commits", () => {
+    const styles = renderFrameStyles({
+      fullScreen: true,
+      fullScreenBoundaryTransition: true,
+      fullScreenBoundarySourceFullScreen: true,
+      fullScreenBoundaryTargetFullScreen: false,
+      morphProgress: 0,
+      transitionGeneration: 9,
+      transitionStartedGeneration: 0,
+      transitionCompletedGeneration: 0,
+    });
+
+    expect(styles.trayLayoutStyle.height).toBe(SCREEN_HEIGHT);
+    expect(styles.contentViewportStyle).toEqual({
+      flex: 1,
+      height: undefined,
+    });
+  });
+
   it("does not re-enter the measurement hold after the boundary completes", () => {
     const styles = renderFrameStyles({
       fullScreen: false,
