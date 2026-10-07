@@ -219,6 +219,50 @@ describe("tray transition start synchronization", () => {
     expect(content.onStart).toHaveBeenCalledWith(content, 0, 120, null);
   });
 
+  it("waits for the first visual layout frame before releasing content", () => {
+    const startedGeneration = shared(0);
+    const startedAt = shared(0);
+    const layoutStartedGeneration = shared(0);
+    const completedGeneration = shared(0);
+    const layoutProgress = shared(0);
+    const content = createAnimation();
+    const layout = createAnimation();
+    const contentParticipant = withTrayTransitionStart(
+      content as unknown as number,
+      startedGeneration,
+      startedAt,
+      layoutStartedGeneration,
+      completedGeneration,
+      19,
+      "incoming",
+      undefined,
+      false,
+      true,
+      layoutProgress,
+    ) as unknown as AnimationObject<number>;
+    const layoutParticipant = withTrayTransitionStart(
+      layout as unknown as number,
+      startedGeneration,
+      startedAt,
+      layoutStartedGeneration,
+      completedGeneration,
+      19,
+      "layout",
+    ) as unknown as AnimationObject<number>;
+
+    contentParticipant.onStart(contentParticipant, 0, 100, null);
+    layoutParticipant.onStart(layoutParticipant, 0, 100, null);
+
+    expect(layoutStartedGeneration.value).toBe(19);
+    expect(contentParticipant.onFrame(contentParticipant, 116)).toBe(false);
+    expect(content.onStart).not.toHaveBeenCalled();
+
+    layoutProgress.value = 0.01;
+
+    expect(contentParticipant.onFrame(contentParticipant, 132)).toBe(true);
+    expect(content.onStart).toHaveBeenCalledWith(content, 0, 132, null);
+  });
+
   it("does not wait for a layout event when content is the first participant", () => {
     const startedGeneration = shared(0);
     const startedAt = shared(0);
