@@ -67,6 +67,7 @@ describe("tray transition start synchronization", () => {
     const transitionStart = {
       generation: 4,
       fullScreenChanged: false,
+      layoutStartRequired: true,
       generationValue: shared(4),
       fullScreenChangedValue: shared(0),
       startedAt: shared(0),
@@ -83,6 +84,12 @@ describe("tray transition start synchronization", () => {
         4,
       ),
     ).toBe(true);
+    expect(
+      shouldWaitForTrayLayoutStart(
+        { ...transitionStart, layoutStartRequired: false },
+        4,
+      ),
+    ).toBe(false);
     expect(shouldWaitForTrayLayoutStart(null, 4)).toBe(false);
   });
 
@@ -365,6 +372,7 @@ describe("tray transition start synchronization", () => {
     const transitionStart = {
       generation: 4,
       fullScreenChanged: false,
+      layoutStartRequired: true,
       generationValue: shared(5),
       fullScreenChangedValue: shared(1),
       startedAt: shared(0),
@@ -383,6 +391,7 @@ describe("tray transition start synchronization", () => {
     const transitionStart = {
       generation: 15,
       fullScreenChanged: true,
+      layoutStartRequired: true,
       generationValue: shared(9),
       fullScreenChangedValue: shared(0),
       startedAt: shared(0),

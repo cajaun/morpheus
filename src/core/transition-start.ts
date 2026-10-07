@@ -11,6 +11,11 @@ import { logWorklet } from "./logger";
 export type TrayTransitionStart = {
   generation: number;
   fullScreenChanged: boolean;
+  // True only when this transition has a shell/layout participant that must
+  // open the content barrier before incoming and outgoing motion starts.
+  // Keeping this explicit prevents content from waiting for a layout event
+  // that native layout never scheduled.
+  layoutStartRequired?: boolean;
   generationValue: SharedValue<number>;
   fullScreenChangedValue: SharedValue<number>;
   morphProgress?: SharedValue<number>;
@@ -79,16 +84,19 @@ export const resolveTrayTransitionFullScreenChanged = (
   );
 };
 
-// Every rendered participant waits for the shell layout participant. Publishing
-// a keyboard snapshot early is only a mount/measurement optimization; it must
-// not create a second animation clock for the incoming or outgoing content.
+// Content waits for the shell only when the transition has an actual shell
+// participant. A transition descriptor alone is not evidence that native
+// layout scheduled an animation, so this cannot be inferred from generation
+// alone.
 export const shouldWaitForTrayLayoutStart = (
   transitionStart: TrayTransitionStart | null,
   generation: number,
 ) => {
   "worklet";
 
-  return transitionStart !== null && generation > 0;
+  return (
+    transitionStart?.layoutStartRequired === true && generation > 0
+  );
 };
 
 // publish the timestamp before the generation for joining participants

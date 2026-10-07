@@ -227,6 +227,18 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       hasValidBoundarySheetFrame;
     const shouldUseLayoutAnimation =
       layoutEnabled && !isFullScreenBoundaryTransition;
+    const hasStepContentTransition =
+      transitionContract?.stepChanged === true ||
+      transitionContract?.pageChanged === true;
+    // The content barrier is only meaningful when this tray has a shell
+    // participant for the same transition generation. Full-screen boundaries
+    // use the explicit morph-progress layout participant; sheet step changes
+    // use the native shell layout participant. Open/close and other contracts
+    // must not leave content waiting for a layout animation that was never
+    // scheduled.
+    const layoutStartRequired =
+      isFullScreenBoundaryTransition ||
+      (hasStepContentTransition && shouldUseLayoutAnimation);
 
     useEffect(() => {
       log("KEYBOARD STEP CLASSIFICATION", {
@@ -395,6 +407,7 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
       () => ({
         generation: transitionContract?.generation ?? 0,
         fullScreenChanged: transitionContract?.fullScreenChanged ?? false,
+        layoutStartRequired,
         keyboardStepTransition,
         generationValue: transitionGenerationValue,
         fullScreenChangedValue,
@@ -405,9 +418,8 @@ const ActionTray = forwardRef<ActionTrayRef, ActionTrayProps>(
         completedGeneration: transitionCompletedGeneration,
       }),
       [
-        transitionContract?.generation,
-        transitionContract?.fullScreenChanged,
         transitionContract,
+        layoutStartRequired,
         keyboardStepTransition,
         transitionGenerationValue,
         fullScreenChangedValue,
