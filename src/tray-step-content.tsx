@@ -12,7 +12,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-  type SharedValue,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import {
@@ -103,7 +102,6 @@ const createMorphEntering = (
   stepKey: string,
   transitionStart: TrayTransitionStart | null,
   motionDirection: TrayContentMotionDirection | null,
-  layoutProgress: SharedValue<number> | null,
 ): EntryExitAnimationFunction => {
   return () => {
     "worklet";
@@ -152,7 +150,6 @@ const createMorphEntering = (
         onStart,
         synchronizedFullScreen,
         waitForLayoutStart,
-        waitForLayoutStart ? layoutProgress ?? undefined : undefined,
       );
     };
     const synchronizeWithLayout = (
@@ -230,7 +227,6 @@ const createMorphExiting = (
   fullScreenBoundaryExit: boolean,
   transitionStart: TrayTransitionStart | null,
   motionDirection: TrayContentMotionDirection | null,
-  layoutProgress: SharedValue<number> | null,
 ): EntryExitAnimationFunction => {
   return () => {
     "worklet";
@@ -283,7 +279,6 @@ const createMorphExiting = (
         undefined,
         synchronizedFullScreen,
         waitForLayoutStart,
-        waitForLayoutStart ? layoutProgress ?? undefined : undefined,
       );
     };
 
@@ -339,7 +334,6 @@ export const TrayStepContent: React.FC<Props> = ({
 }) => {
   const transitionStart = useTrayTransitionStart();
   const motionDirection = useTrayContentMotionDirection();
-  const layoutProgress = useOptionalTrayMorphProgress();
 
   useEffect(() => {
     log("TrayStepContent", {
@@ -380,7 +374,6 @@ export const TrayStepContent: React.FC<Props> = ({
               stepKey ?? "unknown-step",
               transitionStart,
               motionDirection,
-              layoutProgress,
             )
       }
       exiting={
@@ -391,7 +384,6 @@ export const TrayStepContent: React.FC<Props> = ({
               fullScreenBoundaryExit,
               transitionStart,
               motionDirection,
-              layoutProgress,
             )
       }
     >

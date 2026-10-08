@@ -134,7 +134,6 @@ interface TransitionStartAnimation
   layoutStartedGeneration: SharedValue<number>;
   completedGeneration: SharedValue<number>;
   waitingForStart: boolean;
-  waitingForVisualProgress: boolean;
   started: boolean;
   diagnosticStarted: boolean;
   diagnosticCompleted: boolean;
@@ -151,7 +150,6 @@ type WithTrayTransitionStart = <T extends AnimatableValue>(
   onStartSignal?: (startedAt: number, generation: number) => void,
   waitForClock?: boolean,
   waitForLayoutStart?: boolean,
-  waitForLayoutProgress?: SharedValue<number>,
 ) => T;
 
 // join every participant to one ui thread clock
@@ -166,7 +164,6 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
   onStartSignal?: (startedAt: number, generation: number) => void,
   waitForClock = false,
   waitForLayoutStart = false,
-  waitForLayoutProgress?: SharedValue<number>,
 ): Animation<TransitionStartAnimation> {
   "worklet";
 
@@ -189,25 +186,18 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         const clockNotStarted = startedGeneration.value < generation;
         const layoutNotStarted =
           layoutStartedGeneration.value < generation;
-        const layoutHasNoVisualProgress =
-          waitForLayoutProgress !== undefined &&
-          waitForLayoutProgress.value <= 0;
         if (
           !completed &&
           ((waitForClock && clockNotStarted) ||
-            (waitForLayoutStart && layoutNotStarted) ||
-            layoutHasNoVisualProgress)
+            (waitForLayoutStart && layoutNotStarted))
         ) {
           animation.waitingForStart = true;
-          animation.waitingForVisualProgress = layoutHasNoVisualProgress;
           return;
         }
 
         const hasSameGeneration =
           !completed && startedGeneration.value === generation;
-        const innerStartedAt = animation.waitingForVisualProgress
-          ? now
-          : hasSameGeneration
+        const innerStartedAt = hasSameGeneration
           ? startedAt.value
           : now;
 
@@ -230,7 +220,6 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         );
         animation.current = nextAnimation.current ?? value;
         animation.waitingForStart = false;
-        animation.waitingForVisualProgress = false;
         animation.started = true;
 
         if (!animation.diagnosticStarted) {
@@ -266,9 +255,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
             animation.waitingForStart &&
             (!waitForClock || startedGeneration.value >= generation) &&
             (!waitForLayoutStart ||
-              layoutStartedGeneration.value >= generation) &&
-            (waitForLayoutProgress === undefined ||
-              waitForLayoutProgress.value > 0)
+              layoutStartedGeneration.value >= generation)
           ) {
             startInnerAnimation(animation, animation.current, now);
           }
@@ -343,7 +330,6 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         layoutStartedGeneration,
         completedGeneration,
         waitingForStart: false,
-        waitingForVisualProgress: false,
         started: false,
         diagnosticStarted: false,
         diagnosticCompleted: false,
