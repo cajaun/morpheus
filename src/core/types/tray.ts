@@ -10,6 +10,7 @@ export type { KeyboardTransitionMode } from "../../runtime/types";
 // describe the shell payload after the presenter resolves a step
 export type TrayProps = {
   assignmentId?: number;
+  prepared?: boolean;
   visible: boolean;
   interactive?: boolean;
   style?: StyleProp<ViewStyle>;

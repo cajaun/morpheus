@@ -7,6 +7,8 @@ import { describeTrayTransition } from "../diagnostics/tray-transition-diagnosti
 
 // render state holds the committed payload while newer props continue to stream in
 type TraySnapshot = {
+  prepared?: boolean;
+  visible?: boolean;
   header?: React.ReactNode;
   content?: React.ReactNode;
   footer?: React.ReactNode;
@@ -122,6 +124,8 @@ const describeTrayState = (state: RenderedTrayState) => ({
 
 // retain a stable rendered payload while transitions consume new props
 export const useTrayRenderState = ({
+  prepared = false,
+  visible = false,
   header,
   content,
   footer,
@@ -179,6 +183,14 @@ export const useTrayRenderState = ({
   const transitionContractRef = useRef(transitionContract);
   transitionContractRef.current = transitionContract;
 
+  // A prepared host already owns the controller/native shell. On its first
+  // presentation, use the incoming payload during this render instead of
+  // waiting for the visibility effect to publish a second snapshot.
+  const wasPreparedRef = useRef(prepared);
+  const preparedActivation =
+    visible && wasPreparedRef.current && prepared !== true;
+  wasPreparedRef.current = prepared;
+
   const [renderedTray, setRenderedTray] =
     useState<InternalRenderedTrayState>(() => ({
       ...toRenderedTrayState({
@@ -198,6 +210,25 @@ export const useTrayRenderState = ({
         transitionContract,
       }),
     }));
+
+  const renderedTrayForRender = preparedActivation
+    ? toRenderedTrayState({
+        content,
+        header,
+        footer,
+        trayId,
+        keyboardAware,
+        fullScreen,
+        fullScreenBackgroundScale,
+        fullScreenSafeAreaTop,
+        fullScreenDraggable,
+        containerStyle,
+        className,
+        footerStyle,
+        footerClassName,
+        transitionContract,
+      })
+    : renderedTray;
 
   const showLatestSnapshot = useCallback(() => {
     // refs let passive effects publish the newest props without changing callback identity
@@ -302,21 +333,24 @@ export const useTrayRenderState = ({
 
   return {
     state: {
-      renderedContent: renderedTray.content,
-      renderedHeader: renderedTray.header,
-      renderedFooter: renderedTray.footer,
-      renderedTrayId: renderedTray.trayId,
-      renderedKeyboardAware: renderedTray.keyboardAware ?? false,
-      renderedFullScreen: renderedTray.fullScreen ?? false,
+      renderedContent: renderedTrayForRender.content,
+      renderedHeader: renderedTrayForRender.header,
+      renderedFooter: renderedTrayForRender.footer,
+      renderedTrayId: renderedTrayForRender.trayId,
+      renderedKeyboardAware: renderedTrayForRender.keyboardAware ?? false,
+      renderedFullScreen: renderedTrayForRender.fullScreen ?? false,
       renderedFullScreenBackgroundScale:
-        renderedTray.fullScreenBackgroundScale ?? 1,
-      renderedFullScreenSafeAreaTop: renderedTray.fullScreenSafeAreaTop ?? false,
-      renderedFullScreenDraggable: renderedTray.fullScreenDraggable ?? true,
-      renderedContainerStyle: renderedTray.containerStyle,
-      renderedClassName: renderedTray.className,
-      renderedFooterStyle: renderedTray.footerStyle,
-      renderedFooterClassName: renderedTray.footerClassName,
-      renderedTransitionContract: renderedTray.transitionContract ?? null,
+        renderedTrayForRender.fullScreenBackgroundScale ?? 1,
+      renderedFullScreenSafeAreaTop:
+        renderedTrayForRender.fullScreenSafeAreaTop ?? false,
+      renderedFullScreenDraggable:
+        renderedTrayForRender.fullScreenDraggable ?? true,
+      renderedContainerStyle: renderedTrayForRender.containerStyle,
+      renderedClassName: renderedTrayForRender.className,
+      renderedFooterStyle: renderedTrayForRender.footerStyle,
+      renderedFooterClassName: renderedTrayForRender.footerClassName,
+      renderedTransitionContract:
+        renderedTrayForRender.transitionContract ?? null,
     },
     actions: {
       showLatestSnapshot,

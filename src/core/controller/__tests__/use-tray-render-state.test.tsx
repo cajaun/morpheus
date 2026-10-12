@@ -96,4 +96,54 @@ describe("useTrayRenderState", () => {
     expect(state!.state.renderedFooter).toBe("footer");
   });
 
+  it("publishes the real payload during prepared-host activation", () => {
+    const renders: React.ReactNode[] = [];
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+
+    const Probe = ({
+      prepared,
+      visible,
+      content,
+      trayId,
+    }: {
+      prepared: boolean;
+      visible: boolean;
+      content?: React.ReactNode;
+      trayId: string;
+    }) => {
+      const state = useTrayRenderState({
+        prepared,
+        visible,
+        content,
+        trayId,
+      });
+      renders.push(state.state.renderedContent);
+      return null;
+    };
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <Probe
+          prepared
+          visible={false}
+          content={null}
+          trayId="__morpheus_prepared_root_host__-step"
+        />,
+      );
+    });
+
+    act(() => {
+      renderer!.update(
+        <Probe
+          prepared={false}
+          visible
+          content="first tray content"
+          trayId="tray-step-0"
+        />,
+      );
+    });
+
+    expect(renders[1]).toBe("first tray content");
+  });
+
 });

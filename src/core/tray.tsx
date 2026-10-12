@@ -10,6 +10,7 @@ const Tray = forwardRef<TrayRef, TrayProps>(
   (
     {
       assignmentId = 0,
+      prepared = false,
       style,
       onClose,
       onCloseComplete,
@@ -38,6 +39,7 @@ const Tray = forwardRef<TrayRef, TrayProps>(
   ) => {
     const controller = useTrayController({
       assignmentId,
+      prepared,
       visible,
       interactive,
       content,

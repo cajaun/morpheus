@@ -38,11 +38,16 @@ export type TrayHostSlot = {
   payload: PresentedTray | null;
   visible: boolean;
   interactive: boolean;
+  // A prepared slot owns a mounted host but is not part of the presented stack.
+  // It is reused for the next root tray instead of mounting the controller on
+  // the trigger's critical path.
+  prepared?: boolean;
 };
 
 export type PresentedTrayProps = {
   payload: PresentedTray;
   assignmentId: number;
+  prepared?: boolean;
   onRequestClose: () => void;
   onCloseComplete: () => void;
   dismissKeyboardForTray: (trayId?: string | null) => void;

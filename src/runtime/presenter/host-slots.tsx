@@ -17,6 +17,7 @@ import {
   arePresentedTrayListsEquivalent,
   areTrayHostSlotsEquivalent,
   createIdleSlot,
+  createPreparedRootSlot,
   resolveNextActiveSlotIndex,
   resolveOrderedHostSlots,
 } from "./model";
@@ -76,10 +77,9 @@ const RootTraySlotsImpl = ({
   activeHost: PresentedTray | null;
 }) => {
   const Host = renderHost;
-  const nextAssignmentIdRef = useRef(activeHost ? 1 : 0);
+  const nextAssignmentIdRef = useRef(1);
   const activeSlotIndexRef = useRef<number | null>(activeHost ? 0 : null);
   const pendingPresentedHostRef = useRef<PresentedTray | null>(null);
-  const hasInitializedHostSlotsRef = useRef(activeHost !== null);
   const [hostSlots, setHostSlots] = useState<
     [TrayHostSlot, TrayHostSlot]
   >(() =>
@@ -90,37 +90,41 @@ const RootTraySlotsImpl = ({
             payload: activeHost,
             visible: true,
             interactive: activeHost.interactive,
+            prepared: false,
           },
           createIdleSlot(),
         ]
-      : [createIdleSlot(), createIdleSlot()],
+      : [createPreparedRootSlot(), createIdleSlot()],
   );
 
-  // A presenter can be mounted before the first tray is opened. In that
-  // common case the first active payload is available during render, while
-  // the durable two-slot state is still idle until the layout effect below.
-  // Render that first assignment immediately so host mount/measurement does
-  // not wait for the state publication commit.
-  const shouldRenderInitialHostImmediately =
-    !hasInitializedHostSlotsRef.current &&
+  // A prepared host is already mounted before the first trigger. Replace its
+  // inert payload during this render so the real tray can start measuring in
+  // the same presenter commit; the layout effect below publishes the durable
+  // slot state without changing the host assignment key.
+  const preparedHostSlotIndex = hostSlots.findIndex(
+    (slot) => slot.prepared === true && !slot.visible,
+  );
+  const shouldRenderPreparedHostImmediately =
     activeHost !== null &&
-    hostSlots.every((slot) => slot.payload === null);
-  const orderedHostSlots = useMemo(
-    () =>
-      resolveOrderedHostSlots(
-        shouldRenderInitialHostImmediately
-          ? [
-              {
-                assignmentId: 1,
+    activeSlotIndexRef.current === null &&
+    preparedHostSlotIndex >= 0;
+  const slotsForRender =
+    shouldRenderPreparedHostImmediately && activeHost !== null
+      ? hostSlots.map((slot, index) =>
+          index === preparedHostSlotIndex
+            ? {
+                assignmentId: slot.assignmentId,
                 payload: activeHost,
                 visible: true,
-                interactive: activeHost!.interactive,
-              },
-              createIdleSlot(),
-            ]
-          : hostSlots,
-      ),
-    [activeHost, hostSlots, shouldRenderInitialHostImmediately],
+                interactive: activeHost.interactive,
+                prepared: false,
+              }
+            : slot,
+        ) as [TrayHostSlot, TrayHostSlot]
+      : hostSlots;
+  const orderedHostSlots = useMemo(
+    () => resolveOrderedHostSlots(slotsForRender),
+    [slotsForRender],
   );
 
   const handleSlotCloseComplete = useCallback(
@@ -155,7 +159,13 @@ const RootTraySlotsImpl = ({
           return commitHostSlots(current, next);
         }
 
-        next[slotIndex] = createIdleSlot();
+        // Retain the mounted host after close. The close lifecycle has already
+        // reset its shared values and rendered snapshot, so the same host can
+        // accept the next tray without a mount on the next trigger.
+        next[slotIndex] = {
+          ...createPreparedRootSlot(slot.assignmentId),
+          prepared: true,
+        };
         return commitHostSlots(current, next);
       });
     },
@@ -165,10 +175,6 @@ const RootTraySlotsImpl = ({
   useLayoutEffect(() => {
     if (isTrayInstrumentationEnabled()) {
       markTrayStepPresenterResolved(activeHost?.rootTrayId);
-    }
-
-    if (activeHost !== null) {
-      hasInitializedHostSlotsRef.current = true;
     }
 
     setHostSlots((current) => {
@@ -181,7 +187,8 @@ const RootTraySlotsImpl = ({
         (slot, index) =>
           index !== currentActiveSlotIndex &&
           slot.payload !== null &&
-          !slot.visible,
+          !slot.visible &&
+          slot.prepared !== true,
       );
       const nextRootTrayId = activeHost?.rootTrayId ?? null;
 
@@ -236,6 +243,7 @@ const RootTraySlotsImpl = ({
           payload: activeHost,
           visible: true,
           interactive: activeHost.interactive,
+          prepared: false,
         };
 
         if (targetSlot.assignmentId === 0) {
@@ -287,11 +295,17 @@ const RootTraySlotsImpl = ({
 
       nextAssignmentIdRef.current += 1;
       next[nextActiveSlotIndex] = {
-        assignmentId: nextAssignmentIdRef.current,
+        assignmentId: next[nextActiveSlotIndex]?.assignmentId ||
+          nextAssignmentIdRef.current,
         payload: activeHost,
         visible: true,
         interactive: activeHost.interactive,
+        prepared: false,
       };
+      const selectedSlot = next[nextActiveSlotIndex];
+      if (selectedSlot.assignmentId === nextAssignmentIdRef.current) {
+        nextAssignmentIdRef.current += 1;
+      }
       activeSlotIndexRef.current = nextActiveSlotIndex;
 
       return commitHostSlots(current, next);
@@ -358,6 +372,7 @@ const RootTraySlotsImpl = ({
               visible: slot.visible,
               interactive: slot.interactive,
             }}
+            prepared={slot.prepared === true}
             assignmentId={slot.assignmentId}
             onRequestClose={requestCloseActiveTray}
             onCloseComplete={() =>

@@ -18,6 +18,7 @@ import { arePresentedTraysEquivalent } from "../../runtime/presenter/model";
 const PresentedTray = ({
   payload,
   assignmentId,
+  prepared = false,
   onRequestClose,
   onCloseComplete,
   dismissKeyboardForTray,
@@ -111,21 +112,22 @@ const PresentedTray = ({
     ],
   );
   const content = useMemo(
-    () => (
-      <TrayScopeProvider value={payload.rootTrayId}>
-        <TrayStepOptionsProvider value={payload.stepOptions}>
-          <TrayStepContent
-            stepKey={payload.trayId}
-            scale={payload.stepOptions.scale}
-            anchorScaleToTop={payload.fullScreen}
-            fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
-            skipEntering={payload.isFirstRender}
-          >
-            {payload.content}
-          </TrayStepContent>
-        </TrayStepOptionsProvider>
-      </TrayScopeProvider>
-    ),
+    () =>
+      payload.content != null ? (
+        <TrayScopeProvider value={payload.rootTrayId}>
+          <TrayStepOptionsProvider value={payload.stepOptions}>
+            <TrayStepContent
+              stepKey={payload.trayId}
+              scale={payload.stepOptions.scale}
+              anchorScaleToTop={payload.fullScreen}
+              fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
+              skipEntering={payload.isFirstRender}
+            >
+              {payload.content}
+            </TrayStepContent>
+          </TrayStepOptionsProvider>
+        </TrayScopeProvider>
+      ) : null,
     [
       payload.content,
       payload.fullScreen,
@@ -159,6 +161,7 @@ const PresentedTray = ({
   const tray = (
     <Tray
       assignmentId={assignmentId}
+      prepared={prepared}
       visible={payload.visible}
       interactive={payload.interactive}
       rootTrayId={payload.rootTrayId}
@@ -166,7 +169,7 @@ const PresentedTray = ({
       header={header}
       footer={footer}
       onClose={handleRequestClose}
-      onCloseComplete={onCloseComplete}
+      onCloseComplete={prepared ? undefined : onCloseComplete}
       trayId={payload.trayId}
       keyboardAware={payload.keyboardAware ?? payload.stepOptions.keyboardAware}
       fullScreen={payload.fullScreen}
@@ -204,6 +207,7 @@ const arePresentedTrayPropsEqual = (
   next: PresentedTrayProps,
 ) =>
   previous.assignmentId === next.assignmentId &&
+  previous.prepared === next.prepared &&
   previous.onRequestClose === next.onRequestClose &&
   previous.dismissKeyboardForTray === next.dismissKeyboardForTray &&
   arePresentedTraysEquivalent(previous.payload, next.payload);

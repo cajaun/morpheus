@@ -38,9 +38,29 @@ type PresentedTrayRenderer = React.ComponentType<PresentedTrayProps>;
 
 const HostNode = ({
   onCloseComplete,
+  lifecycle,
+  prepared,
+  trayId,
 }: {
   onCloseComplete: () => void;
+  lifecycle?: string[];
+  prepared?: boolean;
+  trayId?: string;
 }) => {
+  React.useEffect(() => {
+    if (!lifecycle || trayId === undefined) {
+      return;
+    }
+
+    lifecycle.push(`mount:${trayId}:${prepared === true ? "prepared" : "active"}`);
+
+    return () => {
+      lifecycle.push(`unmount:${trayId}`);
+    };
+    // This test tracks component lifetime, not prop updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return null;
 };
 
@@ -145,6 +165,72 @@ describe("presenter host startup", () => {
       );
     });
 
-    expect(events[0]).toBe("host:root");
+    expect(events).toContain("host:root");
+  });
+
+  it("reuses the prepared root host for the first presentation", () => {
+    const lifecycle: string[] = [];
+    const renderHost: PresentedTrayRenderer = ({
+      payload,
+      prepared,
+      onCloseComplete,
+    }) => (
+      <HostNode
+        onCloseComplete={onCloseComplete}
+        lifecycle={lifecycle}
+        prepared={prepared === true}
+        trayId={payload.rootTrayId}
+      />
+    );
+    const commonProps = createCommonProps(renderHost);
+
+    act(() => {
+      renderer = create(
+        <RootTraySlots activeHost={null} {...commonProps} />,
+      );
+    });
+
+    act(() => {
+      renderer?.update(
+        <RootTraySlots
+          activeHost={createPresentedTray("root", 0)}
+          {...commonProps}
+        />,
+      );
+    });
+
+    act(() => {
+      renderer?.update(
+        <RootTraySlots activeHost={null} {...commonProps} />,
+      );
+    });
+
+    const closingHost = renderer?.root.findByType(HostNode);
+    act(() => {
+      closingHost?.props.onCloseComplete();
+    });
+
+    act(() => {
+      renderer?.update(
+        <RootTraySlots
+          activeHost={createPresentedTray("root-again", 0)}
+          {...commonProps}
+        />,
+      );
+    });
+
+    expect(lifecycle.filter((event) => event.startsWith("mount:")).length).toBe(
+      1,
+    );
+    expect(
+      lifecycle.some((event) =>
+        event.startsWith("mount:__morpheus_prepared_root_host__"),
+      ),
+    ).toBe(true);
+    expect(
+      lifecycle.some((event) =>
+        event.startsWith("unmount:__morpheus_prepared_root_host__"),
+      ),
+    ).toBe(false);
   });
 });

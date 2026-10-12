@@ -340,7 +340,12 @@ describe("TrayProvider runtime", () => {
       );
     });
 
-    expect(getRenderedTrayHosts()).toHaveLength(0);
+    const preparedHosts = getRenderedTrayHosts();
+    expect(preparedHosts).toHaveLength(1);
+    expect(preparedHosts[0]?.props.rootTrayId).toBe(
+      "__morpheus_prepared_root_host__",
+    );
+    expect(preparedHosts[0]?.props.visible).toBe(false);
 
     act(() => {
       latestHost!.openTray("alpha");

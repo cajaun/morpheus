@@ -1,4 +1,5 @@
 import {
+  DEFAULT_TRAY_STEP_OPTIONS,
   resolveTrayStepOptions,
   type ResolvedTrayStepOptions,
   type TrayRegistration,
@@ -72,6 +73,41 @@ export const createIdleSlot = (): TrayHostSlot => ({
   payload: null,
   visible: false,
   interactive: false,
+  prepared: false,
+});
+
+const PREPARED_ROOT_HOST_ID = "__morpheus_prepared_root_host__";
+
+// Keep one root controller mounted before the first presentation. The payload
+// is intentionally inert: no content, no interaction, and no transition.
+// The real tray payload replaces it without changing the host assignment key.
+export const createPreparedRootSlot = (
+  assignmentId = 1,
+): TrayHostSlot => ({
+  assignmentId,
+  payload: {
+    rootTrayId: PREPARED_ROOT_HOST_ID,
+    trayId: `${PREPARED_ROOT_HOST_ID}-step`,
+    stepOptions: DEFAULT_TRAY_STEP_OPTIONS,
+    header: null,
+    content: null,
+    footer: null,
+    fullScreenBoundaryExit: false,
+    isFirstRender: true,
+    fullScreen: false,
+    fullScreenBackgroundScale: 1,
+    fullScreenSafeAreaTop: false,
+    fullScreenDraggable: true,
+    dismissible: false,
+    transitionContract: null,
+    transition: undefined,
+    stackIndex: 0,
+    visible: false,
+    interactive: false,
+  },
+  visible: false,
+  interactive: false,
+  prepared: true,
 });
 
 // Presenter state is derived from the runtime store. Preserve existing
@@ -139,6 +175,7 @@ export const areTrayHostSlotsEquivalent = (
       slot.assignmentId === nextSlot.assignmentId &&
       slot.visible === nextSlot.visible &&
       slot.interactive === nextSlot.interactive &&
+      (slot.prepared ?? false) === (nextSlot.prepared ?? false) &&
       arePresentedTraysEquivalent(slot.payload, nextSlot.payload)
     );
   });
@@ -209,6 +246,17 @@ export const resolveNextActiveSlotIndex = (
   if (previousActiveSlotIndex !== null) {
     // alternate slots so outgoing and incoming root trays can overlap safely
     return previousActiveSlotIndex === 0 ? 1 : 0;
+  }
+
+  // Claim the prepared controller before an unmounted slot. This keeps the
+  // first real presentation on the host that was mounted during provider
+  // startup.
+  const preparedSlotIndex = slots.findIndex(
+    (slot) => slot.prepared === true && !slot.visible,
+  );
+
+  if (preparedSlotIndex >= 0) {
+    return preparedSlotIndex;
   }
 
   const idleSlotIndex = slots.findIndex((slot) => slot.payload === null);

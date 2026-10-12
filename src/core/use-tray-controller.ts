@@ -39,6 +39,7 @@ import { useTrayTransitionDiagnostics } from "./controller/use-tray-transition-d
 // compose tray policy before the shell renders
 type Params = {
   assignmentId?: number;
+  prepared?: boolean;
   visible: boolean;
   interactive?: boolean;
   header?: React.ReactNode;
@@ -65,6 +66,7 @@ type Params = {
 // compose measurement render and lifecycle hooks into one tray controller
 export const useTrayController = ({
   assignmentId = 0,
+  prepared = false,
   visible,
   interactive = true,
   header,
@@ -89,6 +91,8 @@ export const useTrayController = ({
 }: Params) => {
   // snapshot rendered content so prop streams cannot interrupt a morph
   const renderState = useTrayRenderState({
+    prepared,
+    visible,
     content,
     header,
     footer,
