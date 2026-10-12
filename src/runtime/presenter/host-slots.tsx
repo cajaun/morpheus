@@ -1,6 +1,5 @@
 import React, {
   useCallback,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -53,6 +52,19 @@ const areHostCommonPropsEquivalent = (
   previous.transitionContract === next.transitionContract &&
   previous.renderHost === next.renderHost;
 
+const resolveClosingPresentedTray = (
+  host: PresentedTray,
+  transitionContract: TrayTransitionContract | null,
+): PresentedTray => ({
+  ...host,
+  transitionContract:
+    transitionContract?.from?.trayId === host.rootTrayId
+      ? transitionContract
+      : host.transitionContract,
+  visible: false,
+  interactive: false,
+});
+
 // keep root hosts in two slots so outgoing and incoming shells can overlap
 const RootTraySlotsImpl = ({
   activeHost,
@@ -64,17 +76,51 @@ const RootTraySlotsImpl = ({
   activeHost: PresentedTray | null;
 }) => {
   const Host = renderHost;
-  const nextAssignmentIdRef = useRef(0);
-  const activeSlotIndexRef = useRef<number | null>(null);
+  const nextAssignmentIdRef = useRef(activeHost ? 1 : 0);
+  const activeSlotIndexRef = useRef<number | null>(activeHost ? 0 : null);
   const pendingPresentedHostRef = useRef<PresentedTray | null>(null);
-  const [hostSlots, setHostSlots] = useState<[TrayHostSlot, TrayHostSlot]>([
-    createIdleSlot(),
-    createIdleSlot(),
-  ]);
+  const hasInitializedHostSlotsRef = useRef(activeHost !== null);
+  const [hostSlots, setHostSlots] = useState<
+    [TrayHostSlot, TrayHostSlot]
+  >(() =>
+    activeHost
+      ? [
+          {
+            assignmentId: 1,
+            payload: activeHost,
+            visible: true,
+            interactive: activeHost.interactive,
+          },
+          createIdleSlot(),
+        ]
+      : [createIdleSlot(), createIdleSlot()],
+  );
 
+  // A presenter can be mounted before the first tray is opened. In that
+  // common case the first active payload is available during render, while
+  // the durable two-slot state is still idle until the layout effect below.
+  // Render that first assignment immediately so host mount/measurement does
+  // not wait for the state publication commit.
+  const shouldRenderInitialHostImmediately =
+    !hasInitializedHostSlotsRef.current &&
+    activeHost !== null &&
+    hostSlots.every((slot) => slot.payload === null);
   const orderedHostSlots = useMemo(
-    () => resolveOrderedHostSlots(hostSlots),
-    [hostSlots],
+    () =>
+      resolveOrderedHostSlots(
+        shouldRenderInitialHostImmediately
+          ? [
+              {
+                assignmentId: 1,
+                payload: activeHost,
+                visible: true,
+                interactive: activeHost!.interactive,
+              },
+              createIdleSlot(),
+            ]
+          : hostSlots,
+      ),
+    [activeHost, hostSlots, shouldRenderInitialHostImmediately],
   );
 
   const handleSlotCloseComplete = useCallback(
@@ -119,6 +165,10 @@ const RootTraySlotsImpl = ({
   useLayoutEffect(() => {
     if (isTrayInstrumentationEnabled()) {
       markTrayStepPresenterResolved(activeHost?.rootTrayId);
+    }
+
+    if (activeHost !== null) {
+      hasInitializedHostSlotsRef.current = true;
     }
 
     setHostSlots((current) => {
@@ -353,38 +403,79 @@ const NestedTrayStackImpl = ({
   hosts: PresentedTray[];
 }) => {
   const Host = renderHost;
-  const [renderedHosts, setRenderedHosts] = useState<PresentedTray[]>([]);
+  const [closingHosts, setClosingHosts] = useState<PresentedTray[]>([]);
+  const previousHostsRef = useRef<PresentedTray[]>([]);
+  const activeRootTrayIds = useMemo(
+    () => new Set(hosts.map((host) => host.rootTrayId)),
+    [hosts],
+  );
 
-  useEffect(() => {
-    setRenderedHosts((current) => {
-      const nextByRootTrayId = new Map(
-        hosts.map((host) => [host.rootTrayId, host]),
+  // Active payloads come directly from the presenter props. Only hosts that
+  // disappeared need state, because they must remain mounted for their close
+  // animation. The previous committed list lets a removed host stay present
+  // in this render before the closing-state publication runs.
+  const closingHostsByRootTrayId = new Map<string, PresentedTray>();
+
+  closingHosts.forEach((host) => {
+    if (!activeRootTrayIds.has(host.rootTrayId)) {
+      closingHostsByRootTrayId.set(
+        host.rootTrayId,
+        resolveClosingPresentedTray(host, transitionContract),
       );
-      const retainedClosingHosts = current
-        .filter((host) => !nextByRootTrayId.has(host.rootTrayId))
-        .map((host) => ({
-          ...host,
-          transitionContract:
-            transitionContract?.from?.trayId === host.rootTrayId
-              ? transitionContract
-              : host.transitionContract,
-          visible: false,
-          interactive: false,
-        }));
+    }
+  });
 
-      // nested hosts keep closing payloads until their own close completion fires
-      const next = [...retainedClosingHosts, ...hosts].sort(
+  previousHostsRef.current.forEach((host) => {
+    if (!activeRootTrayIds.has(host.rootTrayId)) {
+      closingHostsByRootTrayId.set(
+        host.rootTrayId,
+        resolveClosingPresentedTray(host, transitionContract),
+      );
+    }
+  });
+
+  const hostsForRender = [
+    ...closingHostsByRootTrayId.values(),
+    ...hosts,
+  ].sort((left, right) => left.stackIndex - right.stackIndex);
+
+  useLayoutEffect(() => {
+    const previousHosts = previousHostsRef.current;
+    previousHostsRef.current = hosts;
+
+    setClosingHosts((current) => {
+      const nextByRootTrayId = new Map<string, PresentedTray>();
+
+      current.forEach((host) => {
+        if (!activeRootTrayIds.has(host.rootTrayId)) {
+          nextByRootTrayId.set(
+            host.rootTrayId,
+            resolveClosingPresentedTray(host, transitionContract),
+          );
+        }
+      });
+
+      previousHosts.forEach((host) => {
+        if (!activeRootTrayIds.has(host.rootTrayId)) {
+          nextByRootTrayId.set(
+            host.rootTrayId,
+            resolveClosingPresentedTray(host, transitionContract),
+          );
+        }
+      });
+
+      const next = [...nextByRootTrayId.values()].sort(
         (left, right) => left.stackIndex - right.stackIndex,
       );
 
       return arePresentedTrayListsEquivalent(current, next) ? current : next;
     });
-  }, [hosts, transitionContract]);
+  }, [activeRootTrayIds, hosts, transitionContract]);
 
   const handleCloseComplete = useCallback((rootTrayId: string) => {
-    setRenderedHosts((current) => {
+    setClosingHosts((current) => {
       const next = current.filter(
-        (host) => host.visible || host.rootTrayId !== rootTrayId,
+        (host) => host.rootTrayId !== rootTrayId,
       );
 
       return next.length === current.length ? current : next;
@@ -393,7 +484,7 @@ const NestedTrayStackImpl = ({
 
   return (
     <>
-      {renderedHosts.map((payload) => (
+      {hostsForRender.map((payload) => (
         <Host
           key={`tray-nested-host-${payload.rootTrayId}`}
           payload={payload}
