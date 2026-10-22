@@ -210,6 +210,7 @@ export const useTrayRenderState = ({
         transitionContract,
       }),
     }));
+  const lastRequestedSnapshotRef = useRef<RenderedTrayState | null>(null);
 
   const renderedTrayForRender = preparedActivation
     ? toRenderedTrayState({
@@ -230,6 +231,26 @@ export const useTrayRenderState = ({
       })
     : renderedTray;
 
+  const publishSnapshot = useCallback((next: RenderedTrayState) => {
+    const lastRequestedSnapshot = lastRequestedSnapshotRef.current;
+
+    if (
+      lastRequestedSnapshot !== null &&
+      areTrayStatesEqual(lastRequestedSnapshot, next)
+    ) {
+      return;
+    }
+
+    lastRequestedSnapshotRef.current = next;
+    setRenderedTray((current) => {
+      log("RENDER SNAPSHOT PUBLISH", {
+        current: describeTrayState(current),
+        next: describeTrayState(next),
+      });
+      return commitTraySnapshot(current, next);
+    });
+  }, []);
+
   const showLatestSnapshot = useCallback(() => {
     // refs let passive effects publish the newest props without changing callback identity
     const next = toRenderedTrayState({
@@ -249,14 +270,8 @@ export const useTrayRenderState = ({
       transitionContract: transitionContractRef.current,
     });
 
-    setRenderedTray((current) => {
-      log("RENDER SNAPSHOT PUBLISH", {
-        current: describeTrayState(current),
-        next: describeTrayState(next),
-      });
-      return commitTraySnapshot(current, next);
-    });
-  }, []);
+    publishSnapshot(next);
+  }, [publishSnapshot]);
 
   const syncRenderedNodes = useCallback((activeTrayId?: string) => {
     if (activeTrayId === undefined) {
@@ -299,6 +314,16 @@ export const useTrayRenderState = ({
         transitionContract: transitionContractRef.current,
       };
 
+      const lastRequestedSnapshot = lastRequestedSnapshotRef.current;
+
+      if (
+        lastRequestedSnapshot !== null &&
+        areTrayStatesEqual(lastRequestedSnapshot, next)
+      ) {
+        return current;
+      }
+
+      lastRequestedSnapshotRef.current = next;
       log("RENDER SNAPSHOT NODE SYNC", {
         current: describeTrayState(current),
         next: describeTrayState(next),
@@ -308,6 +333,7 @@ export const useTrayRenderState = ({
   }, []);
 
   const clear = useCallback(() => {
+    lastRequestedSnapshotRef.current = null;
     setRenderedTray((current) => {
       log("RENDER SNAPSHOT CLEAR", {
         current: describeTrayState(current),

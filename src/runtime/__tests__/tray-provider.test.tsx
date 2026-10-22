@@ -63,6 +63,7 @@ jest.mock("../../core/input/use-tray-keyboard", () => {
 let latestHost: ReturnType<typeof useTrayHost> | null = null;
 let latestNavigation: ReturnType<typeof useTrayNavigation> | null = null;
 let activeRenderer: TestRenderer.ReactTestRenderer | null = null;
+let rerenderNavigation: (() => void) | null = null;
 
 // test spies surface hook state without coupling assertions to rendered text
 const HostSpy = () => {
@@ -72,6 +73,14 @@ const HostSpy = () => {
 
 // expose navigation state so assertions can inspect it
 const FlowSpy = () => {
+  latestNavigation = useTrayNavigation();
+  return null;
+};
+
+// rerender a navigation consumer without changing tray state
+const NavigationRerenderProbe = () => {
+  const [, setRevision] = useState(0);
+  rerenderNavigation = () => setRevision((revision) => revision + 1);
   latestNavigation = useTrayNavigation();
   return null;
 };
@@ -98,6 +107,7 @@ describe("TrayProvider runtime", () => {
     latestHost = null;
     latestNavigation = null;
     activeRenderer = null;
+    rerenderNavigation = null;
   });
 
   afterEach(() => {
@@ -196,6 +206,31 @@ describe("TrayProvider runtime", () => {
       from: { stepIndex: 1, stepKey: "two" },
       to: { stepIndex: 0, stepKey: "one" },
     });
+  });
+
+  it("keeps navigation command identities stable across unrelated rerenders", () => {
+    act(() => {
+      activeRenderer = TestRenderer.create(
+        <TrayProvider>
+          <Tray.Root>
+            {[step("one"), step("two")]}
+            <NavigationRerenderProbe />
+          </Tray.Root>
+        </TrayProvider>,
+      );
+    });
+
+    const firstNavigation = latestNavigation!;
+
+    act(() => {
+      rerenderNavigation!();
+    });
+
+    expect(latestNavigation).toBe(firstNavigation);
+    expect(latestNavigation!.open).toBe(firstNavigation.open);
+    expect(latestNavigation!.close).toBe(firstNavigation.close);
+    expect(latestNavigation!.next).toBe(firstNavigation.next);
+    expect(latestNavigation!.back).toBe(firstNavigation.back);
   });
 
   it("returns fullscreen flows to the shell before dismissing", () => {

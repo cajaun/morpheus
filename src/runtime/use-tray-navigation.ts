@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from "react";
 import { markTrayStepRequested } from "../telemetry/tray-step-timing";
 import { clampTrayStepIndex } from "./tray-step-index";
 import {
@@ -65,72 +66,122 @@ export const useTrayNavigation = () => {
   const canGoNext = pageControls ? pageControls.canGoNext : index < total - 1;
   const canGoBack = pageControls ? pageControls.canGoBack : index > 0;
 
-  return {
-    trayId,
-    isActive,
+  // Keep command identities stable between equivalent store snapshots. This
+  // prevents navigation consumers from propagating fresh callback props into
+  // their button subtrees when only unrelated tray state changes.
+  const open = useCallback(() => openTray(trayId), [openTray, trayId]);
+  const close = useCallback(() => {
+    if (isActive) {
+      closeActiveTray();
+    }
+  }, [closeActiveTray, isActive]);
+  const closeAndNextParentPage = useCallback(() => {
+    if (isActive) {
+      closeActiveTray();
+      parentPageControls?.nextPage();
+    }
+  }, [closeActiveTray, isActive, parentPageControls]);
+  const requestClose = useCallback(() => {
+    if (isActive) {
+      if (
+        activeStep?.options?.fullScreen &&
+        activeStep.options.fullScreenCloseBehavior === "returnToShell" &&
+        index > 0
+      ) {
+        markTrayStepRequested(trayId);
+      }
+
+      requestCloseActiveTray();
+    }
+  }, [
+    activeStep?.options?.fullScreen,
+    activeStep?.options?.fullScreenCloseBehavior,
     index,
+    isActive,
+    requestCloseActiveTray,
+    trayId,
+  ]);
+  const next = useCallback(() => {
+    if (isActive) {
+      if (pageControls?.canGoNext) {
+        pageControls.nextPage();
+        return;
+      }
+
+      const nextIndex = clampTrayStepIndex(index + 1, total);
+      const nextStepDefinition = registration?.steps[nextIndex];
+
+      if (nextIndex !== index && nextStepDefinition) {
+        markTrayStepRequested(trayId);
+      }
+
+      nextStep();
+    }
+  }, [
+    index,
+    isActive,
+    nextStep,
+    pageControls,
+    registration?.steps,
     total,
-    canGoNext,
-    canGoBack,
-    pageIndex: pageControls?.pageIndex,
-    open: () => openTray(trayId),
-    close: () => {
-      if (isActive) {
-        closeActiveTray();
+    trayId,
+  ]);
+  const back = useCallback(() => {
+    if (isActive) {
+      if (pageControls?.canGoBack) {
+        pageControls.backPage();
+        return;
       }
-    },
-    closeAndNextParentPage: () => {
-      if (isActive) {
-        closeActiveTray();
-        parentPageControls?.nextPage();
+
+      const previousIndex = clampTrayStepIndex(index - 1, total);
+      const previousStepDefinition = registration?.steps[previousIndex];
+
+      if (previousIndex !== index && previousStepDefinition) {
+        markTrayStepRequested(trayId);
       }
-    },
-    requestClose: () => {
-      if (isActive) {
-        if (
-          activeStep?.options?.fullScreen &&
-          activeStep.options.fullScreenCloseBehavior === "returnToShell" &&
-          index > 0
-        ) {
-          markTrayStepRequested(trayId);
-        }
 
-        requestCloseActiveTray();
-      }
-    },
-    next: () => {
-      if (isActive) {
-        if (pageControls?.canGoNext) {
-          pageControls.nextPage();
-          return;
-        }
+      previousStep();
+    }
+  }, [
+    index,
+    isActive,
+    pageControls,
+    previousStep,
+    registration?.steps,
+    total,
+    trayId,
+  ]);
 
-        const nextIndex = clampTrayStepIndex(index + 1, total);
-        const nextStepDefinition = registration?.steps[nextIndex];
-
-        if (nextIndex !== index && nextStepDefinition) {
-          markTrayStepRequested(trayId);
-        }
-
-        nextStep();
-      }
-    },
-    back: () => {
-      if (isActive) {
-        if (pageControls?.canGoBack) {
-          pageControls.backPage();
-          return;
-        }
-
-        const previousIndex = clampTrayStepIndex(index - 1, total);
-        const previousStepDefinition = registration?.steps[previousIndex];
-
-        if (previousIndex !== index && previousStepDefinition) {
-          markTrayStepRequested(trayId);
-        }
-
-        previousStep();
-      }
-    },
-  };
+  return useMemo(
+    () => ({
+      trayId,
+      isActive,
+      index,
+      total,
+      canGoNext,
+      canGoBack,
+      pageIndex: pageControls?.pageIndex,
+      open,
+      close,
+      closeAndNextParentPage,
+      requestClose,
+      next,
+      back,
+    }),
+    [
+      back,
+      canGoBack,
+      canGoNext,
+      close,
+      closeAndNextParentPage,
+      index,
+      isActive,
+      next,
+      open,
+      pageControls?.pageIndex,
+      requestClose,
+      total,
+      trayId,
+    ],
+  );
 };
