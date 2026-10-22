@@ -80,6 +80,13 @@ const RootTraySlotsImpl = ({
   const nextAssignmentIdRef = useRef(1);
   const activeSlotIndexRef = useRef<number | null>(activeHost ? 0 : null);
   const pendingPresentedHostRef = useRef<PresentedTray | null>(null);
+  // Same-root step changes are rendered directly from activeHost before the
+  // slot state is durable. Retain the latest payload so a close that arrives
+  // before the durable slot write still closes the currently visible step.
+  const latestActiveHostRef = useRef<PresentedTray | null>(activeHost);
+  if (activeHost !== null) {
+    latestActiveHostRef.current = activeHost;
+  }
   const [hostSlots, setHostSlots] = useState<
     [TrayHostSlot, TrayHostSlot]
   >(() =>
@@ -235,7 +242,10 @@ const RootTraySlotsImpl = ({
         if (closingSlotPayload === null) {
           return current;
         }
-        const closingPayload = closingSlotPayload;
+        const closingPayload =
+          latestActiveHostRef.current?.rootTrayId === currentRootTrayId
+            ? latestActiveHostRef.current
+            : closingSlotPayload;
 
         next[currentActiveSlotIndex] = {
           assignmentId: closingActiveSlot.assignmentId,
@@ -262,6 +272,23 @@ const RootTraySlotsImpl = ({
       if (currentRootTrayId === nextRootTrayId) {
         const targetSlotIndex = currentActiveSlotIndex ?? 0;
         const targetSlot = next[targetSlotIndex];
+
+        // The render path above already substituted activeHost for an
+        // ordinary same-root step replacement. Publishing that same payload
+        // into hostSlots from a layout effect only creates a second React
+        // reconciliation pass. Keep slot topology durable, and use the
+        // latest-host ref when a close needs the payload before a later
+        // topology change repairs the slot state.
+        const canKeepSameRootStepInRender =
+          currentActiveSlotIndex !== null &&
+          targetSlot.visible === true &&
+          targetSlot.payload?.rootTrayId === activeHost.rootTrayId &&
+          targetSlot.payload?.trayId !== activeHost.trayId;
+
+        if (canKeepSameRootStepInRender) {
+          activeSlotIndexRef.current = targetSlotIndex;
+          return current;
+        }
 
         next[targetSlotIndex] = {
           assignmentId:
@@ -292,7 +319,10 @@ const RootTraySlotsImpl = ({
         if (closingSlotPayload === null) {
           return current;
         }
-        const closingPayload = closingSlotPayload;
+        const closingPayload =
+          latestActiveHostRef.current?.rootTrayId === currentRootTrayId
+            ? latestActiveHostRef.current
+            : closingSlotPayload;
 
         pendingPresentedHostRef.current = activeHost;
         next[currentActiveSlotIndex] = {
@@ -377,13 +407,17 @@ const RootTraySlotsImpl = ({
     const activeSlotIndex = activeSlotIndexRef.current;
     const activeSlot =
       activeSlotIndex === null ? null : hostSlots[activeSlotIndex];
+    const renderedActiveHost =
+      shouldRenderSameRootHostImmediately && activeHost !== null
+        ? activeHost
+        : activeSlot?.payload;
 
     markTrayStepSlotCommitted(
-      activeSlot?.payload?.rootTrayId,
-      activeSlot?.payload?.transitionContract?.generation,
-      activeSlot?.payload?.trayId,
+      renderedActiveHost?.rootTrayId,
+      renderedActiveHost?.transitionContract?.generation,
+      renderedActiveHost?.trayId,
     );
-  }, [hostSlots]);
+  }, [activeHost, hostSlots, shouldRenderSameRootHostImmediately]);
 
   return (
     <>
@@ -394,14 +428,20 @@ const RootTraySlotsImpl = ({
           return null;
         }
 
+        const hostPayload =
+          payload.visible === slot.visible &&
+          payload.interactive === slot.interactive
+            ? payload
+            : {
+                ...payload,
+                visible: slot.visible,
+                interactive: slot.interactive,
+              };
+
         return (
           <Host
             key={`tray-root-host-slot-${index}-${slot.assignmentId}`}
-            payload={{
-              ...payload,
-              visible: slot.visible,
-              interactive: slot.interactive,
-            }}
+            payload={hostPayload}
             prepared={slot.prepared === true}
             assignmentId={slot.assignmentId}
             onRequestClose={requestCloseActiveTray}

@@ -204,8 +204,45 @@ describe("presenter host startup", () => {
       );
     });
 
-    expect(renderedTrayIds[0]).toBe("root-next-step");
-    expect(renderedTrayIds).not.toContain("root-step");
+    expect(renderedTrayIds).toEqual(["root-next-step"]);
+  });
+
+  it("closes the latest same-root step before durable slot state catches up", () => {
+    const hostStates: [string, boolean][] = [];
+    const renderHost: PresentedTrayRenderer = ({ payload }) => {
+      hostStates.push([payload.trayId, payload.visible]);
+      return null;
+    };
+    const commonProps = createCommonProps(renderHost);
+
+    act(() => {
+      renderer = create(
+        <RootTraySlots
+          activeHost={createPresentedTray("root", 0)}
+          {...commonProps}
+        />,
+      );
+    });
+
+    act(() => {
+      renderer?.update(
+        <RootTraySlots
+          activeHost={{
+            ...createPresentedTray("root", 0),
+            trayId: "root-next-step",
+          }}
+          {...commonProps}
+        />,
+      );
+    });
+
+    act(() => {
+      renderer?.update(
+        <RootTraySlots activeHost={null} {...commonProps} />,
+      );
+    });
+
+    expect(hostStates).toContainEqual(["root-next-step", false]);
   });
 
   it("reuses the prepared root host for the first presentation", () => {
