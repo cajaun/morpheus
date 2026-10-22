@@ -108,6 +108,14 @@ const RootTraySlotsImpl = ({
     activeHost !== null &&
     activeSlotIndexRef.current === null &&
     preparedHostSlotIndex >= 0;
+  const activeSlotIndex = activeSlotIndexRef.current;
+  const activeSlot =
+    activeSlotIndex === null ? null : hostSlots[activeSlotIndex];
+  const shouldRenderSameRootHostImmediately =
+    activeHost !== null &&
+    activeSlotIndex !== null &&
+    activeSlot?.visible === true &&
+    activeSlot.payload?.rootTrayId === activeHost.rootTrayId;
   const slotsForRender =
     shouldRenderPreparedHostImmediately && activeHost !== null
       ? hostSlots.map((slot, index) =>
@@ -121,7 +129,21 @@ const RootTraySlotsImpl = ({
               }
             : slot,
         ) as [TrayHostSlot, TrayHostSlot]
-      : hostSlots;
+      : shouldRenderSameRootHostImmediately &&
+          activeHost !== null &&
+          activeSlotIndex !== null
+        ? hostSlots.map((slot, index) =>
+            index === activeSlotIndex
+              ? {
+                  assignmentId: slot.assignmentId,
+                  payload: activeHost,
+                  visible: true,
+                  interactive: activeHost.interactive,
+                  prepared: false,
+                }
+              : slot,
+          ) as [TrayHostSlot, TrayHostSlot]
+        : hostSlots;
   const orderedHostSlots = useMemo(
     () => resolveOrderedHostSlots(slotsForRender),
     [slotsForRender],
@@ -174,7 +196,11 @@ const RootTraySlotsImpl = ({
 
   useLayoutEffect(() => {
     if (isTrayInstrumentationEnabled()) {
-      markTrayStepPresenterResolved(activeHost?.rootTrayId);
+      markTrayStepPresenterResolved(
+        activeHost?.rootTrayId,
+        activeHost?.transitionContract?.generation,
+        activeHost?.trayId,
+      );
     }
 
     setHostSlots((current) => {
@@ -352,7 +378,11 @@ const RootTraySlotsImpl = ({
     const activeSlot =
       activeSlotIndex === null ? null : hostSlots[activeSlotIndex];
 
-    markTrayStepSlotCommitted(activeSlot?.payload?.rootTrayId);
+    markTrayStepSlotCommitted(
+      activeSlot?.payload?.rootTrayId,
+      activeSlot?.payload?.transitionContract?.generation,
+      activeSlot?.payload?.trayId,
+    );
   }, [hostSlots]);
 
   return (

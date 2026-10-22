@@ -149,7 +149,11 @@ export const useTrayTransitionDiagnostics = ({
       return;
     }
 
-    markTrayStepRenderedCommit(rootTrayId, renderedTrayId);
+    markTrayStepRenderedCommit(
+      rootTrayId,
+      renderedTrayId,
+      renderedTransitionContract?.generation,
+    );
   }, [
     renderedTrayId,
     renderedTransitionContract,

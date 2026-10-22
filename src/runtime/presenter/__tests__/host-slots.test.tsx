@@ -168,6 +168,46 @@ describe("presenter host startup", () => {
     expect(events).toContain("host:root");
   });
 
+  it("publishes same-root step payloads in the presenter render", () => {
+    const renderedTrayIds: string[] = [];
+    const renderHostMemo = React.memo(
+      ({ payload }: PresentedTrayProps) => {
+        renderedTrayIds.push(payload.trayId);
+        return null;
+      },
+      (previous, next) => previous.payload === next.payload,
+    );
+    renderHostMemo.displayName = "SameRootHostProbe";
+    const renderHost = renderHostMemo as React.ComponentType<PresentedTrayProps>;
+    const commonProps = createCommonProps(renderHost);
+
+    act(() => {
+      renderer = create(
+        <RootTraySlots
+          activeHost={createPresentedTray("root", 0)}
+          {...commonProps}
+        />,
+      );
+    });
+
+    renderedTrayIds.length = 0;
+
+    act(() => {
+      renderer?.update(
+        <RootTraySlots
+          activeHost={{
+            ...createPresentedTray("root", 0),
+            trayId: "root-next-step",
+          }}
+          {...commonProps}
+        />,
+      );
+    });
+
+    expect(renderedTrayIds[0]).toBe("root-next-step");
+    expect(renderedTrayIds).not.toContain("root-step");
+  });
+
   it("reuses the prepared root host for the first presentation", () => {
     const lifecycle: string[] = [];
     const renderHost: PresentedTrayRenderer = ({

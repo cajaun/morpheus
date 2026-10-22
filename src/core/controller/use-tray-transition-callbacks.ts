@@ -123,6 +123,9 @@ export const useTrayTransitionCallbacks = ({
         rootTrayId,
         activeTrayIdRef.current,
         observedAt,
+        callbackGeneration ??
+          activeTransitionRef.current?.generation ??
+          renderedTransitionRef.current?.generation,
       );
     }, [
       activeTrayIdRef,
@@ -201,6 +204,7 @@ export const useTrayTransitionCallbacks = ({
           rootTrayId,
           activeTrayIdRef.current,
           observedAt,
+          callbackGeneration ?? activeTransition?.generation,
         );
       }
     }, [
@@ -304,6 +308,7 @@ export const useTrayTransitionCallbacks = ({
         rootTrayId,
         activeTrayIdRef.current,
         observedAt,
+        callbackGeneration ?? activeTransition?.generation,
       );
 
       const completedGeneration =

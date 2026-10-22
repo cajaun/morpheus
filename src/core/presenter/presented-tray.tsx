@@ -52,6 +52,13 @@ const PresentedTray = ({
         payload.rootTrayId,
         payload.trayId,
         actualDuration,
+        {
+          phase,
+          baseDurationMs: baseDuration,
+          startTime,
+          commitTime,
+          transitionGeneration: payload.transitionContract?.generation,
+        },
       );
     },
     [
@@ -59,6 +66,7 @@ const PresentedTray = ({
       payload.interactive,
       payload.rootTrayId,
       payload.trayId,
+      payload.transitionContract?.generation,
       payload.visible,
     ],
   );

@@ -296,7 +296,11 @@ export const useTrayContentSync = ({
     }
 
     keyboardSnapshotPublishedRef.current = trayId;
-    markTrayStepSnapshotPublished(rootTrayId, trayId);
+    markTrayStepSnapshotPublished(
+      rootTrayId,
+      trayId,
+      transitionContract?.generation,
+    );
     showLatestSnapshot();
   }, [
     renderedTrayId,
@@ -325,7 +329,11 @@ export const useTrayContentSync = ({
     }
 
     // key changes publish a new snapshot after pre paint geometry preparation
-    markTrayStepSnapshotPublished(rootTrayId, trayId);
+    markTrayStepSnapshotPublished(
+      rootTrayId,
+      trayId,
+      transitionContract?.generation,
+    );
     showLatestSnapshot();
   }, [
     className,

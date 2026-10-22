@@ -518,10 +518,19 @@ export const useTrayController = ({
       handleGeometryMeasured({ shellFrame: event.nativeEvent.layout });
 
       if (isTrayInstrumentationEnabled()) {
-        markTrayStepShellLayout(rootTrayId, renderedTrayIdRef.current);
+        markTrayStepShellLayout(
+          rootTrayId,
+          renderedTrayIdRef.current,
+          renderedTransitionContract?.generation,
+        );
       }
     },
-    [handleGeometryMeasured, renderedTrayIdRef, rootTrayId],
+    [
+      handleGeometryMeasured,
+      renderedTrayIdRef,
+      renderedTransitionContract?.generation,
+      rootTrayId,
+    ],
   );
 
   const imperativeApi = useMemo(

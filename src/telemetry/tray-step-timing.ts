@@ -1,21 +1,42 @@
 import { isTrayInstrumentationEnabled } from "./config";
 
+export type TrayProfilerPhase = "mount" | "update" | "nested-update";
+
+// Keep profiler samples separate from the lifecycle clock. React's profiler
+// timestamps describe a renderer sample, while the lifecycle marks below use
+// the JS performance clock for cross-system ordering.
+export type TrayStepReactRender = {
+  phase: TrayProfilerPhase;
+  actualDurationMs: number;
+  baseDurationMs: number;
+  profilerStartTimeMs: number;
+  profilerCommitTimeMs: number;
+  profilerSpanMs: number;
+};
+
+type TrayStepReactRenderSample = TrayStepReactRender & {
+  observedAt: number;
+};
+
 // trace one step transition from request through layout finish
 type TrayStepTimingTrace = {
   rootTrayId: string;
   trayId?: string;
+  transitionGeneration?: number;
   requestedAt: number;
   presenterResolvedAt?: number;
   slotCommittedAt?: number;
   snapshotAt?: number;
-  reactRenderStartedAt?: number;
-  reactActualDurationMs?: number;
   renderedCommitAt?: number;
   shellLayoutAt?: number;
   layoutConfiguredAt?: number;
   layoutStartedAt?: number;
   contentReleasedAt?: number;
   layoutFinishedAt?: number;
+  incomingReactRender?: TrayStepReactRenderSample;
+  snapshotReactRender?: TrayStepReactRenderSample;
+  incomingReactRenderCount: number;
+  snapshotReactRenderCount: number;
   keyboardIntentAt?: number;
   keyboardFocusAt?: number;
   keyboardWillShowAt?: number;
@@ -24,14 +45,11 @@ type TrayStepTimingTrace = {
 export type TrayStepTimingSummary = {
   rootTrayId: string;
   trayId: string;
+  transitionGeneration?: number;
   requestToPresenterResolvedMs: number;
-  presenterResolvedToSlotCommitMs: number;
-  slotCommitToSnapshotMs: number;
-  requestToSnapshotMs: number;
-  snapshotToReactRenderStartMs: number;
-  reactRenderStartToRenderedCommitMs: number;
-  reactActualDurationMs: number;
-  snapshotToRenderedCommitMs: number;
+  presenterResolvedToSlotStateCommitMs: number;
+  requestToSnapshotPublicationMs: number;
+  snapshotPublicationToRenderedCommitMs: number;
   renderedCommitToShellLayoutMs: number;
   renderedCommitToLayoutConfiguredMs: number;
   layoutConfiguredToLayoutStartMs: number;
@@ -40,6 +58,10 @@ export type TrayStepTimingSummary = {
   requestToLayoutStartMs: number;
   layoutStartToContentReleaseMs: number;
   layoutStartToFinishMs: number;
+  incomingReactRender?: TrayStepReactRender;
+  snapshotReactRender?: TrayStepReactRender;
+  incomingReactRenderCount: number;
+  snapshotReactRenderCount: number;
   keyboardIntentToFocusMs?: number;
   keyboardFocusToWillShowMs?: number;
   keyboardWillShowToLayoutStartMs?: number;
@@ -51,6 +73,60 @@ const rootTrayIdByPresentedTrayId = new Map<string, string>();
 
 // read one clock source for every step timing mark
 const now = () => globalThis.performance?.now?.() ?? Date.now();
+
+const round = (value: number) => Number(value.toFixed(2));
+
+const toRenderSummary = (
+  sample: TrayStepReactRenderSample | undefined,
+): TrayStepReactRender | undefined =>
+  sample
+    ? {
+        phase: sample.phase,
+        actualDurationMs: round(sample.actualDurationMs),
+        baseDurationMs: round(sample.baseDurationMs),
+        profilerStartTimeMs: round(sample.profilerStartTimeMs),
+        profilerCommitTimeMs: round(sample.profilerCommitTimeMs),
+        profilerSpanMs: round(sample.profilerSpanMs),
+      }
+    : undefined;
+
+// Associate every mark with the request that owns it. A transition generation
+// may only become available after navigation resolves, so the first mark may
+// attach it lazily; a later generation must never mutate an older trace.
+const getTrace = (rootTrayId: string, transitionGeneration?: number) => {
+  const trace = tracesByRootTrayId.get(rootTrayId);
+
+  if (!trace) {
+    return undefined;
+  }
+
+  if (
+    transitionGeneration !== undefined &&
+    trace.transitionGeneration !== undefined &&
+    trace.transitionGeneration !== transitionGeneration
+  ) {
+    return undefined;
+  }
+
+  if (
+    transitionGeneration !== undefined &&
+    trace.transitionGeneration === undefined
+  ) {
+    trace.transitionGeneration = transitionGeneration;
+  }
+
+  return trace;
+};
+
+const setTraceTrayId = (trace: TrayStepTimingTrace, trayId: string) => {
+  if (trace.trayId !== undefined && trace.trayId !== trayId) {
+    return false;
+  }
+
+  trace.trayId = trayId;
+  rootTrayIdByPresentedTrayId.set(trayId, trace.rootTrayId);
+  return true;
+};
 
 // retain only the latest step timing summaries for inspection
 const writeSummary = (summary: TrayStepTimingSummary) => {
@@ -75,8 +151,6 @@ const tryFinishTrace = (rootTrayId: string) => {
     trace.presenterResolvedAt === undefined ||
     trace.slotCommittedAt === undefined ||
     trace.snapshotAt === undefined ||
-    trace.reactRenderStartedAt === undefined ||
-    trace.reactActualDurationMs === undefined ||
     trace.renderedCommitAt === undefined ||
     trace.shellLayoutAt === undefined ||
     trace.layoutConfiguredAt === undefined ||
@@ -90,18 +164,13 @@ const tryFinishTrace = (rootTrayId: string) => {
   const summary: TrayStepTimingSummary = {
     rootTrayId,
     trayId: trace.trayId,
+    transitionGeneration: trace.transitionGeneration,
     requestToPresenterResolvedMs:
       trace.presenterResolvedAt - trace.requestedAt,
-    presenterResolvedToSlotCommitMs:
+    presenterResolvedToSlotStateCommitMs:
       trace.slotCommittedAt - trace.presenterResolvedAt,
-    slotCommitToSnapshotMs: trace.snapshotAt - trace.slotCommittedAt,
-    requestToSnapshotMs: trace.snapshotAt - trace.requestedAt,
-    snapshotToReactRenderStartMs:
-      trace.reactRenderStartedAt - trace.snapshotAt,
-    reactRenderStartToRenderedCommitMs:
-      trace.renderedCommitAt - trace.reactRenderStartedAt,
-    reactActualDurationMs: trace.reactActualDurationMs,
-    snapshotToRenderedCommitMs:
+    requestToSnapshotPublicationMs: trace.snapshotAt - trace.requestedAt,
+    snapshotPublicationToRenderedCommitMs:
       trace.renderedCommitAt - trace.snapshotAt,
     renderedCommitToShellLayoutMs:
       trace.shellLayoutAt - trace.renderedCommitAt,
@@ -117,6 +186,10 @@ const tryFinishTrace = (rootTrayId: string) => {
       trace.contentReleasedAt - trace.layoutStartedAt,
     layoutStartToFinishMs:
       trace.layoutFinishedAt - trace.layoutStartedAt,
+    incomingReactRender: toRenderSummary(trace.incomingReactRender),
+    snapshotReactRender: toRenderSummary(trace.snapshotReactRender),
+    incomingReactRenderCount: trace.incomingReactRenderCount,
+    snapshotReactRenderCount: trace.snapshotReactRenderCount,
     keyboardIntentToFocusMs:
       trace.keyboardIntentAt !== undefined &&
       trace.keyboardFocusAt !== undefined
@@ -137,60 +210,7 @@ const tryFinishTrace = (rootTrayId: string) => {
   tracesByRootTrayId.delete(rootTrayId);
   rootTrayIdByPresentedTrayId.delete(trace.trayId);
 
-  console.log("[TrayStepPerf]", {
-    rootTrayId,
-    trayId: trace.trayId,
-    requestToPresenterResolvedMs: Number(
-      summary.requestToPresenterResolvedMs.toFixed(2),
-    ),
-    presenterResolvedToSlotCommitMs: Number(
-      summary.presenterResolvedToSlotCommitMs.toFixed(2),
-    ),
-    slotCommitToSnapshotMs: Number(
-      summary.slotCommitToSnapshotMs.toFixed(2),
-    ),
-    requestToSnapshotMs: Number(summary.requestToSnapshotMs.toFixed(2)),
-    snapshotToReactRenderStartMs: Number(
-      summary.snapshotToReactRenderStartMs.toFixed(2),
-    ),
-    reactRenderStartToRenderedCommitMs: Number(
-      summary.reactRenderStartToRenderedCommitMs.toFixed(2),
-    ),
-    reactActualDurationMs: Number(
-      summary.reactActualDurationMs.toFixed(2),
-    ),
-    snapshotToRenderedCommitMs: Number(
-      summary.snapshotToRenderedCommitMs.toFixed(2),
-    ),
-    renderedCommitToShellLayoutMs: Number(
-      summary.renderedCommitToShellLayoutMs.toFixed(2),
-    ),
-    renderedCommitToLayoutConfiguredMs: Number(
-      summary.renderedCommitToLayoutConfiguredMs.toFixed(2),
-    ),
-    layoutConfiguredToLayoutStartMs: Number(
-      summary.layoutConfiguredToLayoutStartMs.toFixed(2),
-    ),
-    renderedCommitToLayoutStartMs: Number(
-      summary.renderedCommitToLayoutStartMs.toFixed(2),
-    ),
-    snapshotToLayoutStartMs: Number(
-      summary.snapshotToLayoutStartMs.toFixed(2),
-    ),
-    requestToLayoutStartMs: Number(
-      summary.requestToLayoutStartMs.toFixed(2),
-    ),
-    layoutStartToContentReleaseMs: Number(
-      summary.layoutStartToContentReleaseMs.toFixed(2),
-    ),
-    layoutStartToFinishMs: Number(
-      summary.layoutStartToFinishMs.toFixed(2),
-    ),
-    keyboardIntentToFocusMs: summary.keyboardIntentToFocusMs,
-    keyboardFocusToWillShowMs: summary.keyboardFocusToWillShowMs,
-    keyboardWillShowToLayoutStartMs:
-      summary.keyboardWillShowToLayoutStartMs,
-  });
+  console.log("[TrayStepPerf]", JSON.stringify(summary));
 };
 
 // record the first point where navigation knows the next step will need the keyboard
@@ -239,83 +259,143 @@ export const markTrayStepKeyboardWillShow = (
 };
 
 // start a step trace at the navigation request boundary
-export const markTrayStepRequested = (rootTrayId?: string) => {
+export const markTrayStepRequested = (
+  rootTrayId?: string,
+  transitionGeneration?: number,
+) => {
   if (!isTrayInstrumentationEnabled() || !rootTrayId) {
     return;
   }
 
   tracesByRootTrayId.set(rootTrayId, {
     rootTrayId,
+    transitionGeneration,
     requestedAt: now(),
+    incomingReactRenderCount: 0,
+    snapshotReactRenderCount: 0,
   });
 };
 
-// record when the render snapshot exposes the new step
+// record when the render snapshot publication is requested. This is the state
+// update boundary, not the React commit boundary; the latter is recorded by
+// markTrayStepRenderedCommit.
 export const markTrayStepSnapshotPublished = (
   rootTrayId?: string,
   trayId?: string,
+  transitionGeneration?: number,
 ) => {
   if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
-  const trace = tracesByRootTrayId.get(rootTrayId);
+  const trace = getTrace(rootTrayId, transitionGeneration);
 
-  if (trace && trace.snapshotAt === undefined) {
-    trace.trayId = trayId;
+  if (
+    trace &&
+    trace.snapshotAt === undefined &&
+    setTraceTrayId(trace, trayId)
+  ) {
     trace.snapshotAt = now();
-    rootTrayIdByPresentedTrayId.set(trayId, rootTrayId);
   }
 };
 
 // record when the presenter resolves the new step payload
-export const markTrayStepPresenterResolved = (rootTrayId?: string) => {
+export const markTrayStepPresenterResolved = (
+  rootTrayId?: string,
+  transitionGeneration?: number,
+  trayId?: string,
+) => {
   if (!isTrayInstrumentationEnabled() || !rootTrayId) {
     return;
   }
 
-  const trace = tracesByRootTrayId.get(rootTrayId);
+  const trace = getTrace(rootTrayId, transitionGeneration);
 
-  if (trace && trace.presenterResolvedAt === undefined) {
+  if (
+    trace &&
+    (trayId === undefined || setTraceTrayId(trace, trayId)) &&
+    trace.presenterResolvedAt === undefined
+  ) {
     trace.presenterResolvedAt = now();
   }
 };
 
 // record when the host slot commits the resolved payload
-export const markTrayStepSlotCommitted = (rootTrayId?: string) => {
+export const markTrayStepSlotCommitted = (
+  rootTrayId?: string,
+  transitionGeneration?: number,
+  trayId?: string,
+) => {
   if (!isTrayInstrumentationEnabled() || !rootTrayId) {
     return;
   }
 
-  const trace = tracesByRootTrayId.get(rootTrayId);
+  const trace = getTrace(rootTrayId, transitionGeneration);
 
-  if (trace && trace.slotCommittedAt === undefined) {
+  if (
+    trace &&
+    (trayId === undefined || setTraceTrayId(trace, trayId)) &&
+    trace.slotCommittedAt === undefined
+  ) {
     trace.slotCommittedAt = now();
   }
 };
 
-// record the react render start and measured render cost
+// Record every presenter-owned React render. We classify the first render
+// before snapshot publication as the incoming/staging render and the first
+// render after publication as the committed snapshot render. The profiler's
+// own timestamps stay inside the sample; observedAt is only used for this
+// ordering decision and is never reported as React render start.
 export const markTrayStepReactRenderStarted = (
   rootTrayId: string | undefined,
   trayId: string | undefined,
   actualDurationMs: number,
+  details?: {
+    phase?: TrayProfilerPhase;
+    baseDurationMs?: number;
+    startTime?: number;
+    commitTime?: number;
+    transitionGeneration?: number;
+  },
 ) => {
   if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
-  const trace = tracesByRootTrayId.get(rootTrayId);
+  const observedAt = now();
+  const trace = getTrace(rootTrayId, details?.transitionGeneration);
+
+  if (!trace || !setTraceTrayId(trace, trayId)) {
+    return;
+  }
+
+  const profilerStartTime = details?.startTime ?? observedAt;
+  const profilerCommitTime = details?.commitTime ?? observedAt;
+  const sample: TrayStepReactRenderSample = {
+    phase: details?.phase ?? "update",
+    actualDurationMs,
+    baseDurationMs: details?.baseDurationMs ?? actualDurationMs,
+    profilerStartTimeMs: profilerStartTime,
+    profilerCommitTimeMs: profilerCommitTime,
+    profilerSpanMs: profilerCommitTime - profilerStartTime,
+    observedAt,
+  };
 
   if (
-    trace &&
-    trace.trayId === trayId &&
-    trace.reactRenderStartedAt === undefined
+    trace.snapshotAt === undefined
   ) {
-    // React Profiler's startTime uses a renderer-specific time origin. Read
-    // the timestamp here so it shares the same JS clock as every other mark.
-    trace.reactRenderStartedAt = now();
-    trace.reactActualDurationMs = actualDurationMs;
+    trace.incomingReactRenderCount += 1;
+    if (trace.incomingReactRender === undefined) {
+      trace.incomingReactRender = sample;
+    }
+  } else {
+    trace.snapshotReactRenderCount += 1;
+    if (trace.snapshotReactRender === undefined) {
+      trace.snapshotReactRender = sample;
+    }
   }
+
+  tryFinishTrace(rootTrayId);
 };
 
 // record when native layout begins consuming the new geometry
@@ -323,16 +403,19 @@ export const markTrayStepLayoutStarted = (
   rootTrayId: string | undefined,
   trayId: string | undefined,
   startedAt: number,
+  transitionGeneration?: number,
 ) => {
   if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
-  const trace = tracesByRootTrayId.get(rootTrayId);
+  const trace = getTrace(rootTrayId, transitionGeneration);
 
-  if (trace && trace.layoutStartedAt === undefined) {
-    trace.trayId = trayId;
-    rootTrayIdByPresentedTrayId.set(trayId, rootTrayId);
+  if (
+    trace &&
+    trace.layoutStartedAt === undefined &&
+    setTraceTrayId(trace, trayId)
+  ) {
     trace.layoutStartedAt = startedAt;
     tryFinishTrace(rootTrayId);
   }
@@ -343,12 +426,13 @@ export const markTrayStepLayoutConfigured = (
   rootTrayId: string | undefined,
   trayId: string | undefined,
   configuredAt: number,
+  transitionGeneration?: number,
 ) => {
   if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
-  const trace = tracesByRootTrayId.get(rootTrayId);
+  const trace = getTrace(rootTrayId, transitionGeneration);
 
   if (
     trace &&
@@ -363,12 +447,13 @@ export const markTrayStepLayoutConfigured = (
 export const markTrayStepShellLayout = (
   rootTrayId?: string,
   trayId?: string,
+  transitionGeneration?: number,
 ) => {
   if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
-  const trace = tracesByRootTrayId.get(rootTrayId);
+  const trace = getTrace(rootTrayId, transitionGeneration);
 
   if (
     trace &&
@@ -384,12 +469,13 @@ export const markTrayStepLayoutFinished = (
   rootTrayId: string | undefined,
   trayId: string | undefined,
   finishedAt: number,
+  transitionGeneration?: number,
 ) => {
   if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
-  const trace = tracesByRootTrayId.get(rootTrayId);
+  const trace = getTrace(rootTrayId, transitionGeneration);
 
   if (
     trace &&
@@ -405,12 +491,13 @@ export const markTrayStepLayoutFinished = (
 export const markTrayStepRenderedCommit = (
   rootTrayId?: string,
   trayId?: string,
+  transitionGeneration?: number,
 ) => {
   if (!isTrayInstrumentationEnabled() || !rootTrayId || !trayId) {
     return;
   }
 
-  const trace = tracesByRootTrayId.get(rootTrayId);
+  const trace = getTrace(rootTrayId, transitionGeneration);
 
   if (
     trace &&

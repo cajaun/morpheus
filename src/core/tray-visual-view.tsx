@@ -160,6 +160,17 @@ type TraySurfaceProps = Pick<
     isFullScreenBoundaryTransition: boolean;
   };
 
+// Keep arbitrary React step nodes behind their own reconciliation boundary.
+// The shell still receives every geometry/lifecycle update, but a shell-only
+// update does not ask the step's header, body, or footer subtree to reconcile
+// when its element identity is unchanged. This preserves the existing
+// transition providers and native layout participants.
+const TrayRenderedNode = React.memo(
+  ({ node }: { node: React.ReactNode }) => <>{node}</>,
+);
+
+TrayRenderedNode.displayName = "TrayRenderedNode";
+
 // Keep the native surface and its content reconciliation behind a second
 // boundary. Reanimated shared values continue to update the same animated
 // styles on the UI thread; this only skips React work when a controller update
@@ -256,10 +267,10 @@ const TraySurface = React.memo(
                       <Animated.View
                         style={[localStyles.headerContainer, headerFrameStyle]}
                       >
-                        {renderedHeader}
+                        <TrayRenderedNode node={renderedHeader} />
                       </Animated.View>
                     ) : null}
-                    {renderedContent}
+                    <TrayRenderedNode node={renderedContent} />
                   </TrayTransitionStartProvider>
                 </TrayContentMotionDirectionProvider>
               </Animated.View>
@@ -286,7 +297,7 @@ const TraySurface = React.memo(
       >
         <Animated.View style={footerContentFrameStyle}>
           <TrayOriginProgressProvider value={originProgress}>
-            {renderedFooter ?? null}
+            <TrayRenderedNode node={renderedFooter ?? null} />
           </TrayOriginProgressProvider>
         </Animated.View>
       </Animated.View>
