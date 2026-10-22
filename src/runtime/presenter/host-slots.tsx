@@ -210,6 +210,21 @@ const RootTraySlotsImpl = ({
       );
     }
 
+    // Same-root step replacements are already represented by activeHost in
+    // this render. Do not enqueue a second state update just to copy the same
+    // payload into the durable slot; that updater would create a nested React
+    // reconciliation pass on every step. The latest-host ref above preserves
+    // close correctness until a real topology change publishes the slot.
+    const shouldSkipSameRootStepStatePublication =
+      shouldRenderSameRootHostImmediately &&
+      activeHost !== null &&
+      activeSlot?.payload?.trayId !== activeHost.trayId &&
+      pendingPresentedHostRef.current === null;
+
+    if (shouldSkipSameRootStepStatePublication) {
+      return;
+    }
+
     setHostSlots((current) => {
       const next = [...current] as [TrayHostSlot, TrayHostSlot];
       const currentActiveSlotIndex = activeSlotIndexRef.current;
@@ -366,7 +381,12 @@ const RootTraySlotsImpl = ({
 
       return commitHostSlots(current, next);
     });
-  }, [activeHost, transitionContract]);
+  }, [
+    activeHost,
+    activeSlot?.payload?.trayId,
+    shouldRenderSameRootHostImmediately,
+    transitionContract,
+  ]);
 
   useLayoutEffect(() => {
     log("HOST SLOT STATE", {

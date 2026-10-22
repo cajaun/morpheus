@@ -170,6 +170,7 @@ describe("presenter host startup", () => {
 
   it("publishes same-root step payloads in the presenter render", () => {
     const renderedTrayIds: string[] = [];
+    const phases: string[] = [];
     const renderHostMemo = React.memo(
       ({ payload }: PresentedTrayProps) => {
         renderedTrayIds.push(payload.trayId);
@@ -183,28 +184,54 @@ describe("presenter host startup", () => {
 
     act(() => {
       renderer = create(
-        <RootTraySlots
-          activeHost={createPresentedTray("root", 0)}
-          {...commonProps}
-        />,
+        <Profiler
+          id="same-root-step"
+          onRender={(_, phase) => phases.push(phase)}
+        >
+          <RootTraySlots
+            activeHost={null}
+            {...commonProps}
+          />
+        </Profiler>,
+      );
+    });
+
+    act(() => {
+      renderer?.update(
+        <Profiler
+          id="same-root-step"
+          onRender={(_, phase) => phases.push(phase)}
+        >
+          <RootTraySlots
+            activeHost={createPresentedTray("root", 0)}
+            {...commonProps}
+          />
+        </Profiler>,
       );
     });
 
     renderedTrayIds.length = 0;
+    phases.length = 0;
 
     act(() => {
       renderer?.update(
-        <RootTraySlots
-          activeHost={{
-            ...createPresentedTray("root", 0),
-            trayId: "root-next-step",
-          }}
-          {...commonProps}
-        />,
+        <Profiler
+          id="same-root-step"
+          onRender={(_, phase) => phases.push(phase)}
+        >
+          <RootTraySlots
+            activeHost={{
+              ...createPresentedTray("root", 0),
+              trayId: "root-next-step",
+            }}
+            {...commonProps}
+          />
+        </Profiler>,
       );
     });
 
     expect(renderedTrayIds).toEqual(["root-next-step"]);
+    expect(phases).toEqual(["update"]);
   });
 
   it("closes the latest same-root step before durable slot state catches up", () => {
