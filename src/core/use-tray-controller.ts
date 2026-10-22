@@ -94,6 +94,7 @@ export const useTrayController = ({
   const renderState = useTrayRenderState({
     prepared,
     visible,
+    rootTrayId,
     content,
     header,
     footer,

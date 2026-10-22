@@ -10,7 +10,7 @@ import {
   markTrayBoundaryRequested,
   markTrayBoundaryShellLayout,
   markTrayBoundarySlotCommitted,
-  markTrayBoundarySnapshotPublished,
+  markTrayBoundarySnapshotCommitted,
   type TrayBoundaryTimingSummary,
 } from "../tray-boundary-timing";
 
@@ -71,12 +71,12 @@ describe("tray boundary timing", () => {
       transition,
       "root-tray-full-screen",
     );
-    markTrayBoundaryRenderedCommit(
+    markTrayBoundarySnapshotCommitted(
       "root-tray",
       transition,
       "root-tray-full-screen",
     );
-    markTrayBoundarySnapshotPublished(
+    markTrayBoundaryRenderedCommit(
       "root-tray",
       transition,
       "root-tray-full-screen",
@@ -112,12 +112,12 @@ describe("tray boundary timing", () => {
         toMode: "fullScreen",
         requestToPresenterResolvedMs: 5,
         requestToSlotCommittedMs: 10,
-        requestToSnapshotPublicationMs: 20,
-        renderedCommitToSnapshotPublicationMs: 5,
-        requestToRenderedCommitMs: 15,
-        renderedCommitToShellLayoutMs: 10,
-        renderedCommitToLayoutConfiguredMs: 15,
-        renderedCommitToLayoutStartMs: 17,
+        requestToSnapshotPublicationMs: 15,
+        snapshotPublicationToRenderedCommitMs: 5,
+        requestToRenderedCommitMs: 20,
+        renderedCommitToShellLayoutMs: 5,
+        renderedCommitToLayoutConfiguredMs: 10,
+        renderedCommitToLayoutStartMs: 12,
         requestToLayoutStartMs: 32,
         layoutStartToFinishMs: 13,
         reactRender: {

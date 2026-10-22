@@ -1,14 +1,21 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import { RenderedTrayState } from "../types";
 import type { TrayTransitionContract } from "../../runtime/types";
 import { log } from "../logger";
 import { describeTrayTransition } from "../diagnostics/tray-transition-diagnostics";
+import { markTrayBoundarySnapshotCommitted } from "../../telemetry/tray-boundary-timing";
 
 // render state holds the committed payload while newer props continue to stream in
 type TraySnapshot = {
   prepared?: boolean;
   visible?: boolean;
+  rootTrayId?: string;
   header?: React.ReactNode;
   content?: React.ReactNode;
   footer?: React.ReactNode;
@@ -126,6 +133,7 @@ const describeTrayState = (state: RenderedTrayState) => ({
 export const useTrayRenderState = ({
   prepared = false,
   visible = false,
+  rootTrayId,
   header,
   content,
   footer,
@@ -230,6 +238,28 @@ export const useTrayRenderState = ({
         transitionContract,
       })
     : renderedTray;
+
+  // Record the snapshot only after React has committed the rendered payload.
+  // The previous marker lived in a passive prop-sync effect, so it described
+  // the request for a state update and could precede the rendered-commit mark,
+  // producing impossible negative boundary durations.
+  useLayoutEffect(() => {
+    if (!visible || renderedTrayForRender.trayId === undefined) {
+      return;
+    }
+
+    markTrayBoundarySnapshotCommitted(
+      rootTrayId,
+      renderedTrayForRender.transitionContract,
+      renderedTrayForRender.trayId,
+    );
+  }, [
+    preparedActivation,
+    renderedTray,
+    renderedTrayForRender,
+    rootTrayId,
+    visible,
+  ]);
 
   const publishSnapshot = useCallback((next: RenderedTrayState) => {
     const lastRequestedSnapshot = lastRequestedSnapshotRef.current;

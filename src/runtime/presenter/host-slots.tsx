@@ -224,13 +224,24 @@ const RootTraySlotsImpl = ({
     // payload into the durable slot; that updater would create a nested React
     // reconciliation pass on every step. The latest-host ref above preserves
     // close correctness until a real topology change publishes the slot.
-    const shouldSkipSameRootStepStatePublication =
+    const shouldSkipSameRootHostStatePublication =
       shouldRenderSameRootHostImmediately &&
       activeHost !== null &&
-      activeSlot?.payload?.trayId !== activeHost.trayId &&
+      activeSlot?.payload !== activeHost &&
       pendingPresentedHostRef.current === null;
 
-    if (shouldSkipSameRootStepStatePublication) {
+    const activeHostAlreadyDurable =
+      shouldRenderSameRootHostImmediately &&
+      activeHost !== null &&
+      activeSlot?.payload === activeHost &&
+      activeSlot.visible === true &&
+      activeSlot.interactive === activeHost.interactive &&
+      activeSlot.prepared !== true;
+
+    if (
+      shouldSkipSameRootHostStatePublication ||
+      activeHostAlreadyDurable
+    ) {
       return;
     }
 
@@ -303,13 +314,13 @@ const RootTraySlotsImpl = ({
         // reconciliation pass. Keep slot topology durable, and use the
         // latest-host ref when a close needs the payload before a later
         // topology change repairs the slot state.
-        const canKeepSameRootStepInRender =
+        const canKeepSameRootHostInRender =
           currentActiveSlotIndex !== null &&
           targetSlot.visible === true &&
           targetSlot.payload?.rootTrayId === activeHost.rootTrayId &&
-          targetSlot.payload?.trayId !== activeHost.trayId;
+          targetSlot.payload !== activeHost;
 
-        if (canKeepSameRootStepInRender) {
+        if (canKeepSameRootHostInRender) {
           activeSlotIndexRef.current = targetSlotIndex;
           return current;
         }
@@ -393,6 +404,10 @@ const RootTraySlotsImpl = ({
   }, [
     activeHost,
     activeSlot?.payload?.trayId,
+    activeSlot?.payload,
+    activeSlot?.visible,
+    activeSlot?.interactive,
+    activeSlot?.prepared,
     shouldRenderSameRootHostImmediately,
     transitionContract,
   ]);

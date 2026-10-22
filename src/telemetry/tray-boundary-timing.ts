@@ -37,7 +37,7 @@ export type TrayBoundaryTimingSummary = {
   requestToPresenterResolvedMs?: number;
   requestToSlotCommittedMs?: number;
   requestToSnapshotPublicationMs?: number;
-  renderedCommitToSnapshotPublicationMs?: number;
+  snapshotPublicationToRenderedCommitMs?: number;
   requestToRenderedCommitMs?: number;
   renderedCommitToShellLayoutMs?: number;
   renderedCommitToLayoutConfiguredMs?: number;
@@ -167,6 +167,13 @@ export const markTrayBoundarySnapshotPublished = (
   setObservedAt(rootTrayId, contract, "snapshotPublishedAt", trayId);
 };
 
+// The snapshot is published when the rendered snapshot state has committed,
+// not when a passive effect requests that state update. Keep the old export
+// above for callers that already use the telemetry hook, while giving the
+// committed boundary a name that matches its lifecycle position.
+export const markTrayBoundarySnapshotCommitted =
+  markTrayBoundarySnapshotPublished;
+
 export const markTrayBoundaryRenderedCommit = (
   rootTrayId: string | undefined,
   contract: TrayTransitionContract | null | undefined,
@@ -238,10 +245,10 @@ export const markTrayBoundaryLayoutFinished = (
       requestedAt !== undefined && trace.snapshotPublishedAt !== undefined
         ? round(trace.snapshotPublishedAt - requestedAt)
         : undefined,
-    renderedCommitToSnapshotPublicationMs:
+    snapshotPublicationToRenderedCommitMs:
       renderedCommitAt !== undefined &&
       trace.snapshotPublishedAt !== undefined
-        ? round(trace.snapshotPublishedAt - renderedCommitAt)
+        ? round(Math.max(0, renderedCommitAt - trace.snapshotPublishedAt))
         : undefined,
     requestToRenderedCommitMs:
       requestedAt !== undefined && renderedCommitAt !== undefined

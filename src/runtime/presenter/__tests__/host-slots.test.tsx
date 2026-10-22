@@ -234,6 +234,53 @@ describe("presenter host startup", () => {
     expect(phases).toEqual(["update"]);
   });
 
+  it("does not publish durable slot state for same-root mode changes", () => {
+    const phases: string[] = [];
+    const renderHost = React.memo(
+      ({ payload }: PresentedTrayProps) => (
+        <HostNode
+          onCloseComplete={() => {}}
+          trayId={payload.trayId}
+        />
+      ),
+    );
+    renderHost.displayName = "SameRootModeHostProbe";
+    const commonProps = createCommonProps(renderHost);
+    const sheetHost = createPresentedTray("root", 0);
+
+    act(() => {
+      renderer = create(
+        <Profiler
+          id="same-root-mode"
+          onRender={(_, phase) => phases.push(phase)}
+        >
+          <RootTraySlots activeHost={sheetHost} {...commonProps} />
+        </Profiler>,
+      );
+    });
+
+    phases.length = 0;
+
+    act(() => {
+      renderer?.update(
+        <Profiler
+          id="same-root-mode"
+          onRender={(_, phase) => phases.push(phase)}
+        >
+          <RootTraySlots
+            activeHost={{
+              ...sheetHost,
+              fullScreen: true,
+            }}
+            {...commonProps}
+          />
+        </Profiler>,
+      );
+    });
+
+    expect(phases).toEqual(["update"]);
+  });
+
   it("closes the latest same-root step before durable slot state catches up", () => {
     const hostStates: [string, boolean][] = [];
     const renderHost: PresentedTrayRenderer = ({ payload }) => {
