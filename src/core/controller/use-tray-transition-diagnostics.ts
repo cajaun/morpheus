@@ -11,6 +11,7 @@ import { isTrayInstrumentationEnabled } from "../../telemetry/config";
 import {
   markTrayStepRenderedCommit,
 } from "../../telemetry/tray-step-timing";
+import { markTrayBoundaryRenderedCommit } from "../../telemetry/tray-boundary-timing";
 import { log } from "../logger";
 
 type Params = {
@@ -153,6 +154,11 @@ export const useTrayTransitionDiagnostics = ({
       rootTrayId,
       renderedTrayId,
       renderedTransitionContract?.generation,
+    );
+    markTrayBoundaryRenderedCommit(
+      rootTrayId,
+      renderedTransitionContract,
+      renderedTrayId,
     );
   }, [
     renderedTrayId,

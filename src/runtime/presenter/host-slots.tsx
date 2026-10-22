@@ -10,6 +10,10 @@ import {
   markTrayStepPresenterResolved,
   markTrayStepSlotCommitted,
 } from "../../telemetry/tray-step-timing";
+import {
+  markTrayBoundaryPresenterResolved,
+  markTrayBoundarySlotCommitted,
+} from "../../telemetry/tray-boundary-timing";
 import { describeTrayTransition } from "../transition-diagnostics";
 import { log } from "../logger";
 import {
@@ -206,6 +210,11 @@ const RootTraySlotsImpl = ({
       markTrayStepPresenterResolved(
         activeHost?.rootTrayId,
         activeHost?.transitionContract?.generation,
+        activeHost?.trayId,
+      );
+      markTrayBoundaryPresenterResolved(
+        activeHost?.rootTrayId,
+        activeHost?.transitionContract,
         activeHost?.trayId,
       );
     }
@@ -435,6 +444,11 @@ const RootTraySlotsImpl = ({
     markTrayStepSlotCommitted(
       renderedActiveHost?.rootTrayId,
       renderedActiveHost?.transitionContract?.generation,
+      renderedActiveHost?.trayId,
+    );
+    markTrayBoundarySlotCommitted(
+      renderedActiveHost?.rootTrayId,
+      renderedActiveHost?.transitionContract,
       renderedActiveHost?.trayId,
     );
   }, [activeHost, hostSlots, shouldRenderSameRootHostImmediately]);

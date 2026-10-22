@@ -7,6 +7,7 @@ import {
 } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
+import { markTrayBoundarySnapshotPublished } from "../../telemetry/tray-boundary-timing";
 import { markTrayStepSnapshotPublished } from "../../telemetry/tray-step-timing";
 import type { TrayTransitionContract } from "../../runtime/types";
 import { log } from "../logger";
@@ -319,6 +320,11 @@ export const useTrayContentSync = ({
 
     if (renderedTrayId === trayId) {
       // same key updates can sync nodes without replaying snapshot publication
+      markTrayBoundarySnapshotPublished(
+        rootTrayId,
+        transitionContract,
+        trayId,
+      );
       syncRenderedNodes(trayId);
       return;
     }
@@ -333,6 +339,11 @@ export const useTrayContentSync = ({
       rootTrayId,
       trayId,
       transitionContract?.generation,
+    );
+    markTrayBoundarySnapshotPublished(
+      rootTrayId,
+      transitionContract,
+      trayId,
     );
     showLatestSnapshot();
   }, [

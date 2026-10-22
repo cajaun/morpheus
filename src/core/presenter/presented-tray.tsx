@@ -12,6 +12,7 @@ import {
   logTrayProfilerCommit,
   profileTrayRegion,
 } from "../../telemetry/tray-profiler";
+import { markTrayBoundaryReactRender } from "../../telemetry/tray-boundary-timing";
 import { markTrayStepReactRenderStarted } from "../../telemetry/tray-step-timing";
 import { Tray } from "../tray";
 import type { PresentedTrayProps } from "../../runtime/presenter/types";
@@ -27,6 +28,7 @@ const PresentedTray = ({
   dismissKeyboardForTray,
 }: PresentedTrayProps) => {
   const runtime = useTrayRuntimeStore();
+  const transitionContract = payload.transitionContract;
   const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
     (
       _id,
@@ -60,16 +62,31 @@ const PresentedTray = ({
           baseDurationMs: baseDuration,
           startTime,
           commitTime,
-          transitionGeneration: payload.transitionContract?.generation,
+          transitionGeneration: transitionContract?.generation,
         },
       );
+      if (payload.visible && transitionContract?.fullScreenChanged) {
+        markTrayBoundaryReactRender(
+          payload.rootTrayId,
+          transitionContract,
+          payload.trayId,
+          {
+            phase,
+            actualDurationMs: actualDuration,
+            baseDurationMs: baseDuration,
+            profilerStartTimeMs: startTime,
+            profilerCommitTimeMs: commitTime,
+            profilerSpanMs: commitTime - startTime,
+          },
+        );
+      }
     },
     [
       assignmentId,
       payload.interactive,
       payload.rootTrayId,
       payload.trayId,
-      payload.transitionContract?.generation,
+      transitionContract,
       payload.visible,
     ],
   );

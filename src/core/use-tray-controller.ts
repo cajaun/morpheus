@@ -25,6 +25,7 @@ import { isTrayInstrumentationEnabled } from "../telemetry/config";
 import {
   markTrayStepShellLayout,
 } from "../telemetry/tray-step-timing";
+import { markTrayBoundaryShellLayout } from "../telemetry/tray-boundary-timing";
 import { useTrayContentSync } from "./controller/use-tray-content-sync";
 import { useTrayAssignmentReset } from "./controller/use-tray-assignment-reset";
 import { useTrayGeometryOwnership } from "./controller/use-tray-geometry-ownership";
@@ -523,12 +524,17 @@ export const useTrayController = ({
           renderedTrayIdRef.current,
           renderedTransitionContract?.generation,
         );
+        markTrayBoundaryShellLayout(
+          rootTrayId,
+          renderedTransitionContract,
+          renderedTrayIdRef.current,
+        );
       }
     },
     [
       handleGeometryMeasured,
       renderedTrayIdRef,
-      renderedTransitionContract?.generation,
+      renderedTransitionContract,
       rootTrayId,
     ],
   );

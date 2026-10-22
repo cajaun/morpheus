@@ -6,6 +6,11 @@ import {
   markTrayStepLayoutFinished,
   markTrayStepLayoutStarted,
 } from "../../telemetry/tray-step-timing";
+import {
+  markTrayBoundaryLayoutConfigured,
+  markTrayBoundaryLayoutFinished,
+  markTrayBoundaryLayoutStarted,
+} from "../../telemetry/tray-boundary-timing";
 import type {
   TrayPresentationMode,
   TrayTransitionContract,
@@ -127,6 +132,10 @@ export const useTrayTransitionCallbacks = ({
           activeTransitionRef.current?.generation ??
           renderedTransitionRef.current?.generation,
       );
+      markTrayBoundaryLayoutConfigured(
+        rootTrayId,
+        activeTransitionRef.current ?? renderedTransitionRef.current,
+      );
     }, [
       activeTrayIdRef,
       activeTransitionGenerationRef,
@@ -207,6 +216,10 @@ export const useTrayTransitionCallbacks = ({
           callbackGeneration ?? activeTransition?.generation,
         );
       }
+      markTrayBoundaryLayoutStarted(
+        rootTrayId,
+        activeTransition ?? renderedTransitionRef.current,
+      );
     }, [
       activeTrayIdRef,
       activeTransitionGenerationRef,
@@ -309,6 +322,10 @@ export const useTrayTransitionCallbacks = ({
         activeTrayIdRef.current,
         observedAt,
         callbackGeneration ?? activeTransition?.generation,
+      );
+      markTrayBoundaryLayoutFinished(
+        rootTrayId,
+        activeTransition ?? renderedTransitionRef.current,
       );
 
       const completedGeneration =

@@ -12,6 +12,7 @@ import type {
   TrayRuntimeDependencies,
 } from "./tray-runtime-action-context";
 import { createInitialTrayHostState } from "./tray-runtime-state";
+import { markTrayBoundaryRequested } from "../../telemetry/tray-boundary-timing";
 
 // create the external store that joins navigation state to lifecycle records
 export const createTrayRuntimeStore = (
@@ -78,9 +79,17 @@ export const createTrayRuntimeStore = (
         transitions.begin(resolvedState.lastTransition);
       }
 
+      const finalTransition = resolvedState.lastTransition!;
+      const activeTrayId =
+        resolvedState.stack[resolvedState.stack.length - 1]?.trayId ??
+        finalTransition.to?.trayId ??
+        finalTransition.from?.trayId;
+
+      markTrayBoundaryRequested(activeTrayId, finalTransition);
+
       if (
         pendingPageTransition !== null &&
-        pendingPageTransition.generation !== resolvedState.lastTransition?.generation
+        pendingPageTransition.generation !== finalTransition.generation
       ) {
         pendingPageTransition = null;
       }
