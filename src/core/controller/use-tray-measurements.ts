@@ -103,10 +103,14 @@ export const useTrayMeasurements = ({
   const measuredContentHeight = useSharedValue(0);
   const resolvedContentHeight = useSharedValue(0);
   const measuredFooterHeight = useSharedValue(0);
+  const latestMeasuredFooterNodeRef = useRef<React.ReactNode | undefined>(
+    undefined,
+  );
+  const latestMeasuredFooterTrayIdRef = useRef<string | undefined>(undefined);
+  const latestMeasuredFooterFullScreenRef = useRef(false);
   const latestMeasurementOwnerRef = useRef(measurementOwner);
   const lastContentLayoutRef = useRef<LayoutSignature | null>(null);
   const lastVisibleFooterLayoutRef = useRef<LayoutSignature | null>(null);
-  const lastMeasuredFooterLayoutRef = useRef<LayoutSignature | null>(null);
   latestMeasurementOwnerRef.current = measurementOwner;
 
   useEffect(() => {
@@ -116,6 +120,9 @@ export const useTrayMeasurements = ({
 
     // clear footer state when a step drops its footer so the old spacer disappears
     latestMeasuredFooterHeightRef.current = 0;
+    latestMeasuredFooterNodeRef.current = undefined;
+    latestMeasuredFooterTrayIdRef.current = undefined;
+    latestMeasuredFooterFullScreenRef.current = false;
     measuredFooterHeight.value = 0;
     footerHeight.value = 0;
   }, [footerHeight, measuredFooterHeight, renderedFooter]);
@@ -164,15 +171,21 @@ export const useTrayMeasurements = ({
       latestMeasuredTrayIdRef.current = undefined;
       lastContentLayoutRef.current = null;
       lastVisibleFooterLayoutRef.current = null;
-      lastMeasuredFooterLayoutRef.current = null;
       contentHeight.value = 0;
       measuredContentHeight.value = 0;
       resolvedContentHeight.value = 0;
       footerHeight.value = hasFooter ? latestMeasuredFooterHeightRef.current : 0;
 
+      const canReuseVisibleFooterMeasurement =
+        hasFooter &&
+        latestMeasuredFooterHeightRef.current > 1 &&
+        latestMeasuredFooterNodeRef.current === renderedFooter &&
+        latestMeasuredFooterTrayIdRef.current === renderedTrayId &&
+        latestMeasuredFooterFullScreenRef.current === renderedFullScreen;
+
       setLayoutEnabled(false);
       setContentMeasured(false);
-      setFooterMeasured(!hasFooter);
+      setFooterMeasured(!hasFooter || canReuseVisibleFooterMeasurement);
       setPendingOpen(true);
     },
     [
@@ -180,6 +193,9 @@ export const useTrayMeasurements = ({
       footerHeight,
       measuredContentHeight,
       resolvedContentHeight,
+      renderedFooter,
+      renderedFullScreen,
+      renderedTrayId,
     ],
   );
 
@@ -207,10 +223,12 @@ export const useTrayMeasurements = ({
     latestMeasuredContentHeightRef.current = 0;
     latestResolvedContentHeightRef.current = 0;
     latestMeasuredFooterHeightRef.current = 0;
+    latestMeasuredFooterNodeRef.current = undefined;
+    latestMeasuredFooterTrayIdRef.current = undefined;
+    latestMeasuredFooterFullScreenRef.current = false;
     latestMeasuredTrayIdRef.current = undefined;
     lastContentLayoutRef.current = null;
     lastVisibleFooterLayoutRef.current = null;
-    lastMeasuredFooterLayoutRef.current = null;
     contentHeight.value = 0;
     footerHeight.value = 0;
     measuredContentHeight.value = 0;
@@ -535,7 +553,9 @@ export const useTrayMeasurements = ({
         return;
       }
 
-      // visible footer measurement handles late footer changes after the first open
+      // The visible footer is the source of truth for both the first-open gate
+      // and later intrinsic-height changes. Measuring an offscreen copy would
+      // mount the consumer's arbitrary footer subtree a second time.
       const height = e.nativeEvent.layout.height;
       const layoutSignature: LayoutSignature = {
         ownerKey: measurementOwner?.presentationKey,
@@ -569,13 +589,18 @@ export const useTrayMeasurements = ({
       });
 
       latestMeasuredFooterHeightRef.current = height;
+      latestMeasuredFooterNodeRef.current = renderedFooter;
+      latestMeasuredFooterTrayIdRef.current = renderedTrayId;
+      latestMeasuredFooterFullScreenRef.current = renderedFullScreen;
       measuredFooterHeight.value = height;
       footerHeight.value = height;
       onGeometryMeasured?.({
         footerFrame: e.nativeEvent.layout,
         measuredFooterHeight: height,
       });
-      // visible footer layouts are late updates and should not reopen measurement gates
+      if (height > 1) {
+        setFooterMeasured(true);
+      }
     },
     [
       footerHeight,
@@ -584,53 +609,6 @@ export const useTrayMeasurements = ({
       onGeometryMeasured,
       renderedFullScreen,
       renderedFooter,
-      renderedTrayId,
-    ],
-  );
-
-  const handleMeasureFooterLayout = useCallback(
-    (e: LayoutChangeEvent) => {
-      // offscreen measurement prevents the first open from guessing footer travel
-      const height = e.nativeEvent.layout.height;
-      const layoutSignature: LayoutSignature = {
-        ownerKey: measurementOwner?.presentationKey,
-        trayId: renderedTrayId,
-        fullScreen: renderedFullScreen,
-        x: e.nativeEvent.layout.x,
-        y: e.nativeEvent.layout.y,
-        width: e.nativeEvent.layout.width,
-        height,
-      };
-
-      if (
-        areLayoutSignaturesEqual(
-          lastMeasuredFooterLayoutRef.current,
-          layoutSignature,
-        )
-      ) {
-        return;
-      }
-
-      lastMeasuredFooterLayoutRef.current = layoutSignature;
-
-      log("OFFSCREEN FOOTER onLayout", { height });
-
-      latestMeasuredFooterHeightRef.current = height;
-      measuredFooterHeight.value = height;
-      footerHeight.value = height;
-      onGeometryMeasured?.({
-        footerFrame: e.nativeEvent.layout,
-        measuredFooterHeight: height,
-      });
-      // offscreen footer measurement is the gate that lets first open begin
-      setFooterMeasured(true);
-    },
-    [
-      footerHeight,
-      measuredFooterHeight,
-      measurementOwner,
-      onGeometryMeasured,
-      renderedFullScreen,
       renderedTrayId,
     ],
   );
@@ -654,7 +632,6 @@ export const useTrayMeasurements = ({
       contentMeasured,
       pendingOpen,
       isReadyToOpen: pendingOpen && contentMeasured && footerMeasured,
-      shouldMeasureFooter: !!renderedFooter && !footerMeasured,
     },
     actions: {
       beginOpenMeasurement,
@@ -668,7 +645,6 @@ export const useTrayMeasurements = ({
     handlers: {
       handleContentLayout,
       handleVisibleFooterLayout,
-      handleMeasureFooterLayout,
     },
   };
 };

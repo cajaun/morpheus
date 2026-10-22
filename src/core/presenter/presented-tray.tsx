@@ -8,7 +8,10 @@ import {
   useTrayRuntimeStore,
 } from "../../runtime/tray-context";
 import { isTrayInstrumentationEnabled } from "../../telemetry/config";
-import { logTrayProfilerCommit } from "../../telemetry/tray-profiler";
+import {
+  logTrayProfilerCommit,
+  profileTrayRegion,
+} from "../../telemetry/tray-profiler";
 import { markTrayStepReactRenderStarted } from "../../telemetry/tray-step-timing";
 import { Tray } from "../tray";
 import type { PresentedTrayProps } from "../../runtime/presenter/types";
@@ -92,8 +95,12 @@ const PresentedTray = ({
     ],
   );
   const header = useMemo(
-    () =>
-      payload.header ? (
+    () => {
+      if (!payload.header) {
+        return null;
+      }
+
+      const region = (
         <TrayScopeProvider value={payload.rootTrayId}>
           <TrayStepOptionsProvider value={payload.stepOptions}>
             <TrayStepContent
@@ -108,8 +115,21 @@ const PresentedTray = ({
             </TrayStepContent>
           </TrayStepOptionsProvider>
         </TrayScopeProvider>
-      ) : null,
+      );
+
+      return profileTrayRegion(
+        `tray-region:${payload.trayId}:header`,
+        region,
+        {
+          region: "header",
+          rootTrayId: payload.rootTrayId,
+          trayId: payload.trayId,
+          assignmentId,
+        },
+      );
+    },
     [
+      assignmentId,
       headerTransitionContent,
       payload.fullScreen,
       payload.fullScreenBoundaryExit,
@@ -117,11 +137,16 @@ const PresentedTray = ({
       payload.isFirstRender,
       payload.rootTrayId,
       payload.stepOptions,
+      payload.trayId,
     ],
   );
   const content = useMemo(
-    () =>
-      payload.content != null ? (
+    () => {
+      if (payload.content == null) {
+        return null;
+      }
+
+      const region = (
         <TrayScopeProvider value={payload.rootTrayId}>
           <TrayStepOptionsProvider value={payload.stepOptions}>
             <TrayStepContent
@@ -135,8 +160,21 @@ const PresentedTray = ({
             </TrayStepContent>
           </TrayStepOptionsProvider>
         </TrayScopeProvider>
-      ) : null,
+      );
+
+      return profileTrayRegion(
+        `tray-region:${payload.trayId}:content`,
+        region,
+        {
+          region: "content",
+          rootTrayId: payload.rootTrayId,
+          trayId: payload.trayId,
+          assignmentId,
+        },
+      );
+    },
     [
+      assignmentId,
       payload.content,
       payload.fullScreen,
       payload.fullScreenBoundaryExit,
@@ -147,15 +185,37 @@ const PresentedTray = ({
     ],
   );
   const footer = useMemo(
-    () =>
-      payload.footer ? (
+    () => {
+      if (!payload.footer) {
+        return null;
+      }
+
+      const region = (
         <TrayScopeProvider value={payload.rootTrayId}>
           <TrayStepOptionsProvider value={payload.stepOptions}>
             {payload.footer}
           </TrayStepOptionsProvider>
         </TrayScopeProvider>
-      ) : null,
-    [payload.footer, payload.rootTrayId, payload.stepOptions],
+      );
+
+      return profileTrayRegion(
+        `tray-region:${payload.trayId}:footer`,
+        region,
+        {
+          region: "footer",
+          rootTrayId: payload.rootTrayId,
+          trayId: payload.trayId,
+          assignmentId,
+        },
+      );
+    },
+    [
+      assignmentId,
+      payload.footer,
+      payload.rootTrayId,
+      payload.stepOptions,
+      payload.trayId,
+    ],
   );
   const handleDismissKeyboard = useCallback(
     () => dismissKeyboardForTray(payload.rootTrayId),

@@ -96,12 +96,10 @@ jest.mock("../use-tray-controller", () => ({
         renderedClassName: undefined,
         renderedFooterStyle: undefined,
         renderedFooterClassName: undefined,
-        measureFooter: null,
       },
       handlers: {
         handleContentLayout: jest.fn(),
         handleVisibleFooterLayout: mockFooterLayoutHandler,
-        handleMeasureFooterLayout: jest.fn(),
         handleShellLayout: jest.fn(),
         handleRequestClose: mockCloseHandler,
       },

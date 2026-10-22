@@ -730,6 +730,104 @@ describe("useTrayContentSync", () => {
     );
   });
 
+  it("uses the visible footer layout for the first-open measurement gate", () => {
+    const contentHeight = shared(0);
+    const footerHeight = shared(0);
+    let beginOpenMeasurement: ((hasFooter: boolean) => void) | null = null;
+    let handleContentLayout: ((event: never) => void) | null = null;
+    let handleVisibleFooterLayout: ((event: never) => void) | null = null;
+    let measurementState:
+      | ReturnType<typeof useTrayMeasurements>["state"]
+      | null = null;
+
+    const Probe = () => {
+      const measurements = useTrayMeasurements({
+        contentHeight,
+        footerHeight,
+        renderedTrayId: "tray-content-four",
+        renderedFooter: <React.Fragment />,
+      });
+
+      measurementState = measurements.state;
+      beginOpenMeasurement = measurements.actions.beginOpenMeasurement;
+      handleContentLayout = measurements.handlers.handleContentLayout as (
+        event: never,
+      ) => void;
+      handleVisibleFooterLayout =
+        measurements.handlers.handleVisibleFooterLayout as (
+          event: never,
+        ) => void;
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    act(() => {
+      beginOpenMeasurement?.(true);
+    });
+
+    act(() => {
+      handleContentLayout?.({
+        nativeEvent: { layout: { height: 240, width: 320, x: 0, y: 0 } },
+      } as never);
+      handleVisibleFooterLayout?.({
+        nativeEvent: { layout: { height: 64, width: 320, x: 0, y: 0 } },
+      } as never);
+    });
+
+    expect(measurementState).not.toBeNull();
+    expect(measurementState!.isReadyToOpen).toBe(true);
+    expect(footerHeight.value).toBe(64);
+  });
+
+  it("reuses a matching visible footer measurement when opening a prepared tray", () => {
+    const contentHeight = shared(0);
+    const footerHeight = shared(0);
+    const footer = <React.Fragment />;
+    let beginOpenMeasurement: ((hasFooter: boolean) => void) | null = null;
+    let handleVisibleFooterLayout: ((event: never) => void) | null = null;
+    let measurementState:
+      | ReturnType<typeof useTrayMeasurements>["state"]
+      | null = null;
+
+    const Probe = () => {
+      const measurements = useTrayMeasurements({
+        contentHeight,
+        footerHeight,
+        renderedTrayId: "prepared-step",
+        renderedFooter: footer,
+      });
+
+      measurementState = measurements.state;
+      beginOpenMeasurement = measurements.actions.beginOpenMeasurement;
+      handleVisibleFooterLayout =
+        measurements.handlers.handleVisibleFooterLayout as (
+          event: never,
+        ) => void;
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+
+    act(() => {
+      handleVisibleFooterLayout?.({
+        nativeEvent: { layout: { height: 64, width: 320, x: 0, y: 0 } },
+      } as never);
+    });
+
+    act(() => {
+      beginOpenMeasurement?.(true);
+    });
+
+    expect(measurementState).not.toBeNull();
+    expect(measurementState!.footerMeasured).toBe(true);
+    expect(footerHeight.value).toBe(64);
+  });
+
   it("does not republish an identical body layout frame", () => {
     const contentHeight = shared(240);
     const footerHeight = shared(64);

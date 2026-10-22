@@ -25,9 +25,4 @@ export const styles = StyleSheet.create({
     paddingBottom: TRAY_FOOTER_PADDING_BOTTOM,
     borderCurve: "continuous",
   },
-  measureFooter: {
-    position: "absolute",
-    opacity: 0,
-    top: -10000,
-  },
 });

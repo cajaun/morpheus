@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { StyleSheet } from "react-native";
 import Animated, {
   useDerivedValue,
@@ -13,6 +13,7 @@ import { createTrayLayoutTransition } from "./animation/tray-layout";
 import { styles as trayStyles } from "./animation/tray-styles";
 import { TrayOriginProgressProvider } from "./tray-origin-progress";
 import { isTrayInstrumentationEnabled } from "../telemetry/config";
+import { logTrayProfilerCommit } from "../telemetry/tray-profiler";
 import { TrayMorphProgressProvider } from "./tray-morph-progress";
 import {
   TrayTransitionStartProvider,
@@ -35,12 +36,8 @@ import {
 import { describeTrayTransition } from "./diagnostics/tray-transition-diagnostics";
 import { log } from "./logger";
 import {
-  HORIZONTAL_MARGIN,
-  TRAY_FOOTER_PADDING_BOTTOM,
-  TRAY_FOOTER_PADDING_TOP,
   TRAY_HEADER_HORIZONTAL_PADDING,
   TRAY_KEYBOARD_GAP,
-  TRAY_VERTICAL_PADDING,
 } from "./constants";
 import type { TrayProps } from "./types";
 
@@ -97,7 +94,6 @@ type TrayVisualViewProps = Pick<
     | "renderedClassName"
     | "renderedFooterStyle"
     | "renderedFooterClassName"
-    | "measureFooter"
   >;
   handlers: TrayController["handlers"];
 };
@@ -364,12 +360,10 @@ const TrayVisualView = React.memo(
       renderedClassName,
       renderedFooterStyle,
       renderedFooterClassName,
-      measureFooter,
     } = state;
     const {
       handleContentLayout,
       handleVisibleFooterLayout,
-      handleMeasureFooterLayout,
       handleShellLayout,
       handleLayoutTransitionConfigured,
       handleLayoutTransitionStart,
@@ -656,29 +650,44 @@ const TrayVisualView = React.memo(
           : undefined,
       [flattenedContainerStyle],
     );
-    return (
-      <TrayMorphProgressProvider value={morphProgress}>
-        {measureFooter && (
-          <Animated.View
-            style={[
-              trayStyles.measureFooter,
-              {
-                left: presentationFullScreen ? 0 : HORIZONTAL_MARGIN,
-                right: presentationFullScreen ? 0 : HORIZONTAL_MARGIN,
-                paddingHorizontal: TRAY_VERTICAL_PADDING,
-                paddingTop: TRAY_FOOTER_PADDING_TOP,
-                paddingBottom: TRAY_FOOTER_PADDING_BOTTOM,
-              },
-            ]}
-            onLayout={handleMeasureFooterLayout}
-            pointerEvents="none"
-          >
-            <TrayOriginProgressProvider value={originProgress}>
-              {measureFooter}
-            </TrayOriginProgressProvider>
-          </Animated.View>
-        )}
+    const shellId = `tray-region:${trayId ?? rootTrayId ?? assignmentId}:shell`;
+    const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
+      (
+        _id,
+        phase,
+        actualDuration,
+        baseDuration,
+        startTime,
+        commitTime,
+      ) =>
+        logTrayProfilerCommit(
+          shellId,
+          phase,
+          actualDuration,
+          baseDuration,
+          startTime,
+          commitTime,
+          {
+            region: "shell",
+            rootTrayId,
+            trayId,
+            assignmentId,
+            visible,
+            interactive,
+          },
+        ),
+      [
+        assignmentId,
+        interactive,
+        rootTrayId,
+        shellId,
+        trayId,
+        visible,
+      ],
+    );
 
+    const shell = (
+      <TrayMorphProgressProvider value={morphProgress}>
         <Backdrop
           onTap={dismissible ? handleRequestClose : () => {}}
           isRendered={renderedTrayId !== undefined}
@@ -760,6 +769,16 @@ const TrayVisualView = React.memo(
           </KeyboardStickyView>
         )}
       </TrayMorphProgressProvider>
+    );
+
+    if (!instrumentationEnabled) {
+      return shell;
+    }
+
+    return (
+      <React.Profiler id={shellId} onRender={handleProfileRender}>
+        {shell}
+      </React.Profiler>
     );
   },
 );

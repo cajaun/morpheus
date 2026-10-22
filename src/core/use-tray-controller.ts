@@ -619,9 +619,6 @@ export const useTrayController = ({
       renderedClassName: renderState.state.renderedClassName,
       renderedFooterStyle: renderState.state.renderedFooterStyle,
       renderedFooterClassName: renderState.state.renderedFooterClassName,
-      measureFooter: measurements.state.shouldMeasureFooter
-        ? renderState.state.renderedFooter
-        : null,
     }),
     [
       contentHeightSnapshot,
@@ -631,7 +628,6 @@ export const useTrayController = ({
       measurements.state.footerMeasured,
       measurements.state.layoutEnabled,
       measurements.state.pendingOpen,
-      measurements.state.shouldMeasureFooter,
       openCloseLifecycle.state.isSurfaceReady,
       renderState.state.renderedClassName,
       renderState.state.renderedContainerStyle,
@@ -650,13 +646,11 @@ export const useTrayController = ({
   const {
     handleContentLayout,
     handleVisibleFooterLayout,
-    handleMeasureFooterLayout,
   } = measurements.handlers;
   const handlers = useMemo(
     () => ({
       handleContentLayout,
       handleVisibleFooterLayout,
-      handleMeasureFooterLayout,
       handleShellLayout,
       handleLayoutTransitionConfigured,
       handleLayoutTransitionStart,
@@ -670,7 +664,6 @@ export const useTrayController = ({
       handleRequestClose,
       handleShellLayout,
       handleContentLayout,
-      handleMeasureFooterLayout,
       handleVisibleFooterLayout,
     ],
   );
