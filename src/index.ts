@@ -29,6 +29,7 @@ export {
   useTrayKeyboard,
   useTrayHost,
   useTrayNavigation,
+  useTrayNavigationActions,
   useTrayTransitionLifecycle,
   type TrayRegistration,
   type TrayStepProps,

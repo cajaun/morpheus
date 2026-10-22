@@ -13,6 +13,7 @@ import {
   Tray,
   TrayProvider,
   useTrayNavigation,
+  useTrayNavigationActions,
   useTrayHost,
   type TrayStepOptions,
 } from "../..";
@@ -62,8 +63,11 @@ jest.mock("../../core/input/use-tray-keyboard", () => {
 
 let latestHost: ReturnType<typeof useTrayHost> | null = null;
 let latestNavigation: ReturnType<typeof useTrayNavigation> | null = null;
+let latestNavigationActions: ReturnType<typeof useTrayNavigationActions> | null =
+  null;
 let activeRenderer: TestRenderer.ReactTestRenderer | null = null;
 let rerenderNavigation: (() => void) | null = null;
+let navigationActionsRenderCount = 0;
 
 // test spies surface hook state without coupling assertions to rendered text
 const HostSpy = () => {
@@ -82,6 +86,13 @@ const NavigationRerenderProbe = () => {
   const [, setRevision] = useState(0);
   rerenderNavigation = () => setRevision((revision) => revision + 1);
   latestNavigation = useTrayNavigation();
+  return null;
+};
+
+// action-only consumers should not subscribe to step state changes
+const NavigationActionsProbe = () => {
+  navigationActionsRenderCount += 1;
+  latestNavigationActions = useTrayNavigationActions();
   return null;
 };
 
@@ -106,8 +117,10 @@ describe("TrayProvider runtime", () => {
   beforeEach(() => {
     latestHost = null;
     latestNavigation = null;
+    latestNavigationActions = null;
     activeRenderer = null;
     rerenderNavigation = null;
+    navigationActionsRenderCount = 0;
   });
 
   afterEach(() => {
@@ -231,6 +244,34 @@ describe("TrayProvider runtime", () => {
     expect(latestNavigation!.close).toBe(firstNavigation.close);
     expect(latestNavigation!.next).toBe(firstNavigation.next);
     expect(latestNavigation!.back).toBe(firstNavigation.back);
+  });
+
+  it("keeps action-only consumers isolated from step state changes", () => {
+    act(() => {
+      activeRenderer = TestRenderer.create(
+        <TrayProvider>
+          <HostSpy />
+          <Tray.Root>
+            {[step("one"), step("two"), step("three")]}
+            <NavigationActionsProbe />
+          </Tray.Root>
+        </TrayProvider>,
+      );
+    });
+
+    const initialRenderCount = navigationActionsRenderCount;
+    const firstActions = latestNavigationActions!;
+
+    act(() => {
+      firstActions.open();
+      firstActions.next();
+    });
+
+    expect(latestHost!.activeIndex).toBe(1);
+    expect(navigationActionsRenderCount).toBe(initialRenderCount);
+    expect(latestNavigationActions).toBe(firstActions);
+    expect(latestNavigationActions!.next).toBe(firstActions.next);
+    expect(latestNavigationActions!.back).toBe(firstActions.back);
   });
 
   it("returns fullscreen flows to the shell before dismissing", () => {

@@ -15,7 +15,10 @@ export {
   resolveTrayStepOptions,
 } from "./tray-store-context";
 export { useTrayKeyboard } from "./use-tray-keyboard";
-export { useTrayNavigation } from "./use-tray-navigation";
+export {
+  useTrayNavigation,
+  useTrayNavigationActions,
+} from "./use-tray-navigation";
 export type {
   ResolvedTrayStepOptions,
   TrayCloseTransition,

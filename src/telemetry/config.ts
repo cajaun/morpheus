@@ -1,4 +1,4 @@
-// enabled temporarily while diagnosing tray timing
+// Keep diagnostics opt-in. Set this to true only for a profiling run.
 export const TRAY_INSTRUMENTATION_ENABLED = false;
 
 // allow diagnostics only in development when the feature flag is enabled

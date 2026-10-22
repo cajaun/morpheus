@@ -42,7 +42,11 @@ Ensure Reanimated and Worklets are configured for the versions used by your appl
 
 ```tsx
 import { Text } from "react-native";
-import { Tray, useTrayNavigation } from "react-native-morpheus";
+import {
+  Tray,
+  useTrayNavigation,
+  useTrayNavigationActions,
+} from "react-native-morpheus";
 
 function TrayFooter() {
   const { next, close, index, total } = useTrayNavigation();
@@ -69,7 +73,7 @@ function TrayFooter() {
 }
 
 function BackAction() {
-  const { back } = useTrayNavigation();
+  const { back } = useTrayNavigationActions();
 
   return (
     <Tray.HeaderButton onPress={back}>
@@ -87,7 +91,7 @@ function StepHeader({
   title: string;
   canGoBack?: boolean;
 }) {
-  const { close } = useTrayNavigation();
+  const { close } = useTrayNavigationActions();
 
   return (
     <Tray.Header withSeparator>
@@ -198,10 +202,15 @@ Root `stepOptions` are inherited by every step and can be overridden by
 that step's `options` prop. `Tray.Root` and `Tray.Nested` no longer accept a
 `steps` prop.
 
-Consumer hooks include `useTrayNavigation`, `useTrayKeyboard`, `useTrayPages`,
+Consumer hooks include `useTrayNavigation`, `useTrayNavigationActions`, `useTrayKeyboard`, `useTrayPages`,
 `useOptionalTrayPages`, and `useTrayProgress`. Focused animation hooks include
 `useTrayMorphProgress` and `useTrayOriginProgress`. Advanced integrations can
 use `useTrayHost` and `useTrayTransitionLifecycle`.
+
+Use `useTrayNavigation` when a component renders navigation state such as the
+current step or page index. Use `useTrayNavigationActions` for controls that
+only dispatch commands such as close and back buttons; it reads the latest
+state when pressed without subscribing the control to every step update.
 
 Package-level layout constants that are intentionally public are available from `react-native-morpheus/constants`.
 
