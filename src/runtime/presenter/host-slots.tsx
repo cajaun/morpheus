@@ -84,13 +84,6 @@ const RootTraySlotsImpl = ({
   const nextAssignmentIdRef = useRef(1);
   const activeSlotIndexRef = useRef<number | null>(activeHost ? 0 : null);
   const pendingPresentedHostRef = useRef<PresentedTray | null>(null);
-  // Same-root step changes are rendered directly from activeHost before the
-  // slot state is durable. Retain the latest payload so a close that arrives
-  // before the durable slot write still closes the currently visible step.
-  const latestActiveHostRef = useRef<PresentedTray | null>(activeHost);
-  if (activeHost !== null) {
-    latestActiveHostRef.current = activeHost;
-  }
   const [hostSlots, setHostSlots] = useState<
     [TrayHostSlot, TrayHostSlot]
   >(() =>
@@ -219,17 +212,6 @@ const RootTraySlotsImpl = ({
       );
     }
 
-    // Same-root step replacements are already represented by activeHost in
-    // this render. Do not enqueue a second state update just to copy the same
-    // payload into the durable slot; that updater would create a nested React
-    // reconciliation pass on every step. The latest-host ref above preserves
-    // close correctness until a real topology change publishes the slot.
-    const shouldSkipSameRootHostStatePublication =
-      shouldRenderSameRootHostImmediately &&
-      activeHost !== null &&
-      activeSlot?.payload !== activeHost &&
-      pendingPresentedHostRef.current === null;
-
     const activeHostAlreadyDurable =
       shouldRenderSameRootHostImmediately &&
       activeHost !== null &&
@@ -238,10 +220,7 @@ const RootTraySlotsImpl = ({
       activeSlot.interactive === activeHost.interactive &&
       activeSlot.prepared !== true;
 
-    if (
-      shouldSkipSameRootHostStatePublication ||
-      activeHostAlreadyDurable
-    ) {
+    if (activeHostAlreadyDurable) {
       return;
     }
 
@@ -277,10 +256,7 @@ const RootTraySlotsImpl = ({
         if (closingSlotPayload === null) {
           return current;
         }
-        const closingPayload =
-          latestActiveHostRef.current?.rootTrayId === currentRootTrayId
-            ? latestActiveHostRef.current
-            : closingSlotPayload;
+        const closingPayload = closingSlotPayload;
 
         next[currentActiveSlotIndex] = {
           assignmentId: closingActiveSlot.assignmentId,
@@ -308,23 +284,9 @@ const RootTraySlotsImpl = ({
         const targetSlotIndex = currentActiveSlotIndex ?? 0;
         const targetSlot = next[targetSlotIndex];
 
-        // The render path above already substituted activeHost for an
-        // ordinary same-root step replacement. Publishing that same payload
-        // into hostSlots from a layout effect only creates a second React
-        // reconciliation pass. Keep slot topology durable, and use the
-        // latest-host ref when a close needs the payload before a later
-        // topology change repairs the slot state.
-        const canKeepSameRootHostInRender =
-          currentActiveSlotIndex !== null &&
-          targetSlot.visible === true &&
-          targetSlot.payload?.rootTrayId === activeHost.rootTrayId &&
-          targetSlot.payload !== activeHost;
-
-        if (canKeepSameRootHostInRender) {
-          activeSlotIndexRef.current = targetSlotIndex;
-          return current;
-        }
-
+        // Same-root updates are durable before the next lifecycle boundary.
+        // The close path must consume this committed slot instead of trying to
+        // recover a payload from a render-time ref.
         next[targetSlotIndex] = {
           assignmentId:
             targetSlot.assignmentId || nextAssignmentIdRef.current + 1,
@@ -354,10 +316,7 @@ const RootTraySlotsImpl = ({
         if (closingSlotPayload === null) {
           return current;
         }
-        const closingPayload =
-          latestActiveHostRef.current?.rootTrayId === currentRootTrayId
-            ? latestActiveHostRef.current
-            : closingSlotPayload;
+        const closingPayload = closingSlotPayload;
 
         pendingPresentedHostRef.current = activeHost;
         next[currentActiveSlotIndex] = {

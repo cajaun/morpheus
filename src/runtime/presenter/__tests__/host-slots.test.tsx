@@ -231,10 +231,10 @@ describe("presenter host startup", () => {
     });
 
     expect(renderedTrayIds).toEqual(["root-next-step"]);
-    expect(phases).toEqual(["update"]);
+    expect(phases).toEqual(["update", "nested-update"]);
   });
 
-  it("does not publish durable slot state for same-root mode changes", () => {
+  it("publishes durable slot state for same-root mode changes", () => {
     const phases: string[] = [];
     const renderHost = React.memo(
       ({ payload }: PresentedTrayProps) => (
@@ -278,10 +278,10 @@ describe("presenter host startup", () => {
       );
     });
 
-    expect(phases).toEqual(["update"]);
+    expect(phases).toEqual(["update", "nested-update"]);
   });
 
-  it("closes the latest same-root step before durable slot state catches up", () => {
+  it("closes the latest same-root step after the durable slot catches up", () => {
     const hostStates: [string, boolean][] = [];
     const renderHost: PresentedTrayRenderer = ({ payload }) => {
       hostStates.push([payload.trayId, payload.visible]);
