@@ -26,6 +26,49 @@ type TrayNavigationSnapshot = {
   pageControls: TrayPagesRegistration | null;
 };
 
+// A navigation consumer needs one coherent view of the runtime state. Keep
+// that view referentially stable when an unrelated runtime write changes the
+// store object but not the fields navigation actually renders. This prevents
+// one footer from maintaining several subscriptions and scheduling several
+// selector calculations for the same step transition.
+const areTrayNavigationSnapshotsEquivalent = (
+  previous: TrayNavigationSnapshot,
+  next: TrayNavigationSnapshot,
+) =>
+  previous.registration === next.registration &&
+  previous.activeTrayId === next.activeTrayId &&
+  previous.parentPageControls === next.parentPageControls &&
+  previous.total === next.total &&
+  previous.isActive === next.isActive &&
+  previous.index === next.index &&
+  previous.activeStep === next.activeStep &&
+  previous.pageControls === next.pageControls;
+
+const createTrayNavigationSelector = (trayId: string) => {
+  let previousState: TrayHostStateValue | null = null;
+  let previousSnapshot: TrayNavigationSnapshot | null = null;
+
+  return (state: TrayHostStateValue) => {
+    if (state === previousState && previousSnapshot !== null) {
+      return previousSnapshot;
+    }
+
+    const nextSnapshot = resolveTrayNavigationSnapshot(state, trayId);
+
+    if (
+      previousSnapshot !== null &&
+      areTrayNavigationSnapshotsEquivalent(previousSnapshot, nextSnapshot)
+    ) {
+      previousState = state;
+      return previousSnapshot;
+    }
+
+    previousState = state;
+    previousSnapshot = nextSnapshot;
+    return nextSnapshot;
+  };
+};
+
 // Resolve command state imperatively for action-only consumers. These
 // consumers intentionally do not subscribe to the store; commands read the
 // current snapshot at press time so a stable callback never captures stale
@@ -86,34 +129,14 @@ const resolveTrayNavigationSnapshot = (
 // connect the nearest tray to step navigation and presentation actions
 export const useTrayNavigation = () => {
   const trayId = useTrayScope();
-  // navigation state follows the nearest root so nested trays stay independent
-  const registration = useTrayHostSelector((state) =>
-    trayId ? state.registry[trayId] : undefined,
+  // navigation state follows the nearest root so nested trays stay
+  // independent. One cached selector gives the footer one coherent snapshot
+  // and avoids four independent store subscriptions for the same transition.
+  const navigationSelector = useMemo(
+    () => createTrayNavigationSelector(trayId ?? ""),
+    [trayId],
   );
-  const activeTrayId = useTrayHostSelector((state) => state.activeTrayId);
-  const stackEntry = useTrayHostSelector((state) =>
-    trayId ? state.stack.find((entry) => entry.trayId === trayId) : undefined,
-  );
-  const parentPageControls = useTrayHostSelector((state) => {
-    const parentTrayId = stackEntry?.parentTrayId;
-
-    if (!parentTrayId) {
-      return null;
-    }
-
-    const parentEntry = state.stack.find(
-      (entry) => entry.trayId === parentTrayId,
-    );
-    const parentRegistration = state.registry[parentTrayId];
-    const parentStep = parentRegistration?.steps[parentEntry?.index ?? 0];
-    const pages = parentRegistration?.pages;
-
-    if (!parentStep || pages?.stepKey !== parentStep.key || pages.hasFooter) {
-      return null;
-    }
-
-    return pages;
-  });
+  const navigation = useTrayHostSelector(navigationSelector);
   const {
     openTray,
     closeActiveTray,
@@ -126,18 +149,15 @@ export const useTrayNavigation = () => {
     throw new Error("Must be used within Tray.Root scope");
   }
 
-  const total = registration?.steps.length ?? 0;
-  const isActive = activeTrayId === trayId;
-  const index = stackEntry
-    ? clampTrayStepIndex(stackEntry.index, total)
-    : 0;
-  const activeStep = registration?.steps[index];
-  const pageControls =
-    activeStep &&
-    registration?.pages?.stepKey === activeStep.key &&
-    !registration.pages.hasFooter
-      ? registration.pages
-      : null;
+  const {
+    registration,
+    parentPageControls,
+    total,
+    isActive,
+    index,
+    activeStep,
+    pageControls,
+  } = navigation;
   // page controls take priority so page navigation keeps the shell step stable
   const canGoNext = pageControls ? pageControls.canGoNext : index < total - 1;
   const canGoBack = pageControls ? pageControls.canGoBack : index > 0;
