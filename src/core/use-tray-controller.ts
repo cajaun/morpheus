@@ -156,6 +156,7 @@ export const useTrayController = ({
     presentationFullScreen,
     renderedTrayId: renderState.state.renderedTrayId,
     renderedTransitionContract,
+    renderedSnapshotStore: renderState.snapshotStore,
     transitionContract,
     transitionLifecycle,
     transitionCompletedGeneration,
@@ -313,6 +314,8 @@ export const useTrayController = ({
   const measurements = useTrayMeasurements({
     contentHeight: presentation.shared.contentHeight,
     footerHeight: presentation.shared.footerHeight,
+    renderedSnapshotRef: renderState.renderedSnapshotRef,
+    measurementOwnerRef: geometry.refs.measurementOwnerRef,
     renderedTrayId: renderState.state.renderedTrayId,
     renderedFullScreen: renderState.state.renderedFullScreen,
     renderedFooter: renderState.state.renderedFooter,
@@ -678,6 +681,8 @@ export const useTrayController = ({
   return {
     shared,
     state,
+    renderSnapshotStore: renderState.snapshotStore,
+    renderSnapshotOverride: renderState.renderSnapshotOverride,
     handlers,
     imperativeApi,
   };

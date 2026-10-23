@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { StyleSheet } from "react-native";
 import Animated, {
   useDerivedValue,
@@ -14,6 +20,8 @@ import { styles as trayStyles } from "./animation/tray-styles";
 import { TrayOriginProgressProvider } from "./tray-origin-progress";
 import { isTrayInstrumentationEnabled } from "../telemetry/config";
 import { logTrayProfilerCommit } from "../telemetry/tray-profiler";
+import { markTrayBoundarySnapshotCommitted } from "../telemetry/tray-boundary-timing";
+import { markTrayStepRenderedCommit } from "../telemetry/tray-step-timing";
 import { TrayMorphProgressProvider } from "./tray-morph-progress";
 import {
   TrayTransitionStartProvider,
@@ -29,6 +37,10 @@ import { useTrayGesture } from "./input/use-tray-gesture";
 import { useSheetTrayKeyboard } from "./input/use-tray-keyboard";
 import { resolveKeyboardSheetTransitionIntent } from "./input/keyboard-transition";
 import type { TrayController } from "./use-tray-controller";
+import {
+  useTrayRenderSnapshot,
+  type TrayRenderSnapshotStore,
+} from "./controller/use-tray-render-state";
 import {
   isSheetFrameForTransition,
   resolveTransitionEndpointKey,
@@ -94,6 +106,10 @@ type TrayVisualViewProps = Pick<
     | "renderedClassName"
     | "renderedFooterStyle"
     | "renderedFooterClassName"
+  >;
+  renderSnapshotStore?: TrayRenderSnapshotStore;
+  renderSnapshotOverride?: ReturnType<
+    typeof useTrayRenderSnapshot
   >;
   handlers: TrayController["handlers"];
 };
@@ -321,6 +337,8 @@ const TrayVisualView = React.memo(
     keyboardAware,
     shared,
     state,
+    renderSnapshotStore,
+    renderSnapshotOverride,
     handlers,
   }: TrayVisualViewProps) => {
     const {
@@ -347,20 +365,97 @@ const TrayVisualView = React.memo(
       contentHeightSnapshot,
       isSurfaceReady,
       preparedSheetFrame,
-      renderedHeader,
-      renderedFooter,
-      renderedContent,
-      renderedTrayId,
-      renderedFullScreen,
-      renderedFullScreenBackgroundScale,
+      renderedHeader: fallbackHeader,
+      renderedFooter: fallbackFooter,
+      renderedContent: fallbackContent,
+      renderedTrayId: fallbackTrayId,
+      renderedFullScreen: fallbackFullScreen,
+      renderedFullScreenBackgroundScale: fallbackSnapshotBackgroundScale,
       frameFullScreen,
-      renderedFullScreenSafeAreaTop,
-      renderedFullScreenDraggable,
-      renderedContainerStyle,
-      renderedClassName,
-      renderedFooterStyle,
-      renderedFooterClassName,
+      renderedFullScreenSafeAreaTop: fallbackSafeAreaTop,
+      renderedFullScreenDraggable: fallbackDraggable,
+      renderedContainerStyle: fallbackContainerStyle,
+      renderedClassName: fallbackClassName,
+      renderedFooterStyle: fallbackFooterStyle,
+      renderedFooterClassName: fallbackFooterClassName,
     } = state;
+    const fallbackSnapshot = useMemo(
+      () => ({
+        header: fallbackHeader,
+        footer: fallbackFooter,
+        content: fallbackContent,
+        trayId: fallbackTrayId,
+        fullScreen: fallbackFullScreen,
+        fullScreenBackgroundScale: fallbackSnapshotBackgroundScale,
+        fullScreenSafeAreaTop: fallbackSafeAreaTop,
+        fullScreenDraggable: fallbackDraggable,
+        containerStyle: fallbackContainerStyle,
+        className: fallbackClassName,
+        footerStyle: fallbackFooterStyle,
+        footerClassName: fallbackFooterClassName,
+        transitionContract: transitionContract ?? null,
+      }),
+      [
+        fallbackSnapshotBackgroundScale,
+        fallbackClassName,
+        fallbackContainerStyle,
+        fallbackContent,
+        fallbackDraggable,
+        fallbackFooter,
+        fallbackFooterClassName,
+        fallbackFooterStyle,
+        fallbackFullScreen,
+        fallbackHeader,
+        fallbackSafeAreaTop,
+        fallbackTrayId,
+        transitionContract,
+      ],
+    );
+    const fallbackSnapshotStore = useMemo<TrayRenderSnapshotStore>(
+      () => ({
+        getSnapshot: () => fallbackSnapshot,
+        subscribe: () => () => {},
+        publish: () => {},
+      }),
+      [fallbackSnapshot],
+    );
+    const committedSnapshot = useTrayRenderSnapshot(
+      renderSnapshotStore ?? fallbackSnapshotStore,
+    );
+    const preparedSnapshotRef = useRef(renderSnapshotOverride);
+    const lastSnapshotOverrideRef = useRef(renderSnapshotOverride);
+
+    if (renderSnapshotOverride !== lastSnapshotOverrideRef.current) {
+      lastSnapshotOverrideRef.current = renderSnapshotOverride;
+      preparedSnapshotRef.current = renderSnapshotOverride;
+    }
+
+    const preparedSnapshot = preparedSnapshotRef.current;
+    useLayoutEffect(() => {
+      if (
+        preparedSnapshot !== undefined &&
+        committedSnapshot.trayId === preparedSnapshot.trayId
+      ) {
+        preparedSnapshotRef.current = undefined;
+      }
+    }, [committedSnapshot, preparedSnapshot]);
+
+    const renderedSnapshot = preparedSnapshot ?? committedSnapshot;
+    const renderedHeader = renderedSnapshot.header;
+    const renderedFooter = renderedSnapshot.footer;
+    const renderedContent = renderedSnapshot.content;
+    const renderedTrayId = renderedSnapshot.trayId;
+    const renderedFullScreen = renderedSnapshot.fullScreen ?? false;
+    const renderedFullScreenBackgroundScale =
+      renderedSnapshot.fullScreenBackgroundScale ?? 1;
+    const renderedFullScreenSafeAreaTop =
+      renderedSnapshot.fullScreenSafeAreaTop ?? false;
+    const renderedFullScreenDraggable =
+      renderedSnapshot.fullScreenDraggable ?? true;
+    const renderedContainerStyle = renderedSnapshot.containerStyle;
+    const renderedClassName = renderedSnapshot.className;
+    const renderedFooterStyle = renderedSnapshot.footerStyle;
+    const renderedFooterClassName = renderedSnapshot.footerClassName;
     const {
       handleContentLayout,
       handleVisibleFooterLayout,
@@ -370,6 +465,33 @@ const TrayVisualView = React.memo(
       handleLayoutTransitionComplete,
       handleRequestClose,
     } = handlers;
+
+    useLayoutEffect(() => {
+      // Footer presence is a shell scalar. Keep it synchronized even when a
+      // same-mode step payload is delivered through the local snapshot store.
+      hasFooter.value = renderedFooter != null;
+
+      if (!visible || renderedSnapshot.trayId === undefined) {
+        return;
+      }
+
+      markTrayBoundarySnapshotCommitted(
+        rootTrayId,
+        renderedSnapshot.transitionContract,
+        renderedSnapshot.trayId,
+      );
+      markTrayStepRenderedCommit(
+        rootTrayId,
+        renderedSnapshot.trayId,
+        renderedSnapshot.transitionContract?.generation,
+      );
+    }, [
+      hasFooter,
+      renderedFooter,
+      renderedSnapshot,
+      rootTrayId,
+      visible,
+    ]);
 
     // resolve direction during render so entering and exiting content receive the same transition snapshot
     const contentMotionDirection =

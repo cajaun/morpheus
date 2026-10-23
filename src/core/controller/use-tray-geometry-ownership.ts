@@ -17,6 +17,7 @@ import { log } from "../logger";
 import { describeTrayTransition } from "../diagnostics/tray-transition-diagnostics";
 import { createTrayEndpointKey } from "./tray-sheet-frame";
 import type { TraySheetFrame } from "../types/tray";
+import type { TrayRenderSnapshotStore } from "./use-tray-render-state";
 
 type Params = {
   visible: boolean;
@@ -26,6 +27,7 @@ type Params = {
   presentationFullScreen: boolean;
   renderedTrayId?: string;
   renderedTransitionContract?: TrayTransitionContract | null;
+  renderedSnapshotStore?: TrayRenderSnapshotStore;
   transitionContract?: TrayTransitionContract | null;
   transitionLifecycle?: TrayTransitionLifecycle;
   transitionCompletedGeneration: SharedValue<number>;
@@ -40,6 +42,7 @@ export const useTrayGeometryOwnership = ({
   presentationFullScreen,
   renderedTrayId,
   renderedTransitionContract,
+  renderedSnapshotStore,
   transitionContract,
   transitionLifecycle,
   transitionCompletedGeneration,
@@ -98,6 +101,38 @@ export const useTrayGeometryOwnership = ({
       generation: renderedTransitionContract.generation,
     });
   }, [measurementEndpoint, renderedTransitionContract, rootTrayId]);
+  const measurementOwnerRef = useRef(measurementOwner);
+  measurementOwnerRef.current = measurementOwner;
+
+  useLayoutEffect(() => {
+    if (!renderedSnapshotStore) {
+      return;
+    }
+
+    const syncCommittedSnapshot = () => {
+      const snapshot = renderedSnapshotStore.getSnapshot();
+      const committedTransition = snapshot.transitionContract;
+      const committedEndpoint =
+        committedTransition?.to ?? committedTransition?.from;
+
+      measurementOwnerRef.current =
+        rootTrayId && committedTransition && committedEndpoint
+          ? createTrayMeasurementOwner({
+              rootTrayId,
+              endpoint: committedEndpoint,
+              generation: committedTransition.generation,
+            })
+          : undefined;
+      renderedTrayIdRef.current = snapshot.trayId;
+      renderedTransitionRef.current = committedTransition;
+      renderedTransitionGenerationRef.current =
+        committedTransition?.generation;
+      renderedFullScreenRef.current = snapshot.fullScreen ?? false;
+    };
+
+    syncCommittedSnapshot();
+    return renderedSnapshotStore.subscribe(syncCommittedSnapshot);
+  }, [renderedSnapshotStore, rootTrayId]);
 
   useLayoutEffect(() => {
     log("GEOMETRY OWNERSHIP", {
@@ -155,18 +190,21 @@ export const useTrayGeometryOwnership = ({
         Omit<TrayGeometrySnapshot, "owner" | "capturedAt">
       >,
     ) => {
-      if (!measurementOwner || !renderedTransitionContract) {
+      const committedMeasurementOwner = measurementOwnerRef.current;
+      const committedTransition = renderedTransitionRef.current;
+
+      if (!committedMeasurementOwner || !committedTransition) {
         return;
       }
 
       const previous = latestGeometryRef.current;
       const snapshot: TrayGeometrySnapshot = {
         ...(previous?.owner.presentationKey ===
-        measurementOwner.presentationKey
+        committedMeasurementOwner.presentationKey
           ? previous
           : {}),
         ...geometry,
-        owner: measurementOwner,
+        owner: committedMeasurementOwner,
         capturedAt: performance.now(),
       };
       latestGeometryRef.current = snapshot;
@@ -180,13 +218,13 @@ export const useTrayGeometryOwnership = ({
           geometry.measuredFooterHeight;
       }
 
-      const role = renderedTransitionContract.to ? "target" : "source";
+      const role = committedTransition.to ? "target" : "source";
       transitionLifecycle?.captureGeometry(
-        renderedTransitionContract.generation,
+        committedTransition.generation,
         role,
         snapshot,
       );
-    }, [measurementOwner, renderedTransitionContract, transitionLifecycle],
+    }, [measurementOwnerRef, renderedTransitionRef, transitionLifecycle],
   );
 
   useLayoutEffect(() => {
@@ -343,6 +381,7 @@ export const useTrayGeometryOwnership = ({
       renderedTransitionGenerationRef,
       renderedTransitionRef,
       renderedFullScreenRef,
+      measurementOwnerRef,
       lastHandledLayoutCompletionGenerationRef,
       returningToSheetRef,
       latestLayoutFrameRef,

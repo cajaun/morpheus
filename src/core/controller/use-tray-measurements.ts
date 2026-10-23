@@ -8,6 +8,7 @@ import type {
   TrayPresentationMode,
 } from "../../runtime/types";
 import type { TraySheetFrame } from "../types/tray";
+import type { RenderedTrayState } from "../types";
 
 // measurement owns the geometry contract that open animation depends on
 type Params = {
@@ -17,6 +18,7 @@ type Params = {
   renderedTrayId?: string;
   renderedFullScreen?: boolean;
   renderedFooter?: React.ReactNode;
+  renderedSnapshotRef?: { current: RenderedTrayState };
   hasRenderedBody?: boolean;
   acceptContentMeasurement?: boolean;
   contentMeasurementLeaseActive?: boolean;
@@ -25,6 +27,7 @@ type Params = {
   originGeometryLeaseRef?: { current: boolean };
   preparedSheetFrameRef?: { current: TraySheetFrame | undefined };
   committedSheetFrameRef?: { current: TraySheetFrame | undefined };
+  measurementOwnerRef?: { current: TrayMeasurementOwner | undefined };
   resolveContentHeight?: (measuredHeight: number) => number;
   onContentHeightResolved?: (
     resolvedHeight: number,
@@ -76,6 +79,7 @@ export const useTrayMeasurements = ({
   renderedTrayId,
   renderedFullScreen = false,
   renderedFooter,
+  renderedSnapshotRef,
   hasRenderedBody = false,
   acceptContentMeasurement = true,
   contentMeasurementLeaseActive = false,
@@ -84,6 +88,7 @@ export const useTrayMeasurements = ({
   originGeometryLeaseRef,
   preparedSheetFrameRef,
   committedSheetFrameRef,
+  measurementOwnerRef,
   resolveContentHeight,
   onContentHeightResolved,
   onSheetContentHeightMeasured,
@@ -111,7 +116,8 @@ export const useTrayMeasurements = ({
   const latestMeasurementOwnerRef = useRef(measurementOwner);
   const lastContentLayoutRef = useRef<LayoutSignature | null>(null);
   const lastVisibleFooterLayoutRef = useRef<LayoutSignature | null>(null);
-  latestMeasurementOwnerRef.current = measurementOwner;
+  latestMeasurementOwnerRef.current =
+    measurementOwnerRef?.current ?? measurementOwner;
 
   useEffect(() => {
     if (renderedFooter) {
@@ -284,16 +290,21 @@ export const useTrayMeasurements = ({
 
   const handleContentLayout = useCallback(
     (e: LayoutChangeEvent) => {
+      const committedSnapshot = renderedSnapshotRef?.current;
+      const committedTrayId = committedSnapshot?.trayId ?? renderedTrayId;
+      const committedMeasurementOwner =
+        measurementOwnerRef?.current ?? measurementOwner;
+
       if (!acceptContentMeasurement) {
         // ignore old snapshot layout frames after the fullscreen viewport changes
         log("CONTENT onLayout ignored during boundary handoff", {
           height: e.nativeEvent.layout.height,
-          trayId: renderedTrayId,
+          trayId: committedTrayId,
           acceptContentMeasurement,
           contentMeasurementLeaseActive,
           contentMeasurementLeaseRef: contentMeasurementLeaseRef?.current ?? false,
           renderedFullScreen,
-          measurementOwner: measurementOwner?.presentationKey,
+          measurementOwner: committedMeasurementOwner?.presentationKey,
         });
         return;
       }
@@ -301,8 +312,8 @@ export const useTrayMeasurements = ({
       const canMeasureIntrinsicSheetDuringLease =
         allowIntrinsicSheetMeasurementDuringLease &&
         !renderedFullScreen &&
-        measurementOwner?.mode === "sheet" &&
-        measurementOwner.trayId === renderedTrayId;
+        committedMeasurementOwner?.mode === "sheet" &&
+        committedMeasurementOwner.trayId === committedTrayId;
 
       if (
         !canMeasureIntrinsicSheetDuringLease &&
@@ -312,12 +323,12 @@ export const useTrayMeasurements = ({
         // ignore animated viewport measurements so intermediate frames cannot become sheet heights
         log("CONTENT onLayout ignored during sheet frame lease", {
           height: e.nativeEvent.layout.height,
-          trayId: renderedTrayId,
+          trayId: committedTrayId,
           acceptContentMeasurement,
           contentMeasurementLeaseActive,
           contentMeasurementLeaseRef: contentMeasurementLeaseRef?.current ?? false,
           renderedFullScreen,
-          measurementOwner: measurementOwner?.presentationKey,
+          measurementOwner: committedMeasurementOwner?.presentationKey,
           latestMeasuredContentHeight: latestMeasuredContentHeightRef.current,
           latestResolvedContentHeight: latestResolvedContentHeightRef.current,
         });
@@ -328,11 +339,11 @@ export const useTrayMeasurements = ({
         // trigger origin owns the target while transient fullscreen layouts drain
         log("CONTENT onLayout ignored during trigger origin lease", {
           height: e.nativeEvent.layout.height,
-          trayId: renderedTrayId,
+          trayId: committedTrayId,
           acceptContentMeasurement,
           originGeometryLeaseActive: originGeometryLeaseRef.current,
           renderedFullScreen,
-          measurementOwner: measurementOwner?.presentationKey,
+          measurementOwner: committedMeasurementOwner?.presentationKey,
           latestMeasuredContentHeight: latestMeasuredContentHeightRef.current,
           latestResolvedContentHeight: latestResolvedContentHeightRef.current,
         });
@@ -342,14 +353,14 @@ export const useTrayMeasurements = ({
       const height = e.nativeEvent.layout.height;
       const previousMeasuredHeight = latestMeasuredContentHeightRef.current;
 
-      const callbackOwnerKey = measurementOwner?.presentationKey;
+      const callbackOwnerKey = committedMeasurementOwner?.presentationKey;
       const currentOwnerKey =
-        latestMeasurementOwnerRef.current?.presentationKey;
+        committedMeasurementOwner?.presentationKey;
 
       if (callbackOwnerKey !== currentOwnerKey) {
         log("CONTENT onLayout ignored — stale measurement owner", {
           height,
-          trayId: renderedTrayId,
+          trayId: committedTrayId,
           callbackOwnerKey,
           currentOwnerKey,
           renderedFullScreen,
@@ -366,7 +377,7 @@ export const useTrayMeasurements = ({
       ) {
         log("CONTENT onLayout ignored — invalid body endpoint", {
           height,
-          trayId: renderedTrayId,
+          trayId: committedTrayId,
           previousMeasuredHeight,
           currentContentHeight: contentHeight.value,
           measurementOwner: currentOwnerKey,
@@ -384,14 +395,14 @@ export const useTrayMeasurements = ({
       const preparedSheetFrame = preparedSheetFrameRef?.current;
       const preparedFrameMatchesOwner =
         preparedSheetFrame !== undefined &&
-        measurementOwner !== undefined &&
-        preparedSheetFrame.generation === measurementOwner.generation &&
+        committedMeasurementOwner !== undefined &&
+        preparedSheetFrame.generation === committedMeasurementOwner.generation &&
         preparedSheetFrame.endpointKey ===
           [
-            measurementOwner.trayId,
-            measurementOwner.stepKey,
-            measurementOwner.pageIndex ?? "step",
-            measurementOwner.mode,
+            committedMeasurementOwner.trayId,
+            committedMeasurementOwner.stepKey,
+            committedMeasurementOwner.pageIndex ?? "step",
+            committedMeasurementOwner.mode,
           ].join("::");
 
       if (
@@ -408,14 +419,14 @@ export const useTrayMeasurements = ({
           height,
           resolvedHeight,
           preparedContentHeight: preparedSheetFrame.contentHeight,
-          trayId: renderedTrayId,
-          measurementOwner: measurementOwner?.presentationKey,
+          trayId: committedTrayId,
+          measurementOwner: committedMeasurementOwner?.presentationKey,
         });
         return;
       }
       const layoutSignature: LayoutSignature = {
         ownerKey: currentOwnerKey,
-        trayId: renderedTrayId,
+        trayId: committedTrayId,
         fullScreen: renderedFullScreen,
         x: e.nativeEvent.layout.x,
         y: e.nativeEvent.layout.y,
@@ -427,14 +438,14 @@ export const useTrayMeasurements = ({
       const committedSheetFrame = committedSheetFrameRef?.current;
       const committedFrameMatchesOwner =
         committedSheetFrame !== undefined &&
-        measurementOwner !== undefined &&
-        committedSheetFrame.generation === measurementOwner.generation &&
+        committedMeasurementOwner !== undefined &&
+        committedSheetFrame.generation === committedMeasurementOwner.generation &&
         committedSheetFrame.endpointKey ===
           [
-            measurementOwner.trayId,
-            measurementOwner.stepKey,
-            measurementOwner.pageIndex ?? "step",
-            measurementOwner.mode,
+            committedMeasurementOwner.trayId,
+            committedMeasurementOwner.stepKey,
+            committedMeasurementOwner.pageIndex ?? "step",
+            committedMeasurementOwner.mode,
           ].join("::");
 
       if (
@@ -452,8 +463,8 @@ export const useTrayMeasurements = ({
           committedTotalHeight: committedSheetFrame.totalHeight,
           committedGeneration: committedSheetFrame.generation,
           committedEndpointKey: committedSheetFrame.endpointKey,
-          measurementOwner: measurementOwner?.presentationKey,
-          renderedTrayId,
+          measurementOwner: committedMeasurementOwner?.presentationKey,
+          renderedTrayId: committedTrayId,
           renderedFullScreen,
         });
         return;
@@ -484,14 +495,14 @@ export const useTrayMeasurements = ({
       // measured height is raw content size while resolved height respects tray policy
       latestMeasuredContentHeightRef.current = height;
       latestResolvedContentHeightRef.current = resolvedHeight;
-      latestMeasuredTrayIdRef.current = renderedTrayId;
+      latestMeasuredTrayIdRef.current = committedTrayId;
       measuredContentHeight.value = height;
       resolvedContentHeight.value = resolvedHeight;
       contentHeight.value = resolvedHeight;
       onContentHeightResolved?.(
         resolvedHeight,
         height,
-        renderedTrayId,
+        committedTrayId,
         renderedFullScreen ? "fullScreen" : "sheet",
       );
       onGeometryMeasured?.({
@@ -500,10 +511,10 @@ export const useTrayMeasurements = ({
         resolvedContentHeight: resolvedHeight,
       });
       if (!renderedFullScreen) {
-        onSheetContentHeightMeasured?.(resolvedHeight, renderedTrayId);
+        onSheetContentHeightMeasured?.(resolvedHeight, committedTrayId);
       }
 
-      if (!contentMeasured && renderedTrayId !== undefined) {
+      if (!contentMeasured && committedTrayId !== undefined) {
         // content is only considered ready after it belongs to a named rendered tray
         setContentMeasured(true);
       }
@@ -511,7 +522,7 @@ export const useTrayMeasurements = ({
       log("CONTENT onLayout", {
         height,
         resolvedHeight,
-        trayId: renderedTrayId,
+        trayId: committedTrayId,
         previousMeasuredHeight,
         previousResolvedHeight,
         currentContentHeight: contentHeight.value,
@@ -540,8 +551,10 @@ export const useTrayMeasurements = ({
       onSheetContentHeightMeasured,
       onGeometryMeasured,
       measurementOwner,
+      measurementOwnerRef,
       renderedTrayId,
       renderedFullScreen,
+      renderedSnapshotRef,
       resolvedContentHeight,
       resolveContentHeight,
     ],
@@ -549,7 +562,13 @@ export const useTrayMeasurements = ({
 
   const handleVisibleFooterLayout = useCallback(
     (e: LayoutChangeEvent) => {
-      if (!renderedFooter) {
+      const committedSnapshot = renderedSnapshotRef?.current;
+      const committedTrayId = committedSnapshot?.trayId ?? renderedTrayId;
+      const committedFooter = committedSnapshot?.footer ?? renderedFooter;
+      const committedMeasurementOwner =
+        measurementOwnerRef?.current ?? measurementOwner;
+
+      if (!committedFooter) {
         return;
       }
 
@@ -558,8 +577,8 @@ export const useTrayMeasurements = ({
       // mount the consumer's arbitrary footer subtree a second time.
       const height = e.nativeEvent.layout.height;
       const layoutSignature: LayoutSignature = {
-        ownerKey: measurementOwner?.presentationKey,
-        trayId: renderedTrayId,
+        ownerKey: committedMeasurementOwner?.presentationKey,
+        trayId: committedTrayId,
         fullScreen: renderedFullScreen,
         x: e.nativeEvent.layout.x,
         y: e.nativeEvent.layout.y,
@@ -589,8 +608,8 @@ export const useTrayMeasurements = ({
       });
 
       latestMeasuredFooterHeightRef.current = height;
-      latestMeasuredFooterNodeRef.current = renderedFooter;
-      latestMeasuredFooterTrayIdRef.current = renderedTrayId;
+      latestMeasuredFooterNodeRef.current = committedFooter;
+      latestMeasuredFooterTrayIdRef.current = committedTrayId;
       latestMeasuredFooterFullScreenRef.current = renderedFullScreen;
       measuredFooterHeight.value = height;
       footerHeight.value = height;
@@ -606,9 +625,11 @@ export const useTrayMeasurements = ({
       footerHeight,
       measuredFooterHeight,
       measurementOwner,
+      measurementOwnerRef,
       onGeometryMeasured,
       renderedFullScreen,
       renderedFooter,
+      renderedSnapshotRef,
       renderedTrayId,
     ],
   );

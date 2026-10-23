@@ -35,6 +35,39 @@ describe("useTrayRenderState", () => {
     expect(renderCount).toBe(committedRenderCount);
   });
 
+  it("publishes same-mode step content without rerendering the controller host", () => {
+    let renderCount = 0;
+    let state: ReturnType<typeof useTrayRenderState> | null = null;
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+
+    const Probe = ({ trayId }: { trayId: string }) => {
+      renderCount += 1;
+      state = useTrayRenderState({
+        content: `content-${trayId}`,
+        trayId,
+        fullScreen: false,
+      });
+      return null;
+    };
+
+    act(() => {
+      renderer = TestRenderer.create(<Probe trayId="step-one" />);
+    });
+
+    act(() => {
+      renderer!.update(<Probe trayId="step-two" />);
+    });
+    const renderCountBeforeSnapshotPublication = renderCount;
+
+    act(() => {
+      state!.actions.showLatestSnapshot();
+    });
+
+    expect(renderCount).toBe(renderCountBeforeSnapshotPublication);
+    expect(state!.snapshotStore.getSnapshot().trayId).toBe("step-two");
+    expect(state!.snapshotStore.getSnapshot().content).toBe("content-step-two");
+  });
+
   it("uses a neutral fullscreen background scale when no override is set", () => {
     let state: ReturnType<typeof useTrayRenderState> | null = null;
 

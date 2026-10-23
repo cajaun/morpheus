@@ -170,6 +170,8 @@ const Tray = forwardRef<TrayRef, TrayProps>(
         keyboardAware={keyboardAware}
         shared={visualShared}
         state={visualState}
+        renderSnapshotStore={controller.renderSnapshotStore}
+        renderSnapshotOverride={controller.renderSnapshotOverride}
         handlers={controller.handlers}
       />
     );

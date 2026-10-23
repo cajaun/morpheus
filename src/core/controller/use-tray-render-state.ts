@@ -3,6 +3,7 @@ import React, {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import { RenderedTrayState } from "../types";
@@ -33,6 +34,42 @@ type TraySnapshot = {
 };
 
 type InternalRenderedTrayState = RenderedTrayState;
+
+export type TrayRenderSnapshotStore = {
+  getSnapshot: () => RenderedTrayState;
+  subscribe: (listener: () => void) => () => void;
+  publish: (snapshot: RenderedTrayState) => void;
+};
+
+const createTrayRenderSnapshotStore = (
+  initialSnapshot: RenderedTrayState,
+): TrayRenderSnapshotStore => {
+  let snapshot = initialSnapshot;
+  const listeners = new Set<() => void>();
+
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    publish: (nextSnapshot) => {
+      if (snapshot === nextSnapshot) {
+        return;
+      }
+
+      snapshot = nextSnapshot;
+      listeners.forEach((listener) => listener());
+    },
+  };
+};
+
+// The visual subtree can receive a committed payload without making the
+// controller host reconcile its measurement and lifecycle hooks again.
+export const useTrayRenderSnapshot = (
+  store: TrayRenderSnapshotStore,
+) =>
+  useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
 
 // convert a prop snapshot into the normalized rendered shell shape
 const toRenderedTrayState = ({
@@ -199,25 +236,30 @@ export const useTrayRenderState = ({
     visible && wasPreparedRef.current && prepared !== true;
   wasPreparedRef.current = prepared;
 
+  const initialSnapshot = toRenderedTrayState({
+    content,
+    header,
+    footer,
+    trayId,
+    keyboardAware,
+    fullScreen,
+    fullScreenBackgroundScale,
+    fullScreenSafeAreaTop,
+    fullScreenDraggable,
+    containerStyle,
+    className,
+    footerStyle,
+    footerClassName,
+    transitionContract,
+  });
+  const snapshotStoreRef = useRef<TrayRenderSnapshotStore | null>(null);
+  if (snapshotStoreRef.current === null) {
+    snapshotStoreRef.current = createTrayRenderSnapshotStore(initialSnapshot);
+  }
+  const snapshotStore = snapshotStoreRef.current;
+  const renderedTrayRef = useRef<InternalRenderedTrayState>(initialSnapshot);
   const [renderedTray, setRenderedTray] =
-    useState<InternalRenderedTrayState>(() => ({
-      ...toRenderedTrayState({
-        content,
-        header,
-        footer,
-        trayId,
-        keyboardAware,
-        fullScreen,
-        fullScreenBackgroundScale,
-        fullScreenSafeAreaTop,
-        fullScreenDraggable,
-        containerStyle,
-        className,
-        footerStyle,
-        footerClassName,
-        transitionContract,
-      }),
-    }));
+    useState<InternalRenderedTrayState>(initialSnapshot);
   const lastRequestedSnapshotRef = useRef<RenderedTrayState | null>(null);
 
   const renderedTrayForRender = preparedActivation
@@ -237,7 +279,9 @@ export const useTrayRenderState = ({
         footerClassName,
         transitionContract,
       })
-    : renderedTray;
+    : snapshotStore.getSnapshot();
+
+  renderedTrayRef.current = renderedTrayForRender;
 
   // Record the snapshot only after React has committed the rendered payload.
   // The previous marker lived in a passive prop-sync effect, so it described
@@ -261,25 +305,51 @@ export const useTrayRenderState = ({
     visible,
   ]);
 
-  const publishSnapshot = useCallback((next: RenderedTrayState) => {
-    const lastRequestedSnapshot = lastRequestedSnapshotRef.current;
+  const publishSnapshot = useCallback(
+    (next: RenderedTrayState) => {
+      const lastRequestedSnapshot = lastRequestedSnapshotRef.current;
 
-    if (
-      lastRequestedSnapshot !== null &&
-      areTrayStatesEqual(lastRequestedSnapshot, next)
-    ) {
-      return;
-    }
+      if (
+        lastRequestedSnapshot !== null &&
+        areTrayStatesEqual(lastRequestedSnapshot, next)
+      ) {
+        return;
+      }
 
-    lastRequestedSnapshotRef.current = next;
-    setRenderedTray((current) => {
+      lastRequestedSnapshotRef.current = next;
+      const current = snapshotStore.getSnapshot();
+      const committed = commitTraySnapshot(current, next);
+
       log("RENDER SNAPSHOT PUBLISH", {
         current: describeTrayState(current),
         next: describeTrayState(next),
       });
-      return commitTraySnapshot(current, next);
-    });
-  }, []);
+
+      if (committed === current) {
+        return;
+      }
+
+      renderedTrayRef.current = committed;
+      snapshotStore.publish(committed);
+
+      // Same-mode step changes only replace the arbitrary React payload. Keep
+      // the controller host out of this commit; boundary changes still use
+      // the state update because geometry and animation policy must change
+      // together.
+      const isSameModeStepCommit =
+        current.trayId !== undefined &&
+        committed.trayId !== undefined &&
+        current.trayId !== committed.trayId &&
+        current.fullScreen === committed.fullScreen &&
+        current.transitionContract?.fullScreenChanged !== true &&
+        committed.transitionContract?.fullScreenChanged !== true;
+
+      if (!isSameModeStepCommit) {
+        setRenderedTray(committed);
+      }
+    },
+    [snapshotStore],
+  );
 
   const showLatestSnapshot = useCallback(() => {
     // refs let passive effects publish the newest props without changing callback identity
@@ -308,84 +378,94 @@ export const useTrayRenderState = ({
       return;
     }
 
-    setRenderedTray((current) => {
-      if (current.trayId !== activeTrayId) {
-        log("RENDER SNAPSHOT SYNC IGNORED", {
-          activeTrayId,
-          current: describeTrayState(current),
-        });
-        // same host node sync must not steal a transition owned by another tray id
-        return current;
-      }
-
-      const next = {
-        // preserve committed regions across native prop gaps real step changes publish a new snapshot
-        content:
-          contentRef.current ??
-          (fullScreenRef.current === current.fullScreen
-            ? current.content
-            : null),
-        header:
-          headerRef.current ??
-          (fullScreenRef.current === current.fullScreen
-            ? current.header
-            : null),
-        footer: footerRef.current ?? null,
-        trayId: current.trayId,
-        keyboardAware: keyboardAwareRef.current,
-        fullScreen: fullScreenRef.current,
-        fullScreenBackgroundScale: fullScreenBackgroundScaleRef.current,
-        fullScreenSafeAreaTop: fullScreenSafeAreaTopRef.current,
-        fullScreenDraggable: fullScreenDraggableRef.current,
-        containerStyle: containerStyleRef.current,
-        className: classNameRef.current,
-        footerStyle: footerStyleRef.current,
-        footerClassName: footerClassNameRef.current,
-        transitionContract: transitionContractRef.current,
-      };
-
-      const lastRequestedSnapshot = lastRequestedSnapshotRef.current;
-
-      if (
-        lastRequestedSnapshot !== null &&
-        areTrayStatesEqual(lastRequestedSnapshot, next)
-      ) {
-        return current;
-      }
-
-      lastRequestedSnapshotRef.current = next;
-      log("RENDER SNAPSHOT NODE SYNC", {
+    const current = snapshotStore.getSnapshot();
+    if (current.trayId !== activeTrayId) {
+      log("RENDER SNAPSHOT SYNC IGNORED", {
+        activeTrayId,
         current: describeTrayState(current),
-        next: describeTrayState(next),
       });
-      return commitTraySnapshot(current, next);
+      // same host node sync must not steal a transition owned by another tray id
+      return;
+    }
+
+    const next = {
+      // preserve committed regions across native prop gaps; real step changes
+      // publish a new snapshot
+      content:
+        contentRef.current ??
+        (fullScreenRef.current === current.fullScreen
+          ? current.content
+          : null),
+      header:
+        headerRef.current ??
+        (fullScreenRef.current === current.fullScreen
+          ? current.header
+          : null),
+      footer: footerRef.current ?? null,
+      trayId: current.trayId,
+      keyboardAware: keyboardAwareRef.current,
+      fullScreen: fullScreenRef.current,
+      fullScreenBackgroundScale: fullScreenBackgroundScaleRef.current,
+      fullScreenSafeAreaTop: fullScreenSafeAreaTopRef.current,
+      fullScreenDraggable: fullScreenDraggableRef.current,
+      containerStyle: containerStyleRef.current,
+      className: classNameRef.current,
+      footerStyle: footerStyleRef.current,
+      footerClassName: footerClassNameRef.current,
+      transitionContract: transitionContractRef.current,
+    };
+
+    const lastRequestedSnapshot = lastRequestedSnapshotRef.current;
+
+    if (
+      lastRequestedSnapshot !== null &&
+      areTrayStatesEqual(lastRequestedSnapshot, next)
+    ) {
+      return;
+    }
+
+    lastRequestedSnapshotRef.current = next;
+    log("RENDER SNAPSHOT NODE SYNC", {
+      current: describeTrayState(current),
+      next: describeTrayState(next),
     });
-  }, []);
+    const committed = commitTraySnapshot(current, next);
+
+    if (committed === current) {
+      return;
+    }
+
+    renderedTrayRef.current = committed;
+    snapshotStore.publish(committed);
+    setRenderedTray(committed);
+  }, [snapshotStore]);
 
   const clear = useCallback(() => {
     lastRequestedSnapshotRef.current = null;
-    setRenderedTray((current) => {
-      log("RENDER SNAPSHOT CLEAR", {
-        current: describeTrayState(current),
-      });
-      return {
-        content: null,
-        header: null,
-        footer: null,
-        trayId: undefined,
-        keyboardAware: undefined,
-        fullScreen: undefined,
-        fullScreenBackgroundScale: undefined,
-        fullScreenSafeAreaTop: undefined,
-        fullScreenDraggable: undefined,
-        containerStyle: undefined,
-        className: undefined,
-        footerStyle: undefined,
-        footerClassName: undefined,
-        transitionContract: null,
-      };
+    const current = snapshotStore.getSnapshot();
+    const cleared = {
+      content: null,
+      header: null,
+      footer: null,
+      trayId: undefined,
+      keyboardAware: undefined,
+      fullScreen: undefined,
+      fullScreenBackgroundScale: undefined,
+      fullScreenSafeAreaTop: undefined,
+      fullScreenDraggable: undefined,
+      containerStyle: undefined,
+      className: undefined,
+      footerStyle: undefined,
+      footerClassName: undefined,
+      transitionContract: null,
+    };
+    log("RENDER SNAPSHOT CLEAR", {
+      current: describeTrayState(current),
     });
-  }, []);
+    renderedTrayRef.current = cleared;
+    snapshotStore.publish(cleared);
+    setRenderedTray(cleared);
+  }, [snapshotStore]);
 
   return {
     state: {
@@ -408,6 +488,11 @@ export const useTrayRenderState = ({
       renderedTransitionContract:
         renderedTrayForRender.transitionContract ?? null,
     },
+    snapshotStore,
+    renderedSnapshotRef: renderedTrayRef,
+    renderSnapshotOverride: preparedActivation
+      ? renderedTrayForRender
+      : undefined,
     actions: {
       showLatestSnapshot,
       syncRenderedNodes,
