@@ -1,5 +1,11 @@
 // adapt runtime payloads into the animated native shell
-import React, { useCallback, useMemo } from "react";
+import React, {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import { TrayStepContent } from "../../tray-step-content";
 import { TrayHeaderTransitionProvider } from "../../primitives/header-transition-context";
 import {
@@ -18,6 +24,126 @@ import { Tray } from "../tray";
 import type { PresentedTrayProps } from "../../runtime/presenter/types";
 import { arePresentedTraysEquivalent } from "../../runtime/presenter/model";
 
+type PresentedTrayRegionName = "header" | "content" | "footer";
+
+type PresentedTrayPayloadStore = {
+  getSnapshot: () => PresentedTrayProps["payload"];
+  subscribe: (listener: () => void) => () => void;
+  publish: (payload: PresentedTrayProps["payload"]) => void;
+};
+
+const createPresentedTrayPayloadStore = (
+  initialPayload: PresentedTrayProps["payload"],
+): PresentedTrayPayloadStore => {
+  let currentPayload = initialPayload;
+  const listeners = new Set<() => void>();
+
+  return {
+    getSnapshot: () => currentPayload,
+    subscribe: (listener) => {
+      listeners.add(listener);
+
+      return () => listeners.delete(listener);
+    },
+    publish: (payload) => {
+      if (payload === currentPayload) {
+        return;
+      }
+
+      currentPayload = payload;
+      listeners.forEach((listener) => listener());
+    },
+  };
+};
+
+// Keep the shell-facing region elements stable while the latest committed
+// payload flows through a small external store. This removes wrapper/context
+// reconstruction from the presenter's hot path without changing the payload
+// ordering used by Tray's render snapshot barrier.
+const PresentedTrayRegion = ({
+  store,
+  region,
+  assignmentId,
+}: {
+  store: PresentedTrayPayloadStore;
+  region: PresentedTrayRegionName;
+  assignmentId: number;
+}) => {
+  const payload = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getSnapshot,
+  );
+
+  let regionNode: React.ReactNode = null;
+
+  if (region === "header" && payload.header) {
+    regionNode = (
+      <TrayScopeProvider value={payload.rootTrayId}>
+        <TrayStepOptionsProvider value={payload.stepOptions}>
+          <TrayStepContent
+            stepKey={
+              payload.fullScreen ? "fullscreen-header" : "fixed-header"
+            }
+            scale={false}
+            fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
+            skipEntering={payload.isFirstRender}
+          >
+            <TrayHeaderTransitionProvider
+              value={{
+                stepKey: payload.trayId,
+                skipEntering: payload.isFirstRender,
+                fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
+              }}
+            >
+              {payload.header}
+            </TrayHeaderTransitionProvider>
+          </TrayStepContent>
+        </TrayStepOptionsProvider>
+      </TrayScopeProvider>
+    );
+  }
+
+  if (region === "content" && payload.content != null) {
+    regionNode = (
+      <TrayScopeProvider value={payload.rootTrayId}>
+        <TrayStepOptionsProvider value={payload.stepOptions}>
+          <TrayStepContent
+            stepKey={payload.trayId}
+            scale={payload.stepOptions.scale}
+            anchorScaleToTop={payload.fullScreen}
+            fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
+            skipEntering={payload.isFirstRender}
+          >
+            {payload.content}
+          </TrayStepContent>
+        </TrayStepOptionsProvider>
+      </TrayScopeProvider>
+    );
+  }
+
+  if (region === "footer" && payload.footer) {
+    regionNode = (
+      <TrayScopeProvider value={payload.rootTrayId}>
+        <TrayStepOptionsProvider value={payload.stepOptions}>
+          {payload.footer}
+        </TrayStepOptionsProvider>
+      </TrayScopeProvider>
+    );
+  }
+
+  return profileTrayRegion(
+    `tray-region:${payload.trayId}:${region}`,
+    regionNode,
+    {
+      region,
+      rootTrayId: payload.rootTrayId,
+      trayId: payload.trayId,
+      assignmentId,
+    },
+  );
+};
+
 // render one resolved payload through the animated shell and content layers
 const PresentedTray = ({
   payload,
@@ -29,6 +155,41 @@ const PresentedTray = ({
 }: PresentedTrayProps) => {
   const runtime = useTrayRuntimeStore();
   const transitionContract = payload.transitionContract;
+  const payloadStoreRef = useRef<{
+    assignmentId: number;
+    prepared: boolean;
+    store: PresentedTrayPayloadStore;
+  } | null>(null);
+
+  if (
+    payloadStoreRef.current === null ||
+    payloadStoreRef.current.assignmentId !== assignmentId ||
+    payloadStoreRef.current.prepared !== prepared
+  ) {
+    payloadStoreRef.current = {
+      assignmentId,
+      prepared,
+      store: createPresentedTrayPayloadStore(payload),
+    };
+  }
+
+  const payloadStore = payloadStoreRef.current.store;
+
+  // Publish after the host commit. Regions therefore never observe a payload
+  // that the animated shell has not committed, which preserves close and
+  // fullscreen transition ordering. Closing hosts intentionally retain their
+  // last visible region payload; the Tray controller owns the close snapshot
+  // and clears it when the native close lifecycle completes.
+  useLayoutEffect(() => {
+    if (payload.visible) {
+      payloadStore.publish(payload);
+    }
+  }, [payload, payloadStore]);
+
+  const hasHeader = Boolean(payload.header);
+  const hasContent = payload.content != null;
+  const hasFooter = Boolean(payload.footer);
+
   const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
     (
       _id,
@@ -91,148 +252,38 @@ const PresentedTray = ({
     ],
   );
 
-  const headerTransitionContent = useMemo(
-    () =>
-      payload.header ? (
-        <TrayHeaderTransitionProvider
-          value={{
-            stepKey: payload.trayId,
-            skipEntering: payload.isFirstRender,
-            fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
-          }}
-        >
-          {payload.header}
-        </TrayHeaderTransitionProvider>
-      ) : null,
-    [
-      payload.fullScreenBoundaryExit,
-      payload.header,
-      payload.isFirstRender,
-      payload.trayId,
-    ],
-  );
   const header = useMemo(
-    () => {
-      if (!payload.header) {
-        return null;
-      }
-
-      const region = (
-        <TrayScopeProvider value={payload.rootTrayId}>
-          <TrayStepOptionsProvider value={payload.stepOptions}>
-            <TrayStepContent
-              stepKey={
-                payload.fullScreen ? "fullscreen-header" : "fixed-header"
-              }
-              scale={false}
-              fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
-              skipEntering={payload.isFirstRender}
-            >
-              {headerTransitionContent}
-            </TrayStepContent>
-          </TrayStepOptionsProvider>
-        </TrayScopeProvider>
-      );
-
-      return profileTrayRegion(
-        `tray-region:${payload.trayId}:header`,
-        region,
-        {
-          region: "header",
-          rootTrayId: payload.rootTrayId,
-          trayId: payload.trayId,
-          assignmentId,
-        },
-      );
-    },
-    [
-      assignmentId,
-      headerTransitionContent,
-      payload.fullScreen,
-      payload.fullScreenBoundaryExit,
-      payload.header,
-      payload.isFirstRender,
-      payload.rootTrayId,
-      payload.stepOptions,
-      payload.trayId,
-    ],
+    () =>
+      hasHeader ? (
+        <PresentedTrayRegion
+          store={payloadStore}
+          region="header"
+          assignmentId={assignmentId}
+        />
+      ) : null,
+    [assignmentId, hasHeader, payloadStore],
   );
   const content = useMemo(
-    () => {
-      if (payload.content == null) {
-        return null;
-      }
-
-      const region = (
-        <TrayScopeProvider value={payload.rootTrayId}>
-          <TrayStepOptionsProvider value={payload.stepOptions}>
-            <TrayStepContent
-              stepKey={payload.trayId}
-              scale={payload.stepOptions.scale}
-              anchorScaleToTop={payload.fullScreen}
-              fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
-              skipEntering={payload.isFirstRender}
-            >
-              {payload.content}
-            </TrayStepContent>
-          </TrayStepOptionsProvider>
-        </TrayScopeProvider>
-      );
-
-      return profileTrayRegion(
-        `tray-region:${payload.trayId}:content`,
-        region,
-        {
-          region: "content",
-          rootTrayId: payload.rootTrayId,
-          trayId: payload.trayId,
-          assignmentId,
-        },
-      );
-    },
-    [
-      assignmentId,
-      payload.content,
-      payload.fullScreen,
-      payload.fullScreenBoundaryExit,
-      payload.isFirstRender,
-      payload.rootTrayId,
-      payload.stepOptions,
-      payload.trayId,
-    ],
+    () =>
+      hasContent ? (
+        <PresentedTrayRegion
+          store={payloadStore}
+          region="content"
+          assignmentId={assignmentId}
+        />
+      ) : null,
+    [assignmentId, hasContent, payloadStore],
   );
   const footer = useMemo(
-    () => {
-      if (!payload.footer) {
-        return null;
-      }
-
-      const region = (
-        <TrayScopeProvider value={payload.rootTrayId}>
-          <TrayStepOptionsProvider value={payload.stepOptions}>
-            {payload.footer}
-          </TrayStepOptionsProvider>
-        </TrayScopeProvider>
-      );
-
-      return profileTrayRegion(
-        `tray-region:${payload.trayId}:footer`,
-        region,
-        {
-          region: "footer",
-          rootTrayId: payload.rootTrayId,
-          trayId: payload.trayId,
-          assignmentId,
-        },
-      );
-    },
-    [
-      assignmentId,
-      payload.footer,
-      payload.rootTrayId,
-      payload.stepOptions,
-      payload.trayId,
-    ],
+    () =>
+      hasFooter ? (
+        <PresentedTrayRegion
+          store={payloadStore}
+          region="footer"
+          assignmentId={assignmentId}
+        />
+      ) : null,
+    [assignmentId, hasFooter, payloadStore],
   );
   const handleDismissKeyboard = useCallback(
     () => dismissKeyboardForTray(payload.rootTrayId),
