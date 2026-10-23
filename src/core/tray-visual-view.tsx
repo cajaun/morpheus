@@ -51,7 +51,7 @@ import {
   TRAY_HEADER_HORIZONTAL_PADDING,
   TRAY_KEYBOARD_GAP,
 } from "./constants";
-import type { TrayProps } from "./types";
+import type { RenderedTrayState, TrayProps } from "./types";
 
 type TrayVisualViewProps = Pick<
   TrayProps,
@@ -150,6 +150,7 @@ type TraySurfaceProps = Pick<
     | "handleShellLayout"
   > & {
     gesture: ReturnType<typeof useTrayGesture>;
+    hasFooter: TrayController["shared"]["hasFooter"];
     style?: TrayProps["style"];
     renderedClassName?: string;
     renderedContainerStyle?: TrayProps["containerStyle"];
@@ -158,6 +159,10 @@ type TraySurfaceProps = Pick<
     renderedFooter: React.ReactNode;
     renderedFooterClassName?: string;
     renderedFooterStyle?: TrayProps["footerStyle"];
+    renderSnapshotStore?: TrayRenderSnapshotStore;
+    renderSnapshotOverride?: RenderedTrayState;
+    rootTrayId?: string;
+    visible: boolean;
     renderedFullScreen: boolean;
     contentMotionDirection: ReturnType<
       typeof resolveTrayContentMotionDirection
@@ -190,6 +195,7 @@ TrayRenderedNode.displayName = "TrayRenderedNode";
 const TraySurface = React.memo(
   ({
     gesture,
+    hasFooter,
     style,
     renderedClassName,
     renderedContainerStyle,
@@ -198,6 +204,10 @@ const TraySurface = React.memo(
     renderedFooter,
     renderedFooterClassName,
     renderedFooterStyle,
+    renderSnapshotStore,
+    renderSnapshotOverride,
+    rootTrayId,
+    visible,
     renderedFullScreen,
     contentMotionDirection,
     trayTransitionStart,
@@ -228,16 +238,107 @@ const TraySurface = React.memo(
     footerContentFrameStyle,
     fullScreenSafeAreaContentStyle,
     originProgress,
-  }: TraySurfaceProps) => (
+  }: TraySurfaceProps) => {
+    const fallbackSnapshot = useMemo<RenderedTrayState>(
+      () => ({
+        header: renderedHeader,
+        content: renderedContent,
+        footer: renderedFooter,
+        trayId: undefined,
+        fullScreen: renderedFullScreen,
+        containerStyle: renderedContainerStyle,
+        className: renderedClassName,
+        footerStyle: renderedFooterStyle,
+        footerClassName: renderedFooterClassName,
+        transitionContract: null,
+      }),
+      [
+        renderedClassName,
+        renderedContainerStyle,
+        renderedContent,
+        renderedFooter,
+        renderedFooterClassName,
+        renderedFooterStyle,
+        renderedFullScreen,
+        renderedHeader,
+      ],
+    );
+    const fallbackSnapshotStore = useMemo<TrayRenderSnapshotStore>(
+      () => ({
+        getSnapshot: () => fallbackSnapshot,
+        subscribe: () => () => {},
+        publish: () => {},
+      }),
+      [fallbackSnapshot],
+    );
+    const committedSnapshot = useTrayRenderSnapshot(
+      renderSnapshotStore ?? fallbackSnapshotStore,
+    );
+    const preparedSnapshotRef = useRef(renderSnapshotOverride);
+    const lastSnapshotOverrideRef = useRef(renderSnapshotOverride);
+
+    if (renderSnapshotOverride !== lastSnapshotOverrideRef.current) {
+      lastSnapshotOverrideRef.current = renderSnapshotOverride;
+      preparedSnapshotRef.current = renderSnapshotOverride;
+    }
+
+    const preparedSnapshot = preparedSnapshotRef.current;
+    useLayoutEffect(() => {
+      if (
+        preparedSnapshot !== undefined &&
+        committedSnapshot.trayId === preparedSnapshot.trayId
+      ) {
+        preparedSnapshotRef.current = undefined;
+      }
+    }, [committedSnapshot, preparedSnapshot]);
+
+    const renderedSnapshot = preparedSnapshot ?? committedSnapshot;
+    const surfaceClassName = renderedSnapshot.className;
+    const surfaceContainerStyle = renderedSnapshot.containerStyle;
+    const surfaceFooterClassName = renderedSnapshot.footerClassName;
+    const surfaceFooterStyle = renderedSnapshot.footerStyle;
+    const surfaceHeader = renderedSnapshot.header;
+    const surfaceContent = renderedSnapshot.content;
+    const surfaceFooter = renderedSnapshot.footer;
+
+    useLayoutEffect(() => {
+      // The store remains the commit barrier. Only this memoized surface and
+      // its arbitrary slot payload respond to its publication; the parent
+      // animation/measurement hook graph does not need to rerender.
+      hasFooter.value = surfaceFooter != null;
+
+      if (!visible || renderedSnapshot.trayId === undefined) {
+        return;
+      }
+
+      markTrayBoundarySnapshotCommitted(
+        rootTrayId,
+        renderedSnapshot.transitionContract,
+        renderedSnapshot.trayId,
+      );
+      markTrayStepRenderedCommit(
+        rootTrayId,
+        renderedSnapshot.trayId,
+        renderedSnapshot.transitionContract?.generation,
+      );
+    }, [
+      hasFooter,
+      renderedSnapshot,
+      rootTrayId,
+      surfaceFooter,
+      visible,
+    ]);
+
+    return (
     <>
       <GestureDetector gesture={gesture}>
         <Animated.View
-          className={renderedClassName}
+          className={surfaceClassName}
           style={[
             trayStyles.container,
             trayLayoutStyle,
             presentationFrameStyle,
-            renderedContainerStyle,
+            surfaceContainerStyle,
             surfaceVisibilityStyle,
             originSurfaceVisibilityStyle,
             dragStyle,
@@ -275,14 +376,14 @@ const TraySurface = React.memo(
                   value={contentMotionDirection}
                 >
                   <TrayTransitionStartProvider value={trayTransitionStart}>
-                    {renderedHeader ? (
+                    {surfaceHeader ? (
                       <Animated.View
                         style={[localStyles.headerContainer, headerFrameStyle]}
                       >
-                        <TrayRenderedNode node={renderedHeader} />
+                        <TrayRenderedNode node={surfaceHeader} />
                       </Animated.View>
                     ) : null}
-                    <TrayRenderedNode node={renderedContent} />
+                    <TrayRenderedNode node={surfaceContent} />
                   </TrayTransitionStartProvider>
                 </TrayContentMotionDirectionProvider>
               </Animated.View>
@@ -294,27 +395,28 @@ const TraySurface = React.memo(
       </GestureDetector>
       {/* fixed footers stay outside the layout animated shell only a fullscreen boundary may move this layer and then it follows the shell s explicit morph clock rather than content layout */}
       <Animated.View
-        className={renderedFooterClassName}
+        className={surfaceFooterClassName}
         onLayout={handleVisibleFooterLayout}
         style={[
           trayStyles.footer,
           dragStyle,
-          renderedFooterStyle,
+          surfaceFooterStyle,
           footerContainerStyle,
           footerVisibilityStyle,
         ]}
         pointerEvents={
-          renderedFooter && interactive && isSurfaceReady ? "auto" : "none"
+          surfaceFooter && interactive && isSurfaceReady ? "auto" : "none"
         }
       >
         <Animated.View style={footerContentFrameStyle}>
           <TrayOriginProgressProvider value={originProgress}>
-            <TrayRenderedNode node={renderedFooter ?? null} />
+            <TrayRenderedNode node={surfaceFooter ?? null} />
           </TrayOriginProgressProvider>
         </Animated.View>
       </Animated.View>
     </>
-  ),
+    );
+  },
 );
 
 TraySurface.displayName = "TraySurface";
@@ -379,83 +481,24 @@ const TrayVisualView = React.memo(
       renderedFooterStyle: fallbackFooterStyle,
       renderedFooterClassName: fallbackFooterClassName,
     } = state;
-    const fallbackSnapshot = useMemo(
-      () => ({
-        header: fallbackHeader,
-        footer: fallbackFooter,
-        content: fallbackContent,
-        trayId: fallbackTrayId,
-        fullScreen: fallbackFullScreen,
-        fullScreenBackgroundScale: fallbackSnapshotBackgroundScale,
-        fullScreenSafeAreaTop: fallbackSafeAreaTop,
-        fullScreenDraggable: fallbackDraggable,
-        containerStyle: fallbackContainerStyle,
-        className: fallbackClassName,
-        footerStyle: fallbackFooterStyle,
-        footerClassName: fallbackFooterClassName,
-        transitionContract: transitionContract ?? null,
-      }),
-      [
-        fallbackSnapshotBackgroundScale,
-        fallbackClassName,
-        fallbackContainerStyle,
-        fallbackContent,
-        fallbackDraggable,
-        fallbackFooter,
-        fallbackFooterClassName,
-        fallbackFooterStyle,
-        fallbackFullScreen,
-        fallbackHeader,
-        fallbackSafeAreaTop,
-        fallbackTrayId,
-        transitionContract,
-      ],
-    );
-    const fallbackSnapshotStore = useMemo<TrayRenderSnapshotStore>(
-      () => ({
-        getSnapshot: () => fallbackSnapshot,
-        subscribe: () => () => {},
-        publish: () => {},
-      }),
-      [fallbackSnapshot],
-    );
-    const committedSnapshot = useTrayRenderSnapshot(
-      renderSnapshotStore ?? fallbackSnapshotStore,
-    );
-    const preparedSnapshotRef = useRef(renderSnapshotOverride);
-    const lastSnapshotOverrideRef = useRef(renderSnapshotOverride);
-
-    if (renderSnapshotOverride !== lastSnapshotOverrideRef.current) {
-      lastSnapshotOverrideRef.current = renderSnapshotOverride;
-      preparedSnapshotRef.current = renderSnapshotOverride;
-    }
-
-    const preparedSnapshot = preparedSnapshotRef.current;
-    useLayoutEffect(() => {
-      if (
-        preparedSnapshot !== undefined &&
-        committedSnapshot.trayId === preparedSnapshot.trayId
-      ) {
-        preparedSnapshotRef.current = undefined;
-      }
-    }, [committedSnapshot, preparedSnapshot]);
-
-    const renderedSnapshot = preparedSnapshot ?? committedSnapshot;
-    const renderedHeader = renderedSnapshot.header;
-    const renderedFooter = renderedSnapshot.footer;
-    const renderedContent = renderedSnapshot.content;
-    const renderedTrayId = renderedSnapshot.trayId;
-    const renderedFullScreen = renderedSnapshot.fullScreen ?? false;
+    // These are the committed shell values. Same-mode step payloads are
+    // intentionally not read here; the memoized TraySurface consumes the
+    // snapshot store after geometry preparation and updates only its slots.
+    const renderedHeader = fallbackHeader;
+    const renderedFooter = fallbackFooter;
+    const renderedContent = fallbackContent;
+    const renderedTrayId = fallbackTrayId;
+    const renderedFullScreen = fallbackFullScreen;
     const renderedFullScreenBackgroundScale =
-      renderedSnapshot.fullScreenBackgroundScale ?? 1;
+      fallbackSnapshotBackgroundScale ?? 1;
     const renderedFullScreenSafeAreaTop =
-      renderedSnapshot.fullScreenSafeAreaTop ?? false;
+      fallbackSafeAreaTop ?? false;
     const renderedFullScreenDraggable =
-      renderedSnapshot.fullScreenDraggable ?? true;
-    const renderedContainerStyle = renderedSnapshot.containerStyle;
-    const renderedClassName = renderedSnapshot.className;
-    const renderedFooterStyle = renderedSnapshot.footerStyle;
-    const renderedFooterClassName = renderedSnapshot.footerClassName;
+      fallbackDraggable ?? true;
+    const renderedContainerStyle = fallbackContainerStyle;
+    const renderedClassName = fallbackClassName;
+    const renderedFooterStyle = fallbackFooterStyle;
+    const renderedFooterClassName = fallbackFooterClassName;
     const {
       handleContentLayout,
       handleVisibleFooterLayout,
@@ -465,33 +508,6 @@ const TrayVisualView = React.memo(
       handleLayoutTransitionComplete,
       handleRequestClose,
     } = handlers;
-
-    useLayoutEffect(() => {
-      // Footer presence is a shell scalar. Keep it synchronized even when a
-      // same-mode step payload is delivered through the local snapshot store.
-      hasFooter.value = renderedFooter != null;
-
-      if (!visible || renderedSnapshot.trayId === undefined) {
-        return;
-      }
-
-      markTrayBoundarySnapshotCommitted(
-        rootTrayId,
-        renderedSnapshot.transitionContract,
-        renderedSnapshot.trayId,
-      );
-      markTrayStepRenderedCommit(
-        rootTrayId,
-        renderedSnapshot.trayId,
-        renderedSnapshot.transitionContract?.generation,
-      );
-    }, [
-      hasFooter,
-      renderedFooter,
-      renderedSnapshot,
-      rootTrayId,
-      visible,
-    ]);
 
     // resolve direction during render so entering and exiting content receive the same transition snapshot
     const contentMotionDirection =
@@ -853,6 +869,11 @@ const TrayVisualView = React.memo(
               renderedFooter={renderedFooter}
               renderedFooterClassName={renderedFooterClassName}
               renderedFooterStyle={renderedFooterStyle}
+              hasFooter={hasFooter}
+              renderSnapshotStore={renderSnapshotStore}
+              renderSnapshotOverride={renderSnapshotOverride}
+              rootTrayId={rootTrayId}
+              visible={visible}
               renderedFullScreen={presentationFullScreen}
               contentMotionDirection={contentMotionDirection}
               trayTransitionStart={trayTransitionStart}
