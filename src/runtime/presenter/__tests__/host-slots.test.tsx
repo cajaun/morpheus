@@ -231,10 +231,10 @@ describe("presenter host startup", () => {
     });
 
     expect(renderedTrayIds).toEqual(["root-next-step"]);
-    expect(phases).toEqual(["update", "nested-update"]);
+    expect(phases).toEqual(["update"]);
   });
 
-  it("publishes durable slot state for same-root mode changes", () => {
+  it("does not enqueue a slot reconciliation for same-root mode changes", () => {
     const phases: string[] = [];
     const renderHost = React.memo(
       ({ payload }: PresentedTrayProps) => (
@@ -278,10 +278,10 @@ describe("presenter host startup", () => {
       );
     });
 
-    expect(phases).toEqual(["update", "nested-update"]);
+    expect(phases).toEqual(["update"]);
   });
 
-  it("closes the latest same-root step after the durable slot catches up", () => {
+  it("closes the latest same-root step from the commit snapshot", () => {
     const hostStates: [string, boolean][] = [];
     const renderHost: PresentedTrayRenderer = ({ payload }) => {
       hostStates.push([payload.trayId, payload.visible]);
@@ -313,6 +313,47 @@ describe("presenter host startup", () => {
     act(() => {
       renderer?.update(
         <RootTraySlots activeHost={null} {...commonProps} />,
+      );
+    });
+
+    expect(hostStates).toContainEqual(["root-next-step", false]);
+  });
+
+  it("closes the latest same-root step before replacing the root host", () => {
+    const hostStates: [string, boolean][] = [];
+    const renderHost: PresentedTrayRenderer = ({ payload }) => {
+      hostStates.push([payload.trayId, payload.visible]);
+      return null;
+    };
+    const commonProps = createCommonProps(renderHost);
+
+    act(() => {
+      renderer = create(
+        <RootTraySlots
+          activeHost={createPresentedTray("root", 0)}
+          {...commonProps}
+        />,
+      );
+    });
+
+    act(() => {
+      renderer?.update(
+        <RootTraySlots
+          activeHost={{
+            ...createPresentedTray("root", 0),
+            trayId: "root-next-step",
+          }}
+          {...commonProps}
+        />,
+      );
+    });
+
+    act(() => {
+      renderer?.update(
+        <RootTraySlots
+          activeHost={createPresentedTray("replacement", 0)}
+          {...commonProps}
+        />,
       );
     });
 

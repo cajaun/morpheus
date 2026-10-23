@@ -84,6 +84,11 @@ const RootTraySlotsImpl = ({
   const nextAssignmentIdRef = useRef(1);
   const activeSlotIndexRef = useRef<number | null>(activeHost ? 0 : null);
   const pendingPresentedHostRef = useRef<PresentedTray | null>(null);
+  // Keep the last active payload that completed a React commit. Same-root
+  // changes can render directly from activeHost without copying the payload
+  // into hostSlots, while close/root replacement still needs the committed
+  // outgoing snapshot to animate.
+  const lastCommittedActiveHostRef = useRef<PresentedTray | null>(null);
   const [hostSlots, setHostSlots] = useState<
     [TrayHostSlot, TrayHostSlot]
   >(() =>
@@ -120,6 +125,15 @@ const RootTraySlotsImpl = ({
     activeSlotIndex !== null &&
     activeSlot?.visible === true &&
     activeSlot.payload?.rootTrayId === activeHost.rootTrayId;
+  const lastCommittedActiveHost = lastCommittedActiveHostRef.current;
+  const shouldRenderClosingHostImmediately =
+    activeSlotIndex !== null &&
+    activeSlot?.visible === true &&
+    activeSlot.payload?.rootTrayId !== undefined &&
+    lastCommittedActiveHost !== null &&
+    lastCommittedActiveHost.rootTrayId === activeSlot.payload.rootTrayId &&
+    (activeHost === null ||
+      activeHost.rootTrayId !== lastCommittedActiveHost.rootTrayId);
   const slotsForRender =
     shouldRenderPreparedHostImmediately && activeHost !== null
       ? hostSlots.map((slot, index) =>
@@ -147,6 +161,23 @@ const RootTraySlotsImpl = ({
                 }
               : slot,
           ) as [TrayHostSlot, TrayHostSlot]
+        : shouldRenderClosingHostImmediately &&
+            activeSlotIndex !== null &&
+            lastCommittedActiveHost !== null
+          ? hostSlots.map((slot, index) =>
+              index === activeSlotIndex
+                ? {
+                    assignmentId: slot.assignmentId,
+                    payload: resolveClosingPresentedTray(
+                      lastCommittedActiveHost,
+                      transitionContract,
+                    ),
+                    visible: false,
+                    interactive: false,
+                    prepared: false,
+                  }
+                : slot,
+            ) as [TrayHostSlot, TrayHostSlot]
         : hostSlots;
   const orderedHostSlots = useMemo(
     () => resolveOrderedHostSlots(slotsForRender),
@@ -212,15 +243,13 @@ const RootTraySlotsImpl = ({
       );
     }
 
-    const activeHostAlreadyDurable =
+    const canRenderSameRootHostWithoutSlotState =
       shouldRenderSameRootHostImmediately &&
       activeHost !== null &&
-      activeSlot?.payload === activeHost &&
-      activeSlot.visible === true &&
-      activeSlot.interactive === activeHost.interactive &&
-      activeSlot.prepared !== true;
+      activeSlot?.visible === true &&
+      activeSlot?.prepared !== true;
 
-    if (activeHostAlreadyDurable) {
+    if (canRenderSameRootHostWithoutSlotState) {
       return;
     }
 
@@ -256,7 +285,10 @@ const RootTraySlotsImpl = ({
         if (closingSlotPayload === null) {
           return current;
         }
-        const closingPayload = closingSlotPayload;
+        const closingPayload =
+          lastCommittedActiveHostRef.current?.rootTrayId === currentRootTrayId
+            ? lastCommittedActiveHostRef.current
+            : closingSlotPayload;
 
         next[currentActiveSlotIndex] = {
           assignmentId: closingActiveSlot.assignmentId,
@@ -284,9 +316,21 @@ const RootTraySlotsImpl = ({
         const targetSlotIndex = currentActiveSlotIndex ?? 0;
         const targetSlot = next[targetSlotIndex];
 
-        // Same-root updates are durable before the next lifecycle boundary.
-        // The close path must consume this committed slot instead of trying to
-        // recover a payload from a render-time ref.
+        // Same-root step/mode changes are already rendered from activeHost.
+        // Keep the two-slot state for topology and close boundaries only; the
+        // commit-phase snapshot ref supplies the outgoing payload when a close
+        // or root replacement arrives before another topology change.
+        const canKeepSameRootHostInRender =
+          currentActiveSlotIndex !== null &&
+          targetSlot.visible === true &&
+          targetSlot.payload?.rootTrayId === activeHost.rootTrayId &&
+          targetSlot.prepared !== true;
+
+        if (canKeepSameRootHostInRender) {
+          activeSlotIndexRef.current = targetSlotIndex;
+          return current;
+        }
+
         next[targetSlotIndex] = {
           assignmentId:
             targetSlot.assignmentId || nextAssignmentIdRef.current + 1,
@@ -316,7 +360,10 @@ const RootTraySlotsImpl = ({
         if (closingSlotPayload === null) {
           return current;
         }
-        const closingPayload = closingSlotPayload;
+        const closingPayload =
+          lastCommittedActiveHostRef.current?.rootTrayId === currentRootTrayId
+            ? lastCommittedActiveHostRef.current
+            : closingSlotPayload;
 
         pendingPresentedHostRef.current = activeHost;
         next[currentActiveSlotIndex] = {
@@ -371,6 +418,24 @@ const RootTraySlotsImpl = ({
     transitionContract,
   ]);
 
+  // Advance the close snapshot only after the active payload has committed.
+  // This effect intentionally follows the slot lifecycle effect above so a
+  // root replacement can still read the previous root's last committed host.
+  useLayoutEffect(() => {
+    if (
+      activeHost !== null &&
+      (shouldRenderPreparedHostImmediately ||
+        shouldRenderSameRootHostImmediately)
+    ) {
+      lastCommittedActiveHostRef.current = activeHost;
+    }
+  }, [
+    activeHost,
+    hostSlots,
+    shouldRenderPreparedHostImmediately,
+    shouldRenderSameRootHostImmediately,
+  ]);
+
   useLayoutEffect(() => {
     log("HOST SLOT STATE", {
       activeHost: activeHost
@@ -411,8 +476,12 @@ const RootTraySlotsImpl = ({
     const activeSlot =
       activeSlotIndex === null ? null : hostSlots[activeSlotIndex];
     const renderedActiveHost =
-      shouldRenderSameRootHostImmediately && activeHost !== null
+      (shouldRenderPreparedHostImmediately ||
+        shouldRenderSameRootHostImmediately) &&
+      activeHost !== null
         ? activeHost
+        : shouldRenderClosingHostImmediately
+          ? lastCommittedActiveHost
         : activeSlot?.payload;
 
     markTrayStepSlotCommitted(
@@ -425,7 +494,14 @@ const RootTraySlotsImpl = ({
       renderedActiveHost?.transitionContract,
       renderedActiveHost?.trayId,
     );
-  }, [activeHost, hostSlots, shouldRenderSameRootHostImmediately]);
+  }, [
+    activeHost,
+    hostSlots,
+    lastCommittedActiveHost,
+    shouldRenderClosingHostImmediately,
+    shouldRenderPreparedHostImmediately,
+    shouldRenderSameRootHostImmediately,
+  ]);
 
   return (
     <>
