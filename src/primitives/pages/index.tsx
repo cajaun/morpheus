@@ -7,7 +7,7 @@ import {
 } from "react-native";
 import { TrayPagesProvider } from "../../pages-context";
 import {
-  useTrayHost,
+  useTrayHostActions,
   useTrayHostSelector,
   useTrayRuntimeStore,
   useTrayScope,
@@ -52,7 +52,10 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
 
     return state.registry[trayId]?.steps[stepIndex]?.key ?? null;
   });
-  const { registerTrayPages, requestPageTransition } = useTrayHost();
+  // Pages only needs imperative runtime commands here. Subscribing to the
+  // complete host snapshot makes shell, geometry, and presentation writes
+  // rerender the entire pages subtree even when page state is unchanged.
+  const { registerTrayPages, requestPageTransition } = useTrayHostActions();
   const runtime = useTrayRuntimeStore();
   const pager = useTrayPagesTransition({
     initialPage,
