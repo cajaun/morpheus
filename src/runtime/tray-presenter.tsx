@@ -3,7 +3,6 @@ import {
   useTrayHostActions,
   useTrayHostSelector,
 } from "./tray-context";
-import type { TrayHostStateValue } from "./types";
 import { logTrayProfilerCommit } from "../telemetry/tray-profiler";
 import { isTrayInstrumentationEnabled } from "../telemetry/config";
 import {
@@ -12,23 +11,23 @@ import {
   RootTraySlots,
   arePresentedTrayListsEquivalent,
   arePresentedTraysEquivalent,
+  createTrayPresenterStateSelector,
   resolvePresenterTransitionScope,
   type PresentedTray,
   type PresentedTrayRenderer,
 } from "./presenter";
-
-const selectRegistry = (state: TrayHostStateValue) => state.registry;
-const selectStack = (state: TrayHostStateValue) => state.stack;
-const selectTransition = (state: TrayHostStateValue) => state.lastTransition;
 
 // resolve runtime stack entries into root and nested host groups
 // resolve runtime stack entries into root and nested host presentations
 export const TrayPresenter: React.FC<{
   renderHost: PresentedTrayRenderer;
 }> = ({ renderHost }) => {
-  const registry = useTrayHostSelector(selectRegistry);
-  const stack = useTrayHostSelector(selectStack);
-  const transition = useTrayHostSelector(selectTransition);
+  const selectPresenterState = useMemo(
+    createTrayPresenterStateSelector,
+    [],
+  );
+  const presenterState = useTrayHostSelector(selectPresenterState);
+  const { registry, stack, transition } = presenterState;
   const { dismissKeyboardForTray, requestCloseActiveTray } = useTrayHostActions();
   const previousIndexByTrayRef = useRef<Record<string, number>>({});
   const previousStackTrayIdsRef = useRef<readonly string[]>([]);
