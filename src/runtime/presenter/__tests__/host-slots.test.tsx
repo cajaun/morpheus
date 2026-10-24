@@ -139,6 +139,54 @@ describe("presenter host startup", () => {
     expect(renderer?.root.findAllByType(HostNode)).toHaveLength(0);
   });
 
+  it("keeps nested host assignment identity when stack position changes", () => {
+    const assignmentIds: Record<string, number[]> = {};
+    const renderHost: PresentedTrayRenderer = ({
+      payload,
+      assignmentId,
+    }) => {
+      (assignmentIds[payload.rootTrayId] ??= []).push(assignmentId);
+      return null;
+    };
+    const commonProps = createCommonProps(renderHost);
+
+    act(() => {
+      renderer = create(
+        <NestedTrayStack
+          hosts={[createPresentedTray("nested-a", 1)]}
+          {...commonProps}
+        />,
+      );
+    });
+
+    act(() => {
+      renderer?.update(
+        <NestedTrayStack
+          hosts={[
+            createPresentedTray("nested-a", 1),
+            createPresentedTray("nested-b", 2),
+          ]}
+          {...commonProps}
+        />,
+      );
+    });
+
+    act(() => {
+      renderer?.update(
+        <NestedTrayStack
+          hosts={[
+            createPresentedTray("nested-b", 1),
+            createPresentedTray("nested-a", 2),
+          ]}
+          {...commonProps}
+        />,
+      );
+    });
+
+    expect(new Set(assignmentIds["nested-a"]).size).toBe(1);
+    expect(new Set(assignmentIds["nested-b"]).size).toBe(1);
+  });
+
   it("renders the first root host before slot state publication", () => {
     const events: string[] = [];
     const renderHost: PresentedTrayRenderer = ({ payload }) => {

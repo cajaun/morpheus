@@ -574,10 +574,30 @@ const NestedTrayStackImpl = ({
   const Host = renderHost;
   const [closingHosts, setClosingHosts] = useState<PresentedTray[]>([]);
   const previousHostsRef = useRef<PresentedTray[]>([]);
+  const assignmentIdByRootTrayIdRef = useRef<Map<string, number>>(new Map());
+  const nextAssignmentIdRef = useRef(1);
   const activeRootTrayIds = useMemo(
     () => new Set(hosts.map((host) => host.rootTrayId)),
     [hosts],
   );
+
+  // Assignment identity belongs to the mounted host, not to its position in
+  // the nested stack. A stack index changes whenever a sibling opens/closes;
+  // using it as the assignment key would reset the existing host controller,
+  // render snapshot, measurements, and transition lifecycle unnecessarily.
+  const getAssignmentId = (rootTrayId: string) => {
+    const existingAssignmentId =
+      assignmentIdByRootTrayIdRef.current.get(rootTrayId);
+
+    if (existingAssignmentId !== undefined) {
+      return existingAssignmentId;
+    }
+
+    const assignmentId = nextAssignmentIdRef.current;
+    nextAssignmentIdRef.current += 1;
+    assignmentIdByRootTrayIdRef.current.set(rootTrayId, assignmentId);
+    return assignmentId;
+  };
 
   // Active payloads come directly from the presenter props. Only hosts that
   // disappeared need state, because they must remain mounted for their close
@@ -642,6 +662,8 @@ const NestedTrayStackImpl = ({
   }, [activeRootTrayIds, hosts, transitionContract]);
 
   const handleCloseComplete = useCallback((rootTrayId: string) => {
+    assignmentIdByRootTrayIdRef.current.delete(rootTrayId);
+
     setClosingHosts((current) => {
       const next = current.filter(
         (host) => host.rootTrayId !== rootTrayId,
@@ -657,7 +679,7 @@ const NestedTrayStackImpl = ({
         <Host
           key={`tray-nested-host-${payload.rootTrayId}`}
           payload={payload}
-          assignmentId={payload.stackIndex + 1}
+          assignmentId={getAssignmentId(payload.rootTrayId)}
           onRequestClose={requestCloseActiveTray}
           onCloseComplete={() => handleCloseComplete(payload.rootTrayId)}
           dismissKeyboardForTray={dismissKeyboardForTray}
