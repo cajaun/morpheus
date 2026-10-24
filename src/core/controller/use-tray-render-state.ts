@@ -162,7 +162,6 @@ const areTrayShellPresentationStatesEqual = (
   current.className === next.className &&
   current.footerStyle === next.footerStyle &&
   current.footerClassName === next.footerClassName &&
-  current.transitionContract === next.transitionContract &&
   (current.header != null) === (next.header != null) &&
   (current.content != null) === (next.content != null) &&
   (current.footer != null) === (next.footer != null);
@@ -383,10 +382,13 @@ export const useTrayRenderState = ({
       renderedTrayRef.current = committed;
       snapshotStore.publish(committed);
 
-      // Same-mode step changes only replace the arbitrary React payload. Keep
-      // the controller host out of this commit; boundary changes still use
-      // the state update because geometry and animation policy must change
-      // together.
+      // Same-mode step changes replace the arbitrary React payload and the
+      // transition descriptor, but not the shell presentation contract. Keep
+      // the committed snapshot out of the controller state update in this
+      // case; Tray still receives the new transition descriptor directly,
+      // while the snapshot store updates only the payload regions. Boundary
+      // changes retain the state update because geometry and animation policy
+      // must change together.
       const isSameModeStepCommit =
         current.trayId !== undefined &&
         committed.trayId !== undefined &&

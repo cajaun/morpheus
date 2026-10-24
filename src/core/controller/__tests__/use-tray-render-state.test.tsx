@@ -71,6 +71,73 @@ describe("useTrayRenderState", () => {
     expect(state!.snapshotStore.getSnapshot().content).toBe("content-step-two");
   });
 
+  it("does not promote a same-mode transition descriptor into the host state", () => {
+    let renderCount = 0;
+    let state: ReturnType<typeof useTrayRenderState> | null = null;
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+
+    const Probe = ({
+      trayId,
+      generation,
+    }: {
+      trayId: string;
+      generation: number;
+    }) => {
+      renderCount += 1;
+      state = useTrayRenderState({
+        content: `content-${trayId}`,
+        trayId,
+        fullScreen: false,
+        transitionContract: {
+          generation,
+          reason: "nextStep",
+          direction: "forward",
+          boundary: "sheetToSheet",
+          from: {
+            trayId: "root-step-one",
+            stepIndex: 0,
+            stepKey: "step-one",
+            mode: "sheet",
+          },
+          to: {
+            trayId: "root-step-two",
+            stepIndex: 1,
+            stepKey: "step-two",
+            mode: "sheet",
+          },
+          stepChanged: true,
+          pageChanged: false,
+          fullScreenChanged: false,
+          sharedRegions: [],
+        },
+      });
+
+      return null;
+    };
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <Probe trayId="step-one" generation={1} />,
+      );
+    });
+
+    act(() => {
+      renderer!.update(<Probe trayId="step-two" generation={2} />);
+    });
+
+    const renderCountBeforeSnapshotPublication = renderCount;
+
+    act(() => {
+      state!.actions.showLatestSnapshot();
+    });
+
+    expect(renderCount).toBe(renderCountBeforeSnapshotPublication);
+    expect(state!.snapshotStore.getSnapshot().trayId).toBe("step-two");
+    expect(state!.snapshotStore.getSnapshot().transitionContract?.generation).toBe(
+      2,
+    );
+  });
+
   it("publishes same-tray region changes without rerendering the shell host", () => {
     let renderCount = 0;
     let state: ReturnType<typeof useTrayRenderState> | null = null;
