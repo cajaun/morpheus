@@ -32,6 +32,19 @@ type PresentedTrayPayloadStore = {
   publish: (payload: PresentedTrayProps["payload"]) => void;
 };
 
+type PresentedTrayRegionPayload = Pick<
+  PresentedTrayProps["payload"],
+  | "rootTrayId"
+  | "trayId"
+  | "stepOptions"
+  | "header"
+  | "content"
+  | "footer"
+  | "fullScreen"
+  | "fullScreenBoundaryExit"
+  | "isFirstRender"
+>;
+
 const createPresentedTrayPayloadStore = (
   initialPayload: PresentedTrayProps["payload"],
 ): PresentedTrayPayloadStore => {
@@ -56,6 +69,101 @@ const createPresentedTrayPayloadStore = (
   };
 };
 
+const arePresentedTrayStepOptionsEquivalent = (
+  previous: PresentedTrayRegionPayload["stepOptions"],
+  next: PresentedTrayRegionPayload["stepOptions"],
+) =>
+  previous === next ||
+  (previous.hasFooter === next.hasFooter &&
+    previous.scale === next.scale &&
+    previous.keyboardAware === next.keyboardAware &&
+    previous.fullScreen === next.fullScreen &&
+    previous.shouldScaleBackground === next.shouldScaleBackground &&
+    previous.fullScreenBackgroundScale === next.fullScreenBackgroundScale &&
+    previous.fullScreenDraggable === next.fullScreenDraggable &&
+    previous.fullScreenCloseBehavior === next.fullScreenCloseBehavior &&
+    previous.fullScreenTransition === next.fullScreenTransition &&
+    previous.fullScreenSafeAreaTop === next.fullScreenSafeAreaTop &&
+    previous.style === next.style &&
+    previous.className === next.className &&
+    previous.footerStyle === next.footerStyle &&
+    previous.footerClassName === next.footerClassName);
+
+const arePresentedTrayRegionPayloadsEquivalent = (
+  region: PresentedTrayRegionName,
+  previous: PresentedTrayRegionPayload,
+  next: PresentedTrayRegionPayload,
+) => {
+  if (
+    previous.rootTrayId !== next.rootTrayId ||
+    previous.stepOptions === undefined ||
+    !arePresentedTrayStepOptionsEquivalent(
+      previous.stepOptions,
+      next.stepOptions,
+    )
+  ) {
+    return false;
+  }
+
+  if (region === "footer") {
+    // The footer node is shared across steps in the common onboarding shape.
+    // Its navigation hook observes the runtime store directly, so a new
+    // step id or header/body node does not require rebuilding this wrapper.
+    return previous.footer === next.footer;
+  }
+
+  return (
+    previous.trayId === next.trayId &&
+    previous.fullScreen === next.fullScreen &&
+    previous.fullScreenBoundaryExit === next.fullScreenBoundaryExit &&
+    previous.isFirstRender === next.isFirstRender &&
+    (region === "header"
+      ? previous.header === next.header
+      : previous.content === next.content)
+  );
+};
+
+// Each visual region has a different reconciliation boundary. Select the
+// fields that can affect that region and preserve the selection object when
+// those fields are unchanged. This keeps a stable footer from reconciling
+// just because the step header/body payload changed.
+const createPresentedTrayRegionSelector = (
+  region: PresentedTrayRegionName,
+) => {
+  let previousPayload: PresentedTrayRegionPayload | null = null;
+  let previousSelection: PresentedTrayRegionPayload | null = null;
+
+  return (payload: PresentedTrayProps["payload"]) => {
+    const nextPayload: PresentedTrayRegionPayload = {
+      rootTrayId: payload.rootTrayId,
+      trayId: payload.trayId,
+      stepOptions: payload.stepOptions,
+      header: region === "header" ? payload.header : null,
+      content: region === "content" ? payload.content : null,
+      footer: region === "footer" ? payload.footer : null,
+      fullScreen: payload.fullScreen,
+      fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
+      isFirstRender: payload.isFirstRender,
+    };
+
+    if (
+      previousPayload !== null &&
+      previousSelection !== null &&
+      arePresentedTrayRegionPayloadsEquivalent(
+        region,
+        previousPayload,
+        nextPayload,
+      )
+    ) {
+      return previousSelection;
+    }
+
+    previousPayload = nextPayload;
+    previousSelection = nextPayload;
+    return nextPayload;
+  };
+};
+
 // Keep the shell-facing region elements stable while the latest committed
 // payload flows through a small external store. This removes wrapper/context
 // reconstruction from the presenter's hot path without changing the payload
@@ -69,10 +177,18 @@ const PresentedTrayRegion = ({
   region: PresentedTrayRegionName;
   assignmentId: number;
 }) => {
+  const selectRegion = useMemo(
+    () => createPresentedTrayRegionSelector(region),
+    [region],
+  );
+  const getRegionSnapshot = useCallback(
+    () => selectRegion(store.getSnapshot()),
+    [selectRegion, store],
+  );
   const payload = useSyncExternalStore(
     store.subscribe,
-    store.getSnapshot,
-    store.getSnapshot,
+    getRegionSnapshot,
+    getRegionSnapshot,
   );
 
   let regionNode: React.ReactNode = null;

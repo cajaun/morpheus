@@ -1,7 +1,10 @@
 import React from "react";
 import { describe, expect, it } from "@jest/globals";
 import TestRenderer, { act } from "react-test-renderer";
-import { useTrayRenderState } from "../use-tray-render-state";
+import {
+  useTrayRenderSnapshotRegion,
+  useTrayRenderState,
+} from "../use-tray-render-state";
 
 // probe committed render snapshots without mounting the animated shell
 describe("useTrayRenderState", () => {
@@ -66,6 +69,99 @@ describe("useTrayRenderState", () => {
     expect(renderCount).toBe(renderCountBeforeSnapshotPublication);
     expect(state!.snapshotStore.getSnapshot().trayId).toBe("step-two");
     expect(state!.snapshotStore.getSnapshot().content).toBe("content-step-two");
+  });
+
+  it("publishes same-tray region changes without rerendering the shell host", () => {
+    let renderCount = 0;
+    let state: ReturnType<typeof useTrayRenderState> | null = null;
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+
+    const Probe = ({ content }: { content: string }) => {
+      renderCount += 1;
+      state = useTrayRenderState({
+        content,
+        trayId: "tray-step",
+        fullScreen: false,
+      });
+      return null;
+    };
+
+    act(() => {
+      renderer = TestRenderer.create(<Probe content="content-one" />);
+    });
+
+    act(() => {
+      renderer!.update(<Probe content="content-two" />);
+    });
+    const renderCountBeforeSnapshotPublication = renderCount;
+
+    act(() => {
+      state!.actions.syncRenderedNodes("tray-step");
+    });
+
+    expect(renderCount).toBe(renderCountBeforeSnapshotPublication);
+    expect(state!.snapshotStore.getSnapshot().content).toBe("content-two");
+  });
+
+  it("only notifies the snapshot region whose node changed", () => {
+    let state: ReturnType<typeof useTrayRenderState> | null = null;
+    const regionRenderCounts = {
+      header: 0,
+      content: 0,
+      footer: 0,
+    };
+
+    const RegionProbe = React.memo(
+      ({
+        store,
+        region,
+      }: {
+        store: NonNullable<typeof state>["snapshotStore"];
+        region: "header" | "content" | "footer";
+      }) => {
+        useTrayRenderSnapshotRegion(store, region);
+        regionRenderCounts[region] += 1;
+        return null;
+      },
+    );
+    RegionProbe.displayName = "RegionProbe";
+
+    const Probe = ({ content }: { content: string }) => {
+      state = useTrayRenderState({
+        header: "header",
+        content,
+        footer: "footer",
+        trayId: "tray-step",
+        fullScreen: false,
+      });
+
+      return (
+        <>
+          <RegionProbe store={state.snapshotStore} region="header" />
+          <RegionProbe store={state.snapshotStore} region="content" />
+          <RegionProbe store={state.snapshotStore} region="footer" />
+        </>
+      );
+    };
+
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+    act(() => {
+      renderer = TestRenderer.create(<Probe content="content-one" />);
+    });
+
+    act(() => {
+      renderer!.update(<Probe content="content-two" />);
+    });
+
+    act(() => {
+      state!.actions.syncRenderedNodes("tray-step");
+    });
+
+    expect(regionRenderCounts).toEqual({
+      header: 1,
+      content: 2,
+      footer: 1,
+    });
   });
 
   it("uses a neutral fullscreen background scale when no override is set", () => {

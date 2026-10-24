@@ -71,6 +71,27 @@ export const useTrayRenderSnapshot = (
 ) =>
   useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
 
+// Subscribe to one payload region without making the subscriber observe the
+// other regions. The store publishes one coherent snapshot, but React's
+// external-store contract compares the selected snapshot with Object.is. A
+// stable region getter therefore prevents an unchanged header/footer from
+// reconciling when only the step body changes.
+export const useTrayRenderSnapshotRegion = <T extends keyof RenderedTrayState>(
+  store: TrayRenderSnapshotStore,
+  region: T,
+): RenderedTrayState[T] => {
+  const getRegionSnapshot = React.useCallback(
+    () => store.getSnapshot()[region],
+    [region, store],
+  );
+
+  return useSyncExternalStore(
+    store.subscribe,
+    getRegionSnapshot,
+    getRegionSnapshot,
+  );
+};
+
 // convert a prop snapshot into the normalized rendered shell shape
 const toRenderedTrayState = ({
   header,
@@ -123,6 +144,36 @@ const areTrayStatesEqual = (
   current.footerStyle === next.footerStyle &&
   current.footerClassName === next.footerClassName &&
   current.transitionContract === next.transitionContract;
+
+// Region payloads are delivered through the snapshot store. The controller
+// host only needs another React state commit when shell topology/configuration
+// changes; replacing an already-mounted header/body/footer node does not
+// require rerunning the measurement and animation hook graph.
+const areTrayShellPresentationStatesEqual = (
+  current: RenderedTrayState,
+  next: RenderedTrayState,
+) =>
+  current.keyboardAware === next.keyboardAware &&
+  current.fullScreen === next.fullScreen &&
+  current.fullScreenBackgroundScale === next.fullScreenBackgroundScale &&
+  current.fullScreenSafeAreaTop === next.fullScreenSafeAreaTop &&
+  current.fullScreenDraggable === next.fullScreenDraggable &&
+  current.containerStyle === next.containerStyle &&
+  current.className === next.className &&
+  current.footerStyle === next.footerStyle &&
+  current.footerClassName === next.footerClassName &&
+  current.transitionContract === next.transitionContract &&
+  (current.header != null) === (next.header != null) &&
+  (current.content != null) === (next.content != null) &&
+  (current.footer != null) === (next.footer != null);
+
+const areTrayShellStatesEqual = (
+  current: RenderedTrayState,
+  next: RenderedTrayState,
+) =>
+  current.trayId === next.trayId &&
+  current.transitionContract === next.transitionContract &&
+  areTrayShellPresentationStatesEqual(current, next);
 
 // reject transient empty payloads before they erase visible content
 const commitTraySnapshot = (
@@ -342,7 +393,8 @@ export const useTrayRenderState = ({
         current.trayId !== committed.trayId &&
         current.fullScreen === committed.fullScreen &&
         current.transitionContract?.fullScreenChanged !== true &&
-        committed.transitionContract?.fullScreenChanged !== true;
+        committed.transitionContract?.fullScreenChanged !== true &&
+        areTrayShellPresentationStatesEqual(current, committed);
 
       if (!isSameModeStepCommit) {
         setRenderedTray(committed);
@@ -437,7 +489,9 @@ export const useTrayRenderState = ({
 
     renderedTrayRef.current = committed;
     snapshotStore.publish(committed);
-    setRenderedTray(committed);
+    if (!areTrayShellStatesEqual(current, committed)) {
+      setRenderedTray(committed);
+    }
   }, [snapshotStore]);
 
   const clear = useCallback(() => {
