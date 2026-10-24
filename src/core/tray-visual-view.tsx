@@ -264,6 +264,77 @@ TraySnapshotTelemetry.displayName = "TraySnapshotTelemetry";
 // boundary. Reanimated shared values continue to update the same animated
 // styles on the UI thread; this only skips React work when a controller update
 // does not change anything consumed by this surface.
+const areTraySurfacePropsEqual = (
+  previous: TraySurfaceProps,
+  next: TraySurfaceProps,
+) => {
+  const hasSameRegionShape =
+    (previous.renderedHeader != null) === (next.renderedHeader != null) &&
+    (previous.renderedContent != null) === (next.renderedContent != null) &&
+    (previous.renderedFooter != null) === (next.renderedFooter != null);
+
+  if (
+    !hasSameRegionShape ||
+    previous.renderSnapshotStore !== next.renderSnapshotStore
+  ) {
+    return false;
+  }
+
+  if (previous.renderSnapshotStore == null) {
+    if (
+      previous.renderedHeader !== next.renderedHeader ||
+      previous.renderedContent !== next.renderedContent ||
+      previous.renderedFooter !== next.renderedFooter
+    ) {
+      return false;
+    }
+  }
+
+  return (
+    previous.gesture === next.gesture &&
+    previous.hasFooter === next.hasFooter &&
+    previous.style === next.style &&
+    previous.renderedClassName === next.renderedClassName &&
+    previous.renderedContainerStyle === next.renderedContainerStyle &&
+    previous.renderedFooterClassName === next.renderedFooterClassName &&
+    previous.renderedFooterStyle === next.renderedFooterStyle &&
+    previous.renderedFullScreen === next.renderedFullScreen &&
+    previous.contentMotionDirection === next.contentMotionDirection &&
+    previous.trayTransitionStart === next.trayTransitionStart &&
+    previous.layoutAnimationConfig === next.layoutAnimationConfig &&
+    previous.instrumentationEnabled === next.instrumentationEnabled &&
+    previous.shouldUseLayoutAnimation === next.shouldUseLayoutAnimation &&
+    previous.interactive === next.interactive &&
+    previous.isSurfaceReady === next.isSurfaceReady &&
+    previous.isFullScreenBoundaryTransition ===
+      next.isFullScreenBoundaryTransition &&
+    previous.handleContentLayout === next.handleContentLayout &&
+    previous.handleVisibleFooterLayout === next.handleVisibleFooterLayout &&
+    previous.handleShellLayout === next.handleShellLayout &&
+    previous.footerSpacerStyle === next.footerSpacerStyle &&
+    previous.contentBoundarySourceStyle === next.contentBoundarySourceStyle &&
+    previous.contentBoundarySourceViewportStyle ===
+      next.contentBoundarySourceViewportStyle &&
+    previous.contentFrameStyle === next.contentFrameStyle &&
+    previous.contentPaddingStyle === next.contentPaddingStyle &&
+    previous.contentRevealStyle === next.contentRevealStyle &&
+    previous.contentViewportStyle === next.contentViewportStyle &&
+    previous.headerFrameStyle === next.headerFrameStyle &&
+    previous.presentationFrameStyle === next.presentationFrameStyle &&
+    previous.trayLayoutStyle === next.trayLayoutStyle &&
+    previous.footerContainerStyle === next.footerContainerStyle &&
+    previous.dragStyle === next.dragStyle &&
+    previous.surfaceVisibilityStyle === next.surfaceVisibilityStyle &&
+    previous.originSurfaceVisibilityStyle ===
+      next.originSurfaceVisibilityStyle &&
+    previous.footerVisibilityStyle === next.footerVisibilityStyle &&
+    previous.footerContentFrameStyle === next.footerContentFrameStyle &&
+    previous.fullScreenSafeAreaContentStyle ===
+      next.fullScreenSafeAreaContentStyle &&
+    previous.originProgress === next.originProgress
+  );
+};
+
 const TraySurface = React.memo(
   ({
     gesture,
@@ -431,6 +502,7 @@ const TraySurface = React.memo(
     </>
     );
   },
+  areTraySurfacePropsEqual,
 );
 
 TraySurface.displayName = "TraySurface";
