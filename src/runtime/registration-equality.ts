@@ -102,6 +102,7 @@ export const areTrayRegistrationsEquivalent = (
   current.steps.every((step, index) =>
     areStepsEquivalent(step, next.steps[index]!),
   ) &&
+  current.parentTrayId === next.parentTrayId &&
   areAuthoredValuesEquivalent(current.footer, next.footer) &&
   current.dismissible === next.dismissible &&
   areAuthoredValuesEquivalent(current.transition, next.transition);

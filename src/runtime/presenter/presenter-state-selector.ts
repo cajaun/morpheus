@@ -2,7 +2,7 @@ import type { TrayHostStateValue, TrayRegistration } from "../types";
 
 type TrayPresenterRegistration = Pick<
   TrayRegistration,
-  "steps" | "footer" | "dismissible" | "transition"
+  "steps" | "footer" | "dismissible" | "transition" | "parentTrayId"
 >;
 
 export type TrayPresenterState = {
@@ -20,7 +20,8 @@ const arePresenterRegistrationsEquivalent = (
   previous.steps === next.steps &&
   previous.footer === next.footer &&
   previous.dismissible === next.dismissible &&
-  previous.transition === next.transition;
+  previous.transition === next.transition &&
+  previous.parentTrayId === next.parentTrayId;
 
 // Keep the presenter subscribed to only registrations that can currently
 // produce a host. Inactive Tray.Nested registrations still belong in the
@@ -77,6 +78,7 @@ export const createTrayPresenterStateSelector = () => {
             footer: registration.footer,
             dismissible: registration.dismissible,
             transition: registration.transition,
+            parentTrayId: registration.parentTrayId,
           };
         }
       }

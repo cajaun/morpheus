@@ -45,8 +45,9 @@ export const TrayNested: React.FC<TrayNestedProps> = ({
       steps,
       footer,
       transition,
+      parentTrayId: parentTrayId ?? undefined,
     }),
-    [footer, steps, transition],
+    [footer, parentTrayId, steps, transition],
   );
 
   useEffect(() => {

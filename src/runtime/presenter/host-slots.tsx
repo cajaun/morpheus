@@ -37,6 +37,9 @@ const commitHostSlots = (
   next: [TrayHostSlot, TrayHostSlot],
 ) => (areTrayHostSlotsEquivalent(current, next) ? current : next);
 
+const EMPTY_PRESENTED_TRAYS: PresentedTray[] = [];
+const NOOP_CLOSE_COMPLETE = () => {};
+
 // root slots keep replacement trays pending until the outgoing slot finishes
 type HostCommonProps = {
   requestCloseActiveTray: () => void;
@@ -564,18 +567,24 @@ export const RootTraySlots = MemoizedRootTraySlots;
 // retain nested hosts in stack order while the active root changes
 const NestedTrayStackImpl = ({
   hosts,
+  prewarmedHosts = EMPTY_PRESENTED_TRAYS,
   requestCloseActiveTray,
   dismissKeyboardForTray,
   transitionContract,
   renderHost,
 }: HostCommonProps & {
   hosts: PresentedTray[];
+  prewarmedHosts?: PresentedTray[];
 }) => {
   const Host = renderHost;
   const [closingHosts, setClosingHosts] = useState<PresentedTray[]>([]);
   const previousHostsRef = useRef<PresentedTray[]>([]);
   const assignmentIdByRootTrayIdRef = useRef<Map<string, number>>(new Map());
   const nextAssignmentIdRef = useRef(1);
+  const prewarmedRootTrayIdsRef = useRef<Set<string>>(new Set());
+  prewarmedRootTrayIdsRef.current = new Set(
+    prewarmedHosts.map((host) => host.rootTrayId),
+  );
   const activeRootTrayIds = useMemo(
     () => new Set(hosts.map((host) => host.rootTrayId)),
     [hosts],
@@ -628,6 +637,26 @@ const NestedTrayStackImpl = ({
     ...hosts,
   ].sort((left, right) => left.stackIndex - right.stackIndex);
 
+  const activeOrClosingRootTrayIds = new Set(
+    hostsForRender.map((host) => host.rootTrayId),
+  );
+  const preparedHostsForRender = prewarmedHosts.filter(
+    (host) => !activeOrClosingRootTrayIds.has(host.rootTrayId),
+  );
+
+  useLayoutEffect(() => {
+    const retainedRootTrayIds = new Set([
+      ...prewarmedHosts.map((host) => host.rootTrayId),
+      ...hostsForRender.map((host) => host.rootTrayId),
+    ]);
+
+    assignmentIdByRootTrayIdRef.current.forEach((_assignmentId, rootTrayId) => {
+      if (!retainedRootTrayIds.has(rootTrayId)) {
+        assignmentIdByRootTrayIdRef.current.delete(rootTrayId);
+      }
+    });
+  }, [hostsForRender, prewarmedHosts]);
+
   useLayoutEffect(() => {
     const previousHosts = previousHostsRef.current;
     previousHostsRef.current = hosts;
@@ -662,7 +691,9 @@ const NestedTrayStackImpl = ({
   }, [activeRootTrayIds, hosts, transitionContract]);
 
   const handleCloseComplete = useCallback((rootTrayId: string) => {
-    assignmentIdByRootTrayIdRef.current.delete(rootTrayId);
+    if (!prewarmedRootTrayIdsRef.current.has(rootTrayId)) {
+      assignmentIdByRootTrayIdRef.current.delete(rootTrayId);
+    }
 
     setClosingHosts((current) => {
       const next = current.filter(
@@ -675,22 +706,39 @@ const NestedTrayStackImpl = ({
 
   return (
     <>
-      {hostsForRender.map((payload) => (
-        <Host
-          key={`tray-nested-host-${payload.rootTrayId}`}
-          payload={payload}
-          assignmentId={getAssignmentId(payload.rootTrayId)}
-          onRequestClose={requestCloseActiveTray}
-          onCloseComplete={() => handleCloseComplete(payload.rootTrayId)}
-          dismissKeyboardForTray={dismissKeyboardForTray}
-        />
-      ))}
+      {[
+        ...preparedHostsForRender.map((payload) => ({
+          payload,
+          prepared: true,
+        })),
+        ...hostsForRender.map((payload) => ({
+          payload,
+          prepared: false,
+        })),
+      ]
+        .sort((left, right) => left.payload.stackIndex - right.payload.stackIndex)
+        .map(({ payload, prepared }) => (
+          <Host
+            key={`tray-nested-host-${payload.rootTrayId}`}
+            payload={payload}
+            prepared={prepared}
+            assignmentId={getAssignmentId(payload.rootTrayId)}
+            onRequestClose={requestCloseActiveTray}
+            onCloseComplete={
+              prepared
+                ? NOOP_CLOSE_COMPLETE
+                : () => handleCloseComplete(payload.rootTrayId)
+            }
+            dismissKeyboardForTray={dismissKeyboardForTray}
+          />
+        ))}
     </>
   );
 };
 
 type NestedTrayStackProps = HostCommonProps & {
   hosts: PresentedTray[];
+  prewarmedHosts?: PresentedTray[];
 };
 
 const areNestedTrayStackPropsEquivalent = (
@@ -699,7 +747,13 @@ const areNestedTrayStackPropsEquivalent = (
 ) =>
   areHostCommonPropsEquivalent(previous, next) &&
   (previous.hosts === next.hosts ||
-    arePresentedTrayListsEquivalent(previous.hosts, next.hosts));
+    arePresentedTrayListsEquivalent(previous.hosts, next.hosts)) &&
+  ((previous.prewarmedHosts ?? EMPTY_PRESENTED_TRAYS) ===
+    (next.prewarmedHosts ?? EMPTY_PRESENTED_TRAYS) ||
+    arePresentedTrayListsEquivalent(
+      previous.prewarmedHosts ?? EMPTY_PRESENTED_TRAYS,
+      next.prewarmedHosts ?? EMPTY_PRESENTED_TRAYS,
+    ));
 
 const MemoizedNestedTrayStack = React.memo(
   NestedTrayStackImpl,

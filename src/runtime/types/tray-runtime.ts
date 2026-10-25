@@ -55,6 +55,8 @@ export type TrayRegistration = {
   dismissible?: boolean;
   transition?: TrayTransitionOptions;
   pages?: TrayPagesRegistration;
+  /** Owning tray scope for an internally registered nested tray. */
+  parentTrayId?: string;
 };
 
 export type TrayStackEntry = {

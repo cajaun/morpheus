@@ -3,6 +3,7 @@ export { NestedTrayStack, RootTraySlots } from "./host-slots";
 export {
   arePresentedTrayListsEquivalent,
   arePresentedTraysEquivalent,
+  createPreparedNestedTray,
   createPresentedTray,
   resolvePresenterTransitionScope,
 } from "./model";

@@ -155,6 +155,7 @@ const Tray = forwardRef<TrayRef, TrayProps>(
     return (
       <TrayVisualView
         assignmentId={assignmentId}
+        prepared={prepared}
         style={style}
         rootTrayId={rootTrayId}
         trayId={trayId}

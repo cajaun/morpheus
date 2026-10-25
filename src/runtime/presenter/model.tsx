@@ -427,3 +427,43 @@ export const createPresentedTray = ({
     interactive: stackIndex === stackLength - 1,
   };
 };
+
+// Mount a content-free nested shell while its trigger is mounted. The parent
+// can change a nested presentation's boundary mode, so callers pass the
+// parent's static fullscreen capability into this prepared payload.
+export const createPreparedNestedTray = (
+  rootTrayId: string,
+  registration: TrayRegistration,
+  parentCanPresentFullScreen = false,
+): PresentedTray => {
+  const firstStep = registration.steps[0];
+  const stepOptions = firstStep
+    ? resolveContextualStepOptions(firstStep, registration.footer != null)
+    : resolveTrayStepOptions(undefined);
+  const ownCapabilities = getTrayMotionCapabilities(registration);
+
+  return {
+    rootTrayId,
+    trayId: `${rootTrayId}::__prepared__`,
+    keyboardAware: false,
+    ...ownCapabilities,
+    fullScreenMotionCapable:
+      ownCapabilities.fullScreenMotionCapable || parentCanPresentFullScreen,
+    stepOptions,
+    header: null,
+    content: null,
+    footer: null,
+    fullScreenBoundaryExit: false,
+    isFirstRender: true,
+    fullScreen: false,
+    fullScreenBackgroundScale: 1,
+    fullScreenSafeAreaTop: false,
+    fullScreenDraggable: stepOptions.fullScreenDraggable,
+    dismissible: registration.dismissible ?? true,
+    transitionContract: null,
+    transition: registration.transition,
+    stackIndex: -1,
+    visible: false,
+    interactive: false,
+  };
+};

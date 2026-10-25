@@ -60,6 +60,7 @@ import type { RenderedTrayState, TrayProps } from "./types";
 type TrayVisualViewProps = Pick<
   TrayProps,
   | "assignmentId"
+  | "prepared"
   | "style"
   | "rootTrayId"
   | "trayId"
@@ -179,6 +180,7 @@ const areTrayVisualShellPropsEqual = (
   next: TrayVisualShellProps,
 ) =>
   previous.assignmentId === next.assignmentId &&
+  previous.prepared === next.prepared &&
   previous.style === next.style &&
   previous.rootTrayId === next.rootTrayId &&
   previous.trayId === next.trayId &&
@@ -342,10 +344,12 @@ type TrayBoundaryMotionParams = Omit<
 const TrayBoundaryMotionController = ({
   params,
   animatedStyleParams,
+  prepared,
   children,
 }: {
   params: TrayBoundaryMotionParams;
   animatedStyleParams: Parameters<typeof useTrayAnimatedStyles>[0];
+  prepared: boolean;
   children: (
     styles: TrayBoundaryStyles,
     animatedStyles: TrayAnimatedStyles,
@@ -361,8 +365,12 @@ const TrayBoundaryMotionController = ({
   );
   const providerBackgroundScale = useTrayBackgroundScale();
   const fallbackBackgroundScale = useSharedValue(1);
-  // Nested test shells may render without a provider, so keep the same local fallback.
-  const backgroundScale = providerBackgroundScale ?? fallbackBackgroundScale;
+  // A prepared hidden host must not publish its baseline into the visible
+  // tray's shared scale. It switches to the provider value on activation.
+  const backgroundScale =
+    !prepared && providerBackgroundScale
+      ? providerBackgroundScale
+      : fallbackBackgroundScale;
   const styles = useTrayBoundaryMotionState({
     ...params,
     safeAreaTopInset,
@@ -391,11 +399,13 @@ const TrayBoundaryMotionRegion = ({
   enabled,
   params,
   animatedStyleParams,
+  prepared,
   children,
 }: {
   enabled: boolean;
   params: TrayBoundaryMotionParams;
   animatedStyleParams: Parameters<typeof useTrayAnimatedStyles>[0];
+  prepared: boolean;
   children: (
     boundaryStyles: TrayBoundaryStyles | null,
     animatedStyles: TrayAnimatedStyles,
@@ -405,6 +415,7 @@ const TrayBoundaryMotionRegion = ({
     <TrayBoundaryMotionController
       params={params}
       animatedStyleParams={animatedStyleParams}
+      prepared={prepared}
     >
       {children}
     </TrayBoundaryMotionController>
@@ -842,6 +853,7 @@ TraySurface.displayName = "TraySurface";
 const TrayVisualShell = React.memo(
   ({
     assignmentId = 0,
+    prepared = false,
     style,
     rootTrayId,
     trayId,
@@ -1304,6 +1316,7 @@ const TrayVisualShell = React.memo(
         enabled={requiresFullScreenMotion}
         params={boundaryMotionParams}
         animatedStyleParams={animatedStyleParams}
+        prepared={prepared}
       >
         {(boundaryStyles, animatedStyles) =>
           renderShell(boundaryStyles, animatedStyles)
@@ -1326,6 +1339,7 @@ const TrayVisualViewBody = React.memo(
   ({ keyboardStickyEnabled, ...props }: TrayVisualViewBodyProps) => {
     const {
       assignmentId = 0,
+      prepared = false,
       rootTrayId,
       keyboardStickyCapable = true,
       fullScreenMotionCapable = true,
@@ -1393,6 +1407,7 @@ const TrayVisualViewBody = React.memo(
               <TrayVisualShell
                 {...shellProps}
                 assignmentId={assignmentId}
+                prepared={prepared}
                 rootTrayId={rootTrayId}
                 keyboardStickyCapable={keyboardStickyCapable}
                 fullScreenMotionCapable={fullScreenMotionCapable}

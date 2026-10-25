@@ -312,24 +312,14 @@ export const useTrayRenderState = ({
     useState<InternalRenderedTrayState>(initialSnapshot);
   const lastRequestedSnapshotRef = useRef<RenderedTrayState | null>(null);
 
-  const renderedTrayForRender = preparedActivation
-    ? toRenderedTrayState({
-        content,
-        header,
-        footer,
-        trayId,
-        keyboardAware,
-        fullScreen,
-        fullScreenBackgroundScale,
-        fullScreenSafeAreaTop,
-        fullScreenDraggable,
-        containerStyle,
-        className,
-        footerStyle,
-        footerClassName,
-        transitionContract,
-      })
-    : snapshotStore.getSnapshot();
+  // Keep the content-free visual tree mounted while a host is prepared. The
+  // assignment reset clears its snapshot store, but clearing the rendered
+  // tray id here would unmount the native shell and make activation mount it
+  // again on the opening path.
+  const renderedTrayForRender =
+    (prepared && !visible) || preparedActivation
+      ? initialSnapshot
+      : snapshotStore.getSnapshot();
 
   renderedTrayRef.current = renderedTrayForRender;
 
