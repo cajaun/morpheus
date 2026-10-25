@@ -1,6 +1,5 @@
 import {
   useCallback,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -12,6 +11,7 @@ import type {
   TrayTransitionLifecycle,
 } from "../../runtime/types";
 import { createTrayMeasurementOwner } from "../../runtime/types";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import { isTrayTransitionTerminal } from "../../runtime/transition-lifecycle";
 import { log } from "../logger";
 import { describeTrayTransition } from "../diagnostics/tray-transition-diagnostics";
@@ -104,7 +104,7 @@ export const useTrayGeometryOwnership = ({
   const measurementOwnerRef = useRef(measurementOwner);
   measurementOwnerRef.current = measurementOwner;
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayGeometryOwnership.subscribeSnapshot", () => {
     if (!renderedSnapshotStore) {
       return;
     }
@@ -134,7 +134,7 @@ export const useTrayGeometryOwnership = ({
     return renderedSnapshotStore.subscribe(syncCommittedSnapshot);
   }, [renderedSnapshotStore, rootTrayId]);
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayGeometryOwnership.diagnostics", () => {
     log("GEOMETRY OWNERSHIP", {
       visible,
       rootTrayId,
@@ -173,7 +173,7 @@ export const useTrayGeometryOwnership = ({
     visible,
   ]);
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayGeometryOwnership.returnToSheetState", () => {
     if (!fullScreen && presentationFullScreen) {
       returningToSheetRef.current = true;
       return;
@@ -227,7 +227,7 @@ export const useTrayGeometryOwnership = ({
     }, [measurementOwnerRef, renderedTransitionRef, transitionLifecycle],
   );
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayGeometryOwnership.captureRenderedSourceGeometry", () => {
     const source = renderedTransitionContract?.from;
     const previous = latestGeometryRef.current;
 
@@ -250,7 +250,7 @@ export const useTrayGeometryOwnership = ({
     );
   }, [renderedTransitionContract, rootTrayId, transitionLifecycle]);
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayGeometryOwnership.captureHiddenSourceGeometry", () => {
     const source = transitionContract?.from;
     const previous = latestGeometryRef.current;
 

@@ -1,4 +1,5 @@
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import { Gesture } from "react-native-gesture-handler";
 import { withSpring } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
@@ -27,7 +28,7 @@ export const useTrayGesture = ({
   // Keep gesture worklets stable when a parent replaces its close callback;
   // the ref still dispatches the latest callback on the JS runtime.
   const onRequestCloseRef = useRef(onRequestClose);
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayGesture.updateCloseHandler", () => {
     onRequestCloseRef.current = onRequestClose;
   }, [onRequestClose]);
   const requestClose = useCallback(() => {

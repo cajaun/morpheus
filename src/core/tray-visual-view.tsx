@@ -1,10 +1,10 @@
 import React, {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
 } from "react";
+import { useProfiledTrayLayoutEffect } from "../telemetry/tray-layout-effect-profiler";
 import { Animated as RNAnimated, StyleSheet, View } from "react-native";
 import Animated, {
   useDerivedValue,
@@ -540,7 +540,7 @@ const TraySnapshotTelemetry = React.memo(
     );
     const snapshot = override ?? committedSnapshot;
 
-    useLayoutEffect(() => {
+    useProfiledTrayLayoutEffect("TraySnapshotTelemetry.commitSnapshot", () => {
       if (!visible || snapshot.trayId === undefined) {
         return;
       }
@@ -731,7 +731,7 @@ const TraySurface = React.memo(
     const surfaceContent = renderedContent;
     const surfaceFooter = renderedFooter;
 
-    useLayoutEffect(() => {
+    useProfiledTrayLayoutEffect("TraySurface.syncFooterFlag", () => {
       hasFooter.value = surfaceFooter != null;
     }, [hasFooter, surfaceFooter]);
 

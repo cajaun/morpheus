@@ -1,10 +1,10 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import { LayoutChangeEvent, PixelRatio } from "react-native";
 import { useSharedValue, withSpring } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
@@ -200,7 +200,7 @@ export const useTrayPagesTransition = ({
     [transitions],
   );
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayPagesTransition.markTransitionCommitted", () => {
     if (
       transitionFromIndex === null ||
       transitionTargetRef.current !== pageIndex ||

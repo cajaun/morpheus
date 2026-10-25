@@ -7,7 +7,10 @@ export {
   createPresentedTray,
   resolvePresenterTransitionScope,
 } from "./model";
-export { createTrayPresenterStateSelector } from "./presenter-state-selector";
+export {
+  createPreparedNestedTraySelector,
+  createTrayPresenterStateSelector,
+} from "./presenter-state-selector";
 export type {
   PresentedTrayRenderer,
   PresentedTray,

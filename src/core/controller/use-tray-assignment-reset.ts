@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef, type RefObject } from "react";
+import { useRef, type RefObject } from "react";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import type { SharedValue } from "react-native-reanimated";
 import { SCREEN_HEIGHT } from "../constants";
 import { log } from "../logger";
@@ -66,7 +67,7 @@ export const useTrayAssignmentReset = ({
     lastHandledLayoutCompletionGenerationRef,
   } = transition;
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayAssignmentReset.resetAssignment", () => {
     if (
       assignmentId <= 0 ||
       lastResetAssignmentIdRef.current === assignmentId

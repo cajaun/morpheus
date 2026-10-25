@@ -1,4 +1,5 @@
-import React, { useEffect, useId, useLayoutEffect, useMemo } from "react";
+import React, { useEffect, useId, useMemo } from "react";
+import { useProfiledTrayLayoutEffect } from "../telemetry/tray-layout-effect-profiler";
 import {
   TrayScopeProvider,
   useTrayHostActions,
@@ -46,7 +47,7 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
     [dismissible, footer, steps, transition],
   );
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("TrayRoot.registerTray", () => {
     // register steps before paint so dynamic keys avoid an extra passive frame
     registerTray(trayId, registration);
   }, [registration, registerTray, trayId]);

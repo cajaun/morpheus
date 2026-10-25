@@ -1,9 +1,9 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
 } from "react";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import { Platform } from "react-native";
 import {
   KeyboardController,
@@ -133,7 +133,7 @@ export const useSheetTrayKeyboard = ({
     visible,
   ]);
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayKeyboard.updateOwnership", () => {
     if (lastTransitionGenerationRef.current !== transitionGeneration) {
       lastTransitionGenerationRef.current = transitionGeneration;
       dismissIssuedRef.current = false;

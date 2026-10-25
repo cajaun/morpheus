@@ -1,15 +1,15 @@
 import {
   RefObject,
   useEffect,
-  useLayoutEffect,
   useRef,
   type ReactNode,
 } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import { markTrayStepSnapshotPublished } from "../../telemetry/tray-step-timing";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import type { TrayTransitionContract } from "../../runtime/types";
-import { log } from "../logger";
+import { isTrayDebugLoggingEnabled, log } from "../logger";
 import { describeTrayTransition } from "../diagnostics/tray-transition-diagnostics";
 import { isKeyboardAwareSheetStepTransition } from "../input/keyboard-transition";
 
@@ -34,6 +34,10 @@ type Params = {
   measurements: {
     state: {
       layoutEnabled: boolean;
+    };
+    refs?: {
+      latestMeasuredContentHeightRef?: { current: number };
+      latestMeasuredFooterHeightRef?: { current: number };
     };
     actions: {
       setLayoutAnimationEnabled: (enabled: boolean) => void;
@@ -119,6 +123,10 @@ export const useTrayContentSync = ({
   } =
     renderState.state;
   const { showLatestSnapshot, syncRenderedNodes } = renderState.actions;
+  const {
+    latestMeasuredContentHeightRef,
+    latestMeasuredFooterHeightRef,
+  } = measurements.refs ?? {};
   const resolveIncomingContentHeightRef = useRef(resolveIncomingContentHeight);
   resolveIncomingContentHeightRef.current = resolveIncomingContentHeight;
 
@@ -139,7 +147,7 @@ export const useTrayContentSync = ({
   const keyboardSnapshotPublishedRef = useRef<string | undefined>(undefined);
 
   // prepare geometry before paint without publishing incoming react nodes
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayContentSync.prepareVisibleContent", () => {
     if (!visible) {
       return;
     }
@@ -150,59 +158,74 @@ export const useTrayContentSync = ({
       return;
     }
 
+    // The measurement hook updates these JS refs alongside the shared values.
+    // Prefer the refs here so preparation does not synchronously fetch those
+    // measurements from the UI runtime. Keep the shared-value fallback for
+    // callers that provide the hook's minimal test/compatibility shape.
+    const measuredContentHeightValue =
+      latestMeasuredContentHeightRef?.current ?? measuredContentHeight.value;
+    const measuredFooterHeightValue =
+      latestMeasuredFooterHeightRef?.current ?? measuredFooterHeight.value;
+
     if (renderedTrayId !== trayId || renderedFullScreen !== !!fullScreen) {
       // preserve source visuals until native geometry starts then let the canonical layout worklet advance this same value to one
       morphProgress.value = 0;
     }
 
-    log("TRAY CHANGE", {
-      trayId,
-      renderedTrayId,
-      incomingFullScreen: !!fullScreen,
-      renderedFullScreen,
-      measuredContentHeight: measuredContentHeight.value,
-      measuredFooterHeight: measuredFooterHeight.value,
-      contentHeight: contentHeight.value,
-      footerHeight: footerHeight.value,
-      layoutEnabled,
-      preparesFullScreen: !!fullScreen,
-      morphProgress: morphProgress.value,
-      renderedTransition: describeTrayTransition(renderedTransitionContract),
-    });
+    if (isTrayDebugLoggingEnabled()) {
+      log("TRAY CHANGE", {
+        trayId,
+        renderedTrayId,
+        incomingFullScreen: !!fullScreen,
+        renderedFullScreen,
+        measuredContentHeight: measuredContentHeightValue,
+        measuredFooterHeight: measuredFooterHeightValue,
+        contentHeight: contentHeight.value,
+        footerHeight: footerHeight.value,
+        layoutEnabled,
+        preparesFullScreen: !!fullScreen,
+        morphProgress: morphProgress.value,
+        renderedTransition: describeTrayTransition(renderedTransitionContract),
+      });
+    }
 
     // retain the last footer height when detached layout briefly reports zero during a boundary
     const nextFooterHeight =
-      measuredFooterHeight.value > 0
-        ? measuredFooterHeight.value
+      measuredFooterHeightValue > 0
+        ? measuredFooterHeightValue
         : footerHeight.value;
     footerHeight.value = nextFooterHeight;
 
     if (fullScreen) {
-      if (!renderedFullScreen && contentHeight.value > 0) {
+      const currentContentHeight = contentHeight.value;
+
+      if (!renderedFullScreen && currentContentHeight > 0) {
         // lease the sheet frame while children hand off so transient measurements cannot shrink the shell
         onSheetFramePreparedRef.current?.(
-          contentHeight.value + nextFooterHeight,
+          currentContentHeight + nextFooterHeight,
           "source",
-          contentHeight.value,
+          currentContentHeight,
           renderedTrayId,
         );
       }
 
       // defer fullscreen measurement until its snapshot commits and the boundary clock starts
       const incomingHeight = resolveIncomingContentHeightRef.current(
-        measuredContentHeight.value,
+        measuredContentHeightValue,
       );
 
-      log("PREPARE INCOMING FULLSCREEN HEIGHT", {
-        trayId,
-        renderedTrayId,
-        measuredContentHeight: measuredContentHeight.value,
-        incomingHeight,
-        applied: renderedFullScreen,
-        previousContentHeight: contentHeight.value,
-        morphProgress: morphProgress.value,
-        renderedTransition: describeTrayTransition(renderedTransitionContract),
-      });
+      if (isTrayDebugLoggingEnabled()) {
+        log("PREPARE INCOMING FULLSCREEN HEIGHT", {
+          trayId,
+          renderedTrayId,
+          measuredContentHeight: measuredContentHeightValue,
+          incomingHeight,
+          applied: renderedFullScreen,
+          previousContentHeight: currentContentHeight,
+          morphProgress: morphProgress.value,
+          renderedTransition: describeTrayTransition(renderedTransitionContract),
+        });
+      }
 
       if (renderedFullScreen) {
         contentHeight.value = incomingHeight;
@@ -217,7 +240,7 @@ export const useTrayContentSync = ({
         : undefined;
       const restoredContentHeight = restoreContentHeightRef.current(
         trayId,
-        measuredContentHeight.value,
+        measuredContentHeightValue,
         "sheet",
         // A fullscreen source measurement or a previous step's body height is
         // not an intrinsic fallback for a new sheet endpoint. Boundary returns
@@ -277,8 +300,8 @@ export const useTrayContentSync = ({
     onPrepared?.({
       trayId,
       fullScreen: !!fullScreen,
-      measuredContentHeight: measuredContentHeight.value,
-      measuredFooterHeight: measuredFooterHeight.value,
+      measuredContentHeight: measuredContentHeightValue,
+      measuredFooterHeight: measuredFooterHeightValue,
       resolvedContentHeight: contentHeight.value,
       morphProgress: morphProgress.value,
       renderedTransition: describeTrayTransition(renderedTransitionContract),
@@ -286,7 +309,7 @@ export const useTrayContentSync = ({
     // shell level swaps key off tray identity not every prop change eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trayId, visible, fullScreen, morphProgress, onPrepared]);
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayContentSync.publishKeyboardSnapshot", () => {
     if (
       !visible ||
       renderedTrayId === trayId ||

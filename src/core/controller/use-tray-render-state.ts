@@ -1,10 +1,10 @@
 import React, {
   useCallback,
-  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
 } from "react";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import { StyleProp, ViewStyle } from "react-native";
 import { RenderedTrayState } from "../types";
 import type { TrayTransitionContract } from "../../runtime/types";
@@ -327,7 +327,7 @@ export const useTrayRenderState = ({
   // The previous marker lived in a passive prop-sync effect, so it described
   // the request for a state update and could precede the rendered-commit mark,
   // producing impossible negative boundary durations.
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayRenderState.markCommittedSnapshot", () => {
     if (!visible || renderedTrayForRender.trayId === undefined) {
       return;
     }

@@ -1,10 +1,10 @@
 import React, {
   useCallback,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import { isTrayInstrumentationEnabled } from "../../telemetry/config";
 import {
   markTrayStepPresenterResolved,
@@ -232,7 +232,7 @@ const RootTraySlotsImpl = ({
     [],
   );
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("RootTraySlotsImpl.publishSlotState", () => {
     if (isTrayInstrumentationEnabled()) {
       markTrayStepPresenterResolved(
         activeHost?.rootTrayId,
@@ -424,7 +424,7 @@ const RootTraySlotsImpl = ({
   // Advance the close snapshot only after the active payload has committed.
   // This effect intentionally follows the slot lifecycle effect above so a
   // root replacement can still read the previous root's last committed host.
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("RootTraySlotsImpl.commitActiveHost", () => {
     if (
       activeHost !== null &&
       (shouldRenderPreparedHostImmediately ||
@@ -439,7 +439,7 @@ const RootTraySlotsImpl = ({
     shouldRenderSameRootHostImmediately,
   ]);
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("RootTraySlotsImpl.diagnostics", () => {
     log("HOST SLOT STATE", {
       activeHost: activeHost
         ? {
@@ -470,7 +470,7 @@ const RootTraySlotsImpl = ({
     });
   }, [activeHost, hostSlots, transitionContract]);
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("RootTraySlotsImpl.markSlotCommitted", () => {
     if (!isTrayInstrumentationEnabled()) {
       return;
     }
@@ -644,7 +644,7 @@ const NestedTrayStackImpl = ({
     (host) => !activeOrClosingRootTrayIds.has(host.rootTrayId),
   );
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("NestedTrayStackImpl.pruneAssignments", () => {
     const retainedRootTrayIds = new Set([
       ...prewarmedHosts.map((host) => host.rootTrayId),
       ...hostsForRender.map((host) => host.rootTrayId),
@@ -657,7 +657,7 @@ const NestedTrayStackImpl = ({
     });
   }, [hostsForRender, prewarmedHosts]);
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("NestedTrayStackImpl.syncClosingHosts", () => {
     const previousHosts = previousHostsRef.current;
     previousHostsRef.current = hosts;
 

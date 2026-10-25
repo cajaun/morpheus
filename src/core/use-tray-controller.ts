@@ -1,7 +1,6 @@
 import React, {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
 } from "react";
 import {
@@ -22,6 +21,7 @@ import type {
   TrayTransitionOptions,
 } from "../runtime/types";
 import { isTrayInstrumentationEnabled } from "../telemetry/config";
+import { useProfiledTrayLayoutEffect } from "../telemetry/tray-layout-effect-profiler";
 import {
   markTrayStepShellLayout,
 } from "../telemetry/tray-step-timing";
@@ -122,7 +122,7 @@ export const useTrayController = ({
   );
   const morphProgress = useSharedValue(1);
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayController.syncTransitionValues", () => {
     // keep exiting content on the current transition descriptor
     transitionGenerationValue.value = transitionContract?.generation ?? 0;
     fullScreenChangedValue.value = transitionContract?.fullScreenChanged

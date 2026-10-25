@@ -1,9 +1,11 @@
-import { useLayoutEffect, useRef } from "react";
+import { useRef } from "react";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import {
   Easing,
   useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
+  runOnUI,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
@@ -78,7 +80,7 @@ export const useTrayBoundaryMotionState = ({
   const previousModeRef = useRef(presentationFullScreen);
   const didInitializeBoundaryRef = useRef(false);
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayBoundaryMotionState.transitionBoundary", () => {
     const isInitialCommit = !didInitializeBoundaryRef.current;
     didInitializeBoundaryRef.current = true;
     const modeChanged =
@@ -125,19 +127,31 @@ export const useTrayBoundaryMotionState = ({
     }
 
     if (isBoundaryTransition) {
-      // use the last rendered mode values as the source frame for this generation
-      sourceBackgroundScale.value = currentBackgroundScale.value;
-      destinationBackgroundScale.value = targetBackgroundScale;
-      sourceSafeAreaTop.value = currentSafeAreaTop.value;
-      destinationSafeAreaTop.value = targetSafeAreaTop;
-      boundaryActive.value = true;
-      morphStartedGeneration.value = 0;
-      morphProgress.value = 0;
+      // Capture the live source frame and publish the boundary setup together
+      // on the UI runtime. Reading these values here on JS can block while it
+      // synchronizes with an in-flight boundary reaction.
+      runOnUI(
+        (
+          nextBackgroundScale: number,
+          nextSafeAreaTop: number,
+          enteringFullScreen: boolean,
+        ) => {
+          "worklet";
 
-      if (!presentationFullScreen) {
-        // rounded sheet corners must reveal the app behind the surface before the shell begins returning from the viewport
-        surfaceFillOpacity.value = 0;
-      }
+          sourceBackgroundScale.value = currentBackgroundScale.value;
+          destinationBackgroundScale.value = nextBackgroundScale;
+          sourceSafeAreaTop.value = currentSafeAreaTop.value;
+          destinationSafeAreaTop.value = nextSafeAreaTop;
+          boundaryActive.value = true;
+          morphStartedGeneration.value = 0;
+          morphProgress.value = 0;
+
+          if (!enteringFullScreen) {
+            // rounded sheet corners must reveal the app behind the surface before the shell begins returning from the viewport
+            surfaceFillOpacity.value = 0;
+          }
+        },
+      )(targetBackgroundScale, targetSafeAreaTop, presentationFullScreen);
 
       return;
     }

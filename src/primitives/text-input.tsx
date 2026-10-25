@@ -3,9 +3,9 @@ import React, {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useLayoutEffect,
   useRef,
 } from "react";
+import { useProfiledTrayLayoutEffect } from "../telemetry/tray-layout-effect-profiler";
 import { TextInput, TextInputProps } from "react-native";
 import {
   useTrayHostActions,
@@ -32,7 +32,7 @@ export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
       return registerFocusable(trayId, ref);
     }, [registerFocusable, trayId]);
 
-    useLayoutEffect(() => {
+    useProfiledTrayLayoutEffect("TrayTextInput.focusOnLayout", () => {
       if (!autoFocus) {
         return;
       }

@@ -1,10 +1,10 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import {
   runOnUI,
   withSpring,
@@ -17,7 +17,11 @@ import {
   SCREEN_HEIGHT,
   TRAY_SPRING_CONFIG,
 } from "../constants";
-import { log, logWorklet } from "../logger";
+import {
+  isTrayDebugLoggingEnabled,
+  log,
+  logWorklet,
+} from "../logger";
 import {
   markTrayOpenFinished,
   markTrayOpenStarted,
@@ -212,7 +216,7 @@ export const useTrayOpenCloseLifecycle = ({
     releaseOriginGeometryLease,
   ]);
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayOpenCloseLifecycle.visibility", () => {
     if (visible) {
       // hide the shell until we know the geometry that defines the spring travel
       shared.translateY.value = SCREEN_HEIGHT;
@@ -223,18 +227,22 @@ export const useTrayOpenCloseLifecycle = ({
       justOpenedRef.current = true;
       setIsSurfaceReady(false);
 
-      log("OPEN START", {
-        trayId,
-        footer: measuredFooterHeight.value,
-        hadExistingContent: renderedTrayId !== undefined,
-        existingTrayId: renderedTrayId,
-      });
+      if (isTrayDebugLoggingEnabled()) {
+        log("OPEN START", {
+          trayId,
+          footer: measuredFooterHeight.value,
+          hadExistingContent: renderedTrayId !== undefined,
+          existingTrayId: renderedTrayId,
+        });
+      }
 
       markTrayOpenStarted(rootTrayId ?? trayId ?? "unknown", trayId);
       showLatestSnapshot();
       // measurement must restart after snapshot publication because content identity may change
       beginOpenMeasurement(!!footer);
-      log("OPEN — waiting for measurement");
+      if (isTrayDebugLoggingEnabled()) {
+        log("OPEN — waiting for measurement");
+      }
     } else {
       setIsSurfaceReady(true);
       // Closing is a terminal snapshot boundary. If a step update is still
@@ -242,17 +250,20 @@ export const useTrayOpenCloseLifecycle = ({
       // before the shell starts moving so the previous step cannot reappear.
       showLatestSnapshot();
       // close travel must never be shorter than the current drag offset
+      const currentTranslateY = shared.translateY.value;
       const closeTravel = resolveTrayCloseTravel(
         resolveClosedTranslateY,
-        shared.translateY.value,
+        currentTranslateY,
       );
 
       shared.animationTravel.value = closeTravel;
 
-      log("CLOSE START", {
-        renderedTrayId,
-        closeTravel,
-      });
+      if (isTrayDebugLoggingEnabled()) {
+        log("CLOSE START", {
+          renderedTrayId,
+          closeTravel,
+        });
+      }
 
       const myGeneration = shared.closeGeneration.value + 1;
       shared.closeGeneration.value = myGeneration;
@@ -268,7 +279,7 @@ export const useTrayOpenCloseLifecycle = ({
       const shouldReverseExpand =
         transition?.close === "collapseToTrigger" &&
         transition?.open === "expandFromTrigger" &&
-        shared.translateY.value < 8;
+        currentTranslateY < 8;
 
       if (shouldReverseExpand) {
         // reverse the origin progress instead of running a vertical close spring

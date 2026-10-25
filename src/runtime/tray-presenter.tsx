@@ -2,8 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   useTrayHostActions,
   useTrayHostSelector,
-  type TrayHostStateValue,
-  type TrayRegistration,
 } from "./tray-context";
 import { logTrayProfilerCommit } from "../telemetry/tray-profiler";
 import { isTrayInstrumentationEnabled } from "../telemetry/config";
@@ -14,14 +12,12 @@ import {
   arePresentedTrayListsEquivalent,
   arePresentedTraysEquivalent,
   createPreparedNestedTray,
+  createPreparedNestedTraySelector,
   createTrayPresenterStateSelector,
   resolvePresenterTransitionScope,
   type PresentedTray,
   type PresentedTrayRenderer,
 } from "./presenter";
-
-const selectAllTrayRegistrations = (state: TrayHostStateValue) =>
-  state.registry;
 
 // resolve runtime stack entries into root and nested host groups
 // resolve runtime stack entries into root and nested host presentations
@@ -32,8 +28,14 @@ export const TrayPresenter: React.FC<{
     createTrayPresenterStateSelector,
     [],
   );
+  const selectPreparedNestedTrayState = useMemo(
+    createPreparedNestedTraySelector,
+    [],
+  );
   const presenterState = useTrayHostSelector(selectPresenterState);
-  const allRegistrations = useTrayHostSelector(selectAllTrayRegistrations);
+  const preparedNestedRegistrations = useTrayHostSelector(
+    selectPreparedNestedTrayState,
+  );
   const { registry, stack, transition } = presenterState;
   const { dismissKeyboardForTray, requestCloseActiveTray } = useTrayHostActions();
   const previousIndexByTrayRef = useRef<Record<string, number>>({});
@@ -99,24 +101,14 @@ export const TrayPresenter: React.FC<{
   }, [registry, stack, transitionScope.root]);
 
   const preparedNestedHosts = useMemo<PresentedTray[]>(() => {
-    const nextHosts = Object.entries(allRegistrations)
-      .filter(([, registration]) => registration.parentTrayId != null)
-      .map(([trayId, registration]) => {
-        const parentRegistration = registration.parentTrayId
-          ? allRegistrations[registration.parentTrayId]
-          : undefined;
-        const parentCanPresentFullScreen =
-          parentRegistration?.transition?.open === "expandFromTrigger" ||
-          parentRegistration?.steps.some(
-            (step) => step.options?.fullScreen === true,
-          ) === true;
-
-        return createPreparedNestedTray(
+    const nextHosts = Object.entries(preparedNestedRegistrations).map(
+      ([trayId, registration]) =>
+        createPreparedNestedTray(
           trayId,
           registration,
-          parentCanPresentFullScreen,
-        );
-      });
+          registration.parentCanPresentFullScreen,
+        ),
+    );
     const previousHosts = previousPreparedNestedHostsRef.current;
     const stableHosts = arePresentedTrayListsEquivalent(
       previousHosts,
@@ -127,7 +119,7 @@ export const TrayPresenter: React.FC<{
 
     previousPreparedNestedHostsRef.current = stableHosts;
     return stableHosts;
-  }, [allRegistrations]);
+  }, [preparedNestedRegistrations]);
 
   const preparedNestedHostByTrayId = useMemo(
     () =>

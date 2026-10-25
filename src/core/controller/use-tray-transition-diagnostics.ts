@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect } from "react";
+import { useCallback, useEffect } from "react";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import type {
   SharedValue,
 } from "react-native-reanimated";
@@ -131,7 +132,7 @@ export const useTrayTransitionDiagnostics = ({
     visible,
   ]);
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("useTrayTransitionDiagnostics.markRenderCommit", () => {
     if (
       renderedTransitionContract &&
       renderedTransitionContract.boundary !== "opening" &&

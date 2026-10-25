@@ -1,11 +1,11 @@
 // adapt runtime payloads into the animated native shell
 import React, {
   useCallback,
-  useLayoutEffect,
   useMemo,
   useRef,
   useSyncExternalStore,
 } from "react";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import { TrayStepContent } from "../../tray-step-content";
 import { TrayHeaderTransitionProvider } from "../../primitives/header-transition-context";
 import {
@@ -296,7 +296,7 @@ const PresentedTray = ({
   // fullscreen transition ordering. Closing hosts intentionally retain their
   // last visible region payload; the Tray controller owns the close snapshot
   // and clears it when the native close lifecycle completes.
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("PresentedTray.publishPayload", () => {
     if (payload.visible) {
       payloadStore.publish(payload);
     }
