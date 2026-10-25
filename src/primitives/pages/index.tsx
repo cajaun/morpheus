@@ -40,7 +40,6 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   const parsed = useMemo(() => parseTrayPagesChildren(children), [children]);
   const totalPages = parsed.pages.length;
   const trayId = useTrayScope();
-  const activeIndex = useTrayHostSelector((state) => state.activeIndex);
   const activeStepKey = useTrayHostSelector((state) => {
     if (!trayId) {
       return null;
@@ -67,7 +66,6 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   });
 
   useTrayPagesRegistration({
-    activeIndex,
     activeStepKey,
     backPage: pager.backPage,
     hasFooter: parsed.footer != null,

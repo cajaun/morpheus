@@ -99,6 +99,16 @@ export const useTrayMeasurements = ({
   const [footerMeasured, setFooterMeasured] = useState(false);
   const [contentMeasured, setContentMeasured] = useState(false);
   const [pendingOpen, setPendingOpen] = useState(false);
+  // Keep the layout callback stable when its one-time readiness flag changes.
+  const contentMeasuredRef = useRef(contentMeasured);
+  const markContentMeasured = useCallback(() => {
+    if (contentMeasuredRef.current) {
+      return;
+    }
+
+    contentMeasuredRef.current = true;
+    setContentMeasured(true);
+  }, []);
 
   // refs provide synchronous reads across layout callbacks and spring setup
   const latestMeasuredContentHeightRef = useRef(0);
@@ -190,6 +200,7 @@ export const useTrayMeasurements = ({
         latestMeasuredFooterFullScreenRef.current === renderedFullScreen;
 
       setLayoutEnabled(false);
+      contentMeasuredRef.current = false;
       setContentMeasured(false);
       setFooterMeasured(!hasFooter || canReuseVisibleFooterMeasurement);
       setPendingOpen(true);
@@ -241,6 +252,7 @@ export const useTrayMeasurements = ({
     resolvedContentHeight.value = 0;
     measuredFooterHeight.value = 0;
 
+    contentMeasuredRef.current = false;
     setContentMeasured(false);
     setFooterMeasured(false);
     setPendingOpen(false);
@@ -267,8 +279,8 @@ export const useTrayMeasurements = ({
       contentHeight.value = height;
       onContentHeightResolved?.(height, height, trayId, mode);
 
-      if (!contentMeasured && trayId !== undefined) {
-        setContentMeasured(true);
+      if (!contentMeasuredRef.current && trayId !== undefined) {
+        markContentMeasured();
       }
 
       log("CONTENT HEIGHT COMMITTED FROM SHEET FRAME", {
@@ -281,7 +293,7 @@ export const useTrayMeasurements = ({
     },
     [
       contentHeight,
-      contentMeasured,
+      markContentMeasured,
       measuredContentHeight,
       onContentHeightResolved,
       resolvedContentHeight,
@@ -514,9 +526,9 @@ export const useTrayMeasurements = ({
         onSheetContentHeightMeasured?.(resolvedHeight, committedTrayId);
       }
 
-      if (!contentMeasured && committedTrayId !== undefined) {
+      if (!contentMeasuredRef.current && committedTrayId !== undefined) {
         // content is only considered ready after it belongs to a named rendered tray
-        setContentMeasured(true);
+        markContentMeasured();
       }
 
       log("CONTENT onLayout", {
@@ -536,7 +548,7 @@ export const useTrayMeasurements = ({
     },
     [
       contentHeight,
-      contentMeasured,
+      markContentMeasured,
       acceptContentMeasurement,
       contentMeasurementLeaseActive,
       contentMeasurementLeaseRef,

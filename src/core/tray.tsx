@@ -115,7 +115,6 @@ const Tray = forwardRef<TrayRef, TrayProps>(
       () => ({
         layoutEnabled: controller.state.layoutEnabled,
         contentHeightSnapshot: controller.state.contentHeightSnapshot,
-        isSurfaceReady: controller.state.isSurfaceReady,
         preparedSheetFrame: controller.state.preparedSheetFrame,
         renderedHeader: controller.state.renderedHeader,
         renderedFooter: controller.state.renderedFooter,
@@ -127,8 +126,6 @@ const Tray = forwardRef<TrayRef, TrayProps>(
         frameFullScreen: controller.state.frameFullScreen,
         renderedFullScreenSafeAreaTop:
           controller.state.renderedFullScreenSafeAreaTop,
-        renderedFullScreenDraggable:
-          controller.state.renderedFullScreenDraggable,
         renderedContainerStyle: controller.state.renderedContainerStyle,
         renderedClassName: controller.state.renderedClassName,
         renderedFooterStyle: controller.state.renderedFooterStyle,
@@ -137,7 +134,6 @@ const Tray = forwardRef<TrayRef, TrayProps>(
       [
         controller.state.contentHeightSnapshot,
         controller.state.frameFullScreen,
-        controller.state.isSurfaceReady,
         controller.state.layoutEnabled,
         controller.state.preparedSheetFrame,
         controller.state.renderedClassName,
@@ -148,7 +144,6 @@ const Tray = forwardRef<TrayRef, TrayProps>(
         controller.state.renderedFooterStyle,
         controller.state.renderedFullScreen,
         controller.state.renderedFullScreenBackgroundScale,
-        controller.state.renderedFullScreenDraggable,
         controller.state.renderedFullScreenSafeAreaTop,
         controller.state.renderedHeader,
         controller.state.renderedTrayId,
@@ -168,6 +163,10 @@ const Tray = forwardRef<TrayRef, TrayProps>(
         visible={visible}
         interactive={interactive}
         keyboardAware={keyboardAware}
+        isSurfaceReady={controller.state.isSurfaceReady}
+        fullScreenDraggable={
+          controller.state.renderedFullScreenDraggable ?? true
+        }
         shared={visualShared}
         state={visualState}
         renderSnapshotStore={controller.renderSnapshotStore}

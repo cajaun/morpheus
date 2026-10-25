@@ -5,7 +5,6 @@ import type {
 } from "../../runtime/types";
 
 type Params = {
-  activeIndex: number;
   activeStepKey: string | null;
   backPage: () => void;
   hasFooter: boolean;
@@ -20,7 +19,6 @@ type Params = {
 
 // page registration publishes pager controls beside the active tray step
 export const useTrayPagesRegistration = ({
-  activeIndex,
   activeStepKey,
   backPage,
   hasFooter,
@@ -54,7 +52,6 @@ export const useTrayPagesRegistration = ({
       registerTrayPages(trayId, null);
     };
   }, [
-    activeIndex,
     activeStepKey,
     backPage,
     hasFooter,
