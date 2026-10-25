@@ -5,13 +5,13 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import { StyleSheet } from "react-native";
+import { Animated as RNAnimated, StyleSheet } from "react-native";
 import Animated, {
   useDerivedValue,
   useSharedValue,
 } from "react-native-reanimated";
 import { GestureDetector } from "react-native-gesture-handler";
-import { KeyboardStickyView } from "react-native-keyboard-controller";
+import { useKeyboardAnimation } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Backdrop } from "../primitives/backdrop";
 import { useTrayBackgroundScale } from "../runtime/tray-background-scale";
@@ -226,21 +226,71 @@ const TrayInteractionBackdrop = React.memo(
 
 TrayInteractionBackdrop.displayName = "TrayInteractionBackdrop";
 
+const TrayOriginTransitionBackdrop = React.memo(
+  ({
+    isRendered,
+    originProgress,
+    progress,
+  }: {
+    isRendered: boolean;
+    originProgress: TrayController["shared"]["originProgress"];
+    progress: TrayController["shared"]["progress"];
+  }) => {
+    const backdropProgress = useDerivedValue(
+      () => originProgress.value * progress.value,
+    );
+
+    return (
+      <TrayInteractionBackdrop
+        isRendered={isRendered}
+        progress={backdropProgress}
+      />
+    );
+  },
+);
+
+TrayOriginTransitionBackdrop.displayName = "TrayOriginTransitionBackdrop";
+
 const TrayKeyboardStickyRegion = React.memo(
   ({ enabled, children }: { enabled: boolean; children: React.ReactNode }) => {
     const keyboardStickyEnabled = React.useContext(
       TrayKeyboardStickyContext,
     );
+    const { height, progress } = useKeyboardAnimation();
+    const isEnabled = enabled && keyboardStickyEnabled;
+
+    // KeyboardStickyView recreates this interpolation on every React render.
+    // Keep the same native Animated graph while its source value is stable.
+    const keyboardOffset = useMemo(
+      () =>
+        progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, TRAY_KEYBOARD_GAP],
+        }),
+      [progress],
+    );
+    const stickyStyle = useMemo(() => {
+      const disabledOffset = RNAnimated.add(
+        RNAnimated.multiply(height, 0),
+        0,
+      );
+      const enabledOffset = RNAnimated.add(height, keyboardOffset);
+
+      return {
+        transform: [
+          { translateY: isEnabled ? enabledOffset : disabledOffset },
+        ],
+      };
+    }, [height, isEnabled, keyboardOffset]);
+    const styles = useMemo(
+      () => [stickyStyle, StyleSheet.absoluteFillObject],
+      [stickyStyle],
+    );
 
     return (
-      <KeyboardStickyView
-        enabled={enabled && keyboardStickyEnabled}
-        offset={{ opened: TRAY_KEYBOARD_GAP }}
-        pointerEvents="box-none"
-        style={StyleSheet.absoluteFillObject}
-      >
+      <RNAnimated.View pointerEvents="box-none" style={styles}>
         {children}
-      </KeyboardStickyView>
+      </RNAnimated.View>
     );
   },
 );
@@ -740,13 +790,6 @@ const TrayVisualShell = React.memo(
     const instrumentationEnabled = isTrayInstrumentationEnabled();
     const shouldUseOriginTransition =
       transition?.open === "expandFromTrigger" && !presentationFullScreen;
-    // backdrop follows origin progress only for trigger expansion so opacity waits for the shell
-    const originBackdropProgress = useDerivedValue(
-      () => originProgress.value * progress.value,
-    );
-    const backdropProgress = shouldUseOriginTransition
-      ? originBackdropProgress
-      : progress;
 
     // wait for layout and keyboard state before drag starts
     const hasValidBoundarySheetFrame = isSheetFrameForTransition(
@@ -996,10 +1039,18 @@ const TrayVisualShell = React.memo(
             visible={visible}
           />
         ) : null}
-        <TrayInteractionBackdrop
-          isRendered={renderedTrayId !== undefined}
-          progress={backdropProgress}
-        />
+        {shouldUseOriginTransition ? (
+          <TrayOriginTransitionBackdrop
+            isRendered={renderedTrayId !== undefined}
+            originProgress={originProgress}
+            progress={progress}
+          />
+        ) : (
+          <TrayInteractionBackdrop
+            isRendered={renderedTrayId !== undefined}
+            progress={progress}
+          />
+        )}
 
         {renderedTrayId !== undefined && (
           <Animated.View
