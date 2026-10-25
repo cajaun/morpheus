@@ -3,6 +3,7 @@ import { clampTrayStepIndex } from "./tray-step-index";
 import type {
   TrayPresentationEndpoint,
   TrayRegistration,
+  ResolvedTrayStepOptions,
   TrayStackEntry,
   TrayTransitionBoundary,
   TrayTransitionContract,
@@ -15,9 +16,14 @@ import type {
 export const resolveTrayPresentationEndpoint = ({
   entry,
   registration,
+  resolvedStepOptions,
 }: {
   entry: TrayStackEntry | undefined;
   registration: TrayRegistration | undefined;
+  resolvedStepOptions?: Pick<
+    ResolvedTrayStepOptions,
+    "fullScreen" | "keyboardAware"
+  >;
 }): TrayPresentationEndpoint | null => {
   if (!entry || !registration) {
     return null;
@@ -32,7 +38,8 @@ export const resolveTrayPresentationEndpoint = ({
 
   const pages = registration.pages;
   const pageIndex = pages?.stepKey === step.key ? pages.pageIndex : undefined;
-  const stepOptions = resolveTrayStepOptions(step.options);
+  const stepOptions =
+    resolvedStepOptions ?? resolveTrayStepOptions(step.options);
 
   return {
     trayId: entry.trayId,

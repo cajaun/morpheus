@@ -133,8 +133,72 @@ type TraySurfaceInteraction = {
   onRequestClose: () => void;
 };
 
+type TrayBackdropInteraction = Pick<
+  TraySurfaceInteraction,
+  "interactive" | "onRequestClose"
+>;
+
+// The snapshot store updates arbitrary step nodes through their own region
+// subscriptions. When its region topology is unchanged, those node identities
+// are not inputs to the shell's animation and geometry policy.
+const areTrayVisualShellStatesEqual = (
+  previous: TrayVisualShellProps["state"],
+  next: TrayVisualShellProps["state"],
+  hasSnapshotStore: boolean,
+) =>
+  previous.layoutEnabled === next.layoutEnabled &&
+  previous.contentHeightSnapshot === next.contentHeightSnapshot &&
+  previous.preparedSheetFrame === next.preparedSheetFrame &&
+  (hasSnapshotStore
+    ? Boolean(previous.renderedHeader) === Boolean(next.renderedHeader) &&
+      Boolean(previous.renderedContent) === Boolean(next.renderedContent) &&
+      Boolean(previous.renderedFooter) === Boolean(next.renderedFooter) &&
+      (previous.renderedHeader != null) === (next.renderedHeader != null) &&
+      (previous.renderedContent != null) === (next.renderedContent != null) &&
+      (previous.renderedFooter != null) === (next.renderedFooter != null)
+    : previous.renderedHeader === next.renderedHeader &&
+      previous.renderedContent === next.renderedContent &&
+      previous.renderedFooter === next.renderedFooter) &&
+  previous.renderedTrayId === next.renderedTrayId &&
+  previous.renderedFullScreen === next.renderedFullScreen &&
+  previous.renderedFullScreenBackgroundScale ===
+    next.renderedFullScreenBackgroundScale &&
+  previous.frameFullScreen === next.frameFullScreen &&
+  previous.renderedFullScreenSafeAreaTop ===
+    next.renderedFullScreenSafeAreaTop &&
+  previous.renderedContainerStyle === next.renderedContainerStyle &&
+  previous.renderedClassName === next.renderedClassName &&
+  previous.renderedFooterStyle === next.renderedFooterStyle &&
+  previous.renderedFooterClassName === next.renderedFooterClassName;
+
+const areTrayVisualShellPropsEqual = (
+  previous: TrayVisualShellProps,
+  next: TrayVisualShellProps,
+) =>
+  previous.assignmentId === next.assignmentId &&
+  previous.style === next.style &&
+  previous.rootTrayId === next.rootTrayId &&
+  previous.trayId === next.trayId &&
+  previous.fullScreen === next.fullScreen &&
+  previous.transition === next.transition &&
+  previous.transitionContract === next.transitionContract &&
+  previous.visible === next.visible &&
+  previous.shared === next.shared &&
+  previous.renderSnapshotStore === next.renderSnapshotStore &&
+  previous.renderSnapshotOverride === next.renderSnapshotOverride &&
+  previous.handlers === next.handlers &&
+  previous.interactionStateRef === next.interactionStateRef &&
+  areTrayVisualShellStatesEqual(
+    previous.state,
+    next.state,
+    previous.renderSnapshotStore !== undefined,
+  );
+
 const TraySurfaceInteractionContext = React.createContext<
   TraySurfaceInteraction | undefined
+>(undefined);
+const TrayBackdropInteractionContext = React.createContext<
+  TrayBackdropInteraction | undefined
 >(undefined);
 const TrayKeyboardStickyContext = React.createContext(false);
 const NOOP_TRAY_CLOSE = () => {};
@@ -147,7 +211,7 @@ const TrayInteractionBackdrop = React.memo(
     isRendered: boolean;
     progress: TrayController["shared"]["progress"];
   }) => {
-    const interaction = React.useContext(TraySurfaceInteractionContext)!;
+    const interaction = React.useContext(TrayBackdropInteractionContext)!;
 
     return (
       <Backdrop
@@ -180,6 +244,8 @@ const TrayKeyboardStickyRegion = React.memo(
     );
   },
 );
+
+TrayKeyboardStickyRegion.displayName = "TrayKeyboardStickyRegion";
 
 type TrayAnimatedStyles = ReturnType<
   typeof useTrayAnimatedStyles
@@ -922,12 +988,14 @@ const TrayVisualShell = React.memo(
 
     const shell = (
       <TrayMorphProgressProvider value={morphProgress}>
-        <TraySnapshotTelemetry
-          store={renderSnapshotStore}
-          override={renderSnapshotOverride}
-          rootTrayId={rootTrayId}
-          visible={visible}
-        />
+        {instrumentationEnabled ? (
+          <TraySnapshotTelemetry
+            store={renderSnapshotStore}
+            override={renderSnapshotOverride}
+            rootTrayId={rootTrayId}
+            visible={visible}
+          />
+        ) : null}
         <TrayInteractionBackdrop
           isRendered={renderedTrayId !== undefined}
           progress={backdropProgress}
@@ -1011,6 +1079,7 @@ const TrayVisualShell = React.memo(
       </React.Profiler>
     );
   },
+  areTrayVisualShellPropsEqual,
 );
 
 TrayVisualShell.displayName = "TrayVisualShell";
@@ -1128,24 +1197,33 @@ const TrayVisualView = React.memo((props: TrayVisualViewProps) => {
       isSurfaceReady,
     ],
   );
+  const backdropInteraction = useMemo(
+    () => ({
+      interactive,
+      onRequestClose: interaction.onRequestClose,
+    }),
+    [interactive, interaction.onRequestClose],
+  );
 
   return (
-    <TraySurfaceInteractionContext.Provider value={interaction}>
-      <TrayKeyboardStickyContext.Provider value={keyboard.stickyEnabled}>
-        <TrayVisualShell
-          {...shellProps}
-          assignmentId={assignmentId}
-          rootTrayId={rootTrayId}
-          fullScreen={fullScreen}
-          transitionContract={transitionContract}
-          visible={visible}
-          shared={shared}
-          state={state}
-          handlers={shellHandlers}
-          interactionStateRef={interactionStateRef}
-        />
-      </TrayKeyboardStickyContext.Provider>
-    </TraySurfaceInteractionContext.Provider>
+    <TrayBackdropInteractionContext.Provider value={backdropInteraction}>
+      <TraySurfaceInteractionContext.Provider value={interaction}>
+        <TrayKeyboardStickyContext.Provider value={keyboard.stickyEnabled}>
+          <TrayVisualShell
+            {...shellProps}
+            assignmentId={assignmentId}
+            rootTrayId={rootTrayId}
+            fullScreen={fullScreen}
+            transitionContract={transitionContract}
+            visible={visible}
+            shared={shared}
+            state={state}
+            handlers={shellHandlers}
+            interactionStateRef={interactionStateRef}
+          />
+        </TrayKeyboardStickyContext.Provider>
+      </TraySurfaceInteractionContext.Provider>
+    </TrayBackdropInteractionContext.Provider>
   );
 });
 

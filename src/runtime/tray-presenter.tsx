@@ -91,11 +91,22 @@ export const TrayPresenter: React.FC<{
   }, [registry, stack, transitionScope.root]);
 
   const nestedHosts = useMemo<PresentedTray[]>(() => {
-    const nextHosts = stack.slice(1).flatMap((entry, index) => {
+    const previousHosts = previousNestedHostsRef.current;
+    const previousHostByTrayId = new Map(
+      previousHosts.map((host) => [host.rootTrayId, host]),
+    );
+    const nextHosts: PresentedTray[] = [];
+
+    for (let stackIndex = 1; stackIndex < stack.length; stackIndex += 1) {
+      const entry = stack[stackIndex];
+      if (!entry) {
+        continue;
+      }
+
       const registration = registry[entry.trayId];
 
       if (!registration) {
-        return [];
+        continue;
       }
 
       const host = createPresentedTray({
@@ -103,27 +114,26 @@ export const TrayPresenter: React.FC<{
         registration,
         previousIndex: previousIndexByTrayRef.current[entry.trayId],
         transition: transitionScope.nested,
-        stackIndex: index + 1,
+        stackIndex,
         stackLength: stack.length,
       });
 
-      return host ? [host] : [];
-    });
+      if (!host) {
+        continue;
+      }
 
-    const previousHosts = previousNestedHostsRef.current;
-    const stableHosts = nextHosts.map((host) => {
-      const previousHost = previousHosts.find(
-        (candidate) => candidate.rootTrayId === host.rootTrayId,
+      const previousHost = previousHostByTrayId.get(host.rootTrayId);
+
+      nextHosts.push(
+        previousHost && arePresentedTraysEquivalent(previousHost, host)
+          ? previousHost
+          : host,
       );
+    }
 
-      return previousHost && arePresentedTraysEquivalent(previousHost, host)
-        ? previousHost
-        : host;
-    });
-
-    return arePresentedTrayListsEquivalent(previousHosts, stableHosts)
+    return arePresentedTrayListsEquivalent(previousHosts, nextHosts)
       ? previousHosts
-      : stableHosts;
+      : nextHosts;
   }, [registry, stack, transitionScope.nested]);
 
   useEffect(() => {

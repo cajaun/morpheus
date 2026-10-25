@@ -317,7 +317,11 @@ export const createPresentedTray = ({
     step,
     registration.footer != null,
   );
-  const endpoint = resolveTrayPresentationEndpoint({ entry, registration });
+  const endpoint = resolveTrayPresentationEndpoint({
+    entry,
+    registration,
+    resolvedStepOptions: stepOptions,
+  });
 
   if (!endpoint) {
     return null;

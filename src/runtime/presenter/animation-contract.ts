@@ -1,4 +1,3 @@
-import { resolveTrayStepOptions } from "../tray-step-options";
 import type {
   TrayPresentationEndpoint,
   TrayRegistration,
@@ -47,16 +46,21 @@ export const hasAdjacentFullScreenBoundary = (
     return false;
   }
 
-  const fullScreen = resolveTrayStepOptions(step.options).fullScreen;
+  const fullScreen = step.options?.fullScreen ?? false;
 
-  return [stepIndex - 1, stepIndex + 1].some((adjacentIndex) => {
-    const adjacentStep = registration.steps[adjacentIndex];
+  const previousStep = registration.steps[stepIndex - 1];
+  if (
+    previousStep !== undefined &&
+    (previousStep.options?.fullScreen ?? false) !== fullScreen
+  ) {
+    return true;
+  }
 
-    return (
-      adjacentStep !== undefined &&
-      resolveTrayStepOptions(adjacentStep.options).fullScreen !== fullScreen
-    );
-  });
+  const nextStep = registration.steps[stepIndex + 1];
+  return (
+    nextStep !== undefined &&
+    (nextStep.options?.fullScreen ?? false) !== fullScreen
+  );
 };
 
 // resolve content animation policy from registration and transition state

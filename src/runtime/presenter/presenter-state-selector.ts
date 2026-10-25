@@ -61,18 +61,24 @@ export const createTrayPresenterStateSelector = () => {
       return previousSelection;
     }
 
-    const registry: Record<string, TrayPresenterRegistration> = {};
+    // A transition-only update changes presentation scope, not registration
+    // data. Reuse the selected registry instead of copying every active host.
+    let registry = previousSelection?.registry;
 
-    for (const entry of state.stack) {
-      const registration = state.registry[entry.trayId];
+    if (relevantRegistrationChanged || registry === undefined) {
+      registry = {};
 
-      if (registration !== undefined) {
-        registry[entry.trayId] = {
-          steps: registration.steps,
-          footer: registration.footer,
-          dismissible: registration.dismissible,
-          transition: registration.transition,
-        };
+      for (const entry of state.stack) {
+        const registration = state.registry[entry.trayId];
+
+        if (registration !== undefined) {
+          registry[entry.trayId] = {
+            steps: registration.steps,
+            footer: registration.footer,
+            dismissible: registration.dismissible,
+            transition: registration.transition,
+          };
+        }
       }
     }
 
