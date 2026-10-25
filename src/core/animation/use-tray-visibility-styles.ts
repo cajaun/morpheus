@@ -1,7 +1,4 @@
-import {
-  interpolate,
-  useAnimatedStyle,
-} from "react-native-reanimated";
+import { interpolate, useAnimatedStyle } from "react-native-reanimated";
 import {
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
   EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS,
@@ -16,59 +13,38 @@ import type {
 
 type Params = Pick<
   TrayAnimatedStyleParams,
-  "hasFooter" | "surfaceOpacity" | "transition"
+  "surfaceOpacity" | "transition"
 > &
   Pick<
     TrayAnimationState,
     "originProgress" | "shouldUseOriginTransition"
   >;
 
+const EMPTY_STYLE = {};
+const ZERO_CONTENT_PADDING_STYLE = {
+  paddingHorizontal: 0,
+  paddingBottom: 0,
+  paddingTop: 0,
+};
+
 // coordinate surface content and footer visibility with shell progress
 export const useTrayVisibilityStyles = ({
-  hasFooter,
   originProgress,
   shouldUseOriginTransition,
   surfaceOpacity,
   transition,
 }: Params) => {
-  const surfaceVisibilityStyle = useAnimatedStyle(() => ({
-    opacity: surfaceOpacity.value,
-  }));
-
-  const originSurfaceVisibilityStyle = useAnimatedStyle(() => {
-    if (!shouldUseOriginTransition) {
-      return {};
-    }
-
-    return {
-      // hide the sheet contents while the trigger is still visually a pill
+  const surfaceVisibilityStyle = useAnimatedStyle(
+    () => ({
+      // The trigger-origin gate takes precedence over ordinary visibility.
       opacity:
-        originProgress.value > EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS
-          ? surfaceOpacity.value
-          : 0,
-    };
-  }, [originProgress, shouldUseOriginTransition]);
-
-  const contentRevealStyle = useAnimatedStyle(() => {
-    if (shouldUseOriginTransition) {
-      return {
-        // content reveal matches surface reveal so children do not appear inside the collapsed pill
-        opacity:
-          originProgress.value > EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS
-            ? surfaceOpacity.value
-            : 0,
-      };
-    }
-
-    return {
-      opacity: surfaceOpacity.value,
-    };
-  }, [originProgress, shouldUseOriginTransition]);
-
-  const footerVisibilityStyle = useAnimatedStyle(() => ({
-    // footer layer stays mounted but invisible when the step has no footer
-    opacity: hasFooter.value ? surfaceOpacity.value : 0,
-  }));
+        shouldUseOriginTransition &&
+        !(originProgress.value > EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS)
+          ? 0
+          : surfaceOpacity.value,
+    }),
+    [originProgress, shouldUseOriginTransition, surfaceOpacity],
+  );
 
   const footerContentFrameStyle = useAnimatedStyle(() => {
     const sheetContentWidth =
@@ -99,18 +75,12 @@ export const useTrayVisibilityStyles = ({
     };
   }, [originProgress, shouldUseOriginTransition, transition?.origin]);
 
-  const contentPaddingStyle = useAnimatedStyle(() => ({
-    paddingHorizontal: 0,
-    paddingBottom: 0,
-    paddingTop: 0,
-  }));
-
   return {
-    contentPaddingStyle,
+    contentPaddingStyle: ZERO_CONTENT_PADDING_STYLE,
     surfaceVisibilityStyle,
-    originSurfaceVisibilityStyle,
-    contentRevealStyle,
-    footerVisibilityStyle,
+    originSurfaceVisibilityStyle: EMPTY_STYLE,
+    contentRevealStyle: EMPTY_STYLE,
+    footerVisibilityStyle: EMPTY_STYLE,
     footerContentFrameStyle,
   };
 };

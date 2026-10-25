@@ -10,7 +10,7 @@ import {
 import { scheduleOnRN } from "react-native-worklets";
 import { FULL_SCREEN_LAYOUT_DURATION } from "../constants";
 import { describeTrayTransition } from "../diagnostics/tray-transition-diagnostics";
-import { log, logWorklet } from "../logger";
+import { isTrayDebugLoggingEnabled, log, logWorklet } from "../logger";
 import { withTrayTransitionStart } from "../transition-start";
 import type { TrayTransitionContract } from "../../runtime/types";
 
@@ -76,8 +76,11 @@ export const useTrayBoundaryMotionState = ({
     presentationFullScreen ? 1 : 0,
   );
   const previousModeRef = useRef(presentationFullScreen);
+  const didInitializeBoundaryRef = useRef(false);
 
   useLayoutEffect(() => {
+    const isInitialCommit = !didInitializeBoundaryRef.current;
+    didInitializeBoundaryRef.current = true;
     const modeChanged =
       previousModeRef.current !== presentationFullScreen;
     const hasBoundaryContract =
@@ -91,30 +94,35 @@ export const useTrayBoundaryMotionState = ({
 
     if (waitingForSheetGeometry) {
       // keep the previous mode latched until the target sheet owns a valid frame this preserves the existing boundary clock start contract
-      log("BOUNDARY CONFIG WAITING FOR SHEET GEOMETRY", {
-        boundaryGeometryReady,
-        transition: describeTrayTransition(transitionContract),
-      });
+      if (isTrayDebugLoggingEnabled()) {
+        log("BOUNDARY CONFIG WAITING FOR SHEET GEOMETRY", {
+          boundaryGeometryReady,
+          transition: describeTrayTransition(transitionContract),
+        });
+      }
       return;
     }
 
     previousModeRef.current = presentationFullScreen;
 
-    log("BOUNDARY CONFIG", {
-      modeChanged,
-      hasBoundaryContract,
-      boundaryActive: boundaryActive.value,
-      morphProgress: morphProgress.value,
-      transitionStartedAt: transitionStartedAt.value,
-      transitionStartedGeneration: transitionStartedGeneration.value,
-      transitionLayoutStartedGeneration:
-        transitionLayoutStartedGeneration.value,
-      transitionCompletedGeneration: transitionCompletedGeneration.value,
-      presentationFullScreen,
-      targetBackgroundScale,
-      targetSafeAreaTop,
-      transition: describeTrayTransition(transitionContract),
-    });
+    if (isTrayDebugLoggingEnabled()) {
+      log("BOUNDARY CONFIG", {
+        modeChanged,
+        hasBoundaryContract,
+        boundaryActive: boundaryActive.value,
+        currentBackgroundScale: currentBackgroundScale.value,
+        morphProgress: morphProgress.value,
+        transitionStartedAt: transitionStartedAt.value,
+        transitionStartedGeneration: transitionStartedGeneration.value,
+        transitionLayoutStartedGeneration:
+          transitionLayoutStartedGeneration.value,
+        transitionCompletedGeneration: transitionCompletedGeneration.value,
+        presentationFullScreen,
+        targetBackgroundScale,
+        targetSafeAreaTop,
+        transition: describeTrayTransition(transitionContract),
+      });
+    }
 
     if (isBoundaryTransition) {
       // use the last rendered mode values as the source frame for this generation
@@ -135,6 +143,12 @@ export const useTrayBoundaryMotionState = ({
     }
 
     if (!hasBoundaryContract) {
+      // useSharedValue already initialized these values from the same target
+      // values on this first commit, so skip redundant UI-thread writes.
+      if (isInitialCommit && !modeChanged) {
+        return;
+      }
+
       sourceBackgroundScale.value = targetBackgroundScale;
       destinationBackgroundScale.value = targetBackgroundScale;
       currentBackgroundScale.value = targetBackgroundScale;
@@ -303,8 +317,8 @@ export const useTrayBoundaryMotionState = ({
           (state.destinationSafeAreaTop - state.sourceSafeAreaTop) *
             progress;
 
-        currentBackgroundScale.value = nextBackgroundScale;
         currentSafeAreaTop.value = nextSafeAreaTop;
+        currentBackgroundScale.value = nextBackgroundScale;
         backgroundScale.value =
           1 + (nextBackgroundScale - 1) * state.visibility;
 
@@ -318,8 +332,8 @@ export const useTrayBoundaryMotionState = ({
         return;
       }
 
-      currentBackgroundScale.value = state.destinationBackgroundScale;
       currentSafeAreaTop.value = state.destinationSafeAreaTop;
+      currentBackgroundScale.value = state.destinationBackgroundScale;
       backgroundScale.value =
         1 +
         (state.destinationBackgroundScale - 1) *

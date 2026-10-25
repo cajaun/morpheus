@@ -1,2 +1,6 @@
 // expose the runtime logger to core callers
-export { log, logWorklet } from "../runtime/logger";
+export {
+  isTrayDebugLoggingEnabled,
+  log,
+  logWorklet,
+} from "../runtime/logger";

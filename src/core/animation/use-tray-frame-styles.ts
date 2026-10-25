@@ -10,6 +10,7 @@ import {
   EXPAND_FROM_TRIGGER_COLLAPSED_FOOTER_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT,
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
+  EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS,
   FULL_SCREEN_HEADER_BOTTOM_GAP,
   HORIZONTAL_MARGIN,
   SCREEN_HEIGHT,
@@ -23,7 +24,7 @@ import type {
   TrayAnimationState,
 } from "./tray-animated-style-types";
 import { isSheetFrameForTransition } from "../controller/tray-sheet-frame";
-import { log, logWorklet } from "../logger";
+import { isTrayDebugLoggingEnabled, log, logWorklet } from "../logger";
 import {
   isBoundaryClockStarted,
   isTargetSheetMeasurementPending,
@@ -58,6 +59,7 @@ type Params = Pick<
   | "transitionLayoutStartedGeneration"
   | "transitionCompletedGeneration"
   | "transition"
+  | "surfaceOpacity"
 > &
   TrayAnimationState;
 
@@ -77,6 +79,7 @@ export const useTrayFrameStyles = ({
   originTargetContentHeight,
   preparedSheetFrame,
   shouldUseOriginTransition,
+  surfaceOpacity,
   transition,
   transitionGeneration,
   transitionSourceKey,
@@ -112,6 +115,10 @@ export const useTrayFrameStyles = ({
     !hasPreparedSheetFrame;
 
   useEffect(() => {
+    if (!isTrayDebugLoggingEnabled()) {
+      return;
+    }
+
     log("FRAME STYLE POLICY", {
       fullScreen,
       fullScreenBoundaryTransition,
@@ -447,6 +454,12 @@ export const useTrayFrameStyles = ({
   ]);
 
   const contentFrameStyle = useAnimatedStyle(() => {
+    const contentRevealOpacity =
+      shouldUseOriginTransition &&
+      !(originProgress.value > EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS)
+        ? 0
+        : surfaceOpacity.value;
+
     if (!fullScreenBoundaryTransition) {
       // return a complete neutral sheet frame so recycled native views release boundary position and width
       return {
@@ -459,6 +472,7 @@ export const useTrayFrameStyles = ({
         height: undefined,
         alignSelf: "stretch",
         flex: fullScreen ? 1 : 0,
+        opacity: contentRevealOpacity,
       };
     }
 
@@ -515,15 +529,18 @@ export const useTrayFrameStyles = ({
         : targetSheetMeasurementPending
           ? SCREEN_HEIGHT
           : resolvedSheetHeight;
-    return resolveBoundaryContentStyle({
-      progress,
-      boundaryClockStarted,
-      sourceFullScreen,
-      targetFullScreen,
-      sourceHeight: sourceHeight ?? 0,
-      targetHeight: targetHeight ?? 0,
-      measurementPending: targetSheetMeasurementPending && !fullScreen,
-    });
+    return {
+      ...resolveBoundaryContentStyle({
+        progress,
+        boundaryClockStarted,
+        sourceFullScreen,
+        targetFullScreen,
+        sourceHeight: sourceHeight ?? 0,
+        targetHeight: targetHeight ?? 0,
+        measurementPending: targetSheetMeasurementPending && !fullScreen,
+      }),
+      opacity: contentRevealOpacity,
+    };
   }, [
     contentHeight,
     footerHeight,
@@ -533,8 +550,10 @@ export const useTrayFrameStyles = ({
     fullScreenBoundaryTransition,
     hasFooter,
     morphProgress,
+    originProgress,
     preparedSheetFrame,
     shouldUseOriginTransition,
+    surfaceOpacity,
     transitionGeneration,
     transitionSourceKey,
     transitionTargetKey,
@@ -647,6 +666,7 @@ export const useTrayFrameStyles = ({
       ? originBottomAnchor + targetBottomInset
       : HORIZONTAL_MARGIN + targetBottomInset;
     const targetRadius = BORDER_RADIUS;
+    const footerOpacity = hasFooter.value ? surfaceOpacity.value : 0;
 
     if (shouldUseOriginTransition) {
       // origin expansion is the footer s own presentation transition regular step changes never enter this branch
@@ -674,6 +694,7 @@ export const useTrayFrameStyles = ({
         EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT;
 
       return {
+        opacity: footerOpacity,
         left: currentLeft,
         top: interpolate(progress, [0, 1], [collapsedTop, targetTop]),
         width: currentWidth,
@@ -733,6 +754,7 @@ export const useTrayFrameStyles = ({
       const targetBoundaryBottom = resolvedFooterBottom;
 
       return {
+        opacity: footerOpacity,
         // the footer is detached from ordinary content layout but follows the same explicit shell clock when the presentation mode changes
         left: interpolate(
           progress,
@@ -757,6 +779,7 @@ export const useTrayFrameStyles = ({
     }
 
     return {
+      opacity: footerOpacity,
       // fixed footers stay at the same screen position during ordinary step changes even when the content shell changes height
       left: targetLeft,
       right: targetRight,
@@ -774,10 +797,12 @@ export const useTrayFrameStyles = ({
     fullScreenBoundarySourceFullScreen,
     fullScreenBoundaryTargetFullScreen,
     fullScreen,
+    hasFooter,
     morphProgress,
     originProgress,
     originBottomAnchor,
     shouldUseOriginTransition,
+    surfaceOpacity,
     targetBottomInset,
     transitionGeneration,
     transitionStartedGeneration,

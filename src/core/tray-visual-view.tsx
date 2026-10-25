@@ -32,6 +32,9 @@ import {
   TrayContentMotionDirectionProvider,
 } from "./transition-motion-direction";
 import { useTrayAnimatedStyles } from "./animation/use-tray-animated-styles";
+import {
+  useTraySheetAnimatedStyles,
+} from "./animation/use-tray-sheet-animated-styles";
 import { useTrayBoundaryMotionState } from "./animation/use-tray-boundary-motion-state";
 import { useTrayGesture } from "./input/use-tray-gesture";
 import { useSheetTrayKeyboard } from "./input/use-tray-keyboard";
@@ -47,7 +50,7 @@ import {
   resolveTransitionEndpointKey,
 } from "./controller/tray-sheet-frame";
 import { describeTrayTransition } from "./diagnostics/tray-transition-diagnostics";
-import { log } from "./logger";
+import { isTrayDebugLoggingEnabled, log } from "./logger";
 import {
   TRAY_HEADER_HORIZONTAL_PADDING,
   TRAY_KEYBOARD_GAP,
@@ -128,17 +131,15 @@ type TrayVisualShellProps = Omit<
   interactionStateRef: { current: boolean };
 };
 
-type TraySurfaceInteraction = {
-  gesture: ReturnType<typeof useTrayGesture>;
+type TrayFooterInteraction = {
   interactive: boolean;
   isSurfaceReady: boolean;
-  onRequestClose: () => void;
 };
 
-type TrayBackdropInteraction = Pick<
-  TraySurfaceInteraction,
-  "interactive" | "onRequestClose"
->;
+type TrayBackdropInteraction = {
+  interactive: boolean;
+  onRequestClose: () => void;
+};
 
 // The snapshot store updates arbitrary step nodes through their own region
 // subscriptions. When its region topology is unchanged, those node identities
@@ -198,8 +199,11 @@ const areTrayVisualShellPropsEqual = (
     previous.renderSnapshotStore !== undefined,
   );
 
-const TraySurfaceInteractionContext = React.createContext<
-  TraySurfaceInteraction | undefined
+const TrayGestureContext = React.createContext<
+  ReturnType<typeof useTrayGesture> | undefined
+>(undefined);
+const TrayFooterInteractionContext = React.createContext<
+  TrayFooterInteraction | undefined
 >(undefined);
 const TrayBackdropInteractionContext = React.createContext<
   TrayBackdropInteraction | undefined
@@ -337,12 +341,24 @@ type TrayBoundaryMotionParams = Omit<
 
 const TrayBoundaryMotionController = ({
   params,
+  animatedStyleParams,
   children,
 }: {
   params: TrayBoundaryMotionParams;
-  children: (styles: TrayBoundaryStyles) => React.ReactNode;
+  animatedStyleParams: Parameters<typeof useTrayAnimatedStyles>[0];
+  children: (
+    styles: TrayBoundaryStyles,
+    animatedStyles: TrayAnimatedStyles,
+  ) => React.ReactNode;
 }) => {
-  const { top: safeAreaTopInset } = useSafeAreaInsets();
+  const {
+    top: safeAreaTopInset,
+    bottom: safeAreaBottomInset,
+  } = useSafeAreaInsets();
+  const animatedStyles = useTrayAnimatedStyles(
+    animatedStyleParams,
+    safeAreaBottomInset,
+  );
   const providerBackgroundScale = useTrayBackgroundScale();
   const fallbackBackgroundScale = useSharedValue(1);
   // Nested test shells may render without a provider, so keep the same local fallback.
@@ -352,30 +368,50 @@ const TrayBoundaryMotionController = ({
     safeAreaTopInset,
     backgroundScale,
   });
-
-  return children(styles);
+  return children(styles, animatedStyles);
 };
 
 TrayBoundaryMotionController.displayName = "TrayBoundaryMotionController";
 
-// Only registrations with a fullscreen step can enter this motion system.
-// Its capability is fixed across step changes, so enabling it cannot remount
-// boundary state during a transition.
+const TraySheetAnimatedStyleController = ({
+  params,
+  children,
+}: {
+  params: Parameters<typeof useTrayAnimatedStyles>[0];
+  children: (styles: TrayAnimatedStyles) => React.ReactNode;
+}) => children(useTraySheetAnimatedStyles(params));
+
+TraySheetAnimatedStyleController.displayName =
+  "TraySheetAnimatedStyleController";
+
+// Fullscreen-capable registrations keep this motion system mounted across
+// step changes. Trigger-origin and active fullscreen endpoints also retain it
+// even when the registration itself is otherwise sheet-only.
 const TrayBoundaryMotionRegion = ({
   enabled,
   params,
+  animatedStyleParams,
   children,
 }: {
   enabled: boolean;
   params: TrayBoundaryMotionParams;
-  children: (styles: TrayBoundaryStyles | null) => React.ReactNode;
+  animatedStyleParams: Parameters<typeof useTrayAnimatedStyles>[0];
+  children: (
+    boundaryStyles: TrayBoundaryStyles | null,
+    animatedStyles: TrayAnimatedStyles,
+  ) => React.ReactNode;
 }) =>
   enabled ? (
-    <TrayBoundaryMotionController params={params}>
+    <TrayBoundaryMotionController
+      params={params}
+      animatedStyleParams={animatedStyleParams}
+    >
       {children}
     </TrayBoundaryMotionController>
   ) : (
-    <>{children(null)}</>
+    <TraySheetAnimatedStyleController params={animatedStyleParams}>
+      {(animatedStyles) => children(null, animatedStyles)}
+    </TraySheetAnimatedStyleController>
   );
 
 TrayBoundaryMotionRegion.displayName = "TrayBoundaryMotionRegion";
@@ -588,6 +624,51 @@ const areTraySurfacePropsEqual = (
   );
 };
 
+const TrayGestureRegion = React.memo(
+  ({ children }: { children: React.ReactNode }) => {
+    const gesture = React.useContext(TrayGestureContext)!;
+
+    return <GestureDetector gesture={gesture}>{children}</GestureDetector>;
+  },
+);
+
+TrayGestureRegion.displayName = "TrayGestureRegion";
+
+const TrayFooterSurface = React.memo(
+  ({
+    className,
+    hasFooter,
+    onLayout,
+    style,
+    children,
+  }: {
+    className?: string;
+    hasFooter: boolean;
+    onLayout: TraySurfaceProps["handleVisibleFooterLayout"];
+    style: React.ComponentProps<typeof Animated.View>["style"];
+    children: React.ReactNode;
+  }) => {
+    const interaction = React.useContext(TrayFooterInteractionContext)!;
+
+    return (
+      <Animated.View
+        className={className}
+        onLayout={onLayout}
+        style={style}
+        pointerEvents={
+          hasFooter && interaction.interactive && interaction.isSurfaceReady
+            ? "auto"
+            : "none"
+        }
+      >
+        {children}
+      </Animated.View>
+    );
+  },
+);
+
+TrayFooterSurface.displayName = "TrayFooterSurface";
+
 const TraySurface = React.memo(
   ({
     hasFooter,
@@ -629,7 +710,6 @@ const TraySurface = React.memo(
     fullScreenSafeAreaContentStyle,
     originProgress,
   }: TraySurfaceProps) => {
-    const interaction = React.useContext(TraySurfaceInteractionContext)!;
     // The region elements are stable shell slots. Their own subscriptions
     // update step payloads without publishing through this native surface.
     const surfaceClassName = renderedClassName;
@@ -646,7 +726,7 @@ const TraySurface = React.memo(
 
     return (
     <>
-      <GestureDetector gesture={interaction.gesture}>
+      <TrayGestureRegion>
         <Animated.View
           className={surfaceClassName}
           style={[
@@ -721,10 +801,11 @@ const TraySurface = React.memo(
             <Animated.View style={footerSpacerStyle} />
           </Animated.View>
         </Animated.View>
-      </GestureDetector>
+      </TrayGestureRegion>
       {/* fixed footers stay outside the layout animated shell only a fullscreen boundary may move this layer and then it follows the shell s explicit morph clock rather than content layout */}
-      <Animated.View
+      <TrayFooterSurface
         className={surfaceFooterClassName}
+        hasFooter={Boolean(surfaceFooter)}
         onLayout={handleVisibleFooterLayout}
         style={[
           trayStyles.footer,
@@ -733,13 +814,6 @@ const TraySurface = React.memo(
           footerContainerStyle,
           footerVisibilityStyle,
         ]}
-        pointerEvents={
-          surfaceFooter &&
-          interaction.interactive &&
-          interaction.isSurfaceReady
-            ? "auto"
-            : "none"
-        }
       >
         <Animated.View style={footerContentFrameStyle}>
           <TrayOriginProgressProvider value={originProgress}>
@@ -753,7 +827,7 @@ const TraySurface = React.memo(
             )}
           </TrayOriginProgressProvider>
         </Animated.View>
-      </Animated.View>
+      </TrayFooterSurface>
     </>
     );
   },
@@ -868,6 +942,7 @@ const TrayVisualShell = React.memo(
       fullScreenMotionCapable ||
       fullScreen ||
       presentationFullScreen ||
+      frameFullScreen ||
       transition?.open === "expandFromTrigger" ||
       transitionContract?.fullScreenChanged === true ||
       transitionContract?.from?.mode === "fullScreen" ||
@@ -915,6 +990,10 @@ const TrayVisualShell = React.memo(
       (hasStepContentTransition && shouldUseLayoutAnimation);
 
     useEffect(() => {
+      if (!isTrayDebugLoggingEnabled()) {
+        return;
+      }
+
       log("SHELL LAYOUT POLICY", {
         trayId,
         renderedTrayId,
@@ -949,24 +1028,7 @@ const TrayVisualShell = React.memo(
       transitionContract,
     ]);
 
-    const {
-      footerSpacerStyle,
-      contentBoundarySourceStyle,
-      contentBoundarySourceViewportStyle,
-      contentFrameStyle,
-      contentViewportStyle,
-      headerFrameStyle,
-      presentationFrameStyle,
-      trayLayoutStyle,
-      footerContainerStyle,
-      contentPaddingStyle,
-      dragStyle,
-      surfaceVisibilityStyle,
-      originSurfaceVisibilityStyle,
-      contentRevealStyle,
-      footerVisibilityStyle,
-      footerContentFrameStyle,
-    } = useTrayAnimatedStyles({
+    const animatedStyleParams = {
       translateY,
       contentHeight,
       contentHeightSnapshot,
@@ -1002,7 +1064,7 @@ const TrayVisualShell = React.memo(
         transitionContract?.to,
       ),
       transition,
-    });
+    };
 
     const layoutAnimationConfig = useMemo(
       () =>
@@ -1108,7 +1170,28 @@ const TrayVisualShell = React.memo(
       ],
     );
 
-    const renderShell = (boundaryStyles: TrayBoundaryStyles | null) => {
+    const renderShell = (
+      boundaryStyles: TrayBoundaryStyles | null,
+      animatedStyles: TrayAnimatedStyles,
+    ) => {
+      const {
+        footerSpacerStyle,
+        contentBoundarySourceStyle,
+        contentBoundarySourceViewportStyle,
+        contentFrameStyle,
+        contentViewportStyle,
+        headerFrameStyle,
+        presentationFrameStyle,
+        trayLayoutStyle,
+        footerContainerStyle,
+        contentPaddingStyle,
+        dragStyle,
+        surfaceVisibilityStyle,
+        originSurfaceVisibilityStyle,
+        contentRevealStyle,
+        footerVisibilityStyle,
+        footerContentFrameStyle,
+      } = animatedStyles;
       const fullScreenSafeAreaContentStyle =
         boundaryStyles?.fullScreenSafeAreaContentStyle;
       const fullScreenSurfaceFillStyle =
@@ -1153,7 +1236,7 @@ const TrayVisualShell = React.memo(
             // Only sheet endpoints participate in this native keyboard handoff.
             // Fullscreen keyboard behavior is intentionally not carried to main.
             <TrayKeyboardStickyRegion
-              capable={keyboardStickyCapable || requiresFullScreenMotion}
+              capable={keyboardStickyCapable}
               enabled={!presentationFullScreen && !isFullScreenBoundaryTransition}
             >
               <TraySurface
@@ -1220,8 +1303,11 @@ const TrayVisualShell = React.memo(
       <TrayBoundaryMotionRegion
         enabled={requiresFullScreenMotion}
         params={boundaryMotionParams}
+        animatedStyleParams={animatedStyleParams}
       >
-        {renderShell}
+        {(boundaryStyles, animatedStyles) =>
+          renderShell(boundaryStyles, animatedStyles)
+        }
       </TrayBoundaryMotionRegion>
     );
   },
@@ -1287,51 +1373,40 @@ const TrayVisualViewBody = React.memo(
         handlers.handleLayoutTransitionComplete,
       ],
     );
-    const interaction = useMemo(
-      () => ({
-        gesture,
-        interactive,
-        isSurfaceReady,
-        onRequestClose: dismissible
-          ? handlers.handleRequestClose
-          : NOOP_TRAY_CLOSE,
-      }),
-      [
-        dismissible,
-        gesture,
-        handlers.handleRequestClose,
-        interactive,
-        isSurfaceReady,
-      ],
+    const footerInteraction = useMemo(
+      () => ({ interactive, isSurfaceReady }),
+      [interactive, isSurfaceReady],
     );
+    const onRequestClose = dismissible
+      ? handlers.handleRequestClose
+      : NOOP_TRAY_CLOSE;
     const backdropInteraction = useMemo(
-      () => ({
-        interactive,
-        onRequestClose: interaction.onRequestClose,
-      }),
-      [interactive, interaction.onRequestClose],
+      () => ({ interactive, onRequestClose }),
+      [interactive, onRequestClose],
     );
 
     return (
       <TrayBackdropInteractionContext.Provider value={backdropInteraction}>
-        <TraySurfaceInteractionContext.Provider value={interaction}>
-          <TrayKeyboardStickyContext.Provider value={keyboardStickyEnabled}>
-            <TrayVisualShell
-              {...shellProps}
-              assignmentId={assignmentId}
-              rootTrayId={rootTrayId}
-              keyboardStickyCapable={keyboardStickyCapable}
-              fullScreenMotionCapable={fullScreenMotionCapable}
-              fullScreen={fullScreen}
-              transitionContract={transitionContract}
-              visible={visible}
-              shared={shared}
-              state={state}
-              handlers={shellHandlers}
-              interactionStateRef={interactionStateRef}
-            />
-          </TrayKeyboardStickyContext.Provider>
-        </TraySurfaceInteractionContext.Provider>
+        <TrayGestureContext.Provider value={gesture}>
+          <TrayFooterInteractionContext.Provider value={footerInteraction}>
+            <TrayKeyboardStickyContext.Provider value={keyboardStickyEnabled}>
+              <TrayVisualShell
+                {...shellProps}
+                assignmentId={assignmentId}
+                rootTrayId={rootTrayId}
+                keyboardStickyCapable={keyboardStickyCapable}
+                fullScreenMotionCapable={fullScreenMotionCapable}
+                fullScreen={fullScreen}
+                transitionContract={transitionContract}
+                visible={visible}
+                shared={shared}
+                state={state}
+                handlers={shellHandlers}
+                interactionStateRef={interactionStateRef}
+              />
+            </TrayKeyboardStickyContext.Provider>
+          </TrayFooterInteractionContext.Provider>
+        </TrayGestureContext.Provider>
       </TrayBackdropInteractionContext.Provider>
     );
   },
@@ -1362,6 +1437,10 @@ const TrayKeyboardCapableVisualView = React.memo(
         keyboardTransitionIntent.targetOwnsKeyboard);
 
     useEffect(() => {
+      if (!isTrayDebugLoggingEnabled()) {
+        return;
+      }
+
       log("KEYBOARD STEP CLASSIFICATION", {
         trayId: props.trayId,
         fromStep: props.transitionContract?.from?.stepKey,

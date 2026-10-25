@@ -1,4 +1,3 @@
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { TrayAnimatedStyleParams } from "./tray-animated-style-types";
 import { useTrayDragStyle } from "./use-tray-drag-style";
 import { useTrayFrameStyles } from "./use-tray-frame-styles";
@@ -28,20 +27,20 @@ export const useTrayAnimatedStyles = ({
   fullScreenBoundarySourceFullScreen,
   fullScreenBoundaryTargetFullScreen,
   transition,
-}: TrayAnimatedStyleParams) => {
-  const { bottom } = useSafeAreaInsets();
+}: TrayAnimatedStyleParams, safeAreaBottomInset: number) => {
   const shouldUseOriginTransition =
     transition?.open === "expandFromTrigger" &&
     !frameFullScreen &&
     !layoutEnabled;
 
   const frameStyles = useTrayFrameStyles({
-    bottom,
+    bottom: safeAreaBottomInset,
     contentHeight,
     contentHeightSnapshot,
     footerHeight,
     fullScreen: frameFullScreen,
     hasFooter,
+    surfaceOpacity,
     fullScreenBoundaryTransition,
     fullScreenBoundarySourceFullScreen,
     fullScreenBoundaryTargetFullScreen,
@@ -64,7 +63,6 @@ export const useTrayAnimatedStyles = ({
     translateY,
   });
   const visibilityStyles = useTrayVisibilityStyles({
-    hasFooter,
     originProgress,
     shouldUseOriginTransition,
     surfaceOpacity,
@@ -77,3 +75,5 @@ export const useTrayAnimatedStyles = ({
     ...visibilityStyles,
   };
 };
+
+export type TrayAnimatedStyles = ReturnType<typeof useTrayAnimatedStyles>;

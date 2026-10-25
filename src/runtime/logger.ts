@@ -3,6 +3,8 @@ const DEBUG = false;
 
 let sequence = 0;
 
+export const isTrayDebugLoggingEnabled = () => DEBUG;
+
 // write ordered diagnostics while the timing investigation is enabled
 export const log = (...args: any[]) => {
   if (DEBUG) {

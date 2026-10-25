@@ -39,7 +39,6 @@ const renderVisibilityStyles = ({
 
   const Probe = () => {
     styles = useTrayVisibilityStyles({
-      hasFooter: shared(true),
       originProgress: shared(0),
       shouldUseOriginTransition: true,
       surfaceOpacity: shared(1),
