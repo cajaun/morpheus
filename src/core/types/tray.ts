@@ -22,6 +22,10 @@ export type TrayProps = {
   footer?: React.ReactNode;
   trayId?: string;
   keyboardAware?: boolean;
+  /** @internal Registration-wide keyboard motion capability. */
+  keyboardStickyCapable?: boolean;
+  /** @internal Registration-wide fullscreen boundary motion capability. */
+  fullScreenMotionCapable?: boolean;
   fullScreen?: boolean;
   fullScreenBackgroundScale?: number;
   fullScreenSafeAreaTop?: boolean;

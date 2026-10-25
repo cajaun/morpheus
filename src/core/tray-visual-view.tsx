@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import { Animated as RNAnimated, StyleSheet } from "react-native";
+import { Animated as RNAnimated, StyleSheet, View } from "react-native";
 import Animated, {
   useDerivedValue,
   useSharedValue,
@@ -60,6 +60,8 @@ type TrayVisualViewProps = Pick<
   | "style"
   | "rootTrayId"
   | "trayId"
+  | "keyboardStickyCapable"
+  | "fullScreenMotionCapable"
   | "fullScreen"
   | "dismissible"
   | "transition"
@@ -179,6 +181,8 @@ const areTrayVisualShellPropsEqual = (
   previous.style === next.style &&
   previous.rootTrayId === next.rootTrayId &&
   previous.trayId === next.trayId &&
+  previous.keyboardStickyCapable === next.keyboardStickyCapable &&
+  previous.fullScreenMotionCapable === next.fullScreenMotionCapable &&
   previous.fullScreen === next.fullScreen &&
   previous.transition === next.transition &&
   previous.transitionContract === next.transitionContract &&
@@ -251,11 +255,9 @@ const TrayOriginTransitionBackdrop = React.memo(
 
 TrayOriginTransitionBackdrop.displayName = "TrayOriginTransitionBackdrop";
 
-const TrayKeyboardStickyRegion = React.memo(
+const TrayKeyboardStickyAnimatedRegion = React.memo(
   ({ enabled, children }: { enabled: boolean; children: React.ReactNode }) => {
-    const keyboardStickyEnabled = React.useContext(
-      TrayKeyboardStickyContext,
-    );
+    const keyboardStickyEnabled = React.useContext(TrayKeyboardStickyContext);
     const { height, progress } = useKeyboardAnimation();
     const isEnabled = enabled && keyboardStickyEnabled;
 
@@ -295,6 +297,32 @@ const TrayKeyboardStickyRegion = React.memo(
   },
 );
 
+TrayKeyboardStickyAnimatedRegion.displayName =
+  "TrayKeyboardStickyAnimatedRegion";
+
+const TrayKeyboardStickyRegion = React.memo(
+  ({
+    capable,
+    enabled,
+    children,
+  }: {
+    capable: boolean;
+    enabled: boolean;
+    children: React.ReactNode;
+  }) =>
+    // No registered step can move with the keyboard. Keep the same fill
+    // geometry without subscribing to the keyboard animation clock.
+    capable ? (
+      <TrayKeyboardStickyAnimatedRegion enabled={enabled}>
+        {children}
+      </TrayKeyboardStickyAnimatedRegion>
+    ) : (
+      <View pointerEvents="box-none" style={StyleSheet.absoluteFillObject}>
+        {children}
+      </View>
+    ),
+);
+
 TrayKeyboardStickyRegion.displayName = "TrayKeyboardStickyRegion";
 
 type TrayAnimatedStyles = ReturnType<
@@ -302,6 +330,55 @@ type TrayAnimatedStyles = ReturnType<
 >;
 
 type TrayBoundaryStyles = ReturnType<typeof useTrayBoundaryMotionState>;
+type TrayBoundaryMotionParams = Omit<
+  Parameters<typeof useTrayBoundaryMotionState>[0],
+  "safeAreaTopInset" | "backgroundScale"
+>;
+
+const TrayBoundaryMotionController = ({
+  params,
+  children,
+}: {
+  params: TrayBoundaryMotionParams;
+  children: (styles: TrayBoundaryStyles) => React.ReactNode;
+}) => {
+  const { top: safeAreaTopInset } = useSafeAreaInsets();
+  const providerBackgroundScale = useTrayBackgroundScale();
+  const fallbackBackgroundScale = useSharedValue(1);
+  // Nested test shells may render without a provider, so keep the same local fallback.
+  const backgroundScale = providerBackgroundScale ?? fallbackBackgroundScale;
+  const styles = useTrayBoundaryMotionState({
+    ...params,
+    safeAreaTopInset,
+    backgroundScale,
+  });
+
+  return children(styles);
+};
+
+TrayBoundaryMotionController.displayName = "TrayBoundaryMotionController";
+
+// Only registrations with a fullscreen step can enter this motion system.
+// Its capability is fixed across step changes, so enabling it cannot remount
+// boundary state during a transition.
+const TrayBoundaryMotionRegion = ({
+  enabled,
+  params,
+  children,
+}: {
+  enabled: boolean;
+  params: TrayBoundaryMotionParams;
+  children: (styles: TrayBoundaryStyles | null) => React.ReactNode;
+}) =>
+  enabled ? (
+    <TrayBoundaryMotionController params={params}>
+      {children}
+    </TrayBoundaryMotionController>
+  ) : (
+    <>{children(null)}</>
+  );
+
+TrayBoundaryMotionRegion.displayName = "TrayBoundaryMotionRegion";
 
 type TraySurfaceProps = Pick<
   TrayAnimatedStyles,
@@ -322,10 +399,7 @@ type TraySurfaceProps = Pick<
   | "originSurfaceVisibilityStyle"
   | "trayLayoutStyle"
 > &
-  Pick<
-    TrayBoundaryStyles,
-    "fullScreenSafeAreaContentStyle"
-  > &
+  Partial<Pick<TrayBoundaryStyles, "fullScreenSafeAreaContentStyle">> &
   Pick<
     TrayController["handlers"],
     | "handleContentLayout"
@@ -697,6 +771,8 @@ const TrayVisualShell = React.memo(
     style,
     rootTrayId,
     trayId,
+    keyboardStickyCapable = true,
+    fullScreenMotionCapable = true,
     fullScreen,
     transition,
     transitionContract,
@@ -771,7 +847,6 @@ const TrayVisualShell = React.memo(
     const contentMotionDirection =
       resolveTrayContentMotionDirection(transitionContract);
     const presentationFullScreen = renderedFullScreen;
-    const { top: safeAreaTopInset } = useSafeAreaInsets();
     const isFullScreenBoundaryTransition =
       transitionContract?.fullScreenChanged ?? false;
     const keyboardTransitionIntent = resolveKeyboardSheetTransitionIntent(
@@ -782,14 +857,21 @@ const TrayVisualShell = React.memo(
       isSheetStepTransition &&
       (keyboardTransitionIntent.sourceOwnsKeyboard ||
         keyboardTransitionIntent.targetOwnsKeyboard);
-    const providerBackgroundScale = useTrayBackgroundScale();
-    const fallbackBackgroundScale = useSharedValue(1);
-    // nested test shells may render without a provider so keep a local scale value
-    const backgroundScale =
-      providerBackgroundScale ?? fallbackBackgroundScale;
     const instrumentationEnabled = isTrayInstrumentationEnabled();
     const shouldUseOriginTransition =
       transition?.open === "expandFromTrigger" && !presentationFullScreen;
+    // A trigger-origin presentation can enter through a fullscreen parent or
+    // endpoint even when this registration has no fullscreen step of its own.
+    // Keep the boundary participants mounted for that path from its first
+    // render so the opening frame never changes topology mid-transition.
+    const requiresFullScreenMotion =
+      fullScreenMotionCapable ||
+      fullScreen ||
+      presentationFullScreen ||
+      transition?.open === "expandFromTrigger" ||
+      transitionContract?.fullScreenChanged === true ||
+      transitionContract?.from?.mode === "fullScreen" ||
+      transitionContract?.to?.mode === "fullScreen";
 
     // wait for layout and keyboard state before drag starts
     const hasValidBoundarySheetFrame = isSheetFrameForTransition(
@@ -802,6 +884,21 @@ const TrayVisualShell = React.memo(
       !isFullScreenBoundaryTransition ||
       transitionContract?.to?.mode === "fullScreen" ||
       hasValidBoundarySheetFrame;
+    const boundaryMotionParams: TrayBoundaryMotionParams = {
+      presentationFullScreen,
+      renderedFullScreenBackgroundScale,
+      renderedFullScreenSafeAreaTop,
+      visibilityProgress: progress,
+      morphProgress,
+      transitionStartedAt,
+      transitionStartedGeneration,
+      transitionLayoutStartedGeneration,
+      transitionCompletedGeneration,
+      transitionContract: transitionContract ?? null,
+      boundaryGeometryReady,
+      onTransitionStart: handleLayoutTransitionStart,
+      onTransitionComplete: handleLayoutTransitionComplete,
+    };
     const shouldUseLayoutAnimation =
       layoutEnabled && !isFullScreenBoundaryTransition;
     const hasStepContentTransition =
@@ -907,24 +1004,6 @@ const TrayVisualShell = React.memo(
       transition,
     });
 
-    const { fullScreenSafeAreaContentStyle, fullScreenSurfaceFillStyle } =
-      useTrayBoundaryMotionState({
-        presentationFullScreen,
-        renderedFullScreenBackgroundScale,
-        renderedFullScreenSafeAreaTop,
-        safeAreaTopInset,
-        visibilityProgress: progress,
-        morphProgress,
-        backgroundScale,
-        transitionStartedAt,
-        transitionStartedGeneration,
-        transitionLayoutStartedGeneration,
-        transitionCompletedGeneration,
-        transitionContract: transitionContract ?? null,
-        boundaryGeometryReady,
-        onTransitionStart: handleLayoutTransitionStart,
-        onTransitionComplete: handleLayoutTransitionComplete,
-      });
     const layoutAnimationConfig = useMemo(
       () =>
         createTrayLayoutTransition({
@@ -1029,105 +1108,121 @@ const TrayVisualShell = React.memo(
       ],
     );
 
-    const shell = (
-      <TrayMorphProgressProvider value={morphProgress}>
-        {instrumentationEnabled ? (
-          <TraySnapshotTelemetry
-            store={renderSnapshotStore}
-            override={renderSnapshotOverride}
-            rootTrayId={rootTrayId}
-            visible={visible}
-          />
-        ) : null}
-        {shouldUseOriginTransition ? (
-          <TrayOriginTransitionBackdrop
-            isRendered={renderedTrayId !== undefined}
-            originProgress={originProgress}
-            progress={progress}
-          />
-        ) : (
-          <TrayInteractionBackdrop
-            isRendered={renderedTrayId !== undefined}
-            progress={progress}
-          />
-        )}
-
-        {renderedTrayId !== undefined && (
-          <Animated.View
-            className={presentationFullScreen ? renderedClassName : undefined}
-            pointerEvents="none"
-            style={[
-              StyleSheet.absoluteFillObject,
-              fullScreenSurfaceStyle,
-              fullScreenSurfaceFillStyle,
-              dragStyle,
-            ]}
-          />
-        )}
-
-        {renderedTrayId !== undefined && (
-          // Only sheet endpoints participate in this native keyboard handoff.
-          // Fullscreen keyboard behavior is intentionally not carried to main.
-          <TrayKeyboardStickyRegion
-            enabled={!presentationFullScreen && !isFullScreenBoundaryTransition}
-          >
-            <TraySurface
-              style={style}
-              renderedClassName={renderedClassName}
-              renderedContainerStyle={renderedContainerStyle}
-              renderedHeader={renderedHeader}
-              renderedContent={renderedContent}
-              renderedFooter={renderedFooter}
-              renderedFooterClassName={renderedFooterClassName}
-              renderedFooterStyle={renderedFooterStyle}
-              hasFooter={hasFooter}
-              renderSnapshotStore={renderSnapshotStore}
-              renderedFullScreen={presentationFullScreen}
-              contentMotionDirection={contentMotionDirection}
-              trayTransitionStart={trayTransitionStart}
-              layoutAnimationConfig={layoutAnimationConfig}
-              instrumentationEnabled={instrumentationEnabled}
-              shouldUseLayoutAnimation={shouldUseLayoutAnimation}
-              isFullScreenBoundaryTransition={
-                isFullScreenBoundaryTransition
-              }
-              handleContentLayout={handleContentLayout}
-              handleVisibleFooterLayout={handleVisibleFooterLayout}
-              handleShellLayout={handleShellLayout}
-              footerSpacerStyle={footerSpacerStyle}
-              contentBoundarySourceStyle={contentBoundarySourceStyle}
-              contentBoundarySourceViewportStyle={
-                contentBoundarySourceViewportStyle
-              }
-              contentFrameStyle={contentFrameStyle}
-              contentPaddingStyle={contentPaddingStyle}
-              contentRevealStyle={contentRevealStyle}
-              contentViewportStyle={contentViewportStyle}
-              headerFrameStyle={headerFrameStyle}
-              presentationFrameStyle={presentationFrameStyle}
-              trayLayoutStyle={trayLayoutStyle}
-              footerContainerStyle={footerContainerStyle}
-              dragStyle={dragStyle}
-              surfaceVisibilityStyle={surfaceVisibilityStyle}
-              originSurfaceVisibilityStyle={originSurfaceVisibilityStyle}
-              footerVisibilityStyle={footerVisibilityStyle}
-              footerContentFrameStyle={footerContentFrameStyle}
-              fullScreenSafeAreaContentStyle={fullScreenSafeAreaContentStyle}
-              originProgress={originProgress}
+    const renderShell = (boundaryStyles: TrayBoundaryStyles | null) => {
+      const fullScreenSafeAreaContentStyle =
+        boundaryStyles?.fullScreenSafeAreaContentStyle;
+      const fullScreenSurfaceFillStyle =
+        boundaryStyles?.fullScreenSurfaceFillStyle;
+      const shell = (
+        <TrayMorphProgressProvider value={morphProgress}>
+          {instrumentationEnabled ? (
+            <TraySnapshotTelemetry
+              store={renderSnapshotStore}
+              override={renderSnapshotOverride}
+              rootTrayId={rootTrayId}
+              visible={visible}
             />
-          </TrayKeyboardStickyRegion>
-        )}
-      </TrayMorphProgressProvider>
-    );
+          ) : null}
+          {shouldUseOriginTransition ? (
+            <TrayOriginTransitionBackdrop
+              isRendered={renderedTrayId !== undefined}
+              originProgress={originProgress}
+              progress={progress}
+            />
+          ) : (
+            <TrayInteractionBackdrop
+              isRendered={renderedTrayId !== undefined}
+              progress={progress}
+            />
+          )}
 
-    if (!instrumentationEnabled) {
-      return shell;
-    }
+          {requiresFullScreenMotion && renderedTrayId !== undefined && (
+            <Animated.View
+              className={presentationFullScreen ? renderedClassName : undefined}
+              pointerEvents="none"
+              style={[
+                StyleSheet.absoluteFillObject,
+                fullScreenSurfaceStyle,
+                fullScreenSurfaceFillStyle,
+                dragStyle,
+              ]}
+            />
+          )}
+
+          {renderedTrayId !== undefined && (
+            // Only sheet endpoints participate in this native keyboard handoff.
+            // Fullscreen keyboard behavior is intentionally not carried to main.
+            <TrayKeyboardStickyRegion
+              capable={keyboardStickyCapable || requiresFullScreenMotion}
+              enabled={!presentationFullScreen && !isFullScreenBoundaryTransition}
+            >
+              <TraySurface
+                style={style}
+                renderedClassName={renderedClassName}
+                renderedContainerStyle={renderedContainerStyle}
+                renderedHeader={renderedHeader}
+                renderedContent={renderedContent}
+                renderedFooter={renderedFooter}
+                renderedFooterClassName={renderedFooterClassName}
+                renderedFooterStyle={renderedFooterStyle}
+                hasFooter={hasFooter}
+                renderSnapshotStore={renderSnapshotStore}
+                renderedFullScreen={presentationFullScreen}
+                contentMotionDirection={contentMotionDirection}
+                trayTransitionStart={trayTransitionStart}
+                layoutAnimationConfig={layoutAnimationConfig}
+                instrumentationEnabled={instrumentationEnabled}
+                shouldUseLayoutAnimation={shouldUseLayoutAnimation}
+                isFullScreenBoundaryTransition={
+                  isFullScreenBoundaryTransition
+                }
+                handleContentLayout={handleContentLayout}
+                handleVisibleFooterLayout={handleVisibleFooterLayout}
+                handleShellLayout={handleShellLayout}
+                footerSpacerStyle={footerSpacerStyle}
+                contentBoundarySourceStyle={contentBoundarySourceStyle}
+                contentBoundarySourceViewportStyle={
+                  contentBoundarySourceViewportStyle
+                }
+                contentFrameStyle={contentFrameStyle}
+                contentPaddingStyle={contentPaddingStyle}
+                contentRevealStyle={contentRevealStyle}
+                contentViewportStyle={contentViewportStyle}
+                headerFrameStyle={headerFrameStyle}
+                presentationFrameStyle={presentationFrameStyle}
+                trayLayoutStyle={trayLayoutStyle}
+                footerContainerStyle={footerContainerStyle}
+                dragStyle={dragStyle}
+                surfaceVisibilityStyle={surfaceVisibilityStyle}
+                originSurfaceVisibilityStyle={originSurfaceVisibilityStyle}
+                footerVisibilityStyle={footerVisibilityStyle}
+                footerContentFrameStyle={footerContentFrameStyle}
+                fullScreenSafeAreaContentStyle={fullScreenSafeAreaContentStyle}
+                originProgress={originProgress}
+              />
+            </TrayKeyboardStickyRegion>
+          )}
+        </TrayMorphProgressProvider>
+      );
+
+      if (!instrumentationEnabled) {
+        return shell;
+      }
+
+      return (
+        <React.Profiler id={shellId} onRender={handleProfileRender}>
+          {shell}
+        </React.Profiler>
+      );
+    };
 
     return (
-      <React.Profiler id={shellId} onRender={handleProfileRender}>
-        {shell}
-      </React.Profiler>
+      <TrayBoundaryMotionRegion
+        enabled={requiresFullScreenMotion}
+        params={boundaryMotionParams}
+      >
+        {renderShell}
+      </TrayBoundaryMotionRegion>
     );
   },
   areTrayVisualShellPropsEqual,
@@ -1135,148 +1230,182 @@ const TrayVisualShell = React.memo(
 
 TrayVisualShell.displayName = "TrayVisualShell";
 
+type TrayVisualViewBodyProps = TrayVisualViewProps & {
+  keyboardStickyEnabled: boolean;
+};
+
 // Keyboard and interaction changes update their consumers without rerunning
 // the shell's animation policy when its visual inputs remain stable.
-const TrayVisualView = React.memo((props: TrayVisualViewProps) => {
-  const {
-    assignmentId = 0,
-    rootTrayId,
-    fullScreen,
-    dismissible = true,
-    transitionContract,
-    visible,
-    interactive = true,
-    keyboardAware,
-    isSurfaceReady,
-    fullScreenDraggable,
-    shared,
-    state,
-    handlers,
-    ...shellProps
-  } = props;
-  const interactionStateRef = useRef(interactive);
-  interactionStateRef.current = interactive;
-  const keyboardTransitionIntent = resolveKeyboardSheetTransitionIntent(
-    transitionContract,
-  );
-  const keyboard = useSheetTrayKeyboard({
-    rootTrayId,
-    visible,
-    keyboardAware: !fullScreen && (keyboardAware ?? false),
-    targetKeyboardAware:
-      keyboardTransitionIntent.isSheetStepTransition &&
-      keyboardTransitionIntent.targetOwnsKeyboard,
-    sheetStepTransition: keyboardTransitionIntent.isSheetStepTransition,
-    transitionGeneration: transitionContract?.generation,
-  });
-  const isFullScreenBoundaryTransition =
-    transitionContract?.fullScreenChanged ?? false;
-  const presentationFullScreen = state.renderedFullScreen;
-  const keyboardStepTransition =
-    keyboardTransitionIntent.isSheetStepTransition &&
-    (keyboardTransitionIntent.sourceOwnsKeyboard ||
-      keyboardTransitionIntent.targetOwnsKeyboard);
-
-  useEffect(() => {
-    log("KEYBOARD STEP CLASSIFICATION", {
-      trayId: props.trayId,
-      fromStep: transitionContract?.from?.stepKey,
-      toStep: transitionContract?.to?.stepKey,
-      fromKeyboardAware: transitionContract?.from?.keyboardAware ?? false,
-      toKeyboardAware: transitionContract?.to?.keyboardAware ?? false,
-      fromMode: transitionContract?.from?.mode,
-      toMode: transitionContract?.to?.mode,
-      fullScreenChanged: isFullScreenBoundaryTransition,
-      keyboardStepTransition,
+const TrayVisualViewBody = React.memo(
+  ({ keyboardStickyEnabled, ...props }: TrayVisualViewBodyProps) => {
+    const {
+      assignmentId = 0,
+      rootTrayId,
+      keyboardStickyCapable = true,
+      fullScreenMotionCapable = true,
+      fullScreen,
+      dismissible = true,
+      transitionContract,
       visible,
-      presentationFullScreen,
-      stickyEnabled: keyboard.stickyEnabled,
+      interactive = true,
+      isSurfaceReady,
+      fullScreenDraggable,
+      shared,
+      state,
+      handlers,
+      ...shellProps
+    } = props;
+    const interactionStateRef = useRef(interactive);
+    interactionStateRef.current = interactive;
+
+    const gesture = useTrayGesture({
+      translateY: shared.translateY,
+      totalHeight: shared.totalHeight,
+      context: shared.context,
+      interactive: interactive && isSurfaceReady && dismissible,
+      fullScreen: state.renderedFullScreen,
+      fullScreenDraggable,
+      onRequestClose: handlers.handleRequestClose,
     });
-  }, [
-    isFullScreenBoundaryTransition,
-    keyboard.stickyEnabled,
-    keyboardStepTransition,
-    presentationFullScreen,
-    props.trayId,
-    transitionContract,
-    visible,
-  ]);
-
-  const gesture = useTrayGesture({
-    translateY: shared.translateY,
-    totalHeight: shared.totalHeight,
-    context: shared.context,
-    interactive: interactive && isSurfaceReady && dismissible,
-    fullScreen: state.renderedFullScreen,
-    fullScreenDraggable,
-    onRequestClose: handlers.handleRequestClose,
-  });
-  const shellHandlers = useMemo(
-    () => ({
-      handleContentLayout: handlers.handleContentLayout,
-      handleVisibleFooterLayout: handlers.handleVisibleFooterLayout,
-      handleShellLayout: handlers.handleShellLayout,
-      handleLayoutTransitionConfigured:
+    const shellHandlers = useMemo(
+      () => ({
+        handleContentLayout: handlers.handleContentLayout,
+        handleVisibleFooterLayout: handlers.handleVisibleFooterLayout,
+        handleShellLayout: handlers.handleShellLayout,
+        handleLayoutTransitionConfigured:
+          handlers.handleLayoutTransitionConfigured,
+        handleLayoutTransitionStart: handlers.handleLayoutTransitionStart,
+        handleLayoutTransitionComplete:
+          handlers.handleLayoutTransitionComplete,
+      }),
+      [
+        handlers.handleContentLayout,
+        handlers.handleVisibleFooterLayout,
+        handlers.handleShellLayout,
         handlers.handleLayoutTransitionConfigured,
-      handleLayoutTransitionStart: handlers.handleLayoutTransitionStart,
-      handleLayoutTransitionComplete:
+        handlers.handleLayoutTransitionStart,
         handlers.handleLayoutTransitionComplete,
-    }),
-    [
-      handlers.handleContentLayout,
-      handlers.handleVisibleFooterLayout,
-      handlers.handleShellLayout,
-      handlers.handleLayoutTransitionConfigured,
-      handlers.handleLayoutTransitionStart,
-      handlers.handleLayoutTransitionComplete,
-    ],
-  );
-  const interaction = useMemo(
-    () => ({
-      gesture,
-      interactive,
-      isSurfaceReady,
-      onRequestClose: dismissible
-        ? handlers.handleRequestClose
-        : NOOP_TRAY_CLOSE,
-    }),
-    [
-      dismissible,
-      gesture,
-      handlers.handleRequestClose,
-      interactive,
-      isSurfaceReady,
-    ],
-  );
-  const backdropInteraction = useMemo(
-    () => ({
-      interactive,
-      onRequestClose: interaction.onRequestClose,
-    }),
-    [interactive, interaction.onRequestClose],
-  );
+      ],
+    );
+    const interaction = useMemo(
+      () => ({
+        gesture,
+        interactive,
+        isSurfaceReady,
+        onRequestClose: dismissible
+          ? handlers.handleRequestClose
+          : NOOP_TRAY_CLOSE,
+      }),
+      [
+        dismissible,
+        gesture,
+        handlers.handleRequestClose,
+        interactive,
+        isSurfaceReady,
+      ],
+    );
+    const backdropInteraction = useMemo(
+      () => ({
+        interactive,
+        onRequestClose: interaction.onRequestClose,
+      }),
+      [interactive, interaction.onRequestClose],
+    );
 
-  return (
-    <TrayBackdropInteractionContext.Provider value={backdropInteraction}>
-      <TraySurfaceInteractionContext.Provider value={interaction}>
-        <TrayKeyboardStickyContext.Provider value={keyboard.stickyEnabled}>
-          <TrayVisualShell
-            {...shellProps}
-            assignmentId={assignmentId}
-            rootTrayId={rootTrayId}
-            fullScreen={fullScreen}
-            transitionContract={transitionContract}
-            visible={visible}
-            shared={shared}
-            state={state}
-            handlers={shellHandlers}
-            interactionStateRef={interactionStateRef}
-          />
-        </TrayKeyboardStickyContext.Provider>
-      </TraySurfaceInteractionContext.Provider>
-    </TrayBackdropInteractionContext.Provider>
-  );
-});
+    return (
+      <TrayBackdropInteractionContext.Provider value={backdropInteraction}>
+        <TraySurfaceInteractionContext.Provider value={interaction}>
+          <TrayKeyboardStickyContext.Provider value={keyboardStickyEnabled}>
+            <TrayVisualShell
+              {...shellProps}
+              assignmentId={assignmentId}
+              rootTrayId={rootTrayId}
+              keyboardStickyCapable={keyboardStickyCapable}
+              fullScreenMotionCapable={fullScreenMotionCapable}
+              fullScreen={fullScreen}
+              transitionContract={transitionContract}
+              visible={visible}
+              shared={shared}
+              state={state}
+              handlers={shellHandlers}
+              interactionStateRef={interactionStateRef}
+            />
+          </TrayKeyboardStickyContext.Provider>
+        </TraySurfaceInteractionContext.Provider>
+      </TrayBackdropInteractionContext.Provider>
+    );
+  },
+);
+
+TrayVisualViewBody.displayName = "TrayVisualViewBody";
+
+const TrayKeyboardCapableVisualView = React.memo(
+  (props: TrayVisualViewProps) => {
+    const keyboardTransitionIntent = resolveKeyboardSheetTransitionIntent(
+      props.transitionContract,
+    );
+    const keyboard = useSheetTrayKeyboard({
+      rootTrayId: props.rootTrayId,
+      visible: props.visible,
+      keyboardAware: !props.fullScreen && (props.keyboardAware ?? false),
+      targetKeyboardAware:
+        keyboardTransitionIntent.isSheetStepTransition &&
+        keyboardTransitionIntent.targetOwnsKeyboard,
+      sheetStepTransition: keyboardTransitionIntent.isSheetStepTransition,
+      transitionGeneration: props.transitionContract?.generation,
+    });
+    const isFullScreenBoundaryTransition =
+      props.transitionContract?.fullScreenChanged ?? false;
+    const keyboardStepTransition =
+      keyboardTransitionIntent.isSheetStepTransition &&
+      (keyboardTransitionIntent.sourceOwnsKeyboard ||
+        keyboardTransitionIntent.targetOwnsKeyboard);
+
+    useEffect(() => {
+      log("KEYBOARD STEP CLASSIFICATION", {
+        trayId: props.trayId,
+        fromStep: props.transitionContract?.from?.stepKey,
+        toStep: props.transitionContract?.to?.stepKey,
+        fromKeyboardAware:
+          props.transitionContract?.from?.keyboardAware ?? false,
+        toKeyboardAware:
+          props.transitionContract?.to?.keyboardAware ?? false,
+        fromMode: props.transitionContract?.from?.mode,
+        toMode: props.transitionContract?.to?.mode,
+        fullScreenChanged: isFullScreenBoundaryTransition,
+        keyboardStepTransition,
+        visible: props.visible,
+        presentationFullScreen: props.state.renderedFullScreen,
+        stickyEnabled: keyboard.stickyEnabled,
+      });
+    }, [
+      isFullScreenBoundaryTransition,
+      keyboard.stickyEnabled,
+      keyboardStepTransition,
+      props.state.renderedFullScreen,
+      props.trayId,
+      props.transitionContract,
+      props.visible,
+    ]);
+
+    return (
+      <TrayVisualViewBody
+        {...props}
+        keyboardStickyEnabled={keyboard.stickyEnabled}
+      />
+    );
+  },
+);
+
+TrayKeyboardCapableVisualView.displayName = "TrayKeyboardCapableVisualView";
+
+const TrayVisualView = React.memo((props: TrayVisualViewProps) =>
+  props.keyboardStickyCapable === false ? (
+    <TrayVisualViewBody {...props} keyboardStickyEnabled={false} />
+  ) : (
+    <TrayKeyboardCapableVisualView {...props} />
+  ),
+);
 
 TrayVisualView.displayName = "TrayVisualView";
 

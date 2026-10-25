@@ -77,6 +77,46 @@ export const createIdleSlot = (): TrayHostSlot => ({
 });
 
 const PREPARED_ROOT_HOST_ID = "__morpheus_prepared_root_host__";
+// The root host is pre-mounted and reused for different registrations. Keep
+// both motion paths ready so a root presentation never mounts them on demand.
+const ROOT_TRAY_MOTION_CAPABILITIES = {
+  keyboardStickyCapable: true,
+  fullScreenMotionCapable: true,
+} as const;
+
+type TrayMotionCapabilities = {
+  keyboardStickyCapable: boolean;
+  fullScreenMotionCapable: boolean;
+};
+
+const trayMotionCapabilitiesBySteps = new WeakMap<
+  TrayRegistration["steps"],
+  TrayMotionCapabilities
+>();
+
+const getTrayMotionCapabilities = (
+  registration: TrayRegistration,
+): TrayMotionCapabilities => {
+  const cached = trayMotionCapabilitiesBySteps.get(registration.steps);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  // Step descriptors are fixed for a registration. Scan the full set so a
+  // transition never changes the motion component tree midway through a tray.
+  const capabilities = {
+    keyboardStickyCapable: registration.steps.some(
+      (step) => step.options?.keyboardAware === true,
+    ),
+    fullScreenMotionCapable: registration.steps.some(
+      (step) => step.options?.fullScreen === true,
+    ),
+  };
+
+  trayMotionCapabilitiesBySteps.set(registration.steps, capabilities);
+  return capabilities;
+};
 
 // Keep one root controller mounted before the first presentation. The payload
 // is intentionally inert: no content, no interaction, and no transition.
@@ -98,6 +138,7 @@ export const createPreparedRootSlot = (
     fullScreenBackgroundScale: 1,
     fullScreenSafeAreaTop: false,
     fullScreenDraggable: true,
+    ...ROOT_TRAY_MOTION_CAPABILITIES,
     dismissible: false,
     transitionContract: null,
     transition: undefined,
@@ -143,6 +184,10 @@ export const arePresentedTraysEquivalent = (
     left.rootTrayId === right.rootTrayId &&
     left.trayId === right.trayId &&
     left.keyboardAware === right.keyboardAware &&
+    (left.keyboardStickyCapable ?? true) ===
+      (right.keyboardStickyCapable ?? true) &&
+    (left.fullScreenMotionCapable ?? true) ===
+      (right.fullScreenMotionCapable ?? true) &&
     areStepOptionsEquivalent(left.stepOptions, right.stepOptions) &&
     left.header === right.header &&
     left.content === right.content &&
@@ -293,6 +338,7 @@ export const resolveOrderedHostSlots = (
 export const createPresentedTray = ({
   entry,
   registration,
+  previousMotionCapabilities,
   previousIndex,
   transition = null,
   stackIndex,
@@ -300,6 +346,12 @@ export const createPresentedTray = ({
 }: {
   entry: TrayStackEntry;
   registration: TrayRegistration;
+  // Preserve capabilities already mounted on this live host when registration
+  // input changes; in particular, let a keyboard lease finish its handoff.
+  previousMotionCapabilities?: Pick<
+    PresentedTray,
+    "keyboardStickyCapable" | "fullScreenMotionCapable"
+  >;
   previousIndex?: number;
   transition?: TrayTransitionContract | null;
   stackIndex: number;
@@ -333,10 +385,25 @@ export const createPresentedTray = ({
     previousIndex,
     transition,
   });
+  const registrationMotionCapabilities =
+    getTrayMotionCapabilities(registration);
+  const motionCapabilities =
+    stackIndex === 0
+      ? ROOT_TRAY_MOTION_CAPABILITIES
+      : {
+          keyboardStickyCapable:
+            registrationMotionCapabilities.keyboardStickyCapable ||
+            previousMotionCapabilities?.keyboardStickyCapable === true,
+          fullScreenMotionCapable:
+            registrationMotionCapabilities.fullScreenMotionCapable ||
+            previousMotionCapabilities?.fullScreenMotionCapable === true,
+        };
+
   return {
     rootTrayId: entry.trayId,
     trayId: `${entry.trayId}-${step.key}`,
     keyboardAware: stepOptions.keyboardAware,
+    ...motionCapabilities,
     stepOptions,
     header: step.header ?? null,
     content: step.content,

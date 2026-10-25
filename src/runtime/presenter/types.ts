@@ -11,6 +11,10 @@ export type PresentedTray = {
   rootTrayId: string;
   trayId: string;
   keyboardAware?: boolean;
+  // Capabilities are fixed for a registration so optional motion hosts never
+  // switch component types during a step transition.
+  keyboardStickyCapable?: boolean;
+  fullScreenMotionCapable?: boolean;
   stepOptions: ResolvedTrayStepOptions;
   header: ReactNode;
   content: ReactNode;

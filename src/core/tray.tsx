@@ -19,6 +19,8 @@ const Tray = forwardRef<TrayRef, TrayProps>(
       header,
       footer,
       trayId,
+      keyboardStickyCapable = true,
+      fullScreenMotionCapable = true,
       fullScreen,
       fullScreenBackgroundScale,
       fullScreenSafeAreaTop,
@@ -157,6 +159,8 @@ const Tray = forwardRef<TrayRef, TrayProps>(
         rootTrayId={rootTrayId}
         trayId={trayId}
         fullScreen={fullScreen}
+        keyboardStickyCapable={keyboardStickyCapable}
+        fullScreenMotionCapable={fullScreenMotionCapable}
         dismissible={dismissible}
         transition={transition}
         transitionContract={transitionContract}

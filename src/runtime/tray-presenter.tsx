@@ -109,9 +109,12 @@ export const TrayPresenter: React.FC<{
         continue;
       }
 
+      const previousHost = previousHostByTrayId.get(entry.trayId);
+
       const host = createPresentedTray({
         entry,
         registration,
+        previousMotionCapabilities: previousHost,
         previousIndex: previousIndexByTrayRef.current[entry.trayId],
         transition: transitionScope.nested,
         stackIndex,
@@ -121,8 +124,6 @@ export const TrayPresenter: React.FC<{
       if (!host) {
         continue;
       }
-
-      const previousHost = previousHostByTrayId.get(host.rootTrayId);
 
       nextHosts.push(
         previousHost && arePresentedTraysEquivalent(previousHost, host)
