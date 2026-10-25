@@ -3,6 +3,7 @@ import React, {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
 } from "react";
 import { StyleSheet } from "react-native";
 import Animated, {
@@ -114,19 +115,52 @@ type TrayVisualViewProps = Pick<
 
 type TrayVisualShellProps = Omit<
   TrayVisualViewProps,
-  "isSurfaceReady" | "fullScreenDraggable" | "keyboardAware"
->;
+  | "isSurfaceReady"
+  | "fullScreenDraggable"
+  | "keyboardAware"
+  | "interactive"
+  | "dismissible"
+  | "handlers"
+> & {
+  handlers: Omit<TrayController["handlers"], "handleRequestClose">;
+  interactionStateRef: { current: boolean };
+};
 
 type TraySurfaceInteraction = {
   gesture: ReturnType<typeof useTrayGesture>;
   interactive: boolean;
   isSurfaceReady: boolean;
+  onRequestClose: () => void;
 };
 
 const TraySurfaceInteractionContext = React.createContext<
   TraySurfaceInteraction | undefined
 >(undefined);
 const TrayKeyboardStickyContext = React.createContext(false);
+const NOOP_TRAY_CLOSE = () => {};
+
+const TrayInteractionBackdrop = React.memo(
+  ({
+    isRendered,
+    progress,
+  }: {
+    isRendered: boolean;
+    progress: TrayController["shared"]["progress"];
+  }) => {
+    const interaction = React.useContext(TraySurfaceInteractionContext)!;
+
+    return (
+      <Backdrop
+        onTap={interaction.onRequestClose}
+        isRendered={isRendered}
+        interactive={interaction.interactive}
+        progress={progress}
+      />
+    );
+  },
+);
+
+TrayInteractionBackdrop.displayName = "TrayInteractionBackdrop";
 
 const TrayKeyboardStickyRegion = React.memo(
   ({ enabled, children }: { enabled: boolean; children: React.ReactNode }) => {
@@ -548,16 +582,15 @@ const TrayVisualShell = React.memo(
     rootTrayId,
     trayId,
     fullScreen,
-    dismissible = true,
     transition,
     transitionContract,
     visible,
-    interactive = true,
     shared,
     state,
     renderSnapshotStore,
     renderSnapshotOverride,
     handlers,
+    interactionStateRef,
   }: TrayVisualShellProps) => {
     const {
       translateY,
@@ -616,7 +649,6 @@ const TrayVisualShell = React.memo(
       handleLayoutTransitionConfigured,
       handleLayoutTransitionStart,
       handleLayoutTransitionComplete,
-      handleRequestClose,
     } = handlers;
 
     // resolve direction during render so entering and exiting content receive the same transition snapshot
@@ -875,12 +907,12 @@ const TrayVisualShell = React.memo(
             trayId,
             assignmentId,
             visible,
-            interactive,
+            interactive: interactionStateRef.current,
           },
         ),
       [
         assignmentId,
-        interactive,
+        interactionStateRef,
         rootTrayId,
         shellId,
         trayId,
@@ -896,10 +928,8 @@ const TrayVisualShell = React.memo(
           rootTrayId={rootTrayId}
           visible={visible}
         />
-        <Backdrop
-          onTap={dismissible ? handleRequestClose : () => {}}
+        <TrayInteractionBackdrop
           isRendered={renderedTrayId !== undefined}
-          interactive={interactive}
           progress={backdropProgress}
         />
 
@@ -985,9 +1015,8 @@ const TrayVisualShell = React.memo(
 
 TrayVisualShell.displayName = "TrayVisualShell";
 
-// Readiness changes should update only gesture and footer interactivity. The
-// motion policy below is memoized independently because its animation inputs
-// have not changed for that lifecycle update.
+// Keyboard and interaction changes update their consumers without rerunning
+// the shell's animation policy when its visual inputs remain stable.
 const TrayVisualView = React.memo((props: TrayVisualViewProps) => {
   const {
     assignmentId = 0,
@@ -1005,6 +1034,8 @@ const TrayVisualView = React.memo((props: TrayVisualViewProps) => {
     handlers,
     ...shellProps
   } = props;
+  const interactionStateRef = useRef(interactive);
+  interactionStateRef.current = interactive;
   const keyboardTransitionIntent = resolveKeyboardSheetTransitionIntent(
     transitionContract,
   );
@@ -1060,9 +1091,42 @@ const TrayVisualView = React.memo((props: TrayVisualViewProps) => {
     fullScreenDraggable,
     onRequestClose: handlers.handleRequestClose,
   });
+  const shellHandlers = useMemo(
+    () => ({
+      handleContentLayout: handlers.handleContentLayout,
+      handleVisibleFooterLayout: handlers.handleVisibleFooterLayout,
+      handleShellLayout: handlers.handleShellLayout,
+      handleLayoutTransitionConfigured:
+        handlers.handleLayoutTransitionConfigured,
+      handleLayoutTransitionStart: handlers.handleLayoutTransitionStart,
+      handleLayoutTransitionComplete:
+        handlers.handleLayoutTransitionComplete,
+    }),
+    [
+      handlers.handleContentLayout,
+      handlers.handleVisibleFooterLayout,
+      handlers.handleShellLayout,
+      handlers.handleLayoutTransitionConfigured,
+      handlers.handleLayoutTransitionStart,
+      handlers.handleLayoutTransitionComplete,
+    ],
+  );
   const interaction = useMemo(
-    () => ({ gesture, interactive, isSurfaceReady }),
-    [gesture, interactive, isSurfaceReady],
+    () => ({
+      gesture,
+      interactive,
+      isSurfaceReady,
+      onRequestClose: dismissible
+        ? handlers.handleRequestClose
+        : NOOP_TRAY_CLOSE,
+    }),
+    [
+      dismissible,
+      gesture,
+      handlers.handleRequestClose,
+      interactive,
+      isSurfaceReady,
+    ],
   );
 
   return (
@@ -1073,13 +1137,12 @@ const TrayVisualView = React.memo((props: TrayVisualViewProps) => {
           assignmentId={assignmentId}
           rootTrayId={rootTrayId}
           fullScreen={fullScreen}
-          dismissible={dismissible}
           transitionContract={transitionContract}
           visible={visible}
-          interactive={interactive}
           shared={shared}
           state={state}
-          handlers={handlers}
+          handlers={shellHandlers}
+          interactionStateRef={interactionStateRef}
         />
       </TrayKeyboardStickyContext.Provider>
     </TraySurfaceInteractionContext.Provider>

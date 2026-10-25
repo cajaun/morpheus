@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { Gesture } from "react-native-gesture-handler";
 import { withSpring } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
@@ -24,6 +24,16 @@ export const useTrayGesture = ({
   fullScreenDraggable,
   onRequestClose,
 }: Params) => {
+  // Keep gesture worklets stable when a parent replaces its close callback;
+  // the ref still dispatches the latest callback on the JS runtime.
+  const onRequestCloseRef = useRef(onRequestClose);
+  useLayoutEffect(() => {
+    onRequestCloseRef.current = onRequestClose;
+  }, [onRequestClose]);
+  const requestClose = useCallback(() => {
+    onRequestCloseRef.current();
+  }, []);
+
   return useMemo(() => {
     const dragEnabled = !fullScreen || fullScreenDraggable;
 
@@ -52,7 +62,7 @@ export const useTrayGesture = ({
           (translateY.value > 20 && e.velocityY > 1200);
 
         if (shouldClose) {
-          scheduleOnRN(onRequestClose);
+          scheduleOnRN(requestClose);
         } else {
           translateY.value = withSpring(0, {
             damping: 25,
@@ -65,7 +75,7 @@ export const useTrayGesture = ({
     fullScreen,
     fullScreenDraggable,
     interactive,
-    onRequestClose,
+    requestClose,
     context,
     totalHeight,
     translateY,
