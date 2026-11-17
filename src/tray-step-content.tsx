@@ -3,6 +3,7 @@ import {
   LayoutChangeEvent,
   StyleProp,
   StyleSheet,
+  View,
   ViewStyle,
 } from "react-native";
 import Animated, {
@@ -30,7 +31,7 @@ import {
   useTrayTransitionStart,
   withTrayTransitionStart,
 } from "./core/transition-start";
-import { log } from "./core/logger";
+import { isTrayDebugLoggingEnabled, log } from "./core/logger";
 import {
   FORWARD_CONTENT_MOTION,
   resolveMorphEnteringScale,
@@ -337,6 +338,10 @@ export const TrayStepContent: React.FC<Props> = ({
   const motionDirection = useTrayContentMotionDirection();
 
   useEffect(() => {
+    if (!isTrayDebugLoggingEnabled()) {
+      return;
+    }
+
     log("TrayStepContent", {
       stepKey,
       skipEntering,
@@ -466,8 +471,13 @@ const TrayHeaderTransitionRowImpl: React.FC<TrayHeaderTransitionRowProps> = ({
     titleWidth.value = nextWidth;
   };
 
+  // Only the title layer (translateX) and the TrayStepContent layers
+  // (entering/exiting) animate. The row, title viewport and control slots
+  // carry static styles, so they are plain Views; collapsable={false} keeps
+  // the native view hierarchy identical to the previous Animated.Views.
   return (
-    <Animated.View
+    <View
+      collapsable={false}
       className={className}
       style={[
         headerMotionStyles.headerRow,
@@ -476,7 +486,8 @@ const TrayHeaderTransitionRowImpl: React.FC<TrayHeaderTransitionRowProps> = ({
       ]}
       onLayout={handleRowLayout}
     >
-      <Animated.View
+      <View
+        collapsable={false}
         pointerEvents="none"
         style={headerMotionStyles.titleViewport}
       >
@@ -496,7 +507,7 @@ const TrayHeaderTransitionRowImpl: React.FC<TrayHeaderTransitionRowProps> = ({
             {title}
           </TrayStepContent>
         </Animated.View>
-      </Animated.View>
+      </View>
 
       <TrayStepContent
         stepKey={`header-actions-${actionTransitionKey}`}
@@ -509,20 +520,22 @@ const TrayHeaderTransitionRowImpl: React.FC<TrayHeaderTransitionRowProps> = ({
         style={headerMotionStyles.actionTransitionLayer}
         pointerEvents="box-none"
       >
-        <Animated.View
+        <View
+          collapsable={false}
           pointerEvents={centered ? "auto" : "none"}
           style={headerMotionStyles.leadingControlSlot}
         >
           {left}
-        </Animated.View>
-        <Animated.View
+        </View>
+        <View
+          collapsable={false}
           pointerEvents={right != null ? "auto" : "none"}
           style={headerMotionStyles.trailingControlSlot}
         >
           {right}
-        </Animated.View>
+        </View>
       </TrayStepContent>
-    </Animated.View>
+    </View>
   );
 };
 

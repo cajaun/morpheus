@@ -379,7 +379,7 @@ export const useTrayContentSync = ({
   ]);
 
   useEffect(() => {
-    if (!visible) {
+    if (!visible || !isTrayDebugLoggingEnabled()) {
       return;
     }
 
@@ -414,6 +414,10 @@ export const useTrayContentSync = ({
   ]);
 
   useEffect(() => {
+    if (!isTrayDebugLoggingEnabled()) {
+      return;
+    }
+
     log("RENDERED CONTENT CHANGED", {
       trayId: renderedTrayId,
       hasContent: renderedContent !== null,

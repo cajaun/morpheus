@@ -4,6 +4,7 @@ import {
   type EffectCallback,
 } from "react";
 import { isTrayInstrumentationEnabled } from "./config";
+import { recordTrayTelemetry } from "./tray-telemetry-buffer";
 
 const MIN_REPORTED_DURATION_MS = 0.25;
 const MAX_RECORDED_EVENTS = 4096;
@@ -69,6 +70,10 @@ export const useProfiledTrayLayoutEffect = (
         profile.events.push({
           label,
           startedAtMs: Number(startedAt.toFixed(2)),
+          durationMs: Number(durationMs.toFixed(2)),
+        });
+        recordTrayTelemetry("TrayLayoutEffect", {
+          label,
           durationMs: Number(durationMs.toFixed(2)),
         });
 
