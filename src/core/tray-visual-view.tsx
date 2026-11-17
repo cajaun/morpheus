@@ -1,11 +1,18 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
 } from "react";
 import { useProfiledTrayLayoutEffect } from "../telemetry/tray-layout-effect-profiler";
-import { Animated as RNAnimated, StyleSheet, View } from "react-native";
+import {
+  Animated as RNAnimated,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+} from "react-native";
+import { TrayContentCommitContext } from "./tray-content-commit";
 import Animated, {
   useDerivedValue,
   useSharedValue,
@@ -18,8 +25,12 @@ import { useTrayBackgroundScale } from "../runtime/tray-background-scale";
 import { createTrayLayoutTransition } from "./animation/tray-layout";
 import { styles as trayStyles } from "./animation/tray-styles";
 import { TrayOriginProgressProvider } from "./tray-origin-progress";
-import { isTrayInstrumentationEnabled } from "../telemetry/config";
+import {
+  isTrayInstrumentationEnabled,
+  TRAY_SYNC_CONTENT_MEASUREMENT_ENABLED,
+} from "../telemetry/config";
 import { logTrayProfilerCommit } from "../telemetry/tray-profiler";
+import { recordTrayTelemetry } from "../telemetry/tray-telemetry-buffer";
 import { markTrayBoundarySnapshotCommitted } from "../telemetry/tray-boundary-timing";
 import { markTrayStepRenderedCommit } from "../telemetry/tray-step-timing";
 import { TrayMorphProgressProvider } from "./tray-morph-progress";
@@ -211,6 +222,66 @@ const TrayBackdropInteractionContext = React.createContext<
   TrayBackdropInteraction | undefined
 >(undefined);
 const TrayKeyboardStickyContext = React.createContext(false);
+
+// Per-step transition values. They change on every step, but only a few
+// leaves consume them: the sheet view that carries the layout transition and
+// the content wrappers that read the transition clock. Providing them from
+// TrayVisualShell (which renders for every step anyway) lets React deliver
+// them to those leaves in the same render and commit, while the memoized
+// surface components in between skip. Timing is unchanged: same values,
+// same commit as when they travelled as props.
+type TrayShellTransitionValue = {
+  contentMotionDirection: ReturnType<typeof resolveTrayContentMotionDirection>;
+  trayTransitionStart: TrayTransitionStart;
+  layoutAnimationConfig: ReturnType<typeof createTrayLayoutTransition>;
+};
+
+const TrayShellTransitionContext =
+  React.createContext<TrayShellTransitionValue | null>(null);
+
+// Sheet-only frame values. presentationFrameStyle applies and releases the
+// height lock on step revisits and renderedClassName carries a step's own
+// sheet class. Only the sheet view reads them, so they bypass the memoized
+// surface the same way, landing in the same commit as before.
+type TraySheetFrameValue = {
+  presentationFrameStyle: React.ComponentProps<typeof Animated.View>["style"];
+  renderedClassName?: string;
+};
+
+const TraySheetFrameContext = React.createContext<TraySheetFrameValue | null>(
+  null,
+);
+
+const TraySheetFrameProvider = ({
+  presentationFrameStyle,
+  renderedClassName,
+  children,
+}: TraySheetFrameValue & { children: React.ReactNode }) => {
+  const value = useMemo(
+    () => ({ presentationFrameStyle, renderedClassName }),
+    [presentationFrameStyle, renderedClassName],
+  );
+
+  return (
+    <TraySheetFrameContext.Provider value={value}>
+      {children}
+    </TraySheetFrameContext.Provider>
+  );
+};
+
+// Layout handlers close over per-step state (rendered tray id, measurement
+// owner, transition contract), so their identities change on every step and
+// would force the memoized surface to re-render. Native layout events always
+// arrive after the commit that rendered them, so calling the latest handler
+// through a stable wrapper is behaviourally identical.
+const useStableLayoutHandler = <Args extends unknown[], Result>(
+  handler: (...args: Args) => Result,
+) => {
+  const handlerRef = useRef(handler);
+  handlerRef.current = handler;
+
+  return useCallback((...args: Args) => handlerRef.current(...args), []);
+};
 const NOOP_TRAY_CLOSE = () => {};
 
 const TrayInteractionBackdrop = React.memo(
@@ -441,7 +512,6 @@ type TraySurfaceProps = Pick<
   | "footerSpacerStyle"
   | "footerVisibilityStyle"
   | "headerFrameStyle"
-  | "presentationFrameStyle"
   | "surfaceVisibilityStyle"
   | "originSurfaceVisibilityStyle"
   | "trayLayoutStyle"
@@ -455,7 +525,6 @@ type TraySurfaceProps = Pick<
   > & {
     hasFooter: TrayController["shared"]["hasFooter"];
     style?: TrayProps["style"];
-    renderedClassName?: string;
     renderedContainerStyle?: TrayProps["containerStyle"];
     renderedHeader: React.ReactNode;
     renderedContent: React.ReactNode;
@@ -464,11 +533,6 @@ type TraySurfaceProps = Pick<
     renderedFooterStyle?: TrayProps["footerStyle"];
     renderSnapshotStore?: TrayRenderSnapshotStore;
     renderedFullScreen: boolean;
-    contentMotionDirection: ReturnType<
-      typeof resolveTrayContentMotionDirection
-    >;
-    trayTransitionStart: TrayTransitionStart;
-    layoutAnimationConfig: ReturnType<typeof createTrayLayoutTransition>;
     originProgress: TrayController["shared"]["originProgress"];
     instrumentationEnabled: boolean;
     shouldUseLayoutAnimation: boolean;
@@ -500,6 +564,16 @@ const TraySnapshotRegion = React.memo(
     region: TraySnapshotRegionName;
   }) => {
     const node = useTrayRenderSnapshotRegion(store, region);
+    const notifyContentCommitted = React.useContext(TrayContentCommitContext);
+    const notifyRef = useRef(notifyContentCommitted);
+    notifyRef.current = notifyContentCommitted;
+
+    // a swapped content node is measured in the commit that mounts it
+    useLayoutEffect(() => {
+      if (region === "content" && node != null) {
+        notifyRef.current?.();
+      }
+    }, [node, region]);
 
     return <TrayRenderedNode node={node} />;
   },
@@ -567,10 +641,30 @@ TraySnapshotTelemetry.displayName = "TraySnapshotTelemetry";
 // boundary. Reanimated shared values continue to update the same animated
 // styles on the UI thread; this only skips React work when a controller update
 // does not change anything consumed by this surface.
+const recordChangedSurfaceProps = (
+  previous: TraySurfaceProps,
+  next: TraySurfaceProps,
+) => {
+  const previousProps = previous as unknown as Record<string, unknown>;
+  const nextProps = next as unknown as Record<string, unknown>;
+  const changed = Object.keys(nextProps).filter(
+    (key) => previousProps[key] !== nextProps[key],
+  );
+
+  if (changed.length > 0) {
+    recordTrayTelemetry("TraySurfacePropsChanged", { changed });
+  }
+};
+
 const areTraySurfacePropsEqual = (
   previous: TraySurfaceProps,
   next: TraySurfaceProps,
 ) => {
+  if (next.instrumentationEnabled) {
+    // diagnostic only: names the props that defeat this memo boundary
+    recordChangedSurfaceProps(previous, next);
+  }
+
   const hasSameRegionShape =
     (previous.renderedHeader != null) === (next.renderedHeader != null) &&
     (previous.renderedContent != null) === (next.renderedContent != null) &&
@@ -596,14 +690,10 @@ const areTraySurfacePropsEqual = (
   return (
     previous.hasFooter === next.hasFooter &&
     previous.style === next.style &&
-    previous.renderedClassName === next.renderedClassName &&
     previous.renderedContainerStyle === next.renderedContainerStyle &&
     previous.renderedFooterClassName === next.renderedFooterClassName &&
     previous.renderedFooterStyle === next.renderedFooterStyle &&
     previous.renderedFullScreen === next.renderedFullScreen &&
-    previous.contentMotionDirection === next.contentMotionDirection &&
-    previous.trayTransitionStart === next.trayTransitionStart &&
-    previous.layoutAnimationConfig === next.layoutAnimationConfig &&
     previous.instrumentationEnabled === next.instrumentationEnabled &&
     previous.shouldUseLayoutAnimation === next.shouldUseLayoutAnimation &&
     previous.isFullScreenBoundaryTransition ===
@@ -620,7 +710,6 @@ const areTraySurfacePropsEqual = (
     previous.contentRevealStyle === next.contentRevealStyle &&
     previous.contentViewportStyle === next.contentViewportStyle &&
     previous.headerFrameStyle === next.headerFrameStyle &&
-    previous.presentationFrameStyle === next.presentationFrameStyle &&
     previous.trayLayoutStyle === next.trayLayoutStyle &&
     previous.footerContainerStyle === next.footerContainerStyle &&
     previous.dragStyle === next.dragStyle &&
@@ -683,15 +772,11 @@ TrayFooterSurface.displayName = "TrayFooterSurface";
 type TraySheetSurfaceProps = Pick<
   TraySurfaceProps,
   | "style"
-  | "renderedClassName"
   | "renderedContainerStyle"
   | "renderedHeader"
   | "renderedContent"
   | "renderSnapshotStore"
   | "renderedFullScreen"
-  | "contentMotionDirection"
-  | "trayTransitionStart"
-  | "layoutAnimationConfig"
   | "instrumentationEnabled"
   | "shouldUseLayoutAnimation"
   | "isFullScreenBoundaryTransition"
@@ -705,7 +790,6 @@ type TraySheetSurfaceProps = Pick<
   | "contentRevealStyle"
   | "contentViewportStyle"
   | "headerFrameStyle"
-  | "presentationFrameStyle"
   | "trayLayoutStyle"
   | "dragStyle"
   | "surfaceVisibilityStyle"
@@ -718,18 +802,80 @@ type TraySheetSurfaceProps = Pick<
 // Keep the gesture-bound animated sheet isolated from footer-only and other
 // surface updates. Its shallow props are the inputs that can affect the sheet;
 // stable inputs let React skip rerendering Reanimated's Animated.View wrapper.
+// Re-provide the per-step transition values at their original position in
+// the tree (around the step header/content only, not the footer).
+const TrayStepTransitionProviders = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const value = React.useContext(TrayShellTransitionContext);
+
+  if (!value) {
+    return <>{children}</>;
+  }
+
+  return (
+    <TrayContentMotionDirectionProvider value={value.contentMotionDirection}>
+      <TrayTransitionStartProvider value={value.trayTransitionStart}>
+        {children}
+      </TrayTransitionStartProvider>
+    </TrayContentMotionDirectionProvider>
+  );
+};
+
+TrayStepTransitionProviders.displayName = "TrayStepTransitionProviders";
+
+// The sheet view that carries the layout transition. It reads the per-step
+// layout config from context, so a new config re-renders only this view.
+const TraySheetLayoutView = ({
+  shouldUseLayoutAnimation,
+  leadingStyle,
+  trailingStyle,
+  children,
+  ...viewProps
+}: Omit<
+  React.ComponentProps<typeof Animated.View>,
+  "layout" | "style" | "className"
+> & {
+  shouldUseLayoutAnimation: boolean;
+  leadingStyle: React.ComponentProps<typeof Animated.View>["style"];
+  trailingStyle: React.ComponentProps<typeof Animated.View>["style"];
+  children: React.ReactNode;
+}) => {
+  const value = React.useContext(TrayShellTransitionContext);
+  const frame = React.useContext(TraySheetFrameContext);
+  const presentationFrameStyle = frame?.presentationFrameStyle;
+  // same order as before: container, layout, frame, then container/visibility
+  const style = useMemo(
+    () => [leadingStyle, presentationFrameStyle, trailingStyle],
+    [leadingStyle, presentationFrameStyle, trailingStyle],
+  );
+
+  return (
+    <Animated.View
+      {...viewProps}
+      className={frame?.renderedClassName}
+      style={style}
+      layout={
+        shouldUseLayoutAnimation ? value?.layoutAnimationConfig : undefined
+      }
+    >
+      {children}
+    </Animated.View>
+  );
+};
+
+TraySheetLayoutView.displayName = "TraySheetLayoutView";
+
 const TraySheetSurface = React.memo(
   ({
     style,
-    renderedClassName,
     renderedContainerStyle,
     renderedHeader,
     renderedContent,
     renderSnapshotStore,
     renderedFullScreen,
-    contentMotionDirection,
-    trayTransitionStart,
-    layoutAnimationConfig,
     instrumentationEnabled,
     shouldUseLayoutAnimation,
     isFullScreenBoundaryTransition,
@@ -743,7 +889,6 @@ const TraySheetSurface = React.memo(
     contentRevealStyle,
     contentViewportStyle: contentViewportStyleInput,
     headerFrameStyle,
-    presentationFrameStyle,
     trayLayoutStyle,
     dragStyle,
     surfaceVisibilityStyle,
@@ -751,11 +896,14 @@ const TraySheetSurface = React.memo(
     fullScreenSafeAreaContentStyle,
     hasHeader,
   }: TraySheetSurfaceProps) => {
-    const sheetStyle = useMemo(
+    // presentationFrameStyle and the sheet class come from context inside
+    // TraySheetLayoutView, between these two halves (original order kept)
+    const sheetLeadingStyle = useMemo(
+      () => [trayStyles.container, trayLayoutStyle],
+      [trayLayoutStyle],
+    );
+    const sheetTrailingStyle = useMemo(
       () => [
-        trayStyles.container,
-        trayLayoutStyle,
-        presentationFrameStyle,
         renderedContainerStyle,
         surfaceVisibilityStyle,
         originSurfaceVisibilityStyle,
@@ -765,11 +913,9 @@ const TraySheetSurface = React.memo(
       [
         dragStyle,
         originSurfaceVisibilityStyle,
-        presentationFrameStyle,
         renderedContainerStyle,
         style,
         surfaceVisibilityStyle,
-        trayLayoutStyle,
       ],
     );
     const contentStyle = useMemo(
@@ -810,28 +956,93 @@ const TraySheetSurface = React.memo(
       () => [localStyles.headerContainer, headerFrameStyle],
       [headerFrameStyle],
     );
+    const contentMeasureRef = useRef<View>(null);
+    const contentOriginRef = useRef({ x: 0, y: 0 });
+    const handleContentLayoutRef = useRef(handleContentLayout);
+    handleContentLayoutRef.current = handleContentLayout;
+    const handleMeasuredContentLayout = useCallback(
+      (event: LayoutChangeEvent) => {
+        contentOriginRef.current = {
+          x: event.nativeEvent.layout.x,
+          y: event.nativeEvent.layout.y,
+        };
+        handleContentLayoutRef.current(event);
+      },
+      [],
+    );
+    // Measure committed step content synchronously and feed it through the
+    // same guarded path as onLayout. On Fabric, measure() inside a layout
+    // effect returns the layout React just committed, so the target height
+    // is applied before the frame instead of after a native onLayout round
+    // trip. The later onLayout for the same frame is de-duplicated by the
+    // measurement signature (same origin, size and owner).
+    const measureCommittedContent = useCallback(() => {
+      const node = contentMeasureRef.current as unknown as {
+        measure?: (
+          callback: (
+            x: number,
+            y: number,
+            width: number,
+            height: number,
+          ) => void,
+        ) => void;
+      } | null;
+
+      if (
+        !TRAY_SYNC_CONTENT_MEASUREMENT_ENABLED ||
+        typeof node?.measure !== "function"
+      ) {
+        return;
+      }
+
+      node.measure((_x, _y, width, height) => {
+        if (
+          !Number.isFinite(width) ||
+          !Number.isFinite(height) ||
+          height <= 1
+        ) {
+          return;
+        }
+
+        const { x, y } = contentOriginRef.current;
+
+        handleContentLayoutRef.current({
+          nativeEvent: { layout: { x, y, width, height } },
+        } as LayoutChangeEvent);
+      });
+    }, []);
+
+    // Raw-node mode swaps content through this component's props.
+    useLayoutEffect(() => {
+      if (!renderSnapshotStore && renderedContent != null) {
+        measureCommittedContent();
+      }
+    }, [measureCommittedContent, renderSnapshotStore, renderedContent]);
 
     return (
       <TrayGestureRegion>
-        <Animated.View
-          className={renderedClassName}
-          style={sheetStyle}
+        <TraySheetLayoutView
+          leadingStyle={sheetLeadingStyle}
+          trailingStyle={sheetTrailingStyle}
           onLayout={instrumentationEnabled ? handleShellLayout : undefined}
-          layout={shouldUseLayoutAnimation ? layoutAnimationConfig : undefined}
+          shouldUseLayoutAnimation={shouldUseLayoutAnimation}
         >
           <Animated.View style={contentStyle}>
             <Animated.View style={contentViewportStyle}>
-              <Animated.View
+              <View
                 // Measure the content snapshot, not the animated boundary
                 // viewport that can retain the previous endpoint's height.
+                // The style is static, so a host View (not Animated.View)
+                // gives a ref with synchronous Fabric measure().
+                ref={contentMeasureRef}
                 collapsable={false}
-                onLayout={handleContentLayout}
+                onLayout={handleMeasuredContentLayout}
                 style={fullScreenContentStyle}
               >
-                <TrayContentMotionDirectionProvider
-                  value={contentMotionDirection}
+                <TrayContentCommitContext.Provider
+                  value={measureCommittedContent}
                 >
-                  <TrayTransitionStartProvider value={trayTransitionStart}>
+                  <TrayStepTransitionProviders>
                     {hasHeader ? (
                       <Animated.View style={headerStyle}>
                         {renderSnapshotStore ? (
@@ -852,14 +1063,14 @@ const TraySheetSurface = React.memo(
                     ) : (
                       <TrayRenderedNode node={renderedContent} />
                     )}
-                  </TrayTransitionStartProvider>
-                </TrayContentMotionDirectionProvider>
-              </Animated.View>
+                  </TrayStepTransitionProviders>
+                </TrayContentCommitContext.Provider>
+              </View>
             </Animated.View>
             {/* reserve footer space the footer itself is absolute and does not participate in content measurement */}
             <Animated.View style={footerSpacerStyle} />
           </Animated.View>
-        </Animated.View>
+        </TraySheetLayoutView>
       </TrayGestureRegion>
     );
   },
@@ -871,7 +1082,6 @@ const TraySurface = React.memo(
   ({
     hasFooter,
     style,
-    renderedClassName,
     renderedContainerStyle,
     renderedHeader,
     renderedContent,
@@ -880,9 +1090,6 @@ const TraySurface = React.memo(
     renderedFooterStyle,
     renderSnapshotStore,
     renderedFullScreen,
-    contentMotionDirection,
-    trayTransitionStart,
-    layoutAnimationConfig,
     instrumentationEnabled,
     shouldUseLayoutAnimation,
     isFullScreenBoundaryTransition,
@@ -897,7 +1104,6 @@ const TraySurface = React.memo(
     contentRevealStyle,
     contentViewportStyle,
     headerFrameStyle,
-    presentationFrameStyle,
     trayLayoutStyle,
     footerContainerStyle,
     dragStyle,
@@ -910,7 +1116,6 @@ const TraySurface = React.memo(
   }: TraySurfaceProps) => {
     // The region elements are stable shell slots. Their own subscriptions
     // update step payloads without publishing through this native surface.
-    const surfaceClassName = renderedClassName;
     const surfaceContainerStyle = renderedContainerStyle;
     const surfaceFooterClassName = renderedFooterClassName;
     const surfaceFooterStyle = renderedFooterStyle;
@@ -926,15 +1131,11 @@ const TraySurface = React.memo(
       <>
         <TraySheetSurface
           style={style}
-          renderedClassName={surfaceClassName}
           renderedContainerStyle={surfaceContainerStyle}
           renderedHeader={renderSnapshotStore ? null : surfaceHeader}
           renderedContent={renderSnapshotStore ? null : surfaceContent}
           renderSnapshotStore={renderSnapshotStore}
           renderedFullScreen={renderedFullScreen}
-          contentMotionDirection={contentMotionDirection}
-          trayTransitionStart={trayTransitionStart}
-          layoutAnimationConfig={layoutAnimationConfig}
           instrumentationEnabled={instrumentationEnabled}
           shouldUseLayoutAnimation={shouldUseLayoutAnimation}
           isFullScreenBoundaryTransition={isFullScreenBoundaryTransition}
@@ -950,7 +1151,6 @@ const TraySurface = React.memo(
           contentRevealStyle={contentRevealStyle}
           contentViewportStyle={contentViewportStyle}
           headerFrameStyle={headerFrameStyle}
-          presentationFrameStyle={presentationFrameStyle}
           trayLayoutStyle={trayLayoutStyle}
           dragStyle={dragStyle}
           surfaceVisibilityStyle={surfaceVisibilityStyle}
@@ -995,7 +1195,7 @@ TraySurface.displayName = "TraySurface";
 type TrayVisualShellContentProps = {
   assignmentId: number;
   rootTrayId: TrayVisualViewProps["rootTrayId"];
-  trayId: TrayVisualViewProps["trayId"];
+  trayIdRef: { current: TrayVisualViewProps["trayId"] };
   visible: TrayVisualViewProps["visible"];
   interactionStateRef: { current: boolean };
   surfaceProps: TraySurfaceProps;
@@ -1005,6 +1205,7 @@ type TrayVisualShellContentProps = {
   requiresFullScreenMotion: boolean;
   shouldUseOriginTransition: boolean;
   presentationFullScreen: boolean;
+  renderedClassName?: string;
   keyboardStickyCapable: boolean;
   fullScreenSurfaceStyle: React.ComponentProps<typeof Animated.View>["style"];
   fullScreenSurfaceFillStyle: React.ComponentProps<typeof Animated.View>["style"];
@@ -1019,7 +1220,7 @@ const TrayVisualShellContent = React.memo(
   ({
     assignmentId,
     rootTrayId,
-    trayId,
+    trayIdRef,
     visible,
     interactionStateRef,
     surfaceProps,
@@ -1029,12 +1230,15 @@ const TrayVisualShellContent = React.memo(
     requiresFullScreenMotion,
     shouldUseOriginTransition,
     presentationFullScreen,
+    renderedClassName,
     keyboardStickyCapable,
     fullScreenSurfaceStyle,
     fullScreenSurfaceFillStyle,
     renderSnapshotOverride,
   }: TrayVisualShellContentProps) => {
-    const shellId = `tray-region:${trayId ?? rootTrayId ?? assignmentId}:shell`;
+    // The shell is shared by every step; its region id names the host so a
+    // step change does not re-render the shell just to rename the profiler.
+    const shellId = `tray-region:${rootTrayId ?? assignmentId}:shell`;
     const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
       (
         _id,
@@ -1054,7 +1258,7 @@ const TrayVisualShellContent = React.memo(
           {
             region: "shell",
             rootTrayId,
-            trayId,
+            trayId: trayIdRef.current,
             assignmentId,
             visible,
             interactive: interactionStateRef.current,
@@ -1065,7 +1269,7 @@ const TrayVisualShellContent = React.memo(
         interactionStateRef,
         rootTrayId,
         shellId,
-        trayId,
+        trayIdRef,
         visible,
       ],
     );
@@ -1095,9 +1299,7 @@ const TrayVisualShellContent = React.memo(
         {requiresFullScreenMotion && renderedTrayId !== undefined && (
           <Animated.View
             className={
-              presentationFullScreen
-                ? surfaceProps.renderedClassName
-                : undefined
+              presentationFullScreen ? renderedClassName : undefined
             }
             pointerEvents="none"
             style={[
@@ -1135,7 +1337,7 @@ const TrayVisualShellContent = React.memo(
   (previous, next) =>
     previous.assignmentId === next.assignmentId &&
     previous.rootTrayId === next.rootTrayId &&
-    previous.trayId === next.trayId &&
+    previous.trayIdRef === next.trayIdRef &&
     previous.visible === next.visible &&
     previous.interactionStateRef === next.interactionStateRef &&
     areTraySurfacePropsEqual(previous.surfaceProps, next.surfaceProps) &&
@@ -1145,6 +1347,7 @@ const TrayVisualShellContent = React.memo(
     previous.requiresFullScreenMotion === next.requiresFullScreenMotion &&
     previous.shouldUseOriginTransition === next.shouldUseOriginTransition &&
     previous.presentationFullScreen === next.presentationFullScreen &&
+    previous.renderedClassName === next.renderedClassName &&
     previous.keyboardStickyCapable === next.keyboardStickyCapable &&
     previous.fullScreenSurfaceStyle === next.fullScreenSurfaceStyle &&
     previous.fullScreenSurfaceFillStyle === next.fullScreenSurfaceFillStyle &&
@@ -1227,13 +1430,23 @@ const TrayVisualShell = React.memo(
     const renderedFooterStyle = fallbackFooterStyle;
     const renderedFooterClassName = fallbackFooterClassName;
     const {
-      handleContentLayout,
-      handleVisibleFooterLayout,
-      handleShellLayout,
+      handleContentLayout: latestHandleContentLayout,
+      handleVisibleFooterLayout: latestHandleVisibleFooterLayout,
+      handleShellLayout: latestHandleShellLayout,
       handleLayoutTransitionConfigured,
       handleLayoutTransitionStart,
       handleLayoutTransitionComplete,
     } = handlers;
+
+    const handleContentLayout = useStableLayoutHandler(
+      latestHandleContentLayout,
+    );
+    const handleVisibleFooterLayout = useStableLayoutHandler(
+      latestHandleVisibleFooterLayout,
+    );
+    const handleShellLayout = useStableLayoutHandler(latestHandleShellLayout);
+    const trayIdRef = useRef(trayId);
+    trayIdRef.current = trayId;
 
     // resolve direction during render so entering and exiting content receive the same transition snapshot
     const contentMotionDirection =
@@ -1452,65 +1665,80 @@ const TrayVisualShell = React.memo(
           : undefined,
       [flattenedContainerStyle],
     );
-    return (
-      <TrayBoundaryMotionRegion
-        enabled={requiresFullScreenMotion}
-        params={boundaryMotionParams}
-        animatedStyleParams={animatedStyleParams}
-        prepared={prepared}
-      >
-        {(boundaryStyles, animatedStyles) => {
-          const surfaceProps: TraySurfaceProps = {
-            ...animatedStyles,
-            style,
-            renderedClassName,
-            renderedContainerStyle,
-            renderedHeader,
-            renderedContent,
-            renderedFooter,
-            renderedFooterClassName,
-            renderedFooterStyle,
-            hasFooter,
-            renderSnapshotStore,
-            renderedFullScreen: presentationFullScreen,
-            contentMotionDirection,
-            trayTransitionStart,
-            layoutAnimationConfig,
-            instrumentationEnabled,
-            shouldUseLayoutAnimation,
-            isFullScreenBoundaryTransition,
-            handleContentLayout,
-            handleVisibleFooterLayout,
-            handleShellLayout,
-            fullScreenSafeAreaContentStyle:
-              boundaryStyles?.fullScreenSafeAreaContentStyle,
-            originProgress,
-          };
+    const shellTransitionValue = useMemo<TrayShellTransitionValue>(
+      () => ({
+        contentMotionDirection,
+        trayTransitionStart,
+        layoutAnimationConfig,
+      }),
+      [contentMotionDirection, layoutAnimationConfig, trayTransitionStart],
+    );
 
-          return (
-            <TrayVisualShellContent
-              assignmentId={assignmentId}
-              rootTrayId={rootTrayId}
-              trayId={trayId}
-              visible={visible}
-              interactionStateRef={interactionStateRef}
-              surfaceProps={surfaceProps}
-              morphProgress={morphProgress}
-              progress={progress}
-              renderedTrayId={renderedTrayId}
-              requiresFullScreenMotion={requiresFullScreenMotion}
-              shouldUseOriginTransition={shouldUseOriginTransition}
-              presentationFullScreen={presentationFullScreen}
-              keyboardStickyCapable={keyboardStickyCapable}
-              fullScreenSurfaceStyle={fullScreenSurfaceStyle}
-              fullScreenSurfaceFillStyle={
-                boundaryStyles?.fullScreenSurfaceFillStyle
-              }
-              renderSnapshotOverride={renderSnapshotOverride}
-            />
-          );
-        }}
-      </TrayBoundaryMotionRegion>
+    return (
+      <TrayShellTransitionContext.Provider value={shellTransitionValue}>
+        <TrayBoundaryMotionRegion
+          enabled={requiresFullScreenMotion}
+          params={boundaryMotionParams}
+          animatedStyleParams={animatedStyleParams}
+          prepared={prepared}
+        >
+          {(boundaryStyles, animatedStyles) => {
+            const { presentationFrameStyle, ...surfaceAnimatedStyles } =
+              animatedStyles;
+            const surfaceProps: TraySurfaceProps = {
+              ...surfaceAnimatedStyles,
+              style,
+              renderedContainerStyle,
+              renderedHeader,
+              renderedContent,
+              renderedFooter,
+              renderedFooterClassName,
+              renderedFooterStyle,
+              hasFooter,
+              renderSnapshotStore,
+              renderedFullScreen: presentationFullScreen,
+              instrumentationEnabled,
+              shouldUseLayoutAnimation,
+              isFullScreenBoundaryTransition,
+              handleContentLayout,
+              handleVisibleFooterLayout,
+              handleShellLayout,
+              fullScreenSafeAreaContentStyle:
+                boundaryStyles?.fullScreenSafeAreaContentStyle,
+              originProgress,
+            };
+
+            return (
+              <TraySheetFrameProvider
+                presentationFrameStyle={presentationFrameStyle}
+                renderedClassName={renderedClassName}
+              >
+                <TrayVisualShellContent
+                  assignmentId={assignmentId}
+                  rootTrayId={rootTrayId}
+                  trayIdRef={trayIdRef}
+                  visible={visible}
+                  interactionStateRef={interactionStateRef}
+                  surfaceProps={surfaceProps}
+                  morphProgress={morphProgress}
+                  progress={progress}
+                  renderedTrayId={renderedTrayId}
+                  requiresFullScreenMotion={requiresFullScreenMotion}
+                  shouldUseOriginTransition={shouldUseOriginTransition}
+                  presentationFullScreen={presentationFullScreen}
+                  renderedClassName={renderedClassName}
+                  keyboardStickyCapable={keyboardStickyCapable}
+                  fullScreenSurfaceStyle={fullScreenSurfaceStyle}
+                  fullScreenSurfaceFillStyle={
+                    boundaryStyles?.fullScreenSurfaceFillStyle
+                  }
+                  renderSnapshotOverride={renderSnapshotOverride}
+                />
+              </TraySheetFrameProvider>
+            );
+          }}
+        </TrayBoundaryMotionRegion>
+      </TrayShellTransitionContext.Provider>
     );
   },
   areTrayVisualShellPropsEqual,

@@ -3,7 +3,7 @@ import { Text, View } from "react-native";
 import {
   Tray,
   useTrayNavigation,
-  useTrayNavigationActions,
+  useTrayNavigationState,
 } from "react-native-morpheus";
 import {
   TRAY_HEADER_CLOSE_BUTTON_SIZE,
@@ -20,8 +20,8 @@ import { PrimaryButton } from "../shared/primary-button";
 const ONBOARDING_INFO_ICON = "rgba(255,255,255,0.24)";
 
 const OnboardingFooter = () => {
-  const { index, total, pageIndex } = useTrayNavigation();
-  const { close, next } = useTrayNavigationActions();
+  const { index, total, pageIndex } = useTrayNavigationState();
+  const { close, next } = useTrayNavigation();
   const handlePrimaryPress = index >= total - 1 ? close : next;
   const shouldOpenNestedInfo = index === 2 && pageIndex === 1;
 
@@ -76,7 +76,7 @@ const ContinueButtonLabel = () => (
 );
 
 const OnboardingContinueTrayContent = () => {
-  const { close } = useTrayNavigationActions();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Body style={{ paddingHorizontal: 0 }}>
@@ -179,7 +179,7 @@ const OnboardingContinueTrayContent = () => {
 };
 
 const OnboardingContinueTrayFooter = () => {
-  const { closeAndNextParentPage } = useTrayNavigationActions();
+  const { closeAndNextParentPage } = useTrayNavigation();
 
   return (
     <Tray.Footer style={{ width: "100%" }}>
@@ -211,7 +211,7 @@ const ONBOARDING_FOOTER_STYLE = {
 const ONBOARDING_CONTINUE_TRAY_FOOTER = <OnboardingContinueTrayFooter />;
 
 const OnboardingWalletsInfoStep = () => {
-  const { close } = useTrayNavigationActions();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Body style={{ paddingHorizontal: 0 }}>
@@ -322,7 +322,7 @@ const OnboardingWalletsInfoStep = () => {
 };
 
 const OnboardingBackAction = () => {
-  const { back } = useTrayNavigationActions();
+  const { back } = useTrayNavigation();
 
   return (
     <Tray.HeaderButton onPress={back}>
@@ -344,7 +344,7 @@ const OnboardingHeader = ({
   title: string;
   left?: ReactNode;
 }) => {
-  const { close } = useTrayNavigationActions();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Header withSeparator>

@@ -43,6 +43,7 @@ import {
   TRAY_INSTRUMENTATION_ENABLED,
   isTrayInstrumentationEnabled,
 } from "./telemetry/config";
+import { recordTrayTelemetry } from "./telemetry/tray-telemetry-buffer";
 import { markTrayStepContentReleased } from "./telemetry/tray-step-timing";
 import { useOptionalTrayMorphProgress } from "./core/tray-morph-progress";
 import type { TrayHeaderTransitionValue } from "./primitives/header-transition-context";
@@ -76,7 +77,7 @@ const logStepEnterFinished = (stepKey: string, finishedAt: number) => {
     return;
   }
 
-  console.log("[step-enter-finished]", {
+  recordTrayTelemetry("step-enter-finished", {
     stepKey,
     finishedAt: Number(finishedAt.toFixed(2)),
   });
@@ -90,7 +91,7 @@ const logStepEnterStarted = (stepKey: string) => {
 
   markTrayStepContentReleased(stepKey);
 
-  console.log("[step-enter-started]", {
+  recordTrayTelemetry("step-enter-started", {
     stepKey,
     startedAt: Number(performance.now().toFixed(2)),
   });

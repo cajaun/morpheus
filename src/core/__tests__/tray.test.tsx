@@ -6,6 +6,7 @@ import { Tray } from "../tray";
 // probe shell rendering while native animation modules are replaced by stable hosts
 const mockCloseHandler = jest.fn();
 const mockFooterLayoutHandler = jest.fn();
+const mockContentLayoutHandler = jest.fn();
 
 jest.mock("react-native-gesture-handler", () => ({
   GestureDetector: ({ children }: { children: React.ReactNode }) => children,
@@ -17,6 +18,14 @@ jest.mock("react-native-keyboard-controller", () => ({
     dismiss: jest.fn(),
   },
   useKeyboardState: () => false,
+  useKeyboardAnimation: () => {
+    const ReactNative = require("react-native");
+
+    return {
+      height: new ReactNative.Animated.Value(0),
+      progress: new ReactNative.Animated.Value(0),
+    };
+  },
   useReanimatedKeyboardAnimation: () => ({
     height: { value: 0 },
   }),
@@ -29,6 +38,12 @@ jest.mock("react-native-keyboard-controller", () => ({
     const ReactNative = require("react-native");
     return <ReactNative.View {...props}>{children}</ReactNative.View>;
   },
+}));
+
+// exercise the opt-in synchronous content measurement path
+jest.mock("../../telemetry/config", () => ({
+  ...(jest.requireActual("../../telemetry/config") as object),
+  TRAY_SYNC_CONTENT_MEASUREMENT_ENABLED: true,
 }));
 
 jest.mock("react-native-safe-area-context", () => ({
@@ -98,7 +113,7 @@ jest.mock("../use-tray-controller", () => ({
         renderedFooterClassName: undefined,
       },
       handlers: {
-        handleContentLayout: jest.fn(),
+        handleContentLayout: mockContentLayoutHandler,
         handleVisibleFooterLayout: mockFooterLayoutHandler,
         handleShellLayout: jest.fn(),
         handleRequestClose: mockCloseHandler,
@@ -111,6 +126,22 @@ jest.mock("../use-tray-controller", () => ({
     };
   },
 }));
+
+const isInsideSheetSurface = (node: TestRenderer.ReactTestInstance) => {
+  let current: TestRenderer.ReactTestInstance | null = node.parent;
+
+  while (current) {
+    const type = current.type as { displayName?: string };
+
+    if (typeof current.type !== "string" && type.displayName === "TraySheetSurface") {
+      return true;
+    }
+
+    current = current.parent;
+  }
+
+  return false;
+};
 
 describe("Tray", () => {
   it("keeps the fixed footer layer mounted outside the animated shell", () => {
@@ -156,5 +187,43 @@ describe("Tray", () => {
 
     backdropPressable.props.onPress();
     expect(mockCloseHandler).not.toHaveBeenCalled();
+  });
+
+  it("measures committed content in the same commit instead of waiting for onLayout", () => {
+    mockContentLayoutHandler.mockClear();
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <Tray visible onClose={jest.fn()} dismissKeyboard={jest.fn()} />,
+      );
+    });
+
+    const contentMeasureView = renderer!.root.find(
+      (node) =>
+        node.props.collapsable === false &&
+        typeof node.props.onLayout === "function" &&
+        isInsideSheetSurface(node) &&
+        node.instance != null &&
+        typeof node.instance.measure === "function",
+    );
+    const measure = contentMeasureView.instance.measure as jest.Mock;
+
+    // the layout effect asked for a measurement during the mount commit
+    expect(measure).toHaveBeenCalled();
+    expect(mockContentLayoutHandler).not.toHaveBeenCalled();
+
+    // Fabric answers synchronously; the result flows through the onLayout path
+    const callback = measure.mock.calls[0]![0] as (
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+    ) => void;
+    callback(0, 0, 320, 184);
+
+    expect(mockContentLayoutHandler).toHaveBeenCalledWith({
+      nativeEvent: { layout: { x: 0, y: 0, width: 320, height: 184 } },
+    });
   });
 });

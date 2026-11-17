@@ -1,3 +1,4 @@
+import type { TrayNavigationState } from "../use-tray-navigation";
 import React, { useState } from "react";
 import {
   afterEach,
@@ -14,6 +15,7 @@ import {
   TrayProvider,
   useTrayNavigation,
   useTrayNavigationActions,
+  useTrayNavigationState,
   useTrayHost,
   type TrayStepOptions,
 } from "../..";
@@ -65,6 +67,7 @@ let latestHost: ReturnType<typeof useTrayHost> | null = null;
 let latestNavigation: ReturnType<typeof useTrayNavigation> | null = null;
 let latestNavigationActions: ReturnType<typeof useTrayNavigationActions> | null =
   null;
+let latestNavigationState: TrayNavigationState | null = null;
 let activeRenderer: TestRenderer.ReactTestRenderer | null = null;
 let rerenderNavigation: (() => void) | null = null;
 let navigationActionsRenderCount = 0;
@@ -78,6 +81,7 @@ const HostSpy = () => {
 // expose navigation state so assertions can inspect it
 const FlowSpy = () => {
   latestNavigation = useTrayNavigation();
+  latestNavigationState = useTrayNavigationState();
   return null;
 };
 
@@ -117,6 +121,7 @@ describe("TrayProvider runtime", () => {
   beforeEach(() => {
     latestHost = null;
     latestNavigation = null;
+    latestNavigationState = null;
     latestNavigationActions = null;
     activeRenderer = null;
     rerenderNavigation = null;
@@ -274,6 +279,51 @@ describe("TrayProvider runtime", () => {
     expect(latestNavigationActions!.back).toBe(firstActions.back);
   });
 
+  it("re-renders state selectors only when their slice changes", () => {
+    let totalRenderCount = 0;
+    let indexRenderCount = 0;
+    let latestIndex: number | null = null;
+    const TotalProbe = () => {
+      totalRenderCount += 1;
+      useTrayNavigationState((state) => state.total);
+      return null;
+    };
+    const IndexProbe = () => {
+      indexRenderCount += 1;
+      latestIndex = useTrayNavigationState((state) => state.index);
+      return null;
+    };
+
+    act(() => {
+      activeRenderer = TestRenderer.create(
+        <TrayProvider>
+          <HostSpy />
+          <Tray.Root>
+            {[step("one"), step("two"), step("three")]}
+            <NavigationActionsProbe />
+            <TotalProbe />
+            <IndexProbe />
+          </Tray.Root>
+        </TrayProvider>,
+      );
+    });
+
+    const initialTotalRenders = totalRenderCount;
+    const initialIndexRenders = indexRenderCount;
+
+    act(() => {
+      latestNavigationActions!.open();
+    });
+    act(() => {
+      latestNavigationActions!.next();
+    });
+
+    expect(latestHost!.activeIndex).toBe(1);
+    expect(latestIndex).toBe(1);
+    expect(indexRenderCount).toBeGreaterThan(initialIndexRenders);
+    expect(totalRenderCount).toBe(initialTotalRenders);
+  });
+
   it("returns fullscreen flows to the shell before dismissing", () => {
     act(() => {
       activeRenderer = TestRenderer.create(
@@ -381,13 +431,13 @@ describe("TrayProvider runtime", () => {
       );
     });
 
-    expect(latestNavigation!.total).toBe(1);
+    expect(latestNavigationState!.total).toBe(1);
 
     act(() => {
       setExpanded(true);
     });
 
-    expect(latestNavigation!.total).toBe(2);
+    expect(latestNavigationState!.total).toBe(2);
 
     act(() => {
       latestHost!.openTray(latestNavigation!.trayId);

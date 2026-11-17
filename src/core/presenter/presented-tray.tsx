@@ -1,10 +1,13 @@
 // adapt runtime payloads into the animated native shell
 import React, {
   useCallback,
+  useContext,
+  useLayoutEffect,
   useMemo,
   useRef,
   useSyncExternalStore,
 } from "react";
+import { TrayContentCommitContext } from "../tray-content-commit";
 import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import { TrayStepContent } from "../../tray-step-content";
 import { TrayHeaderTransitionProvider } from "../../primitives/header-transition-context";
@@ -191,6 +194,27 @@ const PresentedTrayRegion = ({
     getRegionSnapshot,
   );
 
+  const notifyContentCommitted = useContext(TrayContentCommitContext);
+  const notifyRef = useRef(notifyContentCommitted);
+  notifyRef.current = notifyContentCommitted;
+
+  // New step content mounts in this region's commit; ask the sheet to
+  // measure it now so the target height is ready before the frame.
+  useLayoutEffect(() => {
+    if (region === "content" && payload.content != null) {
+      notifyRef.current?.();
+    }
+  }, [payload.content, payload.trayId, region]);
+
+  const headerTransitionValue = useMemo(
+    () => ({
+      stepKey: payload.trayId,
+      skipEntering: payload.isFirstRender,
+      fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
+    }),
+    [payload.fullScreenBoundaryExit, payload.isFirstRender, payload.trayId],
+  );
+
   let regionNode: React.ReactNode = null;
 
   if (region === "header" && payload.header) {
@@ -205,13 +229,7 @@ const PresentedTrayRegion = ({
             fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
             skipEntering={payload.isFirstRender}
           >
-            <TrayHeaderTransitionProvider
-              value={{
-                stepKey: payload.trayId,
-                skipEntering: payload.isFirstRender,
-                fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
-              }}
-            >
+            <TrayHeaderTransitionProvider value={headerTransitionValue}>
               {payload.header}
             </TrayHeaderTransitionProvider>
           </TrayStepContent>

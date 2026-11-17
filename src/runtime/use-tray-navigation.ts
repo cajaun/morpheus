@@ -1,8 +1,7 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { markTrayStepRequested } from "../telemetry/tray-step-timing";
 import { clampTrayStepIndex } from "./tray-step-index";
 import {
-  useTrayHostActions,
   useTrayHostSelector,
   useTrayRuntimeStore,
   useTrayScope,
@@ -126,167 +125,126 @@ const resolveTrayNavigationSnapshot = (
   };
 };
 
-// connect the nearest tray to step navigation and presentation actions
-export const useTrayNavigation = () => {
+export type TrayNavigationState = {
+  trayId: string;
+  isActive: boolean;
+  index: number;
+  total: number;
+  canGoNext: boolean;
+  canGoBack: boolean;
+  pageIndex: number | undefined;
+};
+
+const toTrayNavigationState = (
+  trayId: string,
+  snapshot: TrayNavigationSnapshot,
+): TrayNavigationState => {
+  const { pageControls, index, total, isActive } = snapshot;
+
+  return {
+    trayId,
+    isActive,
+    index,
+    total,
+    // page controls take priority so page navigation keeps the shell step stable
+    canGoNext: pageControls ? pageControls.canGoNext : index < total - 1,
+    canGoBack: pageControls ? pageControls.canGoBack : index > 0,
+    pageIndex: pageControls?.pageIndex,
+  };
+};
+
+const areTrayNavigationStatesEqual = (
+  previous: TrayNavigationState,
+  next: TrayNavigationState,
+) =>
+  previous.trayId === next.trayId &&
+  previous.isActive === next.isActive &&
+  previous.index === next.index &&
+  previous.total === next.total &&
+  previous.canGoNext === next.canGoNext &&
+  previous.canGoBack === next.canGoBack &&
+  previous.pageIndex === next.pageIndex;
+
+const selectWholeNavigationState = (state: TrayNavigationState) => state;
+
+// Subscribe to navigation state for components that render it (step counters,
+// pagers, footers that hide on the last step). Pass a selector to re-render
+// only when that slice changes:
+//
+//   const index = useTrayNavigationState((state) => state.index);
+//
+// Components that only trigger navigation should use useTrayNavigation(),
+// which subscribes to nothing.
+export function useTrayNavigationState(): TrayNavigationState;
+export function useTrayNavigationState<T>(
+  selector: (state: TrayNavigationState) => T,
+  isEqual?: (previous: T, next: T) => boolean,
+): T;
+export function useTrayNavigationState<T>(
+  selector?: (state: TrayNavigationState) => T,
+  isEqual?: (previous: T, next: T) => boolean,
+) {
   const trayId = useTrayScope();
-  // navigation state follows the nearest root so nested trays stay
-  // independent. One cached selector gives the footer one coherent snapshot
-  // and avoids four independent store subscriptions for the same transition.
-  const navigationSelector = useMemo(
-    () => createTrayNavigationSelector(trayId ?? ""),
-    [trayId],
-  );
-  const navigation = useTrayHostSelector(navigationSelector);
-  const {
-    openTray,
-    closeActiveTray,
-    requestCloseActiveTray,
-    nextStep,
-    previousStep,
-  } = useTrayHostActions();
 
   if (!trayId) {
     throw new Error("Must be used within Tray.Root scope");
   }
 
-  const {
-    registration,
-    parentPageControls,
-    total,
-    isActive,
-    index,
-    activeStep,
-    pageControls,
-  } = navigation;
-  // page controls take priority so page navigation keeps the shell step stable
-  const canGoNext = pageControls ? pageControls.canGoNext : index < total - 1;
-  const canGoBack = pageControls ? pageControls.canGoBack : index > 0;
+  // Keep the latest selector without changing the store selector identity, so
+  // an inline selector does not reset the cached result on every render.
+  const selectorRef = useRef(selector);
+  const isEqualRef = useRef(isEqual);
+  selectorRef.current = selector;
+  isEqualRef.current = isEqual;
 
-  // Keep command identities stable between equivalent store snapshots. This
-  // prevents navigation consumers from propagating fresh callback props into
-  // their button subtrees when only unrelated tray state changes.
-  const open = useCallback(() => openTray(trayId), [openTray, trayId]);
-  const close = useCallback(() => {
-    if (isActive) {
-      closeActiveTray();
-    }
-  }, [closeActiveTray, isActive]);
-  const closeAndNextParentPage = useCallback(() => {
-    if (isActive) {
-      closeActiveTray();
-      parentPageControls?.nextPage();
-    }
-  }, [closeActiveTray, isActive, parentPageControls]);
-  const requestClose = useCallback(() => {
-    if (isActive) {
-      if (
-        activeStep?.options?.fullScreen &&
-        activeStep.options.fullScreenCloseBehavior === "returnToShell" &&
-        index > 0
-      ) {
-        markTrayStepRequested(trayId);
+  const storeSelector = useMemo(() => {
+    const selectNavigation = createTrayNavigationSelector(trayId);
+    let previousSnapshot: TrayNavigationSnapshot | null = null;
+    let previousState: TrayNavigationState | null = null;
+    let hasOutput = false;
+    let previousOutput: unknown;
+
+    return (state: TrayHostStateValue) => {
+      const snapshot = selectNavigation(state);
+
+      if (snapshot !== previousSnapshot || previousState === null) {
+        const nextState = toTrayNavigationState(trayId, snapshot);
+
+        previousState =
+          previousState !== null &&
+          areTrayNavigationStatesEqual(previousState, nextState)
+            ? previousState
+            : nextState;
+        previousSnapshot = snapshot;
       }
 
-      requestCloseActiveTray();
-    }
-  }, [
-    activeStep?.options?.fullScreen,
-    activeStep?.options?.fullScreenCloseBehavior,
-    index,
-    isActive,
-    requestCloseActiveTray,
-    trayId,
-  ]);
-  const next = useCallback(() => {
-    if (isActive) {
-      if (pageControls?.canGoNext) {
-        pageControls.nextPage();
-        return;
+      const select = (selectorRef.current ??
+        selectWholeNavigationState) as (value: TrayNavigationState) => unknown;
+      const output = select(previousState);
+      const equal = (isEqualRef.current ?? Object.is) as (
+        a: unknown,
+        b: unknown,
+      ) => boolean;
+
+      if (hasOutput && equal(previousOutput, output)) {
+        return previousOutput;
       }
 
-      const nextIndex = clampTrayStepIndex(index + 1, total);
-      const nextStepDefinition = registration?.steps[nextIndex];
+      hasOutput = true;
+      previousOutput = output;
+      return output;
+    };
+  }, [trayId]);
 
-      if (nextIndex !== index && nextStepDefinition) {
-        markTrayStepRequested(trayId);
-      }
+  return useTrayHostSelector(storeSelector) as T | TrayNavigationState;
+}
 
-      nextStep();
-    }
-  }, [
-    index,
-    isActive,
-    nextStep,
-    pageControls,
-    registration?.steps,
-    total,
-    trayId,
-  ]);
-  const back = useCallback(() => {
-    if (isActive) {
-      if (pageControls?.canGoBack) {
-        pageControls.backPage();
-        return;
-      }
-
-      const previousIndex = clampTrayStepIndex(index - 1, total);
-      const previousStepDefinition = registration?.steps[previousIndex];
-
-      if (previousIndex !== index && previousStepDefinition) {
-        markTrayStepRequested(trayId);
-      }
-
-      previousStep();
-    }
-  }, [
-    index,
-    isActive,
-    pageControls,
-    previousStep,
-    registration?.steps,
-    total,
-    trayId,
-  ]);
-
-  return useMemo(
-    () => ({
-      trayId,
-      isActive,
-      index,
-      total,
-      canGoNext,
-      canGoBack,
-      pageIndex: pageControls?.pageIndex,
-      open,
-      close,
-      closeAndNextParentPage,
-      requestClose,
-      next,
-      back,
-    }),
-    [
-      back,
-      canGoBack,
-      canGoNext,
-      close,
-      closeAndNextParentPage,
-      index,
-      isActive,
-      next,
-      open,
-      pageControls?.pageIndex,
-      requestClose,
-      total,
-      trayId,
-    ],
-  );
-};
-
-// Expose stable imperative navigation commands for controls that do not need
-// navigation state in their render output. Unlike useTrayNavigation, this hook
-// subscribes to no state slices, so a header close button cannot be forced to
-// reconcile when the footer index or another step changes.
-export const useTrayNavigationActions = () => {
+// Navigation commands for the nearest tray. This hook subscribes to no
+// navigation state, so pressing next/back never re-renders the step that is
+// being left. Commands read the current runtime snapshot at press time, so
+// their identities stay stable and never capture stale step state. Read state
+// with useTrayNavigationState(selector) when a component renders it.
+export const useTrayNavigation = () => {
   const trayId = useTrayScope();
   const store = useTrayRuntimeStore();
   const {
@@ -401,3 +359,6 @@ export const useTrayNavigationActions = () => {
     ],
   );
 };
+
+// @deprecated since 3.0.0 — useTrayNavigation is now actions-only; use it directly.
+export const useTrayNavigationActions = useTrayNavigation;

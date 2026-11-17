@@ -3,6 +3,7 @@ import {
   type DependencyList,
   type EffectCallback,
 } from "react";
+import { isTrayInstrumentationEnabled } from "./config";
 
 const MIN_REPORTED_DURATION_MS = 0.25;
 const MAX_RECORDED_EVENTS = 4096;
@@ -53,7 +54,7 @@ export const useProfiledTrayLayoutEffect = (
   // list explicit preserves each existing effect's scheduling semantics.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
-    if (!__DEV__) {
+    if (!isTrayInstrumentationEnabled()) {
       return effect();
     }
 

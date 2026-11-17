@@ -9,8 +9,8 @@ import Animated, {
 import { SymbolView } from "expo-symbols";
 import {
   Tray,
-  useTrayNavigationActions,
   useTrayPages,
+  useTrayNavigation,
 } from "react-native-morpheus";
 import {
   FULL_SCREEN_HEADER_PADDING_TOP,
@@ -82,7 +82,7 @@ export const OnboardingPageHeader = ({
   rightAccessory?: React.ReactNode;
   showProgress?: boolean;
 }) => {
-  const { requestClose } = useTrayNavigationActions();
+  const { requestClose } = useTrayNavigation();
   const { pageIndex, totalPages, backPage, progress } = useTrayPages();
   const isFirstPage = pageIndex === 0;
 

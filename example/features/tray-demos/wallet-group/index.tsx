@@ -6,6 +6,7 @@ import Animated, { Easing, FadeIn, FadeOut } from "react-native-reanimated";
 import {
   Tray,
   useTrayNavigation,
+  useTrayNavigationState,
 } from "react-native-morpheus";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { PressableScale } from "@/shared/ui/pressable-scale";
@@ -446,7 +447,8 @@ const CreateWalletGroupConfirmationStep = () => {
 };
 
 const WalletGroupFooter = () => {
-  const { index, total, next, close } = useTrayNavigation();
+  const { next, close } = useTrayNavigation();
+  const { index, total } = useTrayNavigationState();
   const isLastStep = total > 0 && index === total - 1;
   const label = isLastStep ? "Continue" : "Next";
 

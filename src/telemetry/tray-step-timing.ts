@@ -37,6 +37,10 @@ type TrayStepTimingTrace = {
   snapshotReactRender?: TrayStepReactRenderSample;
   incomingReactRenderCount: number;
   snapshotReactRenderCount: number;
+  // React render time spent before the animation started (blocks the tap)
+  blockingReactRenderMs: number;
+  // React commits observed while the transition was animating
+  reactCommitsDuringLayout: number;
   keyboardIntentAt?: number;
   keyboardFocusAt?: number;
   keyboardWillShowAt?: number;
@@ -62,6 +66,8 @@ export type TrayStepTimingSummary = {
   snapshotReactRender?: TrayStepReactRender;
   incomingReactRenderCount: number;
   snapshotReactRenderCount: number;
+  blockingReactRenderMs: number;
+  reactCommitsDuringLayout: number;
   keyboardIntentToFocusMs?: number;
   keyboardFocusToWillShowMs?: number;
   keyboardWillShowToLayoutStartMs?: number;
@@ -190,6 +196,8 @@ const tryFinishTrace = (rootTrayId: string) => {
     snapshotReactRender: toRenderSummary(trace.snapshotReactRender),
     incomingReactRenderCount: trace.incomingReactRenderCount,
     snapshotReactRenderCount: trace.snapshotReactRenderCount,
+    blockingReactRenderMs: round(trace.blockingReactRenderMs),
+    reactCommitsDuringLayout: trace.reactCommitsDuringLayout,
     keyboardIntentToFocusMs:
       trace.keyboardIntentAt !== undefined &&
       trace.keyboardFocusAt !== undefined
@@ -272,6 +280,8 @@ export const markTrayStepRequested = (
     transitionGeneration,
     requestedAt: now(),
     incomingReactRenderCount: 0,
+    blockingReactRenderMs: 0,
+    reactCommitsDuringLayout: 0,
     snapshotReactRenderCount: 0,
   });
 };
@@ -380,6 +390,12 @@ export const markTrayStepReactRenderStarted = (
     profilerSpanMs: profilerCommitTime - profilerStartTime,
     observedAt,
   };
+
+  if (trace.layoutStartedAt === undefined) {
+    trace.blockingReactRenderMs += actualDurationMs;
+  } else if (trace.layoutFinishedAt === undefined) {
+    trace.reactCommitsDuringLayout += 1;
+  }
 
   if (
     trace.snapshotAt === undefined

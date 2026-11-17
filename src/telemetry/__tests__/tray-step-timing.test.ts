@@ -129,6 +129,8 @@ describe("tray step timing", () => {
         },
         incomingReactRenderCount: 1,
         snapshotReactRenderCount: 1,
+        blockingReactRenderMs: 6,
+        reactCommitsDuringLayout: 0,
         keyboardIntentToFocusMs: undefined,
         keyboardFocusToWillShowMs: undefined,
         keyboardWillShowToLayoutStartMs: undefined,

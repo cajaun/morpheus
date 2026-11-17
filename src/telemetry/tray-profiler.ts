@@ -1,5 +1,6 @@
 import React from "react";
 import { isTrayInstrumentationEnabled } from "./config";
+import { recordTrayTelemetry } from "./tray-telemetry-buffer";
 
 // log profiler commits only while the explicit development instrumentation flag is enabled
 export const logTrayProfilerCommit = (
@@ -15,7 +16,7 @@ export const logTrayProfilerCommit = (
     return;
   }
 
-  console.log("[TrayProfiler]", {
+  recordTrayTelemetry("TrayProfiler", {
     id,
     phase,
     actualDurationMs: Number(actualDuration.toFixed(2)),

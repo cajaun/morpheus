@@ -2,7 +2,11 @@ import type { ComponentProps } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SymbolView } from "expo-symbols";
-import { Tray, useTrayNavigation } from "react-native-morpheus";
+import {
+  Tray,
+  useTrayNavigation,
+  useTrayNavigationState,
+} from "react-native-morpheus";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { AnimatedOnboardingButton } from "@/features/tray-demos/presets/content/button";
 import { PressableScale } from "@/shared/ui/pressable-scale";
@@ -21,7 +25,8 @@ const RED = "#FF3B4D";
 const GREEN = "#22C766";
 
 const DynamicHeightsFooter = () => {
-  const { next, index, total, close, back } = useTrayNavigation();
+  const { next, close, back } = useTrayNavigation();
+  const { index, total } = useTrayNavigationState();
   const isFirstStep = index === 0;
   const isLastStep = index === total - 1;
 
@@ -43,7 +48,8 @@ const DynamicHeightsFooter = () => {
 };
 
 const DynamicHeightsHeader = ({ title }: { title: string }) => {
-  const { close, back, index } = useTrayNavigation();
+  const { close, back } = useTrayNavigation();
+  const { index } = useTrayNavigationState();
   const left =
     index > 0 ? (
       <Tray.HeaderButton onPress={back}>

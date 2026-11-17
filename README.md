@@ -45,11 +45,14 @@ import { Text } from "react-native";
 import {
   Tray,
   useTrayNavigation,
-  useTrayNavigationActions,
+  useTrayNavigationState,
 } from "react-native-morpheus";
 
 function TrayFooter() {
-  const { next, close, index, total } = useTrayNavigation();
+  const { next, close } = useTrayNavigation();
+  const isLastStep = useTrayNavigationState(
+    (state) => state.index >= state.total - 1,
+  );
 
   return (
     <Tray.Footer>
@@ -73,7 +76,7 @@ function TrayFooter() {
 }
 
 function BackAction() {
-  const { back } = useTrayNavigationActions();
+  const { back } = useTrayNavigation();
 
   return (
     <Tray.HeaderButton onPress={back}>
@@ -91,7 +94,7 @@ function StepHeader({
   title: string;
   canGoBack?: boolean;
 }) {
-  const { close } = useTrayNavigationActions();
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Header withSeparator>
@@ -202,15 +205,38 @@ Root `stepOptions` are inherited by every step and can be overridden by
 that step's `options` prop. `Tray.Root` and `Tray.Nested` no longer accept a
 `steps` prop.
 
-Consumer hooks include `useTrayNavigation`, `useTrayNavigationActions`, `useTrayKeyboard`, `useTrayPages`,
+Consumer hooks include `useTrayNavigation`, `useTrayNavigationState`, `useTrayKeyboard`, `useTrayPages`,
 `useOptionalTrayPages`, and `useTrayProgress`. Focused animation hooks include
 `useTrayMorphProgress` and `useTrayOriginProgress`. Advanced integrations can
 use `useTrayHost` and `useTrayTransitionLifecycle`.
 
-Use `useTrayNavigation` when a component renders navigation state such as the
-current step or page index. Use `useTrayNavigationActions` for controls that
-only dispatch commands such as close and back buttons; it reads the latest
-state when pressed without subscribing the control to every step update.
+`useTrayNavigation` returns navigation commands (`next`, `back`, `close`,
+`requestClose`, `open`, `closeAndNextParentPage`). It subscribes to no state,
+so pressing next or back never re-renders the step being left; commands read
+the latest state when pressed. Use `useTrayNavigationState` only in components
+that render navigation state, and pass a selector so they re-render only when
+that slice changes:
+
+```tsx
+const index = useTrayNavigationState((state) => state.index);
+```
+
+### Migrating to 3.0
+
+In 2.x, `useTrayNavigation` also returned `index`, `total`, `isActive`,
+`canGoNext`, `canGoBack` and `pageIndex`, which re-rendered every consumer on
+every step change. In 3.0 those fields moved to `useTrayNavigationState`:
+
+```tsx
+// 2.x
+const { next, index, total } = useTrayNavigation();
+
+// 3.0
+const { next } = useTrayNavigation();
+const { index, total } = useTrayNavigationState();
+```
+
+`useTrayNavigationActions` remains as a deprecated alias of `useTrayNavigation`.
 
 Package-level layout constants that are intentionally public are available from `react-native-morpheus/constants`.
 

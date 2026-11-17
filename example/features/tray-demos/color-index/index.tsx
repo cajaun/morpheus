@@ -9,6 +9,7 @@ import {
   Tray,
   useTrayNavigation,
   useTrayMorphProgress,
+  useTrayNavigationState,
 } from "react-native-morpheus";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
@@ -55,7 +56,8 @@ const COLOR_STEPS: ColorStep[] = [
 ];
 
 const ColorIndexHeader = ({ step }: { step: ColorStep }) => {
-  const { close, back, index } = useTrayNavigation();
+  const { close, back } = useTrayNavigation();
+  const { index } = useTrayNavigationState();
   const left =
     index > 0 ? (
       <Tray.HeaderButton onPress={back}>

@@ -18,6 +18,8 @@ export { useTrayKeyboard } from "./use-tray-keyboard";
 export {
   useTrayNavigation,
   useTrayNavigationActions,
+  useTrayNavigationState,
+  type TrayNavigationState,
 } from "./use-tray-navigation";
 export type {
   ResolvedTrayStepOptions,
