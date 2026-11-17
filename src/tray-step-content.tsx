@@ -10,6 +10,7 @@ import Animated, {
   Easing,
   EntryExitAnimationFunction,
   interpolate,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -398,6 +399,27 @@ export const TrayStepContent: React.FC<Props> = ({
   );
 };
 
+// The title slides between its source and target centered offsets on the
+// shared morph clock. The source width must be the width on screen when a
+// transition starts. Without this, the start width kept the value from the
+// transition before (two titles ago), so on the frames between the clock
+// reset and the new title's onLayout the title jumped toward a stale offset,
+// then snapped back once measured.
+export const resolveSettledTitleStartWidth = (
+  progress: number,
+  previousProgress: number | null,
+  startWidth: number,
+  width: number,
+) => {
+  "worklet";
+
+  const transitionSettled = progress >= 1;
+  const transitionRestarted =
+    previousProgress !== null && progress < previousProgress;
+
+  return transitionSettled || transitionRestarted ? width : startWidth;
+};
+
 type TrayHeaderTransitionRowProps = {
   title: React.ReactNode;
   left?: React.ReactNode;
@@ -435,6 +457,25 @@ const TrayHeaderTransitionRowImpl: React.FC<TrayHeaderTransitionRowProps> = ({
   useEffect(() => {
     previousLeftVisibleRef.current = centered;
   }, [centered]);
+
+  // Keep the slide's source width equal to the width on screen whenever a
+  // transition settles or restarts (see resolveSettledTitleStartWidth).
+  useAnimatedReaction(
+    () => morphProgress?.value ?? 1,
+    (progress, previousProgress) => {
+      const nextStartWidth = resolveSettledTitleStartWidth(
+        progress,
+        previousProgress,
+        titleStartWidth.value,
+        titleWidth.value,
+      );
+
+      if (nextStartWidth !== titleStartWidth.value) {
+        titleStartWidth.value = nextStartWidth;
+      }
+    },
+    [morphProgress],
+  );
 
   const titlePositionStyle = useAnimatedStyle(() => {
     const progress = morphProgress?.value ?? 1;
