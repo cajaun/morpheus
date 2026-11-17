@@ -271,6 +271,11 @@ const PresentedTray = ({
 }: PresentedTrayProps) => {
   const runtime = useTrayRuntimeStore();
   const transitionContract = payload.transitionContract;
+  const onCloseCompleteRef = useRef(onCloseComplete);
+  onCloseCompleteRef.current = onCloseComplete;
+  const handleCloseComplete = useCallback(() => {
+    onCloseCompleteRef.current?.();
+  }, []);
   const payloadStoreRef = useRef<{
     assignmentId: number;
     prepared: boolean;
@@ -421,7 +426,7 @@ const PresentedTray = ({
       header={header}
       footer={footer}
       onClose={handleRequestClose}
-      onCloseComplete={prepared ? undefined : onCloseComplete}
+      onCloseComplete={prepared ? undefined : handleCloseComplete}
       trayId={payload.trayId}
       keyboardAware={payload.keyboardAware ?? payload.stepOptions.keyboardAware}
       keyboardStickyCapable={payload.keyboardStickyCapable}

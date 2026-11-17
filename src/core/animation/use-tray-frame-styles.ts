@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   interpolate,
   useAnimatedReaction,
@@ -219,49 +219,69 @@ export const useTrayFrameStyles = ({
     ],
   );
   // let boundary layout own the shell frame while the absolute footer follows it
-  const presentationFrameStyle =
-    !fullScreenBoundaryTransition && fullScreen
-    ? {
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
-        height: SCREEN_HEIGHT,
-      }
-    : !fullScreenBoundaryTransition &&
-        hasPreparedSheetFrame
-      ? {
-          left: HORIZONTAL_MARGIN,
-          right: HORIZONTAL_MARGIN,
-          top: "auto" as const,
-          bottom: HORIZONTAL_MARGIN + targetBottomInset,
-          height: preparedSheetHeight,
-        }
-      : undefined;
+  // Keep plain geometry styles referentially stable so the memoized shell can
+  // skip renders when the geometry inputs have not changed.
+  const presentationFrameStyle = useMemo(
+    () =>
+      !fullScreenBoundaryTransition && fullScreen
+        ? {
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            height: SCREEN_HEIGHT,
+          }
+        : !fullScreenBoundaryTransition && hasPreparedSheetFrame
+          ? {
+              left: HORIZONTAL_MARGIN,
+              right: HORIZONTAL_MARGIN,
+              top: "auto" as const,
+              bottom: HORIZONTAL_MARGIN + targetBottomInset,
+              height: preparedSheetHeight,
+            }
+          : undefined,
+    [
+      fullScreen,
+      fullScreenBoundaryTransition,
+      hasPreparedSheetFrame,
+      preparedSheetHeight,
+      targetBottomInset,
+    ],
+  );
 
   // establish the source viewport with the fullscreen snapshot so flex content cannot measure at header height
-  const contentBoundarySourceStyle =
-    fullScreenBoundaryTransition &&
-    !(fullScreenBoundaryTargetFullScreen === false && !fullScreen)
-    ? {
-        position: "absolute" as const,
-        top: 0,
-        bottom: 0,
-        left: 0,
-        width:
-          (fullScreenBoundarySourceFullScreen ?? !fullScreen)
-            ? SCREEN_WIDTH
-            : SCREEN_WIDTH - HORIZONTAL_MARGIN * 2,
-        // bound the incoming flex tree to the source height until the ui boundary frame publishes
-        height:
-          (fullScreenBoundarySourceFullScreen ?? !fullScreen)
-            ? SCREEN_HEIGHT
-            : hasPreparedSheetFrame
-              ? preparedSheetHeight
-              : undefined,
-        alignSelf: "flex-start" as const,
-      }
-    : undefined;
+  const contentBoundarySourceStyle = useMemo(
+    () =>
+      fullScreenBoundaryTransition &&
+      !(fullScreenBoundaryTargetFullScreen === false && !fullScreen)
+        ? {
+            position: "absolute" as const,
+            top: 0,
+            bottom: 0,
+            left: 0,
+            width:
+              (fullScreenBoundarySourceFullScreen ?? !fullScreen)
+                ? SCREEN_WIDTH
+                : SCREEN_WIDTH - HORIZONTAL_MARGIN * 2,
+            // bound the incoming flex tree to the source height until the ui boundary frame publishes
+            height:
+              (fullScreenBoundarySourceFullScreen ?? !fullScreen)
+                ? SCREEN_HEIGHT
+                : hasPreparedSheetFrame
+                  ? preparedSheetHeight
+                  : undefined,
+            alignSelf: "flex-start" as const,
+          }
+        : undefined,
+    [
+      fullScreen,
+      fullScreenBoundarySourceFullScreen,
+      fullScreenBoundaryTargetFullScreen,
+      fullScreenBoundaryTransition,
+      hasPreparedSheetFrame,
+      preparedSheetHeight,
+    ],
+  );
 
   const sourceFullScreen =
     fullScreenBoundarySourceFullScreen ?? !fullScreen;
@@ -271,15 +291,23 @@ export const useTrayFrameStyles = ({
       : hasPreparedSheetFrame
         ? preparedSheetFrame?.contentHeight
         : contentHeightSnapshot;
-  const contentBoundarySourceViewportStyle =
-    resolveBoundaryContentSourceViewportStyle({
+  const resolvedSourceContentHeight =
+    sourceContentHeight !== undefined && sourceContentHeight > 0
+      ? sourceContentHeight
+      : undefined;
+  const contentBoundarySourceViewportStyle = useMemo(
+    () =>
+      resolveBoundaryContentSourceViewportStyle({
+        fullScreenBoundaryTransition,
+        sourceFullScreen,
+        sourceContentHeight: resolvedSourceContentHeight,
+      }),
+    [
       fullScreenBoundaryTransition,
+      resolvedSourceContentHeight,
       sourceFullScreen,
-      sourceContentHeight:
-        sourceContentHeight !== undefined && sourceContentHeight > 0
-          ? sourceContentHeight
-          : undefined,
-    });
+    ],
+  );
 
   const footerSpacerStyle = useAnimatedStyle(() => ({
     // the absolute footer does not participate in layout so the body still reserves its measured space when the shell derives its sheet height

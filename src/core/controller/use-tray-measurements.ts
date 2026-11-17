@@ -96,19 +96,28 @@ export const useTrayMeasurements = ({
   onGeometryMeasured,
 }: Params) => {
   const [layoutEnabled, setLayoutEnabled] = useState(false);
-  const [footerMeasured, setFooterMeasured] = useState(false);
-  const [contentMeasured, setContentMeasured] = useState(false);
-  const [pendingOpen, setPendingOpen] = useState(false);
-  // Keep the layout callback stable when its one-time readiness flag changes.
-  const contentMeasuredRef = useRef(contentMeasured);
+  const [isReadyToOpen, setIsReadyToOpen] = useState(false);
+  // Measurement readiness is controller bookkeeping. Keep individual arrivals
+  // in refs and publish one React update only after all open geometry is ready.
+  const footerMeasuredRef = useRef(false);
+  const contentMeasuredRef = useRef(false);
+  const pendingOpenRef = useRef(false);
+  const syncOpenReadiness = useCallback(() => {
+    const ready =
+      pendingOpenRef.current &&
+      contentMeasuredRef.current &&
+      footerMeasuredRef.current;
+
+    setIsReadyToOpen((current) => (current === ready ? current : ready));
+  }, []);
   const markContentMeasured = useCallback(() => {
     if (contentMeasuredRef.current) {
       return;
     }
 
     contentMeasuredRef.current = true;
-    setContentMeasured(true);
-  }, []);
+    syncOpenReadiness();
+  }, [syncOpenReadiness]);
 
   // refs provide synchronous reads across layout callbacks and spring setup
   const latestMeasuredContentHeightRef = useRef(0);
@@ -201,9 +210,10 @@ export const useTrayMeasurements = ({
 
       setLayoutEnabled(false);
       contentMeasuredRef.current = false;
-      setContentMeasured(false);
-      setFooterMeasured(!hasFooter || canReuseVisibleFooterMeasurement);
-      setPendingOpen(true);
+      footerMeasuredRef.current =
+        !hasFooter || canReuseVisibleFooterMeasurement;
+      pendingOpenRef.current = true;
+      syncOpenReadiness();
     },
     [
       contentHeight,
@@ -213,6 +223,7 @@ export const useTrayMeasurements = ({
       renderedFooter,
       renderedFullScreen,
       renderedTrayId,
+      syncOpenReadiness,
     ],
   );
 
@@ -226,14 +237,16 @@ export const useTrayMeasurements = ({
 
   const completePendingOpen = useCallback(() => {
     // pending open ends before the ui spring starts so later layouts can animate
-    setPendingOpen(false);
-  }, []);
+    pendingOpenRef.current = false;
+    syncOpenReadiness();
+  }, [syncOpenReadiness]);
 
   const prepareForClose = useCallback(() => {
     // closing disables layout animation so teardown does not morph stale content
-    setPendingOpen(false);
+    pendingOpenRef.current = false;
+    syncOpenReadiness();
     setLayoutEnabled(false);
-  }, []);
+  }, [syncOpenReadiness]);
 
   const reset = useCallback(() => {
     // full reset is used only when a host slot is cleared or reassigned
@@ -253,9 +266,9 @@ export const useTrayMeasurements = ({
     measuredFooterHeight.value = 0;
 
     contentMeasuredRef.current = false;
-    setContentMeasured(false);
-    setFooterMeasured(false);
-    setPendingOpen(false);
+    footerMeasuredRef.current = false;
+    pendingOpenRef.current = false;
+    syncOpenReadiness();
     setLayoutEnabled(false);
   }, [
     contentHeight,
@@ -263,6 +276,7 @@ export const useTrayMeasurements = ({
     measuredContentHeight,
     measuredFooterHeight,
     resolvedContentHeight,
+    syncOpenReadiness,
   ]);
 
   const commitContentHeight = useCallback(
@@ -630,7 +644,8 @@ export const useTrayMeasurements = ({
         measuredFooterHeight: height,
       });
       if (height > 1) {
-        setFooterMeasured(true);
+        footerMeasuredRef.current = true;
+        syncOpenReadiness();
       }
     },
     [
@@ -643,6 +658,7 @@ export const useTrayMeasurements = ({
       renderedFooter,
       renderedSnapshotRef,
       renderedTrayId,
+      syncOpenReadiness,
     ],
   );
 
@@ -661,10 +677,7 @@ export const useTrayMeasurements = ({
     },
     state: {
       layoutEnabled,
-      footerMeasured,
-      contentMeasured,
-      pendingOpen,
-      isReadyToOpen: pendingOpen && contentMeasured && footerMeasured,
+      isReadyToOpen,
     },
     actions: {
       beginOpenMeasurement,

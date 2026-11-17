@@ -1,5 +1,6 @@
 import type {
   TrayHostActionsValue,
+  TrayPagesRegistration,
   TrayRegistration,
 } from "../types";
 import { areTrayRegistrationsEquivalent } from "../registration-equality";
@@ -14,6 +15,21 @@ type RegistrationActions = Pick<
   TrayHostActionsValue,
   "registerTray" | "unregisterTray" | "registerTrayPages"
 >;
+
+const areTrayPagesEquivalent = (
+  previous: TrayPagesRegistration,
+  next: TrayPagesRegistration,
+) =>
+  previous.stepKey === next.stepKey &&
+  previous.pageIndex === next.pageIndex &&
+  previous.totalPages === next.totalPages &&
+  previous.hasFooter === next.hasFooter &&
+  previous.canGoNext === next.canGoNext &&
+  previous.canGoBack === next.canGoBack &&
+  previous.nextPage === next.nextPage &&
+  previous.backPage === next.backPage &&
+  previous.setPage === next.setPage &&
+  previous.progress === next.progress;
 
 // registration commands keep the runtime registry aligned with rendered trays
 export const createTrayRuntimeRegistrationActions = ({
@@ -80,7 +96,15 @@ export const createTrayRuntimeRegistrationActions = ({
     setState((current) => {
       const registration = current.registry[id];
 
-      if (!registration || registration.pages === pages) {
+      const previousPages = registration?.pages;
+
+      if (
+        !registration ||
+        (pages === null && previousPages === undefined) ||
+        (pages !== null &&
+          previousPages !== undefined &&
+          areTrayPagesEquivalent(previousPages, pages))
+      ) {
         return current;
       }
 
@@ -95,7 +119,6 @@ export const createTrayRuntimeRegistrationActions = ({
         },
       };
 
-      const previousPages = registration.pages;
       const recordsPageChange =
         pages !== null &&
         previousPages !== undefined &&

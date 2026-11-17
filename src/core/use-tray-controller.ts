@@ -607,9 +607,6 @@ export const useTrayController = ({
   const state = useMemo(
     () => ({
       layoutEnabled: measurements.state.layoutEnabled,
-      footerMeasured: measurements.state.footerMeasured,
-      contentMeasured: measurements.state.contentMeasured,
-      pendingOpen: measurements.state.pendingOpen,
       contentHeightSnapshot,
       preparedSheetFrame: geometry.state.preparedSheetFrame,
       isSurfaceReady: openCloseLifecycle.state.isSurfaceReady,
@@ -634,10 +631,7 @@ export const useTrayController = ({
       contentHeightSnapshot,
       frameFullScreen,
       geometry.state.preparedSheetFrame,
-      measurements.state.contentMeasured,
-      measurements.state.footerMeasured,
       measurements.state.layoutEnabled,
-      measurements.state.pendingOpen,
       openCloseLifecycle.state.isSurfaceReady,
       renderState.state.renderedClassName,
       renderState.state.renderedContainerStyle,

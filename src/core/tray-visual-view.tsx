@@ -680,6 +680,193 @@ const TrayFooterSurface = React.memo(
 
 TrayFooterSurface.displayName = "TrayFooterSurface";
 
+type TraySheetSurfaceProps = Pick<
+  TraySurfaceProps,
+  | "style"
+  | "renderedClassName"
+  | "renderedContainerStyle"
+  | "renderedHeader"
+  | "renderedContent"
+  | "renderSnapshotStore"
+  | "renderedFullScreen"
+  | "contentMotionDirection"
+  | "trayTransitionStart"
+  | "layoutAnimationConfig"
+  | "instrumentationEnabled"
+  | "shouldUseLayoutAnimation"
+  | "isFullScreenBoundaryTransition"
+  | "handleContentLayout"
+  | "handleShellLayout"
+  | "footerSpacerStyle"
+  | "contentBoundarySourceStyle"
+  | "contentBoundarySourceViewportStyle"
+  | "contentFrameStyle"
+  | "contentPaddingStyle"
+  | "contentRevealStyle"
+  | "contentViewportStyle"
+  | "headerFrameStyle"
+  | "presentationFrameStyle"
+  | "trayLayoutStyle"
+  | "dragStyle"
+  | "surfaceVisibilityStyle"
+  | "originSurfaceVisibilityStyle"
+  | "fullScreenSafeAreaContentStyle"
+> & {
+  hasHeader: boolean;
+};
+
+// Keep the gesture-bound animated sheet isolated from footer-only and other
+// surface updates. Its shallow props are the inputs that can affect the sheet;
+// stable inputs let React skip rerendering Reanimated's Animated.View wrapper.
+const TraySheetSurface = React.memo(
+  ({
+    style,
+    renderedClassName,
+    renderedContainerStyle,
+    renderedHeader,
+    renderedContent,
+    renderSnapshotStore,
+    renderedFullScreen,
+    contentMotionDirection,
+    trayTransitionStart,
+    layoutAnimationConfig,
+    instrumentationEnabled,
+    shouldUseLayoutAnimation,
+    isFullScreenBoundaryTransition,
+    handleContentLayout,
+    handleShellLayout,
+    footerSpacerStyle,
+    contentBoundarySourceStyle,
+    contentBoundarySourceViewportStyle,
+    contentFrameStyle,
+    contentPaddingStyle,
+    contentRevealStyle,
+    contentViewportStyle: contentViewportStyleInput,
+    headerFrameStyle,
+    presentationFrameStyle,
+    trayLayoutStyle,
+    dragStyle,
+    surfaceVisibilityStyle,
+    originSurfaceVisibilityStyle,
+    fullScreenSafeAreaContentStyle,
+    hasHeader,
+  }: TraySheetSurfaceProps) => {
+    const sheetStyle = useMemo(
+      () => [
+        trayStyles.container,
+        trayLayoutStyle,
+        presentationFrameStyle,
+        renderedContainerStyle,
+        surfaceVisibilityStyle,
+        originSurfaceVisibilityStyle,
+        dragStyle,
+        style,
+      ],
+      [
+        dragStyle,
+        originSurfaceVisibilityStyle,
+        presentationFrameStyle,
+        renderedContainerStyle,
+        style,
+        surfaceVisibilityStyle,
+        trayLayoutStyle,
+      ],
+    );
+    const contentStyle = useMemo(
+      () => [
+        trayStyles.content,
+        // apply the clock aware frame last so target topology wins
+        ...(isFullScreenBoundaryTransition
+          ? [contentBoundarySourceStyle, contentFrameStyle]
+          : [contentFrameStyle]),
+        contentRevealStyle,
+      ],
+      [
+        contentBoundarySourceStyle,
+        contentFrameStyle,
+        contentRevealStyle,
+        isFullScreenBoundaryTransition,
+      ],
+    );
+    const contentViewportStyle = useMemo(
+      () => [
+        contentPaddingStyle,
+        contentBoundarySourceViewportStyle,
+        contentViewportStyleInput,
+        fullScreenSafeAreaContentStyle,
+      ],
+      [
+        contentBoundarySourceViewportStyle,
+        contentPaddingStyle,
+        contentViewportStyleInput,
+        fullScreenSafeAreaContentStyle,
+      ],
+    );
+    const fullScreenContentStyle = useMemo(
+      () => (renderedFullScreen ? { flex: 1 } : undefined),
+      [renderedFullScreen],
+    );
+    const headerStyle = useMemo(
+      () => [localStyles.headerContainer, headerFrameStyle],
+      [headerFrameStyle],
+    );
+
+    return (
+      <TrayGestureRegion>
+        <Animated.View
+          className={renderedClassName}
+          style={sheetStyle}
+          onLayout={instrumentationEnabled ? handleShellLayout : undefined}
+          layout={shouldUseLayoutAnimation ? layoutAnimationConfig : undefined}
+        >
+          <Animated.View style={contentStyle}>
+            <Animated.View style={contentViewportStyle}>
+              <Animated.View
+                // Measure the content snapshot, not the animated boundary
+                // viewport that can retain the previous endpoint's height.
+                collapsable={false}
+                onLayout={handleContentLayout}
+                style={fullScreenContentStyle}
+              >
+                <TrayContentMotionDirectionProvider
+                  value={contentMotionDirection}
+                >
+                  <TrayTransitionStartProvider value={trayTransitionStart}>
+                    {hasHeader ? (
+                      <Animated.View style={headerStyle}>
+                        {renderSnapshotStore ? (
+                          <TraySnapshotRegion
+                            store={renderSnapshotStore}
+                            region="header"
+                          />
+                        ) : (
+                          <TrayRenderedNode node={renderedHeader} />
+                        )}
+                      </Animated.View>
+                    ) : null}
+                    {renderSnapshotStore ? (
+                      <TraySnapshotRegion
+                        store={renderSnapshotStore}
+                        region="content"
+                      />
+                    ) : (
+                      <TrayRenderedNode node={renderedContent} />
+                    )}
+                  </TrayTransitionStartProvider>
+                </TrayContentMotionDirectionProvider>
+              </Animated.View>
+            </Animated.View>
+            {/* reserve footer space the footer itself is absolute and does not participate in content measurement */}
+            <Animated.View style={footerSpacerStyle} />
+          </Animated.View>
+        </Animated.View>
+      </TrayGestureRegion>
+    );
+  },
+);
+
+TraySheetSurface.displayName = "TraySheetSurface";
+
 const TraySurface = React.memo(
   ({
     hasFooter,
@@ -736,116 +923,235 @@ const TraySurface = React.memo(
     }, [hasFooter, surfaceFooter]);
 
     return (
-    <>
-      <TrayGestureRegion>
-        <Animated.View
-          className={surfaceClassName}
+      <>
+        <TraySheetSurface
+          style={style}
+          renderedClassName={surfaceClassName}
+          renderedContainerStyle={surfaceContainerStyle}
+          renderedHeader={renderSnapshotStore ? null : surfaceHeader}
+          renderedContent={renderSnapshotStore ? null : surfaceContent}
+          renderSnapshotStore={renderSnapshotStore}
+          renderedFullScreen={renderedFullScreen}
+          contentMotionDirection={contentMotionDirection}
+          trayTransitionStart={trayTransitionStart}
+          layoutAnimationConfig={layoutAnimationConfig}
+          instrumentationEnabled={instrumentationEnabled}
+          shouldUseLayoutAnimation={shouldUseLayoutAnimation}
+          isFullScreenBoundaryTransition={isFullScreenBoundaryTransition}
+          handleContentLayout={handleContentLayout}
+          handleShellLayout={handleShellLayout}
+          footerSpacerStyle={footerSpacerStyle}
+          contentBoundarySourceStyle={contentBoundarySourceStyle}
+          contentBoundarySourceViewportStyle={
+            contentBoundarySourceViewportStyle
+          }
+          contentFrameStyle={contentFrameStyle}
+          contentPaddingStyle={contentPaddingStyle}
+          contentRevealStyle={contentRevealStyle}
+          contentViewportStyle={contentViewportStyle}
+          headerFrameStyle={headerFrameStyle}
+          presentationFrameStyle={presentationFrameStyle}
+          trayLayoutStyle={trayLayoutStyle}
+          dragStyle={dragStyle}
+          surfaceVisibilityStyle={surfaceVisibilityStyle}
+          originSurfaceVisibilityStyle={originSurfaceVisibilityStyle}
+          fullScreenSafeAreaContentStyle={fullScreenSafeAreaContentStyle}
+          hasHeader={surfaceHeader != null}
+        />
+        {/* fixed footers stay outside the layout animated shell only a fullscreen boundary may move this layer and then it follows the shell s explicit morph clock rather than content layout */}
+        <TrayFooterSurface
+          className={surfaceFooterClassName}
+          hasFooter={Boolean(surfaceFooter)}
+          onLayout={handleVisibleFooterLayout}
           style={[
-            trayStyles.container,
-            trayLayoutStyle,
-            presentationFrameStyle,
-            surfaceContainerStyle,
-            surfaceVisibilityStyle,
-            originSurfaceVisibilityStyle,
+            trayStyles.footer,
             dragStyle,
-            style,
+            surfaceFooterStyle,
+            footerContainerStyle,
+            footerVisibilityStyle,
           ]}
-          onLayout={instrumentationEnabled ? handleShellLayout : undefined}
-          layout={shouldUseLayoutAnimation ? layoutAnimationConfig : undefined}
         >
-          <Animated.View
-            style={[
-              trayStyles.content,
-              // apply the clock aware frame last so target topology wins
-              ...(isFullScreenBoundaryTransition
-                ? [contentBoundarySourceStyle, contentFrameStyle]
-                : [contentFrameStyle]),
-              contentRevealStyle,
-            ]}
-          >
-            <Animated.View
-              style={[
-                contentPaddingStyle,
-                contentBoundarySourceViewportStyle,
-                contentViewportStyle,
-                fullScreenSafeAreaContentStyle,
-              ]}
-            >
-              <Animated.View
-                // Measure the content snapshot, not the animated boundary
-                // viewport that can retain the previous endpoint's height.
-                collapsable={false}
-                onLayout={handleContentLayout}
-                style={renderedFullScreen ? { flex: 1 } : undefined}
-              >
-                <TrayContentMotionDirectionProvider
-                  value={contentMotionDirection}
-                >
-                  <TrayTransitionStartProvider value={trayTransitionStart}>
-                    {surfaceHeader ? (
-                      <Animated.View
-                        style={[localStyles.headerContainer, headerFrameStyle]}
-                      >
-                        {renderSnapshotStore ? (
-                          <TraySnapshotRegion
-                            store={renderSnapshotStore}
-                            region="header"
-                          />
-                        ) : (
-                          <TrayRenderedNode node={surfaceHeader} />
-                        )}
-                      </Animated.View>
-                    ) : null}
-                    {renderSnapshotStore ? (
-                      <TraySnapshotRegion
-                        store={renderSnapshotStore}
-                        region="content"
-                      />
-                    ) : (
-                      <TrayRenderedNode node={surfaceContent} />
-                    )}
-                  </TrayTransitionStartProvider>
-                </TrayContentMotionDirectionProvider>
-              </Animated.View>
-            </Animated.View>
-            {/* reserve footer space the footer itself is absolute and does not participate in content measurement */}
-            <Animated.View style={footerSpacerStyle} />
+          <Animated.View style={footerContentFrameStyle}>
+            <TrayOriginProgressProvider value={originProgress}>
+              {renderSnapshotStore ? (
+                <TraySnapshotRegion
+                  store={renderSnapshotStore}
+                  region="footer"
+                />
+              ) : (
+                <TrayRenderedNode node={surfaceFooter ?? null} />
+              )}
+            </TrayOriginProgressProvider>
           </Animated.View>
-        </Animated.View>
-      </TrayGestureRegion>
-      {/* fixed footers stay outside the layout animated shell only a fullscreen boundary may move this layer and then it follows the shell s explicit morph clock rather than content layout */}
-      <TrayFooterSurface
-        className={surfaceFooterClassName}
-        hasFooter={Boolean(surfaceFooter)}
-        onLayout={handleVisibleFooterLayout}
-        style={[
-          trayStyles.footer,
-          dragStyle,
-          surfaceFooterStyle,
-          footerContainerStyle,
-          footerVisibilityStyle,
-        ]}
-      >
-        <Animated.View style={footerContentFrameStyle}>
-          <TrayOriginProgressProvider value={originProgress}>
-            {renderSnapshotStore ? (
-              <TraySnapshotRegion
-                store={renderSnapshotStore}
-                region="footer"
-              />
-            ) : (
-              <TrayRenderedNode node={surfaceFooter ?? null} />
-            )}
-          </TrayOriginProgressProvider>
-        </Animated.View>
-      </TrayFooterSurface>
-    </>
+        </TrayFooterSurface>
+      </>
     );
   },
   areTraySurfacePropsEqual,
 );
 
 TraySurface.displayName = "TraySurface";
+
+type TrayVisualShellContentProps = {
+  assignmentId: number;
+  rootTrayId: TrayVisualViewProps["rootTrayId"];
+  trayId: TrayVisualViewProps["trayId"];
+  visible: TrayVisualViewProps["visible"];
+  interactionStateRef: { current: boolean };
+  surfaceProps: TraySurfaceProps;
+  morphProgress: TrayController["shared"]["morphProgress"];
+  progress: TrayController["shared"]["progress"];
+  renderedTrayId: TrayVisualViewProps["state"]["renderedTrayId"];
+  requiresFullScreenMotion: boolean;
+  shouldUseOriginTransition: boolean;
+  presentationFullScreen: boolean;
+  keyboardStickyCapable: boolean;
+  fullScreenSurfaceStyle: React.ComponentProps<typeof Animated.View>["style"];
+  fullScreenSurfaceFillStyle: React.ComponentProps<typeof Animated.View>["style"];
+  renderSnapshotOverride?: TrayVisualViewProps["renderSnapshotOverride"];
+};
+
+// The boundary controller runs on state updates that can leave the actual
+// native shell inputs unchanged. Keep construction of the full shell tree
+// behind this memo boundary so those updates only rebuild this component's
+// small element and compare its stable inputs.
+const TrayVisualShellContent = React.memo(
+  ({
+    assignmentId,
+    rootTrayId,
+    trayId,
+    visible,
+    interactionStateRef,
+    surfaceProps,
+    morphProgress,
+    progress,
+    renderedTrayId,
+    requiresFullScreenMotion,
+    shouldUseOriginTransition,
+    presentationFullScreen,
+    keyboardStickyCapable,
+    fullScreenSurfaceStyle,
+    fullScreenSurfaceFillStyle,
+    renderSnapshotOverride,
+  }: TrayVisualShellContentProps) => {
+    const shellId = `tray-region:${trayId ?? rootTrayId ?? assignmentId}:shell`;
+    const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
+      (
+        _id,
+        phase,
+        actualDuration,
+        baseDuration,
+        startTime,
+        commitTime,
+      ) =>
+        logTrayProfilerCommit(
+          shellId,
+          phase,
+          actualDuration,
+          baseDuration,
+          startTime,
+          commitTime,
+          {
+            region: "shell",
+            rootTrayId,
+            trayId,
+            assignmentId,
+            visible,
+            interactive: interactionStateRef.current,
+          },
+        ),
+      [
+        assignmentId,
+        interactionStateRef,
+        rootTrayId,
+        shellId,
+        trayId,
+        visible,
+      ],
+    );
+    const instrumentationEnabled = surfaceProps.instrumentationEnabled;
+    const shell = (
+      <TrayMorphProgressProvider value={morphProgress}>
+        {instrumentationEnabled ? (
+          <TraySnapshotTelemetry
+            store={surfaceProps.renderSnapshotStore}
+            override={renderSnapshotOverride}
+            rootTrayId={rootTrayId}
+            visible={visible}
+          />
+        ) : null}
+        {shouldUseOriginTransition ? (
+          <TrayOriginTransitionBackdrop
+            isRendered={renderedTrayId !== undefined}
+            originProgress={surfaceProps.originProgress}
+            progress={progress}
+          />
+        ) : (
+          <TrayInteractionBackdrop
+            isRendered={renderedTrayId !== undefined}
+            progress={progress}
+          />
+        )}
+        {requiresFullScreenMotion && renderedTrayId !== undefined && (
+          <Animated.View
+            className={
+              presentationFullScreen
+                ? surfaceProps.renderedClassName
+                : undefined
+            }
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFillObject,
+              fullScreenSurfaceStyle,
+              fullScreenSurfaceFillStyle,
+              surfaceProps.dragStyle,
+            ]}
+          />
+        )}
+        {renderedTrayId !== undefined && (
+          <TrayKeyboardStickyRegion
+            capable={keyboardStickyCapable}
+            enabled={
+              !presentationFullScreen &&
+              !surfaceProps.isFullScreenBoundaryTransition
+            }
+          >
+            <TraySurface {...surfaceProps} />
+          </TrayKeyboardStickyRegion>
+        )}
+      </TrayMorphProgressProvider>
+    );
+
+    if (!instrumentationEnabled) {
+      return shell;
+    }
+
+    return (
+      <React.Profiler id={shellId} onRender={handleProfileRender}>
+        {shell}
+      </React.Profiler>
+    );
+  },
+  (previous, next) =>
+    previous.assignmentId === next.assignmentId &&
+    previous.rootTrayId === next.rootTrayId &&
+    previous.trayId === next.trayId &&
+    previous.visible === next.visible &&
+    previous.interactionStateRef === next.interactionStateRef &&
+    areTraySurfacePropsEqual(previous.surfaceProps, next.surfaceProps) &&
+    previous.morphProgress === next.morphProgress &&
+    previous.progress === next.progress &&
+    previous.renderedTrayId === next.renderedTrayId &&
+    previous.requiresFullScreenMotion === next.requiresFullScreenMotion &&
+    previous.shouldUseOriginTransition === next.shouldUseOriginTransition &&
+    previous.presentationFullScreen === next.presentationFullScreen &&
+    previous.keyboardStickyCapable === next.keyboardStickyCapable &&
+    previous.fullScreenSurfaceStyle === next.fullScreenSurfaceStyle &&
+    previous.fullScreenSurfaceFillStyle === next.fullScreenSurfaceFillStyle &&
+    previous.renderSnapshotOverride === next.renderSnapshotOverride,
+);
+
+TrayVisualShellContent.displayName = "TrayVisualShellContent";
 
 // Own the visual/native subtree separately from the controller host. The
 // controller must still run for lifecycle and measurement state, but stable
@@ -1146,171 +1452,6 @@ const TrayVisualShell = React.memo(
           : undefined,
       [flattenedContainerStyle],
     );
-    const shellId = `tray-region:${trayId ?? rootTrayId ?? assignmentId}:shell`;
-    const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
-      (
-        _id,
-        phase,
-        actualDuration,
-        baseDuration,
-        startTime,
-        commitTime,
-      ) =>
-        logTrayProfilerCommit(
-          shellId,
-          phase,
-          actualDuration,
-          baseDuration,
-          startTime,
-          commitTime,
-          {
-            region: "shell",
-            rootTrayId,
-            trayId,
-            assignmentId,
-            visible,
-            interactive: interactionStateRef.current,
-          },
-        ),
-      [
-        assignmentId,
-        interactionStateRef,
-        rootTrayId,
-        shellId,
-        trayId,
-        visible,
-      ],
-    );
-
-    const renderShell = (
-      boundaryStyles: TrayBoundaryStyles | null,
-      animatedStyles: TrayAnimatedStyles,
-    ) => {
-      const {
-        footerSpacerStyle,
-        contentBoundarySourceStyle,
-        contentBoundarySourceViewportStyle,
-        contentFrameStyle,
-        contentViewportStyle,
-        headerFrameStyle,
-        presentationFrameStyle,
-        trayLayoutStyle,
-        footerContainerStyle,
-        contentPaddingStyle,
-        dragStyle,
-        surfaceVisibilityStyle,
-        originSurfaceVisibilityStyle,
-        contentRevealStyle,
-        footerVisibilityStyle,
-        footerContentFrameStyle,
-      } = animatedStyles;
-      const fullScreenSafeAreaContentStyle =
-        boundaryStyles?.fullScreenSafeAreaContentStyle;
-      const fullScreenSurfaceFillStyle =
-        boundaryStyles?.fullScreenSurfaceFillStyle;
-      const shell = (
-        <TrayMorphProgressProvider value={morphProgress}>
-          {instrumentationEnabled ? (
-            <TraySnapshotTelemetry
-              store={renderSnapshotStore}
-              override={renderSnapshotOverride}
-              rootTrayId={rootTrayId}
-              visible={visible}
-            />
-          ) : null}
-          {shouldUseOriginTransition ? (
-            <TrayOriginTransitionBackdrop
-              isRendered={renderedTrayId !== undefined}
-              originProgress={originProgress}
-              progress={progress}
-            />
-          ) : (
-            <TrayInteractionBackdrop
-              isRendered={renderedTrayId !== undefined}
-              progress={progress}
-            />
-          )}
-
-          {requiresFullScreenMotion && renderedTrayId !== undefined && (
-            <Animated.View
-              className={presentationFullScreen ? renderedClassName : undefined}
-              pointerEvents="none"
-              style={[
-                StyleSheet.absoluteFillObject,
-                fullScreenSurfaceStyle,
-                fullScreenSurfaceFillStyle,
-                dragStyle,
-              ]}
-            />
-          )}
-
-          {renderedTrayId !== undefined && (
-            // Only sheet endpoints participate in this native keyboard handoff.
-            // Fullscreen keyboard behavior is intentionally not carried to main.
-            <TrayKeyboardStickyRegion
-              capable={keyboardStickyCapable}
-              enabled={!presentationFullScreen && !isFullScreenBoundaryTransition}
-            >
-              <TraySurface
-                style={style}
-                renderedClassName={renderedClassName}
-                renderedContainerStyle={renderedContainerStyle}
-                renderedHeader={renderedHeader}
-                renderedContent={renderedContent}
-                renderedFooter={renderedFooter}
-                renderedFooterClassName={renderedFooterClassName}
-                renderedFooterStyle={renderedFooterStyle}
-                hasFooter={hasFooter}
-                renderSnapshotStore={renderSnapshotStore}
-                renderedFullScreen={presentationFullScreen}
-                contentMotionDirection={contentMotionDirection}
-                trayTransitionStart={trayTransitionStart}
-                layoutAnimationConfig={layoutAnimationConfig}
-                instrumentationEnabled={instrumentationEnabled}
-                shouldUseLayoutAnimation={shouldUseLayoutAnimation}
-                isFullScreenBoundaryTransition={
-                  isFullScreenBoundaryTransition
-                }
-                handleContentLayout={handleContentLayout}
-                handleVisibleFooterLayout={handleVisibleFooterLayout}
-                handleShellLayout={handleShellLayout}
-                footerSpacerStyle={footerSpacerStyle}
-                contentBoundarySourceStyle={contentBoundarySourceStyle}
-                contentBoundarySourceViewportStyle={
-                  contentBoundarySourceViewportStyle
-                }
-                contentFrameStyle={contentFrameStyle}
-                contentPaddingStyle={contentPaddingStyle}
-                contentRevealStyle={contentRevealStyle}
-                contentViewportStyle={contentViewportStyle}
-                headerFrameStyle={headerFrameStyle}
-                presentationFrameStyle={presentationFrameStyle}
-                trayLayoutStyle={trayLayoutStyle}
-                footerContainerStyle={footerContainerStyle}
-                dragStyle={dragStyle}
-                surfaceVisibilityStyle={surfaceVisibilityStyle}
-                originSurfaceVisibilityStyle={originSurfaceVisibilityStyle}
-                footerVisibilityStyle={footerVisibilityStyle}
-                footerContentFrameStyle={footerContentFrameStyle}
-                fullScreenSafeAreaContentStyle={fullScreenSafeAreaContentStyle}
-                originProgress={originProgress}
-              />
-            </TrayKeyboardStickyRegion>
-          )}
-        </TrayMorphProgressProvider>
-      );
-
-      if (!instrumentationEnabled) {
-        return shell;
-      }
-
-      return (
-        <React.Profiler id={shellId} onRender={handleProfileRender}>
-          {shell}
-        </React.Profiler>
-      );
-    };
-
     return (
       <TrayBoundaryMotionRegion
         enabled={requiresFullScreenMotion}
@@ -1318,9 +1459,57 @@ const TrayVisualShell = React.memo(
         animatedStyleParams={animatedStyleParams}
         prepared={prepared}
       >
-        {(boundaryStyles, animatedStyles) =>
-          renderShell(boundaryStyles, animatedStyles)
-        }
+        {(boundaryStyles, animatedStyles) => {
+          const surfaceProps: TraySurfaceProps = {
+            ...animatedStyles,
+            style,
+            renderedClassName,
+            renderedContainerStyle,
+            renderedHeader,
+            renderedContent,
+            renderedFooter,
+            renderedFooterClassName,
+            renderedFooterStyle,
+            hasFooter,
+            renderSnapshotStore,
+            renderedFullScreen: presentationFullScreen,
+            contentMotionDirection,
+            trayTransitionStart,
+            layoutAnimationConfig,
+            instrumentationEnabled,
+            shouldUseLayoutAnimation,
+            isFullScreenBoundaryTransition,
+            handleContentLayout,
+            handleVisibleFooterLayout,
+            handleShellLayout,
+            fullScreenSafeAreaContentStyle:
+              boundaryStyles?.fullScreenSafeAreaContentStyle,
+            originProgress,
+          };
+
+          return (
+            <TrayVisualShellContent
+              assignmentId={assignmentId}
+              rootTrayId={rootTrayId}
+              trayId={trayId}
+              visible={visible}
+              interactionStateRef={interactionStateRef}
+              surfaceProps={surfaceProps}
+              morphProgress={morphProgress}
+              progress={progress}
+              renderedTrayId={renderedTrayId}
+              requiresFullScreenMotion={requiresFullScreenMotion}
+              shouldUseOriginTransition={shouldUseOriginTransition}
+              presentationFullScreen={presentationFullScreen}
+              keyboardStickyCapable={keyboardStickyCapable}
+              fullScreenSurfaceStyle={fullScreenSurfaceStyle}
+              fullScreenSurfaceFillStyle={
+                boundaryStyles?.fullScreenSurfaceFillStyle
+              }
+              renderSnapshotOverride={renderSnapshotOverride}
+            />
+          );
+        }}
       </TrayBoundaryMotionRegion>
     );
   },
