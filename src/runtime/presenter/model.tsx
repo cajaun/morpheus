@@ -10,7 +10,11 @@ import { resolveTrayPresentationEndpoint } from "../transition-contract";
 import { clampTrayStepIndex } from "../tray-step-index";
 import { resolveTrayAnimationContract } from "./animation-contract";
 import type { TrayStepDefinition } from "../types";
-import type { PresentedTray, TrayHostSlot } from "./types";
+import type {
+  PresentedPreloadedStep,
+  PresentedTray,
+  TrayHostSlot,
+} from "./types";
 
 type ContextualStepOptionsCache = {
   withFooter?: ResolvedTrayStepOptions;
@@ -118,6 +122,67 @@ const getTrayMotionCapabilities = (
   return capabilities;
 };
 
+const NO_PRELOADED_STEPS: readonly PresentedPreloadedStep[] = [];
+
+const preloadCapableBySteps = new WeakMap<TrayRegistration["steps"], boolean>();
+
+// Fixed per registration, like the motion capabilities: a tray in which any
+// step can be preloaded (any sheet step after the first that has not opted
+// out) always renders its content as keyed layers, so a transition never
+// switches the content tree's shape midway. Single-step trays are unchanged.
+const isPreloadCapable = (registration: TrayRegistration) => {
+  const cached = preloadCapableBySteps.get(registration.steps);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const capable = registration.steps.some(
+    (step, index) =>
+      index > 0 &&
+      step.options?.preload !== false &&
+      step.options?.fullScreen !== true,
+  );
+  preloadCapableBySteps.set(registration.steps, capable);
+  return capable;
+};
+
+// The next step is kept rendered, hidden, unless it opts out or either step is
+// fullscreen (fullscreen content uses the boundary transition's own layers).
+const resolvePreloadedSteps = (
+  rootTrayId: string,
+  registration: TrayRegistration,
+  trayIndex: number,
+  currentOptions: ResolvedTrayStepOptions,
+): readonly PresentedPreloadedStep[] => {
+  const nextStep = registration.steps[trayIndex + 1];
+
+  if (
+    !nextStep ||
+    nextStep.options?.preload === false ||
+    currentOptions.fullScreen
+  ) {
+    return NO_PRELOADED_STEPS;
+  }
+
+  const nextOptions = resolveContextualStepOptions(
+    nextStep,
+    registration.footer != null,
+  );
+
+  if (nextOptions.fullScreen) {
+    return NO_PRELOADED_STEPS;
+  }
+
+  return [
+    {
+      trayId: `${rootTrayId}-${nextStep.key}`,
+      content: nextStep.content,
+      stepOptions: nextOptions,
+    },
+  ];
+};
+
 // Keep one root controller mounted before the first presentation. The payload
 // is intentionally inert: no content, no interaction, and no transition.
 // The real tray payload replaces it without changing the host assignment key.
@@ -172,7 +237,31 @@ const areStepOptionsEquivalent = (
     left.style === right.style &&
     left.className === right.className &&
     left.footerStyle === right.footerStyle &&
-    left.footerClassName === right.footerClassName);
+    left.footerClassName === right.footerClassName &&
+    left.preload === right.preload);
+
+// compare preloaded steps by identity of what they render
+export const arePreloadedStepsEquivalent = (
+  left: readonly PresentedPreloadedStep[] | undefined,
+  right: readonly PresentedPreloadedStep[] | undefined,
+) => {
+  const leftSteps = left ?? NO_PRELOADED_STEPS;
+  const rightSteps = right ?? NO_PRELOADED_STEPS;
+
+  return (
+    leftSteps === rightSteps ||
+    (leftSteps.length === rightSteps.length &&
+      leftSteps.every((step, index) => {
+        const other = rightSteps[index]!;
+
+        return (
+          step.trayId === other.trayId &&
+          step.content === other.content &&
+          areStepOptionsEquivalent(step.stepOptions, other.stepOptions)
+        );
+      }))
+  );
+};
 
 export const arePresentedTraysEquivalent = (
   left: PresentedTray | null,
@@ -207,7 +296,9 @@ export const arePresentedTraysEquivalent = (
     left.footerClassName === right.footerClassName &&
     left.stackIndex === right.stackIndex &&
     left.visible === right.visible &&
-    left.interactive === right.interactive);
+    left.interactive === right.interactive &&
+    (left.preloadCapable ?? false) === (right.preloadCapable ?? false) &&
+    arePreloadedStepsEquivalent(left.preloadedSteps, right.preloadedSteps));
 
 export const areTrayHostSlotsEquivalent = (
   left: [TrayHostSlot, TrayHostSlot],
@@ -425,6 +516,13 @@ export const createPresentedTray = ({
     stackIndex,
     visible: true,
     interactive: stackIndex === stackLength - 1,
+    preloadCapable: isPreloadCapable(registration),
+    preloadedSteps: resolvePreloadedSteps(
+      entry.trayId,
+      registration,
+      trayIndex,
+      stepOptions,
+    ),
   };
 };
 

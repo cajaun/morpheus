@@ -62,7 +62,9 @@ const renderCallbacks = (transition: TrayTransitionContract) => {
   const contentMeasurementLeaseRef = { current: true };
   const measuredFooterHeightRef = { current: 90 };
   const footerHeight = shared(90);
-  const commitStableContentHeight = jest.fn(() => true);
+  const commitStableContentHeight = jest.fn(
+    (_height: number, _trayId?: string, _mode?: string) => true,
+  );
   const clearPreparedSheetFrame = jest.fn();
   let callbacks: ReturnType<typeof useTrayTransitionCallbacks> | null =
     null;

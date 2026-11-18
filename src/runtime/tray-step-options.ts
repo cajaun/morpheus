@@ -20,6 +20,7 @@ export const DEFAULT_TRAY_STEP_OPTIONS: ResolvedTrayStepOptions = {
   className: undefined,
   footerStyle: undefined,
   footerClassName: undefined,
+  preload: true,
 };
 
 // merge optional author settings with the runtime defaults

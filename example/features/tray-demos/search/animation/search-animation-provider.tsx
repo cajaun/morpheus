@@ -1,4 +1,5 @@
 import {
+  type ComponentRef,
   createContext,
   type PropsWithChildren,
   type RefObject,
@@ -32,7 +33,7 @@ type ScreenView = "overview" | "results";
 
 type SearchAnimationContextValue = {
   blurIntensity: SharedValue<number>;
-  inputRef: RefObject<TextInput | null>;
+  inputRef: RefObject<ComponentRef<typeof TextInput> | null>;
   isListDragging: SharedValue<boolean>;
   offsetY: SharedValue<number>;
   onOpenResults: () => void;
@@ -44,7 +45,7 @@ const SearchAnimationContext =
   createContext<SearchAnimationContextValue>({} as SearchAnimationContextValue);
 
 export const SearchAnimationProvider = ({ children }: PropsWithChildren) => {
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const screenView = useSharedValue<ScreenView>("overview");
   const offsetY = useSharedValue(0);
   const isListDragging = useSharedValue(false);

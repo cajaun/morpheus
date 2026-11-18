@@ -24,7 +24,14 @@ jest.mock("react-native-reanimated", () => {
   };
 });
 
-type VisibilityStyles = ReturnType<typeof useTrayVisibilityStyles>;
+// useAnimatedStyle is mocked to return the plain style object, so read every
+// style as a plain record (Reanimated types it as an opaque handle)
+type VisibilityStyles = {
+  [K in keyof ReturnType<typeof useTrayVisibilityStyles>]: Record<
+    string,
+    unknown
+  >;
+};
 
 // create a minimal shared value for visibility style probes
 const shared = <T,>(value: T) => ({ value });
@@ -43,7 +50,7 @@ const renderVisibilityStyles = ({
       shouldUseOriginTransition: true,
       surfaceOpacity: shared(1),
       transition: { open: "expandFromTrigger", origin },
-    });
+    }) as unknown as typeof styles;
 
     return null;
   };

@@ -71,6 +71,7 @@ import {
 import { describeTrayTransition } from "./diagnostics/tray-transition-diagnostics";
 import { isTrayDebugLoggingEnabled, log } from "./logger";
 import {
+  ABSOLUTE_FILL,
   TRAY_HEADER_HORIZONTAL_PADDING,
   TRAY_KEYBOARD_GAP,
 } from "./constants";
@@ -370,7 +371,7 @@ const TrayKeyboardStickyAnimatedRegion = React.memo(
       };
     }, [height, isEnabled, keyboardOffset]);
     const styles = useMemo(
-      () => [stickyStyle, StyleSheet.absoluteFillObject],
+      () => [stickyStyle, ABSOLUTE_FILL],
       [stickyStyle],
     );
 
@@ -402,7 +403,7 @@ const TrayKeyboardStickyRegion = React.memo(
         {children}
       </TrayKeyboardStickyAnimatedRegion>
     ) : (
-      <View pointerEvents="box-none" style={StyleSheet.absoluteFillObject}>
+      <View pointerEvents="box-none" style={ABSOLUTE_FILL}>
         {children}
       </View>
     ),
@@ -981,7 +982,7 @@ const TraySheetSurface = React.memo(
       () => [localStyles.headerContainer, headerFrameStyle],
       [headerFrameStyle],
     );
-    const contentMeasureRef = useRef<View>(null);
+    const contentMeasureRef = useRef<React.ComponentRef<typeof View>>(null);
     const contentOriginRef = useRef({ x: 0, y: 0 });
     const handleContentLayoutRef = useRef(handleContentLayout);
     handleContentLayoutRef.current = handleContentLayout;
@@ -1340,7 +1341,7 @@ const TrayVisualShellContent = React.memo(
             }
             pointerEvents="none"
             style={[
-              StyleSheet.absoluteFillObject,
+              ABSOLUTE_FILL,
               fullScreenSurfaceStyle,
               fullScreenSurfaceFillStyle,
               surfaceProps.dragStyle,

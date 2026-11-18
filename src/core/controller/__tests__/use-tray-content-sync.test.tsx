@@ -953,7 +953,7 @@ describe("useTrayContentSync", () => {
     const syncRenderedNodes = jest.fn();
     const setLayoutAnimationEnabled = jest.fn();
     const onSheetFramePrepared = jest.fn();
-    const readCachedSheetContentHeight = jest.fn(() => 255);
+    const readCachedSheetContentHeight = jest.fn((_trayId?: string) => 255);
     const justOpenedRef = { current: false };
 
     const Probe = () => {

@@ -18,7 +18,7 @@ import { useTrayRuntime } from "../runtime/use-tray-runtime";
 export const TrayProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const keyboardHandoffRef = useRef<TextInput>(null);
+  const keyboardHandoffRef = useRef<React.ComponentRef<typeof TextInput>>(null);
   const { dismissKeyboard, anticipateKeyboard } = useTrayKeyboard();
   const { registerFocusable, dismissFocusedInputs } =
     useTrayFocusManager(dismissKeyboard);

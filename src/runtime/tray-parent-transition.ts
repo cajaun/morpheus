@@ -48,3 +48,23 @@ export const useParentTransitionSettled = () => {
 
   return settled;
 };
+
+// The parent's latest completed transition generation, as React state. Driven
+// by the transition's own completion (a UI-thread shared value), not timers.
+export const useParentCompletedGeneration = () => {
+  const parentTransition = useContext(TrayParentTransitionContext);
+  const completedGeneration = parentTransition?.completedGeneration;
+  const [completed, setCompleted] = useState(0);
+
+  useAnimatedReaction(
+    () => completedGeneration?.value ?? 0,
+    (value, previous) => {
+      if (value !== previous) {
+        scheduleOnRN(setCompleted, value);
+      }
+    },
+    [completedGeneration],
+  );
+
+  return completed;
+};

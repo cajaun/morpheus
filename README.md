@@ -16,6 +16,24 @@ npm install react-native-morpheus \
 
 Morpheus treats React, React Native, and the native integration libraries above as peer dependencies. Follow each native dependency's installation instructions for your React Native or Expo version.
 
+### Requirements
+
+Morpheus 3.0 requires React 19.2 or newer, which means React Native 0.83 or
+newer (Expo SDK 55 or newer). Older setups can stay on Morpheus 2.x.
+
+| Package | Minimum |
+| --- | --- |
+| `react` | 19.2.0 |
+| `react-native` | 0.83.0 (New Architecture) |
+| `react-native-reanimated` | 4.2.0 |
+| `react-native-worklets` | 0.7.0 |
+| `react-native-gesture-handler` | 2.30.0 (3.x supported) |
+| `react-native-keyboard-controller` | 1.20.0 |
+| `react-native-safe-area-context` | 5.6.0 |
+| `expo-haptics` | 55.0.0 |
+
+On Expo, `npx expo install` picks versions that match your SDK.
+
 ## App setup
 
 Place `TrayProvider` inside the gesture-handler and keyboard providers. The presenter is mounted once by `TrayProvider`; individual trays only register their steps and render a trigger.
@@ -221,6 +239,26 @@ that slice changes:
 const index = useTrayNavigationState((state) => state.index);
 ```
 
+### Preloading the next step
+
+By default, while a step is on screen Morpheus keeps the next step rendered
+inside a hidden React `<Activity>`. It renders at low priority after the
+current step, takes no space, and its effects (data fetching, subscriptions)
+start only once it is shown. Moving to it then reuses the rendered step instead
+of mounting it after the tap; it still animates in on the same transition clock
+as the sheet.
+
+- Only the next step is kept rendered, so at most one extra step is in memory.
+- Sheet steps only: nothing is preloaded into or out of a fullscreen step.
+- Code that runs during render (not in effects) runs while the step is still
+  hidden. Opt a step out to mount it on the tap instead:
+
+```tsx
+<Tray.Step key="checkout" options={{ preload: false }}>
+  <CheckoutStep />
+</Tray.Step>
+```
+
 ### Migrating to 3.0
 
 In 2.x, `useTrayNavigation` also returned `index`, `total`, `isActive`,
@@ -237,6 +275,10 @@ const { index, total } = useTrayNavigationState();
 ```
 
 `useTrayNavigationActions` remains as a deprecated alias of `useTrayNavigation`.
+
+3.0 also raises the minimum versions: React 19.2+, React Native 0.83+ (Expo
+SDK 55+). See [Requirements](#requirements). Apps on Expo SDK 54 or older, or
+React Native 0.82 or older, should stay on 2.x until they upgrade.
 
 Package-level layout constants that are intentionally public are available from `react-native-morpheus/constants`.
 

@@ -13,15 +13,27 @@ import {
 } from "../runtime/tray-context";
 import { markTrayStepKeyboardFocus } from "../telemetry/tray-step-timing";
 
+// The ref a TrayTextInput forwards: the underlying React Native TextInput.
+export type TrayTextInputRef = React.ComponentRef<typeof TextInput>;
+
+// Named explicitly so published type definitions do not depend on React
+// Native's internal TextInput instance type.
+type TrayTextInputComponent = React.ForwardRefExoticComponent<
+  TextInputProps & React.RefAttributes<TrayTextInputRef>
+>;
+
 // wrap textinput so focus behavior participates in tray keyboard policy
-export const TrayTextInput = forwardRef<TextInput, TextInputProps>(
+export const TrayTextInput: TrayTextInputComponent = forwardRef<
+  TrayTextInputRef,
+  TextInputProps
+>(
   ({ autoFocus = false, ...props }, forwardedRef) => {
-    const ref = useRef<TextInput>(null);
+    const ref = useRef<TrayTextInputRef>(null);
     const trayId = useTrayScope();
     const { anticipateKeyboard, registerFocusable } = useTrayHostActions();
 
     // forward the native input ref while keeping tray focus registration local
-    useImperativeHandle(forwardedRef, () => ref.current as TextInput);
+    useImperativeHandle(forwardedRef, () => ref.current as TrayTextInputRef);
 
     useEffect(() => {
       if (!trayId) {

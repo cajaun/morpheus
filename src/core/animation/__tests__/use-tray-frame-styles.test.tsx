@@ -26,7 +26,11 @@ jest.mock("react-native-reanimated", () => {
   };
 });
 
-type FrameStyles = ReturnType<typeof useTrayFrameStyles>;
+// useAnimatedStyle is mocked to return the plain style object, so read every
+// style as a plain record (Reanimated types it as an opaque handle)
+type FrameStyles = {
+  [K in keyof ReturnType<typeof useTrayFrameStyles>]: Record<string, unknown>;
+};
 
 // create a minimal shared value for frame style probes
 const shared = <T,>(value: T) => ({ value });
@@ -124,7 +128,7 @@ const renderFrameStyles = ({
       transitionGeneration,
       transitionSourceKey,
       transitionTargetKey,
-    });
+    }) as unknown as typeof styles;
 
     return null;
   };
@@ -243,7 +247,7 @@ describe("useTrayFrameStyles", () => {
         transition: undefined,
         transitionGeneration: prepared ? 7 : undefined,
         transitionTargetKey: "target",
-      });
+      }) as unknown as typeof styles;
 
       return null;
     };

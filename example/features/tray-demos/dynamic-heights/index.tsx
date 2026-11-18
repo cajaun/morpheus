@@ -413,7 +413,7 @@ const PriceGauge = () => {
               colors={["#26C65D", "#C6D924", "#FFB70D", "#FF3E2D"]}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
-              style={StyleSheet.absoluteFillObject}
+              style={StyleSheet.absoluteFill}
             />
             <View style={styles.gaugeCutout} />
           </View>

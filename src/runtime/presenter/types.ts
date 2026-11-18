@@ -7,6 +7,13 @@ import type {
 } from "../types";
 
 // describe resolved payloads after runtime state becomes presentable shell props
+// A step kept rendered, hidden, so moving to it does not mount it.
+export type PresentedPreloadedStep = {
+  trayId: string;
+  content: ReactNode;
+  stepOptions: ResolvedTrayStepOptions;
+};
+
 export type PresentedTray = {
   rootTrayId: string;
   trayId: string;
@@ -35,6 +42,11 @@ export type PresentedTray = {
   stackIndex: number;
   visible: boolean;
   interactive: boolean;
+  // Fixed per registration: the tray has at least one preload step, so its
+  // content renders as keyed layers that a preloaded step can be reused from.
+  preloadCapable?: boolean;
+  // Steps currently kept rendered, hidden (the next step, when it preloads).
+  preloadedSteps?: readonly PresentedPreloadedStep[];
 };
 
 export type TrayHostSlot = {

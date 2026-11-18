@@ -25,8 +25,9 @@ jest.mock("react-native-reanimated", () => {
 });
 
 jest.mock("react-native-worklets", () => {
+  // Worklets' own mock: the real module needs its native part under Jest
   const Worklets = jest.requireActual(
-    "react-native-worklets",
+    "react-native-worklets/lib/module/mock",
   ) as Record<string, unknown>;
 
   return {

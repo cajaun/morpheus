@@ -110,6 +110,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
 });

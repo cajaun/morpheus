@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef } from "react";
 import {
   LayoutChangeEvent,
   StyleProp,
@@ -10,6 +10,7 @@ import Animated, {
   Easing,
   EntryExitAnimationFunction,
   interpolate,
+  runOnUI,
   useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
@@ -104,6 +105,126 @@ const logStepEnterStarted = (stepKey: string, joinDelayMs: number) => {
   });
 };
 
+// Build the incoming content animations that follow the shared transition
+// clock. Used by the entering layout animation (content mounted on the step
+// change) and by the reveal of a preloaded step (content already mounted), so
+// both move identically on the same clock.
+const buildMorphEnteringAnimations = (
+  scale: boolean,
+  stepKey: string,
+  transitionStart: TrayTransitionStart | null,
+  motionDirection: TrayContentMotionDirection | null,
+  onOpacityFinished?: (finished?: boolean) => void,
+) => {
+  "worklet";
+
+  const synchronizedFullScreen =
+    resolveTrayTransitionFullScreenChanged(transitionStart);
+  const transitionGeneration =
+    resolveTrayTransitionGeneration(transitionStart);
+  const waitForLayoutStart = shouldWaitForTrayLayoutStart(
+    transitionStart,
+    transitionGeneration,
+  );
+  const duration = synchronizedFullScreen
+    ? FULL_SCREEN_ENTERING_DURATION
+    : MORPH_ENTERING_DURATION;
+  const easing = synchronizedFullScreen
+    ? FULL_SCREEN_CONTENT_EASING
+    : MORPH_EASING;
+  const direction = motionDirection ?? FORWARD_CONTENT_MOTION;
+  const initialScale = resolveMorphEnteringScale({
+    scale,
+    synchronizedFullScreen,
+    direction,
+  });
+  const synchronizeWithTransition = (
+    animation: number,
+    onStart?: TrayTransitionStartSignal,
+  ) => {
+    "worklet";
+
+    if (
+      transitionStart === null ||
+      transitionGeneration <= 0
+    ) {
+      return animation;
+    }
+
+    return withTrayTransitionStart(
+      animation,
+      transitionStart.startedGeneration,
+      transitionStart.startedAt,
+      transitionStart.layoutStartedGeneration,
+      transitionStart.completedGeneration,
+      transitionGeneration,
+      "incoming",
+      onStart,
+      synchronizedFullScreen,
+      waitForLayoutStart,
+    );
+  };
+  const synchronizeWithLayout = (
+    animation: number,
+    logRelease = false,
+  ) => {
+    "worklet";
+
+    const synchronizedAnimation = synchronizeWithTransition(
+      animation,
+      logRelease &&
+        __DEV__ &&
+        TRAY_INSTRUMENTATION_ENABLED
+        ? (clockStartedAt: number, _generation: number, joinedAt: number) => {
+            "worklet";
+            scheduleOnRN(
+              logStepEnterStarted,
+              stepKey,
+              Math.max(0, joinedAt - clockStartedAt),
+            );
+          }
+        : undefined,
+    );
+
+    return synchronizedAnimation;
+  };
+
+  return {
+    initialScale,
+    opacity: synchronizeWithLayout(
+      withTiming(
+        1,
+        {
+          duration,
+          easing,
+        },
+        onOpacityFinished,
+      ),
+      true,
+    ),
+    scale: synchronizeWithLayout(
+      withTiming(1, {
+        duration,
+        easing,
+      }),
+    ),
+    translateY: synchronizeWithLayout(
+      withTiming(0, {
+        duration,
+        easing,
+      }),
+    ),
+  };
+};
+
+const logEnterFinishedWorklet = (stepKey: string, finished?: boolean) => {
+  "worklet";
+
+  if (finished && __DEV__ && TRAY_INSTRUMENTATION_ENABLED) {
+    scheduleOnRN(logStepEnterFinished, stepKey, performance.now());
+  }
+};
+
 // build the entering animation that follows the shared transition clock
 const createMorphEntering = (
   scale: boolean,
@@ -114,120 +235,30 @@ const createMorphEntering = (
   return () => {
     "worklet";
 
-    const synchronizedFullScreen =
-      resolveTrayTransitionFullScreenChanged(transitionStart);
-    const transitionGeneration =
-      resolveTrayTransitionGeneration(transitionStart);
-    const waitForLayoutStart = shouldWaitForTrayLayoutStart(
-      transitionStart,
-      transitionGeneration,
-    );
-    const duration = synchronizedFullScreen
-      ? FULL_SCREEN_ENTERING_DURATION
-      : MORPH_ENTERING_DURATION;
-    const easing = synchronizedFullScreen
-      ? FULL_SCREEN_CONTENT_EASING
-      : MORPH_EASING;
-    const direction = motionDirection ?? FORWARD_CONTENT_MOTION;
-    const initialScale = resolveMorphEnteringScale({
+    const animations = buildMorphEnteringAnimations(
       scale,
-      synchronizedFullScreen,
-      direction,
-    });
-    const synchronizeWithTransition = (
-      animation: number,
-      onStart?: TrayTransitionStartSignal,
-    ) => {
-      "worklet";
-
-      if (
-        transitionStart === null ||
-        transitionGeneration <= 0
-      ) {
-        return animation;
-      }
-
-      return withTrayTransitionStart(
-        animation,
-        transitionStart.startedGeneration,
-        transitionStart.startedAt,
-        transitionStart.layoutStartedGeneration,
-        transitionStart.completedGeneration,
-        transitionGeneration,
-        "incoming",
-        onStart,
-        synchronizedFullScreen,
-        waitForLayoutStart,
-      );
-    };
-    const synchronizeWithLayout = (
-      animation: number,
-      logRelease = false,
-    ) => {
-      "worklet";
-
-      const synchronizedAnimation = synchronizeWithTransition(
-        animation,
-        logRelease &&
-          __DEV__ &&
-          TRAY_INSTRUMENTATION_ENABLED
-          ? (clockStartedAt: number, _generation: number, joinedAt: number) => {
-              "worklet";
-              scheduleOnRN(
-                logStepEnterStarted,
-                stepKey,
-                Math.max(0, joinedAt - clockStartedAt),
-              );
-            }
-          : undefined,
-      );
-
-      return synchronizedAnimation;
-    };
+      stepKey,
+      transitionStart,
+      motionDirection,
+    );
 
     return {
       initialValues: {
         opacity: 0,
         transform: [
-          { scale: initialScale },
+          { scale: animations.initialScale },
           { translateY: 0 },
         ],
       },
       animations: {
-        opacity: synchronizeWithLayout(
-          withTiming(1, {
-            duration,
-            easing,
-          }),
-          true,
-        ),
+        opacity: animations.opacity,
         transform: [
-          {
-            scale: synchronizeWithLayout(
-              withTiming(1, {
-                duration,
-                easing,
-              }),
-            ),
-          },
-          {
-            translateY: synchronizeWithLayout(
-              withTiming(0, {
-                duration,
-                easing,
-              }),
-            ),
-          },
+          { scale: animations.scale },
+          { translateY: animations.translateY },
         ],
       },
       callback: (finished: boolean) => {
-        if (
-          finished &&
-          __DEV__ &&
-          TRAY_INSTRUMENTATION_ENABLED
-        ) {
-          scheduleOnRN(logStepEnterFinished, stepKey, performance.now());
-        }
+        logEnterFinishedWorklet(stepKey, finished);
       },
     };
   };
@@ -330,6 +361,127 @@ const createMorphExiting = (
       },
     };
   };
+};
+
+// Step content that can be mounted while hidden: a preloaded step inside a
+// hidden <Activity>. Reanimated's entering animation fires when a view is
+// mounted, which for a preloaded step is before it is shown, so this content
+// runs the same entering motion itself when it is shown. Effects inside a
+// hidden <Activity> are created only once it becomes visible, so the layout
+// effect below runs exactly when the step appears: on mount if it mounted
+// visible, otherwise on reveal. Exiting is unchanged: the step is removed, not
+// hidden, when it leaves, so the exiting animation still runs.
+export const TrayRevealedStepContent: React.FC<Props> = ({
+  children,
+  style,
+  pointerEvents,
+  scale = true,
+  anchorScaleToTop = false,
+  fullScreenBoundaryExit = false,
+  stepKey,
+  skipEntering = false,
+  skipExiting = false,
+}) => {
+  const transitionStart = useTrayTransitionStart();
+  const motionDirection = useTrayContentMotionDirection();
+  const opacity = useSharedValue(skipEntering ? 1 : 0);
+  const contentScale = useSharedValue(1);
+  const translateY = useSharedValue(0);
+  const shownCountRef = useRef(0);
+  const latestRef = useRef({
+    scale,
+    stepKey,
+    skipEntering,
+    transitionStart,
+    motionDirection,
+  });
+  latestRef.current = {
+    scale,
+    stepKey,
+    skipEntering,
+    transitionStart,
+    motionDirection,
+  };
+
+  const revealStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [
+      { scale: contentScale.value },
+      { translateY: translateY.value },
+    ],
+  }));
+
+  useLayoutEffect(() => {
+    const latest = latestRef.current;
+    const firstShow = shownCountRef.current === 0;
+    shownCountRef.current += 1;
+
+    if (firstShow && latest.skipEntering) {
+      // the opening tray is the arrival cue; start at the resting values
+      return;
+    }
+
+    const key = latest.stepKey ?? "unknown-step";
+    const contentScaleEnabled = latest.scale;
+    const start = latest.transitionStart;
+    const direction = latest.motionDirection;
+
+    runOnUI(() => {
+      "worklet";
+
+      const animations = buildMorphEnteringAnimations(
+        contentScaleEnabled,
+        key,
+        start,
+        direction,
+        (finished?: boolean) => {
+          "worklet";
+          logEnterFinishedWorklet(key, finished);
+        },
+      );
+
+      opacity.value = 0;
+      contentScale.value = animations.initialScale;
+      translateY.value = 0;
+      opacity.value = animations.opacity;
+      contentScale.value = animations.scale;
+      translateY.value = animations.translateY;
+    })();
+    // runs on each show (see above), never on prop changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <Animated.View
+      key={stepKey}
+      collapsable={
+        transitionStart?.keyboardStepTransition === true ? false : undefined
+      }
+      style={[
+        anchorScaleToTop
+          ? {
+              flex: 1,
+              transformOrigin: ["50%", "0%", 0],
+            }
+          : undefined,
+        style,
+        revealStyle,
+      ]}
+      pointerEvents={pointerEvents}
+      exiting={
+        skipExiting
+          ? undefined
+          : createMorphExiting(
+              scale,
+              fullScreenBoundaryExit,
+              transitionStart,
+              motionDirection,
+            )
+      }
+    >
+      {children}
+    </Animated.View>
+  );
 };
 
 // render keyed step content with synchronized entering and exiting motion

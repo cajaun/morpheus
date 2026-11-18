@@ -2,10 +2,20 @@ import { BlurView } from "expo-blur";
 import type { BlurTint } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import { Platform, StyleSheet } from "react-native";
-import MaskedView from "@react-native-masked-view/masked-view";
+import { Platform, StyleSheet, type ViewProps } from "react-native";
+import MaskedViewBase from "@react-native-masked-view/masked-view";
 import { easeGradient } from "react-native-easing-gradient";
 import { useTrayDemoTheme } from "../../theme";
+
+// @react-native-masked-view/masked-view 0.3.2 ships class typings that predate
+// @types/react 19.3 and React Native 0.88, so give it a plain component type.
+type MaskedViewProps = ViewProps & {
+  maskElement: React.ReactElement;
+  androidRenderingMode?: "software" | "hardware";
+};
+const MaskedView = MaskedViewBase as unknown as React.ComponentType<
+  MaskedViewProps
+>;
 
 type GradientConfig = {
   colors: [string, string, ...string[]];
@@ -65,7 +75,7 @@ export const EdgeBlur = ({
       <LinearGradient
         pointerEvents="none"
         style={[
-          StyleSheet.absoluteFillObject,
+          StyleSheet.absoluteFill,
           edge === "top" ? styles.top : styles.bottom,
           { height },
         ]}

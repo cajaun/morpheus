@@ -35,6 +35,15 @@ export type TrayStepOptions = {
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
   footerClassName?: string;
+  /**
+   * Keep this step rendered, hidden, while it is the next step, so moving to
+   * it reuses the rendered step instead of mounting it on the tap. The hidden
+   * step renders at low priority after the current step is on screen, and its
+   * effects run only once it is shown (React `<Activity>`). Sheet steps only:
+   * ignored when either step is fullscreen. On by default; set `false` to
+   * mount the step on the tap instead.
+   */
+  preload?: boolean;
 };
 
 export type TrayStepProps = {
@@ -99,6 +108,7 @@ export type ResolvedTrayStepOptions = {
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
   footerClassName?: string;
+  preload: boolean;
 };
 
 export type TrayHostStateValue = {

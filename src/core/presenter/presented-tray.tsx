@@ -10,6 +10,7 @@ import React, {
 import { TrayContentCommitContext } from "../tray-content-commit";
 import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import { TrayStepContent } from "../../tray-step-content";
+import { TrayPreloadingContent } from "./preloading-content";
 import { TrayHeaderTransitionProvider } from "../../primitives/header-transition-context";
 import {
   TrayScopeProvider,
@@ -25,7 +26,13 @@ import { markTrayBoundaryReactRender } from "../../telemetry/tray-boundary-timin
 import { markTrayStepReactRenderStarted } from "../../telemetry/tray-step-timing";
 import { Tray } from "../tray";
 import type { PresentedTrayProps } from "../../runtime/presenter/types";
-import { arePresentedTraysEquivalent } from "../../runtime/presenter/model";
+import {
+  arePreloadedStepsEquivalent,
+  arePresentedTraysEquivalent,
+} from "../../runtime/presenter/model";
+import type { PresentedPreloadedStep } from "../../runtime/presenter/types";
+
+const NO_PRELOADED_STEPS: readonly PresentedPreloadedStep[] = [];
 
 type PresentedTrayRegionName = "header" | "content" | "footer";
 
@@ -46,6 +53,8 @@ type PresentedTrayRegionPayload = Pick<
   | "fullScreen"
   | "fullScreenBoundaryExit"
   | "isFirstRender"
+  | "preloadCapable"
+  | "preloadedSteps"
 >;
 
 const createPresentedTrayPayloadStore = (
@@ -90,7 +99,8 @@ const arePresentedTrayStepOptionsEquivalent = (
     previous.style === next.style &&
     previous.className === next.className &&
     previous.footerStyle === next.footerStyle &&
-    previous.footerClassName === next.footerClassName);
+    previous.footerClassName === next.footerClassName &&
+    previous.preload === next.preload);
 
 const arePresentedTrayRegionPayloadsEquivalent = (
   region: PresentedTrayRegionName,
@@ -122,7 +132,13 @@ const arePresentedTrayRegionPayloadsEquivalent = (
     previous.isFirstRender === next.isFirstRender &&
     (region === "header"
       ? previous.header === next.header
-      : previous.content === next.content)
+      : previous.content === next.content &&
+        (previous.preloadCapable ?? false) ===
+          (next.preloadCapable ?? false) &&
+        arePreloadedStepsEquivalent(
+          previous.preloadedSteps,
+          next.preloadedSteps,
+        ))
   );
 };
 
@@ -147,6 +163,10 @@ const createPresentedTrayRegionSelector = (
       fullScreen: payload.fullScreen,
       fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
       isFirstRender: payload.isFirstRender,
+      preloadCapable:
+        region === "content" ? payload.preloadCapable : undefined,
+      preloadedSteps:
+        region === "content" ? payload.preloadedSteps : undefined,
     };
 
     if (
@@ -239,7 +259,27 @@ const PresentedTrayRegion = ({
     );
   }
 
-  if (region === "content" && payload.content != null) {
+  if (
+    region === "content" &&
+    payload.content != null &&
+    payload.preloadCapable === true
+  ) {
+    regionNode = (
+      <TrayScopeProvider value={payload.rootTrayId}>
+        <TrayPreloadingContent
+          current={{
+            trayId: payload.trayId,
+            content: payload.content,
+            stepOptions: payload.stepOptions,
+            fullScreen: payload.fullScreen,
+            fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
+            isFirstRender: payload.isFirstRender,
+          }}
+          preloaded={payload.preloadedSteps ?? NO_PRELOADED_STEPS}
+        />
+      </TrayScopeProvider>
+    );
+  } else if (region === "content" && payload.content != null) {
     regionNode = (
       <TrayScopeProvider value={payload.rootTrayId}>
         <TrayStepOptionsProvider value={payload.stepOptions}>

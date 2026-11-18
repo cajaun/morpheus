@@ -290,3 +290,91 @@ const transition = (
     expect(nestedCloseScope.nested).toBe(nestedCloseTransition);
   });
 });
+
+describe("step preloading", () => {
+  const present = (registration: TrayRegistration, index: number) =>
+    createPresentedTray({
+      entry: { trayId: "flow", index },
+      registration,
+      stackIndex: 0,
+      stackLength: 1,
+    });
+
+  it("keeps the next step rendered by default", () => {
+    const registration: TrayRegistration = {
+      steps: [step("one"), step("two"), step("three")],
+    };
+
+    const tray = present(registration, 0);
+
+    expect(tray?.preloadCapable).toBe(true);
+    expect(tray?.preloadedSteps?.map((preloaded) => preloaded.trayId)).toEqual(
+      ["flow-two"],
+    );
+    expect(tray?.preloadedSteps?.[0]?.content).toBe(
+      registration.steps[1]!.content,
+    );
+    expect(present(registration, 1)?.preloadedSteps?.[0]?.trayId).toBe(
+      "flow-three",
+    );
+  });
+
+  it("does not preload a step that opts out", () => {
+    const registration: TrayRegistration = {
+      steps: [step("one"), step("two", { preload: false }), step("three")],
+    };
+
+    expect(present(registration, 0)?.preloadedSteps).toEqual([]);
+    expect(present(registration, 1)?.preloadedSteps?.[0]?.trayId).toBe(
+      "flow-three",
+    );
+  });
+
+  it("preloads only the next step, not earlier ones", () => {
+    const registration: TrayRegistration = {
+      steps: [step("one"), step("two"), step("three")],
+    };
+
+    expect(present(registration, 2)?.preloadedSteps).toEqual([]);
+  });
+
+  it("does not preload across a fullscreen step", () => {
+    const toFullScreen: TrayRegistration = {
+      steps: [step("one"), step("two", { fullScreen: true })],
+    };
+    const fromFullScreen: TrayRegistration = {
+      steps: [step("one", { fullScreen: true }), step("two")],
+    };
+
+    expect(present(toFullScreen, 0)?.preloadedSteps).toEqual([]);
+    expect(present(fromFullScreen, 0)?.preloadedSteps).toEqual([]);
+  });
+
+  it("leaves single-step trays and fully opted-out trays unchanged", () => {
+    const single = present({ steps: [step("one")] }, 0);
+    const optedOut = present(
+      { steps: [step("one"), step("two", { preload: false })] },
+      0,
+    );
+
+    expect(single?.preloadCapable).toBe(false);
+    expect(optedOut?.preloadCapable).toBe(false);
+    expect(optedOut?.preloadedSteps).toEqual([]);
+  });
+
+  it("treats a new preload target as a payload change", () => {
+    const registration: TrayRegistration = {
+      steps: [step("one"), step("two"), step("three")],
+    };
+    const first = present(registration, 0);
+    const again = present(registration, 0);
+
+    expect(arePresentedTraysEquivalent(first, again)).toBe(true);
+    expect(
+      arePresentedTraysEquivalent(first, {
+        ...first!,
+        preloadedSteps: [],
+      }),
+    ).toBe(false);
+  });
+});

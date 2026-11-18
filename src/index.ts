@@ -44,11 +44,32 @@ export {
   type TrayMeasurementOwner,
 } from "./runtime/tray-context";
 export type { TrayNestedProps } from "./runtime/tray-nested";
+export type { TrayTextInputRef } from "./primitives/text-input";
 export type { TrayRootProps } from "./runtime/tray-root";
 export { useOptionalTrayPages, useTrayPages } from "./pages-context";
 
+// Typed by reference to each component so published type definitions stay
+// portable across React Native versions (no inlined internal types).
+type TrayNamespace = {
+  Root: typeof TrayRoot;
+  Nested: typeof TrayNested;
+  Trigger: typeof TrayTrigger;
+  Footer: typeof TrayFooter;
+  Body: typeof TrayBody;
+  Header: typeof TrayHeader;
+  HeaderRow: typeof TrayHeaderRow;
+  HeaderButton: typeof TrayHeaderButton;
+  PrimaryButton: typeof TrayPrimaryButton;
+  Separator: typeof TraySeparator;
+  Section: typeof TraySection;
+  TextInput: typeof TrayTextInput;
+  Page: typeof TrayPage;
+  Pages: typeof TrayPages;
+  Step: typeof TrayStep;
+};
+
 // the namespace mirrors the mental model used by tray authors
-export const Tray = {
+export const Tray: TrayNamespace = {
   Root: TrayRoot,
   Nested: TrayNested,
   Trigger: TrayTrigger,

@@ -7,7 +7,6 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated";
 import { useTrayMorphProgress } from "react-native-morpheus";
-import { Laminar } from "react-native-laminar";
 import { PressableScale } from "@/components/ui/utils/pressable-scale";
 import * as Haptics from "expo-haptics";
 
@@ -164,12 +163,12 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
             justifyContent: "center",
           }}
         >
-          <Laminar
-            text={isLastStep ? "Continue" : "Continue"}
+          <Text
             className="text-white font-bold text-2xl"
-            align="center"
-         
-          />
+            style={{ textAlign: "center" }}
+          >
+            Continue
+          </Text>
         </PressableScale>
       </Animated.View>
     </View>
