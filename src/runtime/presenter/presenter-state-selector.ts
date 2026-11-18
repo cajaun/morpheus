@@ -166,6 +166,15 @@ export const createPreparedNestedTraySelector = () => {
 
       const parentRegistration = state.registry[registration.parentTrayId];
       const previousRegistration = previousSelection?.[trayId];
+
+      // Build the hidden host only once the parent's transition is done. A
+      // host that was already prepared is kept.
+      if (
+        registration.deferHostPreparation === true &&
+        previousRegistration === undefined
+      ) {
+        return;
+      }
       const previousParentRegistration =
         previousState?.registry[registration.parentTrayId];
 

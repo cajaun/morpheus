@@ -30,6 +30,15 @@ export type TrayTransitionStart = {
 
 export type TrayTransitionParticipant = "incoming" | "outgoing" | "layout";
 
+// startedAt is the shared clock start this participant follows; joinedAt is
+// the frame it actually started on. Both come from the UI frame clock, so
+// joinedAt - startedAt is how late the participant joined the transition.
+export type TrayTransitionStartSignal = (
+  startedAt: number,
+  generation: number,
+  joinedAt: number,
+) => void;
+
 const TrayTransitionStartContext =
   createContext<TrayTransitionStart | null>(null);
 
@@ -147,7 +156,7 @@ type WithTrayTransitionStart = <T extends AnimatableValue>(
   completedGeneration: SharedValue<number>,
   generation: number,
   participant: TrayTransitionParticipant,
-  onStartSignal?: (startedAt: number, generation: number) => void,
+  onStartSignal?: TrayTransitionStartSignal,
   waitForClock?: boolean,
   waitForLayoutStart?: boolean,
 ) => T;
@@ -161,7 +170,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
   completedGeneration: SharedValue<number>,
   generation: number,
   participant: TrayTransitionParticipant,
-  onStartSignal?: (startedAt: number, generation: number) => void,
+  onStartSignal?: TrayTransitionStartSignal,
   waitForClock = false,
   waitForLayoutStart = false,
 ): Animation<TransitionStartAnimation> {
@@ -242,7 +251,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
           // Start signals are worklet callbacks. Each caller is responsible
           // for scheduling its JS-side work, if needed; sending the callback
           // itself through scheduleOnRN makes Worklets look up a stale hash.
-          onStartSignal(innerStartedAt, generation);
+          onStartSignal(innerStartedAt, generation, now);
         }
       };
 

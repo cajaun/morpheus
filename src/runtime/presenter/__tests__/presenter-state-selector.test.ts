@@ -1,6 +1,9 @@
 import { describe, expect, it } from "@jest/globals";
 import type { TrayHostStateValue, TrayRegistration } from "../../types";
-import { createTrayPresenterStateSelector } from "../presenter-state-selector";
+import {
+  createPreparedNestedTraySelector,
+  createTrayPresenterStateSelector,
+} from "../presenter-state-selector";
 
 const registration = (key: string): TrayRegistration => ({
   steps: [{ key, content: null }],
@@ -102,5 +105,40 @@ describe("tray presenter state selector", () => {
     );
 
     expect(second).not.toBe(first);
+  });
+});
+
+describe("prepared nested tray selector", () => {
+  const root = registration("root");
+  const nested = (deferHostPreparation?: boolean): TrayRegistration => ({
+    ...registration("nested"),
+    parentTrayId: "root",
+    ...(deferHostPreparation ? { deferHostPreparation } : null),
+  });
+
+  it("does not prepare a host while the parent's transition is running", () => {
+    const select = createPreparedNestedTraySelector();
+
+    expect(
+      select(state({ registry: { root, child: nested(true) } })),
+    ).toEqual({});
+  });
+
+  it("prepares the host once the parent's transition has completed", () => {
+    const select = createPreparedNestedTraySelector();
+    select(state({ registry: { root, child: nested(true) } }));
+
+    const prepared = select(state({ registry: { root, child: nested() } }));
+
+    expect(Object.keys(prepared)).toEqual(["child"]);
+  });
+
+  it("keeps a host that was already prepared", () => {
+    const select = createPreparedNestedTraySelector();
+    select(state({ registry: { root, child: nested() } }));
+
+    const next = select(state({ registry: { root, child: nested(true) } }));
+
+    expect(Object.keys(next)).toEqual(["child"]);
   });
 });

@@ -26,6 +26,15 @@ const registration = (title = "Content One"): TrayRegistration => ({
 });
 
 describe("tray registration equality", () => {
+  it("treats a change in host preparation as a registration update", () => {
+    expect(
+      areTrayRegistrationsEquivalent(
+        { ...registration(), deferHostPreparation: true },
+        registration(),
+      ),
+    ).toBe(false);
+  });
+
   it("treats freshly-authored equivalent arrays and JSX as one definition", () => {
     expect(
       areTrayRegistrationsEquivalent(registration(), registration()),

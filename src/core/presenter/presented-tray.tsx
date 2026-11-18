@@ -202,9 +202,10 @@ const PresentedTrayRegion = ({
   // measure it now so the target height is ready before the frame.
   useLayoutEffect(() => {
     if (region === "content" && payload.content != null) {
-      notifyRef.current?.();
+      // report the generation of the payload this region rendered
+      notifyRef.current?.(store.getSnapshot().transitionContract?.generation);
     }
-  }, [payload.content, payload.trayId, region]);
+  }, [payload.content, payload.trayId, region, store]);
 
   const headerTransitionValue = useMemo(
     () => ({

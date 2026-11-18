@@ -26,6 +26,7 @@ import {
 } from "./core/constants";
 import {
   type TrayTransitionStart,
+  type TrayTransitionStartSignal,
   resolveTrayTransitionFullScreenChanged,
   resolveTrayTransitionGeneration,
   shouldWaitForTrayLayoutStart,
@@ -85,8 +86,11 @@ const logStepEnterFinished = (stepKey: string, finishedAt: number) => {
   });
 };
 
-// record when incoming content releases its visibility latch
-const logStepEnterStarted = (stepKey: string) => {
+// record when incoming content releases its visibility latch. startedAt is
+// when the JS thread received the signal, so it is late whenever JS is busy;
+// joinDelayMs is measured on the UI thread and is how many ms after the shared
+// transition clock started this content actually began animating.
+const logStepEnterStarted = (stepKey: string, joinDelayMs: number) => {
   if (!isTrayInstrumentationEnabled()) {
     return;
   }
@@ -96,6 +100,7 @@ const logStepEnterStarted = (stepKey: string) => {
   recordTrayTelemetry("step-enter-started", {
     stepKey,
     startedAt: Number(performance.now().toFixed(2)),
+    joinDelayMs: Number(joinDelayMs.toFixed(2)),
   });
 };
 
@@ -131,7 +136,7 @@ const createMorphEntering = (
     });
     const synchronizeWithTransition = (
       animation: number,
-      onStart?: (startedAt: number) => void,
+      onStart?: TrayTransitionStartSignal,
     ) => {
       "worklet";
 
@@ -166,9 +171,13 @@ const createMorphEntering = (
         logRelease &&
           __DEV__ &&
           TRAY_INSTRUMENTATION_ENABLED
-          ? () => {
+          ? (clockStartedAt: number, _generation: number, joinedAt: number) => {
               "worklet";
-              scheduleOnRN(logStepEnterStarted, stepKey);
+              scheduleOnRN(
+                logStepEnterStarted,
+                stepKey,
+                Math.max(0, joinedAt - clockStartedAt),
+              );
             }
           : undefined,
       );

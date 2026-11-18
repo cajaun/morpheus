@@ -57,6 +57,12 @@ export type TrayRegistration = {
   pages?: TrayPagesRegistration;
   /** Owning tray scope for an internally registered nested tray. */
   parentTrayId?: string;
+  /**
+   * Internal: the nested tray is registered and can open, but its hidden
+   * prepared host is not built yet. Set while the parent's transition is
+   * still running so the host mount stays off that transition's critical path.
+   */
+  deferHostPreparation?: boolean;
 };
 
 export type TrayStackEntry = {

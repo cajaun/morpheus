@@ -105,4 +105,5 @@ export const areTrayRegistrationsEquivalent = (
   current.parentTrayId === next.parentTrayId &&
   areAuthoredValuesEquivalent(current.footer, next.footer) &&
   current.dismissible === next.dismissible &&
+  current.deferHostPreparation === next.deferHostPreparation &&
   areAuthoredValuesEquivalent(current.transition, next.transition);

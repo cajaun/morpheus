@@ -8,6 +8,7 @@ import {
   type TrayTransitionOptions,
 } from "./tray-context";
 import { compileTraySteps } from "./tray-step-compiler";
+import { useParentTransitionSettled } from "./tray-parent-transition";
 
 export type TrayNestedProps = Omit<PressableProps, "onPress"> & {
   id?: string;
@@ -40,14 +41,20 @@ export const TrayNested: React.FC<TrayNestedProps> = ({
     () => compileTraySteps(children, stepOptions),
     [children, stepOptions],
   );
+  // A nested tray usually mounts with its parent's step content, in the middle
+  // of the parent's transition. Register right away so it can always open,
+  // but let the presenter build its hidden prepared host only after that
+  // transition completes, so the host mount stays off its critical path.
+  const parentTransitionSettled = useParentTransitionSettled();
   const registration = useMemo<TrayRegistration>(
     () => ({
       steps,
       footer,
       transition,
       parentTrayId: parentTrayId ?? undefined,
+      ...(parentTransitionSettled ? null : { deferHostPreparation: true }),
     }),
-    [footer, parentTrayId, steps, transition],
+    [footer, parentTrayId, parentTransitionSettled, steps, transition],
   );
 
   useEffect(() => {

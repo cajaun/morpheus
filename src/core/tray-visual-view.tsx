@@ -12,7 +12,11 @@ import {
   View,
   type LayoutChangeEvent,
 } from "react-native";
-import { TrayContentCommitContext } from "./tray-content-commit";
+import {
+  TrayContentCommitContext,
+  TrayContentCommitTargetContext,
+  type TrayContentCommitTarget,
+} from "./tray-content-commit";
 import Animated, {
   useDerivedValue,
   useSharedValue,
@@ -23,6 +27,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Backdrop } from "../primitives/backdrop";
 import { useTrayBackgroundScale } from "../runtime/tray-background-scale";
 import { createTrayLayoutTransition } from "./animation/tray-layout";
+import {
+  TrayParentTransitionProvider,
+  type TrayParentTransition,
+} from "../runtime/tray-parent-transition";
 import { styles as trayStyles } from "./animation/tray-styles";
 import { TrayOriginProgressProvider } from "./tray-origin-progress";
 import {
@@ -571,9 +579,9 @@ const TraySnapshotRegion = React.memo(
     // a swapped content node is measured in the commit that mounts it
     useLayoutEffect(() => {
       if (region === "content" && node != null) {
-        notifyRef.current?.();
+        notifyRef.current?.(store.getSnapshot().transitionContract?.generation);
       }
-    }, [node, region]);
+    }, [node, region, store]);
 
     return <TrayRenderedNode node={node} />;
   },
@@ -810,6 +818,21 @@ const TrayStepTransitionProviders = ({
   children: React.ReactNode;
 }) => {
   const value = React.useContext(TrayShellTransitionContext);
+  const trayTransitionStart = value?.trayTransitionStart;
+  const parentTransition = useMemo<TrayParentTransition | null>(
+    () =>
+      trayTransitionStart
+        ? {
+            // only transitions with a shell participant complete their
+            // generation; anything else has nothing to wait for
+            generation: trayTransitionStart.layoutStartRequired
+              ? trayTransitionStart.generation
+              : 0,
+            completedGeneration: trayTransitionStart.completedGeneration,
+          }
+        : null,
+    [trayTransitionStart],
+  );
 
   if (!value) {
     return <>{children}</>;
@@ -818,7 +841,9 @@ const TrayStepTransitionProviders = ({
   return (
     <TrayContentMotionDirectionProvider value={value.contentMotionDirection}>
       <TrayTransitionStartProvider value={value.trayTransitionStart}>
-        {children}
+        <TrayParentTransitionProvider value={parentTransition}>
+          {children}
+        </TrayParentTransitionProvider>
       </TrayTransitionStartProvider>
     </TrayContentMotionDirectionProvider>
   );
@@ -976,7 +1001,19 @@ const TraySheetSurface = React.memo(
     // is applied before the frame instead of after a native onLayout round
     // trip. The later onLayout for the same frame is de-duplicated by the
     // measurement signature (same origin, size and owner).
-    const measureCommittedContent = useCallback(() => {
+    const commitTarget = React.useContext(TrayContentCommitTargetContext);
+    const commitTargetRef = useRef(commitTarget);
+    commitTargetRef.current = commitTarget;
+    const measureCommittedContent = useCallback((generation?: number) => {
+      const target = commitTargetRef.current;
+
+      if (target) {
+        // record which transition's content is now mounted; a region that
+        // cannot name its generation (raw node content) uses the shell's
+        target.committedGeneration.value =
+          generation ?? target.shellGenerationRef.current;
+      }
+
       const node = contentMeasureRef.current as unknown as {
         measure?: (
           callback: (
@@ -1490,7 +1527,20 @@ const TrayVisualShell = React.memo(
       !isFullScreenBoundaryTransition ||
       transitionContract?.to?.mode === "fullScreen" ||
       hasValidBoundarySheetFrame;
+    // The generation of the step content currently mounted, written by the
+    // content region's commit. The fullscreen-to-sheet clock waits for it.
+    const contentCommittedGeneration = useSharedValue(0);
+    const shellGenerationRef = useRef(0);
+    shellGenerationRef.current = transitionContract?.generation ?? 0;
+    const contentCommitTarget = useMemo<TrayContentCommitTarget>(
+      () => ({
+        committedGeneration: contentCommittedGeneration,
+        shellGenerationRef,
+      }),
+      [contentCommittedGeneration],
+    );
     const boundaryMotionParams: TrayBoundaryMotionParams = {
+      contentCommittedGeneration,
       presentationFullScreen,
       renderedFullScreenBackgroundScale,
       renderedFullScreenSafeAreaTop,
@@ -1676,6 +1726,7 @@ const TrayVisualShell = React.memo(
 
     return (
       <TrayShellTransitionContext.Provider value={shellTransitionValue}>
+       <TrayContentCommitTargetContext.Provider value={contentCommitTarget}>
         <TrayBoundaryMotionRegion
           enabled={requiresFullScreenMotion}
           params={boundaryMotionParams}
@@ -1738,6 +1789,7 @@ const TrayVisualShell = React.memo(
             );
           }}
         </TrayBoundaryMotionRegion>
+       </TrayContentCommitTargetContext.Provider>
       </TrayShellTransitionContext.Provider>
     );
   },

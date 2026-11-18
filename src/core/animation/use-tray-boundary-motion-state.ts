@@ -30,6 +30,8 @@ type Params = {
   transitionCompletedGeneration: SharedValue<number>;
   transitionContract: TrayTransitionContract | null;
   boundaryGeometryReady?: boolean;
+  // generation of the step content currently mounted (see tray-content-commit)
+  contentCommittedGeneration?: SharedValue<number>;
   onTransitionStart?: (
     startedAt: number,
     transitionGeneration: number,
@@ -39,6 +41,17 @@ type Params = {
     transitionGeneration: number,
   ) => void;
 };
+
+// Whether a boundary's clock must wait for the target step's content commit.
+// Only fullscreen-to-sheet step changes wait: there the target height can be
+// known a commit before the content mounts. Only a step change re-commits the
+// content region, so anything else must not wait (it would wait forever).
+export const shouldBoundaryWaitForContentCommit = (
+  contract: TrayTransitionContract | null | undefined,
+) =>
+  contract?.fullScreenChanged === true &&
+  contract.stepChanged === true &&
+  contract.to?.mode === "sheet";
 
 // derive boundary geometry from shell morph progress instead of a second transition system
 export const useTrayBoundaryMotionState = ({
@@ -55,6 +68,7 @@ export const useTrayBoundaryMotionState = ({
   transitionCompletedGeneration,
   transitionContract,
   boundaryGeometryReady = true,
+  contentCommittedGeneration,
   onTransitionStart,
   onTransitionComplete,
 }: Params) => {
@@ -202,17 +216,29 @@ export const useTrayBoundaryMotionState = ({
   ]);
 
   const transitionGeneration = transitionContract?.generation ?? 0;
+  // Returning to a sheet can know its target height (from cache) one commit
+  // before the target step's content mounts. Starting the clock then lets the
+  // shell move while the content is still missing, and the content joins the
+  // shared clock late. Wait for this generation's content commit first; the
+  // clock starts on the next UI frame after it.
+  const waitForContentCommit =
+    contentCommittedGeneration !== undefined &&
+    shouldBoundaryWaitForContentCommit(transitionContract);
 
   useAnimatedReaction(
     () => ({
       active: boundaryActive.value,
       startedGeneration: transitionStartedGeneration.value,
       completedGeneration: transitionCompletedGeneration.value,
+      contentCommitted:
+        !waitForContentCommit ||
+        (contentCommittedGeneration?.value ?? 0) >= transitionGeneration,
     }),
     (state) => {
       // let the shell own the clock so frame footer and content join one timestamp
       if (
         !state.active ||
+        !state.contentCommitted ||
         transitionGeneration <= 0 ||
         state.completedGeneration >= transitionGeneration ||
         morphStartedGeneration.value === transitionGeneration
@@ -265,6 +291,7 @@ export const useTrayBoundaryMotionState = ({
     },
     [
       boundaryActive,
+      contentCommittedGeneration,
       morphProgress,
       morphStartedGeneration,
       onTransitionComplete,
@@ -274,6 +301,7 @@ export const useTrayBoundaryMotionState = ({
       transitionLayoutStartedGeneration,
       transitionStartedAt,
       transitionStartedGeneration,
+      waitForContentCommit,
     ],
   );
 
