@@ -8,7 +8,7 @@ import {
   FULL_SCREEN_LAYOUT_DURATION,
   FULL_SCREEN_SHELL_EASING_POINTS,
   MORPH_ENTERING_DURATION,
-  MORPH_EXITING_DURATION,
+  SHEET_EASING_POINTS,
   MORPH_LAYOUT_DURATION,
 } from "../constants";
 import { BORDER_RADIUS, HORIZONTAL_MARGIN } from "../constants";
@@ -30,8 +30,8 @@ describe("fullscreen animation contract", () => {
 
   it("does not change regular step-to-step timing", () => {
     expect(MORPH_ENTERING_DURATION).toBe(280);
-    expect(MORPH_EXITING_DURATION).toBe(190);
     expect(MORPH_LAYOUT_DURATION).toBe(300);
+    expect(SHEET_EASING_POINTS).toEqual([0.4, 0.6, 0.15, 1]);
   });
 
   it("keeps the tray return geometry values", () => {

@@ -37,7 +37,7 @@ const SupportFlowHeader = ({
   title: string;
   left?: ReactNode;
 }) => {
-  const { close } = useTrayNavigation();
+  const { back,close } = useTrayNavigation();
 
   return (
     <Tray.Header withSeparator>
@@ -45,7 +45,7 @@ const SupportFlowHeader = ({
         left={left}
         right={
           left == null ? (
-            <Tray.HeaderButton onPress={close}>
+            <Tray.HeaderButton onPress={back}>
               <SymbolView
                 name="xmark"
                 type="palette"
@@ -76,6 +76,7 @@ const HelpSupportTray = () => {
         <SupportFlowHeader title="How can we help?" />
         <SupportChooserStep onSelect={setSelectedFlow} />
       </Tray.Step>
+
       <Tray.Step key="help-areas">
         <SupportFlowHeader
           title="Choose Areas"

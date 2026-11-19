@@ -6,7 +6,7 @@ import {
   type SharedValue,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { MORPH_LAYOUT_DURATION } from "../constants";
+import { MORPH_LAYOUT_DURATION, SHEET_EASING_POINTS } from "../constants";
 import { withTrayTransitionStart } from "../transition-start";
 import { withTrayLayoutProgress } from "./with-tray-layout-progress";
 
@@ -39,7 +39,7 @@ export const createTrayLayoutTransition = ({
 }: TrayLayoutTransitionParams) => {
   const transition = LinearTransition
     .duration(MORPH_LAYOUT_DURATION)
-    .easing(Easing.bezier(0.34, 1.12, 0.64, 1).factory());
+    .easing(Easing.bezier(...SHEET_EASING_POINTS).factory());
 
   const buildTransition = transition.build();
   const synchronizedTransition: LayoutAnimationFunction = (values) => {

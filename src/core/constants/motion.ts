@@ -1,6 +1,8 @@
 export const MORPH_ENTERING_DURATION = 280;
-export const MORPH_EXITING_DURATION = 190;
 export const MORPH_LAYOUT_DURATION = 300;
+// sheet resize curve: eases in, then settles without overshoot. Outgoing
+// content uses the same curve and duration so it fades in lockstep with the sheet
+export const SHEET_EASING_POINTS = [0.4, 0.6, 0.15, 1] as const;
 export const MORPH_ENTERING_SCALE = 0.9;
 export const MORPH_EXITING_SCALE = 1.075;
 

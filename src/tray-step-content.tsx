@@ -22,7 +22,7 @@ import {
   FULL_SCREEN_ENTERING_DURATION,
   FULL_SCREEN_EXITING_DURATION,
   MORPH_ENTERING_DURATION,
-  MORPH_EXITING_DURATION,
+  SHEET_EASING_POINTS,
   MORPH_LAYOUT_DURATION,
 } from "./core/constants";
 import {
@@ -75,7 +75,7 @@ type Props = {
 };
 
 export const MORPH_EASING = Easing.bezier(0.25, 1.0, 0.5, 1);
-export const SHEET_EASING = Easing.bezier(0.34, 1.12, 0.64, 1);
+export const SHEET_EASING = Easing.bezier(...SHEET_EASING_POINTS);
 export const FULL_SCREEN_CONTENT_EASING = Easing.bezier(
   ...FULL_SCREEN_CONTENT_EASING_POINTS,
 );
@@ -291,15 +291,11 @@ const createMorphExiting = (
         fullScreenBoundaryExit,
         synchronizedFullScreen,
       );
-    const keyboardStepTransition =
-      transitionStart?.keyboardStepTransition === true;
-    const duration = keyboardStepTransition
-      ? activeFullScreenBoundaryExit
-        ? FULL_SCREEN_EXITING_DURATION
-        : MORPH_LAYOUT_DURATION
-      : activeFullScreenBoundaryExit
-        ? FULL_SCREEN_EXITING_DURATION
-        : MORPH_EXITING_DURATION;
+    // sheet steps: same duration and curve as the sheet layout transition, on
+    // the same clock, so the old content's fade is locked to the sheet's travel
+    const duration = activeFullScreenBoundaryExit
+      ? FULL_SCREEN_EXITING_DURATION
+      : MORPH_LAYOUT_DURATION;
     const easing = activeFullScreenBoundaryExit
       ? FULL_SCREEN_CONTENT_EASING
       : SHEET_EASING;
