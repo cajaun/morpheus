@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it } from "@jest/globals";
 import TestRenderer, { act } from "react-test-renderer";
-import { useActionTrayDragStyle } from "../use-action-tray-drag-style";
+import { useTrayDragStyle } from "../use-tray-drag-style";
 
 // probe the composed transform without starting a native animation
 jest.mock("react-native-reanimated", () => {
@@ -24,10 +24,10 @@ const renderDragStyle = ({
   shouldUseOriginTransition?: boolean;
   translateY: number;
 }) => {
-  let style: ReturnType<typeof useActionTrayDragStyle> | null = null;
+  let style: ReturnType<typeof useTrayDragStyle> | null = null;
 
   const Probe = () => {
-    style = useActionTrayDragStyle({
+    style = useTrayDragStyle({
       originProgress: shared(originProgress),
       shouldUseOriginTransition,
       translateY: shared(translateY),
@@ -43,7 +43,7 @@ const renderDragStyle = ({
   return style!;
 };
 
-describe("useActionTrayDragStyle", () => {
+describe("useTrayDragStyle", () => {
   it("preserves ordinary tray drag travel", () => {
     expect(
       renderDragStyle({

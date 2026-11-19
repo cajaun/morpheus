@@ -1,11 +1,7 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { SymbolView } from "expo-symbols";
 import { Text } from "react-native";
-import {
-  Tray,
-  useTrayNavigation,
-  useTrayNavigationState,
-} from "react-native-morpheus";
+import { Tray, useTrayNavigation } from "react-native-morpheus";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
@@ -18,21 +14,30 @@ import {
 } from "./steps";
 import type { HelpKind } from "./types";
 
-const SupportFlowHeader = ({ title }: { title: string }) => {
-  const { close, back } = useTrayNavigation();
-  const { index } = useTrayNavigationState();
-  const left =
-    index > 0 ? (
-      <Tray.HeaderButton onPress={back}>
-        <SymbolView
-          name="chevron.left"
-          type="palette"
-          tintColor="#787878"
-          size={TRAY_HEADER_CLOSE_ICON_SIZE}
-          weight="semibold"
-        />
-      </Tray.HeaderButton>
-    ) : undefined;
+const SupportBackAction = () => {
+  const { back } = useTrayNavigation();
+
+  return (
+    <Tray.HeaderButton onPress={back}>
+      <SymbolView
+        name="chevron.left"
+        type="palette"
+        tintColor="#787878"
+        size={TRAY_HEADER_CLOSE_ICON_SIZE}
+        weight="semibold"
+      />
+    </Tray.HeaderButton>
+  );
+};
+
+const SupportFlowHeader = ({
+  title,
+  left,
+}: {
+  title: string;
+  left?: ReactNode;
+}) => {
+  const { close } = useTrayNavigation();
 
   return (
     <Tray.Header withSeparator>
@@ -72,7 +77,10 @@ const HelpSupportTray = () => {
         <SupportChooserStep onSelect={setSelectedFlow} />
       </Tray.Step>
       <Tray.Step key="help-areas">
-        <SupportFlowHeader title="Choose Areas" />
+        <SupportFlowHeader
+          title="Choose Areas"
+  
+        />
         <ChooseAreasStep />
       </Tray.Step>
       <Tray.Step key={`help-compose-${selectedFlow}`} options={{ keyboardAware: true }}>
@@ -88,11 +96,17 @@ const HelpSupportTray = () => {
         <ComposeSupportStep flow={selectedFlow} />
       </Tray.Step>
       <Tray.Step key={`help-attach-${selectedFlow}`}>
-        <SupportFlowHeader title="Attach Media" />
+        <SupportFlowHeader
+          title="Attach Media"
+          left={<SupportBackAction />}
+        />
         <AttachMediaStep flow={selectedFlow} />
       </Tray.Step>
       <Tray.Step key={`help-details-${selectedFlow}`} options={{ keyboardAware: true }}>
-        <SupportFlowHeader title="Your Details" />
+        <SupportFlowHeader
+          title="Your Details"
+          left={<SupportBackAction />}
+        />
         <YourDetailsStep />
       </Tray.Step>
     </Tray.Root>

@@ -228,7 +228,7 @@ const ChangeAvatarTray = () => (
       <ChangeAvatarOptionsStep />
     </Tray.Step>
 
-    <Tray.Step>
+    <Tray.Step >
       <ChangeAvatarHeader
         title="Use Emoji"
         left={<AvatarBackAction />}
