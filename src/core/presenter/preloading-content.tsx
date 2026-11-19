@@ -1,4 +1,10 @@
-import React, { Activity, useContext, useMemo, useState } from "react";
+import React, {
+  Activity,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 import type {
   PresentedPreloadedStep,
 } from "../../runtime/presenter/types";
@@ -106,6 +112,40 @@ const useSettledLayers = <T extends { key: string }>(
   return layers;
 };
 
+// Keeps a hidden layer's content as it was when it was hidden. React defers a
+// hidden <Activity>'s effects, so Reanimated's animated components inside it
+// never finish mounting; re-rendering one then reads shared values on the JS
+// thread during render (the "Reading from `value` during component render"
+// warning). Parents re-render hidden neighbours on every state change (typing
+// into the current step re-renders the next step's content), so the hidden
+// content is held as the same element, which React skips. On reveal the held
+// element is shown first, so the effects mount, then the latest content
+// renders in a layout effect before paint.
+const TrayHiddenLayerContent = ({
+  hidden,
+  children,
+}: {
+  hidden: boolean;
+  children: React.ReactNode;
+}) => {
+  const [held, setHeld] = useState(() => ({ hidden, children }));
+
+  // derived state: hiding captures the latest content
+  if (hidden && !held.hidden) {
+    setHeld({ hidden: true, children });
+  }
+
+  const revealing = !hidden && held.hidden;
+
+  useLayoutEffect(() => {
+    if (revealing) {
+      setHeld({ hidden: false, children });
+    }
+  }, [children, revealing]);
+
+  return hidden || revealing ? held.children : children;
+};
+
 const renderLayer = (
   trayId: string,
   mode: "visible" | "hidden",
@@ -131,7 +171,9 @@ const renderLayer = (
     <Activity mode={mode}>
       <TrayStepLayerProvider value={trayId}>
         <TrayStepOptionsProvider value={stepOptions}>
-          {content}
+          <TrayHiddenLayerContent hidden={mode === "hidden"}>
+            {content}
+          </TrayHiddenLayerContent>
         </TrayStepOptionsProvider>
       </TrayStepLayerProvider>
     </Activity>
@@ -277,7 +319,9 @@ const TrayHeaderLayer = ({
         <TrayStepLayerProvider value={trayId}>
           <TrayStepOptionsProvider value={stepOptions}>
             <TrayHeaderTransitionProvider value={transitionValue}>
-              {header}
+              <TrayHiddenLayerContent hidden={hidden}>
+                {header}
+              </TrayHiddenLayerContent>
             </TrayHeaderTransitionProvider>
           </TrayStepOptionsProvider>
         </TrayStepLayerProvider>

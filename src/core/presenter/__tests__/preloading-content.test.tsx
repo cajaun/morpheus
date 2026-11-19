@@ -190,6 +190,80 @@ describe("TrayPreloadingContent", () => {
   });
 });
 
+describe("hidden layer content", () => {
+  const renders: string[] = [];
+  const Field = ({ value }: { value: string }) => {
+    renders.push(value);
+    return null;
+  };
+  const step = (
+    key: string,
+    value: string,
+  ): PresentedPreloadedStep => ({
+    trayId: `typing-${key}`,
+    header: null,
+    content: <Field value={`${key}:${value}`} />,
+    stepOptions: options,
+  });
+  const typingTree = (
+    current: string,
+    next: string,
+    value: string,
+  ) => (
+    <TrayParentTransitionProvider value={{ generation: 1 } as never}>
+      <TrayPreloadingContent
+        current={{
+          trayId: `typing-${current}`,
+          content: <Field value={`${current}:${value}`} />,
+          stepOptions: options,
+          fullScreen: false,
+          fullScreenBoundaryExit: false,
+          isFirstRender: false,
+        }}
+        preloaded={[step(next, value)]}
+      />
+    </TrayParentTransitionProvider>
+  );
+
+  beforeEach(() => {
+    mockCompletedGeneration = 1;
+    renders.length = 0;
+  });
+
+  it("does not re-render a hidden step when the parent's state changes", () => {
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(typingTree("address", "details", ""));
+    });
+    renders.length = 0;
+
+    act(() => {
+      renderer.update(typingTree("address", "details", "b"));
+    });
+
+    expect(renders).toEqual(["address:b"]);
+  });
+
+  it("shows the latest content once the hidden step is revealed", () => {
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(typingTree("address", "details", ""));
+    });
+    act(() => {
+      renderer.update(typingTree("address", "details", "ben"));
+    });
+    renders.length = 0;
+
+    act(() => {
+      renderer.update(typingTree("details", "address", "ben"));
+    });
+
+    // the held element is shown first, then the latest content renders
+    expect(renders).toContain("details:ben");
+    expect(renders[renders.length - 1]).not.toBe("details:");
+  });
+});
+
 describe("resolveRenderedPreloadedSteps", () => {
   const steps = [preloadStep("two"), preloadStep("three")];
 
