@@ -153,10 +153,11 @@ export const useSheetTrayKeyboard = ({
       keyboardLeaseRef.current = false;
     }
 
-    // A sheet step-to-step transition must never explicitly dismiss the
-    // keyboard. The focused input/native handoff owns that lifecycle; an
-    // imperative dismissal here creates the visible close/reopen correction
-    // when the next keyboard-aware step is still being committed.
+    // A sheet step-to-step transition never dismisses here. A keyboard to
+    // keyboard handoff belongs to the focused input (an imperative dismissal
+    // creates a visible close/reopen), and a step that puts the keyboard away
+    // dismisses it when its layout is ready to move, through the keyboard
+    // gate, so the keyboard and the sheet start on the same frame.
     const shouldDismiss =
       closingTray || (leavingKeyboardStep && !sheetStepTransition);
 

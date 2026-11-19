@@ -49,7 +49,7 @@ const PaymentButton = ({
   </Tray.PrimaryButton>
 );
 
-const PaymentMethodHeader = ({
+export const PaymentMethodHeader = ({
   title,
   showBack = false,
 }: {
@@ -458,7 +458,12 @@ const PaymentMethodCard = ({
   </PressableScale>
 );
 
-const AddPaymentMethodStep = () => {
+export const AddPaymentMethodStep = ({
+  bankAccountEnabled = true,
+}: {
+  // the keyboard variant only follows the stablecoin wallet path
+  bankAccountEnabled?: boolean;
+}) => {
   const { next } = useTrayNavigation();
 
   return (
@@ -466,7 +471,7 @@ const AddPaymentMethodStep = () => {
       <Tray.Section className="gap-4 pt-7 pb-7">
         <PaymentMethodCard
           className="w-full h-34 gap-4 rounded-3xl border border-[#EAEAEA] bg-white px-5 py-4"
-          onPress={next}
+          onPress={bankAccountEnabled ? next : () => {}}
         >
           <View className="flex-row items-start justify-between gap-3">
             <View className="min-w-0 shrink">
@@ -568,7 +573,7 @@ const AddressField = ({
   </PaymentFieldShell>
 );
 
-const AddWalletAddressStep = ({
+export const AddWalletAddressStep = ({
   address,
   onChangeAddress,
 }: {
@@ -612,7 +617,7 @@ const AddWalletAddressStep = ({
   );
 };
 
-const AddressDetailsStep = ({
+export const AddressDetailsStep = ({
   address,
   onChangeAddress,
 }: {

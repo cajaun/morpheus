@@ -30,6 +30,60 @@ export type TrayTransitionStart = {
 
 export type TrayTransitionParticipant = "incoming" | "outgoing" | "layout";
 
+// A sheet step that brings up or puts away the keyboard is armed with its
+// generation. The keyboard's own UI-thread start signal then opens the gate,
+// so the shell layout, the content and the keyboard begin on the same frame.
+// The layout participant holds the shared clock while the gate is armed and
+// closed; content already waits for the layout start, so it follows.
+export type TrayKeyboardGate = {
+  armedGeneration: SharedValue<number>;
+  startedGeneration: SharedValue<number>;
+  // 1 when the armed step brings the keyboard up, 0 when it puts it away
+  armedTarget: SharedValue<number>;
+  // the keyboard's own UI-thread progress (0 hidden, 1 shown). A keyboard
+  // that has already left its start position opens the gate even if its start
+  // signal arrived before the gate was armed.
+  keyboardProgress: SharedValue<number>;
+  // JS callback run when the layout for an armed step is ready to move. A step
+  // that puts the keyboard away dismisses it here, so the keyboard starts with
+  // the sheet instead of at the step commit, ahead of the sheet's layout.
+  onLayoutReady?: (generation: number) => void;
+};
+
+// A keyboard that never moves (no input focused, or a hardware keyboard with
+// no on-screen keyboard) must not hold the transition. Measured keyboard
+// starts land about 25-35 ms after the sheet would start, so this only ever
+// releases a gate whose keyboard is not coming.
+export const TRAY_KEYBOARD_GATE_MAX_WAIT_MS = 120;
+
+// open the gate from the keyboard's UI-thread start signal
+export const openTrayKeyboardGate = (gate: TrayKeyboardGate) => {
+  "worklet";
+
+  gate.startedGeneration.value = gate.armedGeneration.value;
+};
+
+const isTrayKeyboardGateClosed = (
+  gate: TrayKeyboardGate | undefined,
+  generation: number,
+) => {
+  "worklet";
+
+  // exact generation match: a tray whose generations restart, or an earlier
+  // armed step, can never hold an unrelated transition
+  if (
+    gate === undefined ||
+    gate.armedGeneration.value !== generation ||
+    gate.startedGeneration.value === generation
+  ) {
+    return false;
+  }
+
+  const keyboardStartProgress = 1 - gate.armedTarget.value;
+
+  return Math.abs(gate.keyboardProgress.value - keyboardStartProgress) < 0.01;
+};
+
 // startedAt is the shared clock start this participant follows; joinedAt is
 // the frame it actually started on. Both come from the UI frame clock, so
 // joinedAt - startedAt is how late the participant joined the transition.
@@ -144,6 +198,7 @@ interface TransitionStartAnimation
   completedGeneration: SharedValue<number>;
   waitingForStart: boolean;
   started: boolean;
+  gateWaitStartedAt: number;
   diagnosticStarted: boolean;
   diagnosticCompleted: boolean;
 }
@@ -159,6 +214,7 @@ type WithTrayTransitionStart = <T extends AnimatableValue>(
   onStartSignal?: TrayTransitionStartSignal,
   waitForClock?: boolean,
   waitForLayoutStart?: boolean,
+  keyboardGate?: TrayKeyboardGate,
 ) => T;
 
 // join every participant to one ui thread clock
@@ -173,6 +229,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
   onStartSignal?: TrayTransitionStartSignal,
   waitForClock = false,
   waitForLayoutStart = false,
+  keyboardGate?: TrayKeyboardGate,
 ): Animation<TransitionStartAnimation> {
   "worklet";
 
@@ -195,13 +252,27 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         const clockNotStarted = startedGeneration.value < generation;
         const layoutNotStarted =
           layoutStartedGeneration.value < generation;
+        const keyboardNotStarted =
+          participant === "layout" &&
+          isTrayKeyboardGateClosed(keyboardGate, generation) &&
+          now - animation.gateWaitStartedAt < TRAY_KEYBOARD_GATE_MAX_WAIT_MS;
         if (
           !completed &&
           ((waitForClock && clockNotStarted) ||
-            (waitForLayoutStart && layoutNotStarted))
+            (waitForLayoutStart && layoutNotStarted) ||
+            keyboardNotStarted)
         ) {
           animation.waitingForStart = true;
           return;
+        }
+
+        // the layout start is what content waits for, so it is published only
+        // once the layout itself is free to move
+        if (participant === "layout" && !completed) {
+          layoutStartedGeneration.value = Math.max(
+            layoutStartedGeneration.value,
+            generation,
+          );
         }
 
         const hasSameGeneration =
@@ -260,12 +331,8 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         now: number,
       ): boolean => {
         if (!animation.started) {
-          if (
-            animation.waitingForStart &&
-            (!waitForClock || startedGeneration.value >= generation) &&
-            (!waitForLayoutStart ||
-              layoutStartedGeneration.value >= generation)
-          ) {
+          if (animation.waitingForStart) {
+            // re-checks every wait condition, including the keyboard gate
             startInnerAnimation(animation, animation.current, now);
           }
 
@@ -314,13 +381,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
 
         animation.current = value;
         animation.previousAnimation = previousAnimation;
-
-        if (
-          participant === "layout" &&
-          animation.completedGeneration.value < generation
-        ) {
-          animation.layoutStartedGeneration.value = generation;
-        }
+        animation.gateWaitStartedAt = now;
 
         startInnerAnimation(animation, value, now);
       };
@@ -340,6 +401,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         completedGeneration,
         waitingForStart: false,
         started: false,
+        gateWaitStartedAt: 0,
         diagnosticStarted: false,
         diagnosticCompleted: false,
       };

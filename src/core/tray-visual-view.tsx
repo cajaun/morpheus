@@ -22,7 +22,12 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated";
 import { GestureDetector } from "react-native-gesture-handler";
-import { useKeyboardAnimation } from "react-native-keyboard-controller";
+import {
+  KeyboardController,
+  useGenericKeyboardHandler,
+  useKeyboardAnimation,
+  useReanimatedKeyboardAnimation,
+} from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Backdrop } from "../primitives/backdrop";
 import { useTrayBackgroundScale } from "../runtime/tray-background-scale";
@@ -43,7 +48,9 @@ import { markTrayBoundarySnapshotCommitted } from "../telemetry/tray-boundary-ti
 import { markTrayStepRenderedCommit } from "../telemetry/tray-step-timing";
 import { TrayMorphProgressProvider } from "./tray-morph-progress";
 import {
+  openTrayKeyboardGate,
   TrayTransitionStartProvider,
+  type TrayKeyboardGate,
   type TrayTransitionStart,
 } from "./transition-start";
 import {
@@ -231,6 +238,11 @@ const TrayBackdropInteractionContext = React.createContext<
   TrayBackdropInteraction | undefined
 >(undefined);
 const TrayKeyboardStickyContext = React.createContext(false);
+// Present only under a keyboard-capable tray. The shell layout transition
+// waits on it for sheet steps that bring up or put away the keyboard.
+const TrayKeyboardGateContext = React.createContext<TrayKeyboardGate | null>(
+  null,
+);
 
 // Per-step transition values. They change on every step, but only a few
 // leaves consume them: the sheet view that carries the layout transition and
@@ -1497,6 +1509,7 @@ const TrayVisualShell = React.memo(
       transitionLayoutStartedGeneration,
       transitionCompletedGeneration,
     } = shared;
+    const keyboardGate = React.useContext(TrayKeyboardGateContext);
     const {
       layoutEnabled,
       contentHeightSnapshot,
@@ -1720,6 +1733,7 @@ const TrayVisualShell = React.memo(
           transitionLayoutStartedGeneration,
           transitionCompletedGeneration,
           morphProgress,
+          keyboardGate: keyboardGate ?? undefined,
           onConfigure: instrumentationEnabled
             ? handleLayoutTransitionConfigured
             : undefined,
@@ -1735,6 +1749,7 @@ const TrayVisualShell = React.memo(
         transitionLayoutStartedGeneration,
         transitionCompletedGeneration,
         morphProgress,
+        keyboardGate,
         handleLayoutTransitionConfigured,
         handleLayoutTransitionComplete,
         handleLayoutTransitionStart,
@@ -1967,6 +1982,83 @@ const TrayKeyboardCapableVisualView = React.memo(
     const keyboardTransitionIntent = resolveKeyboardSheetTransitionIntent(
       props.transitionContract,
     );
+    const keyboardArmedGeneration = useSharedValue(0);
+    const keyboardStartedGeneration = useSharedValue(0);
+    const keyboardArmedTarget = useSharedValue(1);
+    const { progress: keyboardProgress } = useReanimatedKeyboardAnimation();
+    // generation of a step that puts the keyboard away and has not dismissed
+    // it yet; the dismissal waits for that step's layout to be ready
+    const pendingKeyboardDismissRef = useRef(0);
+    const dismissKeyboardForLayout = useCallback((generation: number) => {
+      if (
+        pendingKeyboardDismissRef.current === 0 ||
+        pendingKeyboardDismissRef.current !== generation
+      ) {
+        return;
+      }
+
+      pendingKeyboardDismissRef.current = 0;
+      void KeyboardController.dismiss({ keepFocus: false, animated: true });
+    }, []);
+    const keyboardGate = useMemo<TrayKeyboardGate>(
+      () => ({
+        armedGeneration: keyboardArmedGeneration,
+        startedGeneration: keyboardStartedGeneration,
+        armedTarget: keyboardArmedTarget,
+        keyboardProgress,
+        onLayoutReady: dismissKeyboardForLayout,
+      }),
+      [
+        dismissKeyboardForLayout,
+        keyboardArmedGeneration,
+        keyboardArmedTarget,
+        keyboardProgress,
+        keyboardStartedGeneration,
+      ],
+    );
+    const keyboardGateGeneration =
+      props.visible &&
+      (keyboardTransitionIntent.entersKeyboard ||
+        keyboardTransitionIntent.leavesKeyboard)
+        ? (props.transitionContract?.generation ?? 0)
+        : 0;
+    const keyboardGateTarget = keyboardTransitionIntent.entersKeyboard ? 1 : 0;
+
+    // Arm on the step commit. The sheet's layout cannot start for several
+    // frames after this, so the gate is always armed before it is checked.
+    useLayoutEffect(() => {
+      if (
+        keyboardGateGeneration <= 0 ||
+        keyboardGateGeneration === keyboardArmedGeneration.value
+      ) {
+        return;
+      }
+
+      if (keyboardGateTarget === 0) {
+        pendingKeyboardDismissRef.current = keyboardGateGeneration;
+      }
+
+      keyboardArmedTarget.value = keyboardGateTarget;
+      keyboardArmedGeneration.value = keyboardGateGeneration;
+    }, [
+      keyboardArmedGeneration,
+      keyboardArmedTarget,
+      keyboardGateGeneration,
+      keyboardGateTarget,
+    ]);
+
+    // The keyboard's start runs on the UI thread on the frame it begins to
+    // move, which is the frame the sheet and content should begin on too.
+    useGenericKeyboardHandler(
+      {
+        onStart: () => {
+          "worklet";
+
+          openTrayKeyboardGate(keyboardGate);
+        },
+      },
+      [keyboardGate],
+    );
     const keyboard = useSheetTrayKeyboard({
       rootTrayId: props.rootTrayId,
       visible: props.visible,
@@ -2016,10 +2108,12 @@ const TrayKeyboardCapableVisualView = React.memo(
     ]);
 
     return (
-      <TrayVisualViewBody
-        {...props}
-        keyboardStickyEnabled={keyboard.stickyEnabled}
-      />
+      <TrayKeyboardGateContext.Provider value={keyboardGate}>
+        <TrayVisualViewBody
+          {...props}
+          keyboardStickyEnabled={keyboard.stickyEnabled}
+        />
+      </TrayKeyboardGateContext.Provider>
     );
   },
 );

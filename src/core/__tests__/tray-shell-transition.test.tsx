@@ -41,6 +41,7 @@ jest.mock("react-native-keyboard-controller", () => ({
     dismiss: jest.fn(),
   },
   useKeyboardState: () => false,
+  useGenericKeyboardHandler: jest.fn(),
   useKeyboardAnimation: () => {
     const ReactNative = require("react-native");
 
@@ -51,6 +52,7 @@ jest.mock("react-native-keyboard-controller", () => ({
   },
   useReanimatedKeyboardAnimation: () => ({
     height: { value: 0 },
+    progress: { value: 0 },
   }),
   KeyboardStickyView: ({
     children,

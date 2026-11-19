@@ -141,4 +141,34 @@ describe("tray step timing", () => {
       JSON.stringify(timingGlobal.__TRAY_STEP_TIMINGS__?.[0]),
     );
   });
+
+  it("keeps a late mark from the previous step off the next step's trace", () => {
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const root = "late-mark-root";
+    const target = "late-mark-root-feedback";
+
+    // step 2 never receives its shell layout before the next request
+    markTrayStepRequested(root);
+    markTrayStepPresenterResolved(root, 2, "late-mark-root-areas");
+    markTrayStepRequested(root);
+    // the stale generation 2 shell layout arrives after the next request
+    markTrayStepShellLayout(root, "late-mark-root-areas", 2);
+
+    markTrayStepPresenterResolved(root, 3, target);
+    markTrayStepSlotCommitted(root, 3, target);
+    markTrayStepSnapshotPublished(root, target, 3);
+    markTrayStepRenderedCommit(root, target, 3);
+    markTrayStepShellLayout(root, target, 3);
+    markTrayStepLayoutConfigured(root, target, 10, 3);
+    markTrayStepLayoutStarted(root, target, 11, 3);
+    markTrayStepContentReleased(target);
+    markTrayStepLayoutFinished(root, target, 300, 3);
+
+    const lines = consoleSpy.mock.calls.map((call) => call[0]);
+
+    expect(lines).toContain("[TrayStepPerf:incomplete]");
+    expect(timingGlobal.__TRAY_STEP_TIMINGS__).toEqual([
+      expect.objectContaining({ trayId: target, transitionGeneration: 3 }),
+    ]);
+  });
 });

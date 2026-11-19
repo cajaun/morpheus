@@ -99,14 +99,14 @@ const HelpSupportTray = () => {
       <Tray.Step key={`help-attach-${selectedFlow}`}>
         <SupportFlowHeader
           title="Attach Media"
-          left={<SupportBackAction />}
+          
         />
         <AttachMediaStep flow={selectedFlow} />
       </Tray.Step>
       <Tray.Step key={`help-details-${selectedFlow}`} options={{ keyboardAware: true }}>
         <SupportFlowHeader
           title="Your Details"
-          left={<SupportBackAction />}
+         
         />
         <YourDetailsStep />
       </Tray.Step>

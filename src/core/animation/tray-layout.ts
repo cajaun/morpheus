@@ -7,7 +7,10 @@ import {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { MORPH_LAYOUT_DURATION, SHEET_EASING_POINTS } from "../constants";
-import { withTrayTransitionStart } from "../transition-start";
+import {
+  type TrayKeyboardGate,
+  withTrayTransitionStart,
+} from "../transition-start";
 import { withTrayLayoutProgress } from "./with-tray-layout-progress";
 
 type TrayLayoutTransitionParams = {
@@ -17,6 +20,8 @@ type TrayLayoutTransitionParams = {
   transitionLayoutStartedGeneration: SharedValue<number>;
   transitionCompletedGeneration: SharedValue<number>;
   morphProgress: SharedValue<number>;
+  // armed only for sheet steps that bring up or put away the keyboard
+  keyboardGate?: TrayKeyboardGate;
   onConfigure?: (configuredAt: number, transitionGeneration: number) => void;
   onStart?: (startedAt: number, transitionGeneration: number) => void;
   onComplete?: (finishedAt: number, transitionGeneration: number) => void;
@@ -33,6 +38,7 @@ export const createTrayLayoutTransition = ({
   transitionLayoutStartedGeneration,
   transitionCompletedGeneration,
   morphProgress,
+  keyboardGate,
   onConfigure,
   onStart,
   onComplete,
@@ -48,6 +54,16 @@ export const createTrayLayoutTransition = ({
     if (onConfigure) {
       // configuration fires before native animation start so timing can split setup from motion
       scheduleOnRN(onConfigure, performance.now(), transitionGeneration);
+    }
+
+    // an armed keyboard step is ready to move: let the keyboard start now so
+    // its start signal opens the gate this layout is about to wait on
+    if (
+      keyboardGate?.onLayoutReady &&
+      transitionGeneration > 0 &&
+      keyboardGate.armedGeneration.value === transitionGeneration
+    ) {
+      scheduleOnRN(keyboardGate.onLayoutReady, transitionGeneration);
     }
 
     
@@ -119,6 +135,9 @@ export const createTrayLayoutTransition = ({
                       scheduleOnRN(onStart, startedAt, callbackGeneration);
                     }
                   : undefined,
+                false,
+                false,
+                keyboardGate,
               ) as unknown as AnimationObject)
             : (progressAnimation as unknown as AnimationObject);
       }

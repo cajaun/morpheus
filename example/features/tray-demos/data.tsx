@@ -3,6 +3,7 @@ import { View } from "react-native";
 import AboutAaveTray from "./about-aave";
 import AddStablecoinsTray from "./add-stablecoins";
 import AddPaymentMethodTray from "./add-payment-method";
+import AddPaymentMethodKeyboardTray from "./add-payment-method-keyboard";
 import ChangeAvatarTray from "./change-avatar";
 import type { UsageVariant } from "./component-presentation/types";
 import CreatingWalletsInfoTray from "./creating-wallets-info";
@@ -88,6 +89,15 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     content: (
       <TrayExampleFrame>
         <AddPaymentMethodTray />
+      </TrayExampleFrame>
+    ),
+  },
+  {
+    value: "add-payment-method-keyboard",
+    label: "Add Payment Method Keyboard",
+    content: (
+      <TrayExampleFrame>
+        <AddPaymentMethodKeyboardTray />
       </TrayExampleFrame>
     ),
   },

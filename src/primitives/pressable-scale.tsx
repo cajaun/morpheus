@@ -9,7 +9,6 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withTiming,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
@@ -26,8 +25,11 @@ export type TrayPressableScaleProps = Omit<
 };
 
 const ANIMATION_DURATION = 250;
+// press-in starts on the touch-down frame: a quick tap is released in well
+// under 100 ms, and any activation delay would leave it with no feedback at
+// all before the action runs
+const PRESS_IN_DURATION = 120;
 const TAP_MAX_DISTANCE = 8;
-const SCALE_ACTIVATION_DELAY_MS = 80;
 
 export const TrayPressableScale: React.FC<TrayPressableScaleProps> = ({
   children,
@@ -61,13 +63,10 @@ export const TrayPressableScale: React.FC<TrayPressableScaleProps> = ({
     transform: [
       {
         scale: active.value
-          ? withDelay(
-              SCALE_ACTIVATION_DELAY_MS,
-              withTiming(0.95, {
-                duration: ANIMATION_DURATION,
-                easing: Easing.bezier(0.4, 0, 0.2, 1),
-              }),
-            )
+          ? withTiming(0.95, {
+              duration: PRESS_IN_DURATION,
+              easing: Easing.bezier(0.4, 0, 0.2, 1),
+            })
           : withTiming(1, {
               duration: ANIMATION_DURATION,
               easing: Easing.bezier(0.4, 0, 0.2, 1),

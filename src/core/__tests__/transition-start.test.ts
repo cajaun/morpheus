@@ -6,7 +6,9 @@ import type {
   SharedValue,
 } from "react-native-reanimated";
 import {
+  openTrayKeyboardGate,
   publishTrayTransitionStart,
+  TRAY_KEYBOARD_GATE_MAX_WAIT_MS,
   resolveTrayTransitionFullScreenChanged,
   resolveTrayTransitionGeneration,
   shouldWaitForTrayLayoutStart,
@@ -405,5 +407,133 @@ describe("tray transition start synchronization", () => {
     expect(resolveTrayTransitionFullScreenChanged(transitionStart)).toBe(
       true,
     );
+  });
+
+  describe("keyboard gate", () => {
+    const setup = () => {
+      const clock = {
+        startedGeneration: shared(0),
+        startedAt: shared(0),
+        layoutStartedGeneration: shared(0),
+        completedGeneration: shared(0),
+      };
+      const gate = {
+        armedGeneration: shared(9),
+        startedGeneration: shared(0),
+        armedTarget: shared(1),
+        keyboardProgress: shared(0),
+      };
+      const layoutInner = createAnimation();
+      const contentInner = createAnimation();
+      const layout = withTrayTransitionStart(
+        layoutInner as unknown as number,
+        clock.startedGeneration,
+        clock.startedAt,
+        clock.layoutStartedGeneration,
+        clock.completedGeneration,
+        9,
+        "layout",
+        undefined,
+        false,
+        false,
+        gate,
+      ) as unknown as AnimationObject<number>;
+      const content = withTrayTransitionStart(
+        contentInner as unknown as number,
+        clock.startedGeneration,
+        clock.startedAt,
+        clock.layoutStartedGeneration,
+        clock.completedGeneration,
+        9,
+        "incoming",
+        undefined,
+        false,
+        true,
+      ) as unknown as AnimationObject<number>;
+
+      return { clock, gate, layout, layoutInner, content, contentInner };
+    };
+
+    it("holds the layout, the clock and the content until the keyboard starts", () => {
+      const { clock, gate, layout, layoutInner, content, contentInner } =
+        setup();
+
+      layout.onStart(layout, 0, 100, null);
+      content.onStart(content, 0, 100, null);
+      layout.onFrame(layout, 116);
+      content.onFrame(content, 116);
+
+      expect(layoutInner.onStart).not.toHaveBeenCalled();
+      expect(contentInner.onStart).not.toHaveBeenCalled();
+      expect(clock.layoutStartedGeneration.value).toBe(0);
+      expect(clock.startedGeneration.value).toBe(0);
+
+      // the keyboard begins moving on the UI thread
+      openTrayKeyboardGate(gate);
+      layout.onFrame(layout, 133);
+      content.onFrame(content, 133);
+
+      expect(clock.layoutStartedGeneration.value).toBe(9);
+      expect(clock.startedGeneration.value).toBe(9);
+      expect(clock.startedAt.value).toBe(133);
+      expect(layoutInner.onStart).toHaveBeenCalledWith(
+        layoutInner,
+        0,
+        133,
+        null,
+      );
+      expect(contentInner.onStart).toHaveBeenCalledWith(
+        contentInner,
+        0,
+        133,
+        null,
+      );
+    });
+
+    it("releases the layout when the keyboard never starts", () => {
+      const { clock, layout, layoutInner } = setup();
+
+      layout.onStart(layout, 0, 100, null);
+      layout.onFrame(layout, 100 + TRAY_KEYBOARD_GATE_MAX_WAIT_MS - 1);
+      expect(layoutInner.onStart).not.toHaveBeenCalled();
+
+      layout.onFrame(layout, 100 + TRAY_KEYBOARD_GATE_MAX_WAIT_MS);
+      expect(layoutInner.onStart).toHaveBeenCalled();
+      expect(clock.layoutStartedGeneration.value).toBe(9);
+    });
+
+    it("opens when the keyboard is already moving, even if its start signal came first", () => {
+      const { gate, layout, layoutInner } = setup();
+
+      layout.onStart(layout, 0, 100, null);
+      expect(layoutInner.onStart).not.toHaveBeenCalled();
+
+      gate.keyboardProgress.value = 0.08;
+      layout.onFrame(layout, 116);
+      expect(layoutInner.onStart).toHaveBeenCalled();
+    });
+
+    it("waits for a keyboard going away to leave its shown position", () => {
+      const { gate, layout, layoutInner } = setup();
+
+      gate.armedTarget.value = 0;
+      gate.keyboardProgress.value = 1;
+      layout.onStart(layout, 0, 100, null);
+      expect(layoutInner.onStart).not.toHaveBeenCalled();
+
+      gate.keyboardProgress.value = 0.95;
+      layout.onFrame(layout, 116);
+      expect(layoutInner.onStart).toHaveBeenCalled();
+    });
+
+    it("does not hold a transition the gate was not armed for", () => {
+      const { clock, gate, layout, layoutInner } = setup();
+
+      gate.armedGeneration.value = 8;
+      layout.onStart(layout, 0, 100, null);
+
+      expect(layoutInner.onStart).toHaveBeenCalled();
+      expect(clock.startedAt.value).toBe(100);
+    });
   });
 });

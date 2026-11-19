@@ -76,6 +76,22 @@ export type TrayStepTimingSummary = {
 const MAX_RECORDED_SUMMARIES = 50;
 const tracesByRootTrayId = new Map<string, TrayStepTimingTrace>();
 const rootTrayIdByPresentedTrayId = new Map<string, string>();
+// transition generation of the last trace finished or replaced per root. A
+// late mark from that generation must not attach its generation to the next
+// trace, which would then reject every mark of the transition it measures.
+// Equality, not ordering, so a tray whose generations restart is unaffected.
+const retiredGenerationByRootTrayId = new Map<string, number>();
+
+const retireTrace = (trace: TrayStepTimingTrace) => {
+  if (trace.transitionGeneration === undefined) {
+    return;
+  }
+
+  retiredGenerationByRootTrayId.set(
+    trace.rootTrayId,
+    trace.transitionGeneration,
+  );
+};
 
 // read one clock source for every step timing mark
 const now = () => globalThis.performance?.now?.() ?? Date.now();
@@ -103,6 +119,15 @@ const getTrace = (rootTrayId: string, transitionGeneration?: number) => {
   const trace = tracesByRootTrayId.get(rootTrayId);
 
   if (!trace) {
+    return undefined;
+  }
+
+  const retiredGeneration = retiredGenerationByRootTrayId.get(rootTrayId);
+
+  if (
+    transitionGeneration !== undefined &&
+    transitionGeneration === retiredGeneration
+  ) {
     return undefined;
   }
 
@@ -215,6 +240,7 @@ const tryFinishTrace = (rootTrayId: string) => {
   };
 
   writeSummary(summary);
+  retireTrace(trace);
   tracesByRootTrayId.delete(rootTrayId);
   rootTrayIdByPresentedTrayId.delete(trace.trayId);
 
@@ -266,6 +292,56 @@ export const markTrayStepKeyboardWillShow = (
   }
 };
 
+const TRACE_STAGES = [
+  "presenterResolvedAt",
+  "slotCommittedAt",
+  "snapshotAt",
+  "renderedCommitAt",
+  "shellLayoutAt",
+  "layoutConfiguredAt",
+  "layoutStartedAt",
+  "contentReleasedAt",
+  "layoutFinishedAt",
+  "keyboardIntentAt",
+  "keyboardFocusAt",
+  "keyboardWillShowAt",
+] as const;
+
+// A trace replaced by the next request never reached every stage. Log what it
+// did record (ms after the request) and which stages never happened, so a
+// transition that skips a stage is visible instead of silently dropped.
+const logIncompleteTrace = (trace: TrayStepTimingTrace) => {
+  const recorded: Record<string, number> = {};
+  const missing: string[] = [];
+
+  for (const stage of TRACE_STAGES) {
+    const at = trace[stage];
+
+    if (at === undefined) {
+      missing.push(stage);
+    } else {
+      recorded[stage] = round(at - trace.requestedAt);
+    }
+  }
+
+  if (trace.trayId !== undefined) {
+    rootTrayIdByPresentedTrayId.delete(trace.trayId);
+  }
+
+  console.log(
+    "[TrayStepPerf:incomplete]",
+    JSON.stringify({
+      rootTrayId: trace.rootTrayId,
+      trayId: trace.trayId,
+      transitionGeneration: trace.transitionGeneration,
+      recordedMsAfterRequest: recorded,
+      missing,
+      blockingReactRenderMs: round(trace.blockingReactRenderMs),
+      reactCommitsDuringLayout: trace.reactCommitsDuringLayout,
+    }),
+  );
+};
+
 // start a step trace at the navigation request boundary
 export const markTrayStepRequested = (
   rootTrayId?: string,
@@ -273,6 +349,13 @@ export const markTrayStepRequested = (
 ) => {
   if (!isTrayInstrumentationEnabled() || !rootTrayId) {
     return;
+  }
+
+  const unfinished = tracesByRootTrayId.get(rootTrayId);
+
+  if (unfinished) {
+    logIncompleteTrace(unfinished);
+    retireTrace(unfinished);
   }
 
   tracesByRootTrayId.set(rootTrayId, {
