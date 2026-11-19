@@ -577,19 +577,28 @@ export const TrayStepContent: React.FC<Props> = ({
 // transition before (two titles ago), so on the frames between the clock
 // reset and the new title's onLayout the title jumped toward a stale offset,
 // then snapped back once measured.
+//
+// On a restart the source is the width shown in the frame before it
+// (`previousWidth`). The new title's width can arrive in the same frame as the
+// clock reset; taking the current width then would make the source equal the
+// target, and the title would jump to its new place instead of sliding.
 export const resolveSettledTitleStartWidth = (
   progress: number,
   previousProgress: number | null,
   startWidth: number,
   width: number,
+  previousWidth: number = width,
 ) => {
   "worklet";
 
-  const transitionSettled = progress >= 1;
   const transitionRestarted =
     previousProgress !== null && progress < previousProgress;
 
-  return transitionSettled || transitionRestarted ? width : startWidth;
+  if (transitionRestarted) {
+    return previousWidth;
+  }
+
+  return progress >= 1 ? width : startWidth;
 };
 
 type TrayHeaderTransitionRowProps = {
@@ -628,14 +637,17 @@ const TrayHeaderTransitionRowImpl: React.FC<TrayHeaderTransitionRowProps> = ({
 
   // Keep the slide's source width equal to the width on screen whenever a
   // transition settles or restarts (see resolveSettledTitleStartWidth).
+  // Tracks the width too, so a restart can see the width of the frame before.
   useAnimatedReaction(
-    () => morphProgress?.value ?? 1,
-    (progress, previousProgress) => {
+    () => [morphProgress?.value ?? 1, titleWidth.value],
+    (current, previous) => {
+      const progress = current[0]!;
       const nextStartWidth = resolveSettledTitleStartWidth(
         progress,
-        previousProgress,
+        previous ? previous[0]! : null,
         titleStartWidth.value,
-        titleWidth.value,
+        current[1]!,
+        previous ? previous[1]! : current[1]!,
       );
 
       if (nextStartWidth !== titleStartWidth.value) {

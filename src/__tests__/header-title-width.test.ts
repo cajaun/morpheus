@@ -15,6 +15,12 @@ describe("resolveSettledTitleStartWidth", () => {
     expect(resolveSettledTitleStartWidth(0, 1, 120, 130)).toBe(130);
   });
 
+  it("slides from the previous frame's width when the new title arrives with the reset", () => {
+    // Two (157) -> Three (177): the clock reset and Three's width land in the
+    // same frame. The source is the 157 that was on screen, not 177.
+    expect(resolveSettledTitleStartWidth(0, 1, 177, 177, 157)).toBe(157);
+  });
+
   it("keeps the measured source width while a transition is running", () => {
     // Two measured mid-transition: onLayout set start 130, width 110
     expect(resolveSettledTitleStartWidth(0.4, 0.3, 130, 110)).toBe(130);
