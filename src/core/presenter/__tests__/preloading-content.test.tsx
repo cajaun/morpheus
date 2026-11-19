@@ -6,8 +6,10 @@ import TestRenderer, { act } from "react-test-renderer";
 import { resolveTrayStepOptions } from "../../../runtime/tray-step-options";
 import type { PresentedPreloadedStep } from "../../../runtime/presenter/types";
 import {
+  resolveRenderedPreloadedHeaders,
   resolveRenderedPreloadedSteps,
   TrayPreloadingContent,
+  TrayPreloadingHeader,
 } from "../preloading-content";
 
 let mockCompletedGeneration = 0;
@@ -57,6 +59,7 @@ const bodies = {
 };
 const preloadStep = (key: keyof typeof bodies): PresentedPreloadedStep => ({
   trayId: `flow-${key}`,
+  header: null,
   content: bodies[key],
   stepOptions: options,
 });
@@ -89,6 +92,7 @@ describe("TrayPreloadingContent", () => {
   });
 
   it("renders the next step ahead of time without running its effects", () => {
+    mockCompletedGeneration = 1;
     act(() => {
       TestRenderer.create(tree("one", ["two"], 1));
     });
@@ -98,6 +102,7 @@ describe("TrayPreloadingContent", () => {
   });
 
   it("reuses the preloaded step when it becomes current", () => {
+    mockCompletedGeneration = 1;
     let renderer!: TestRenderer.ReactTestRenderer;
     act(() => {
       renderer = TestRenderer.create(tree("one", ["two"], 1));
@@ -110,7 +115,56 @@ describe("TrayPreloadingContent", () => {
     // two was mounted once, while hidden, and its effects ran on reveal
     expect(mounts.two).toBe(1);
     expect(effects.two).toBe(1);
+  });
+
+  it("preloads a newly needed step only once the transition finishes", () => {
+    mockCompletedGeneration = 1;
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(tree("one", ["two"], 1));
+    });
+
+    // moving to two: three is needed now, but rendering it would compete
+    // with the transition starting, so it waits
+    act(() => {
+      renderer.update(tree("two", ["three"], 2));
+    });
+    expect(mounts.three).toBeUndefined();
+
+    mockCompletedGeneration = 2;
+    act(() => {
+      renderer.update(tree("two", ["three"], 2));
+    });
     expect(mounts.three).toBe(1);
+    expect(effects.three).toBeUndefined();
+  });
+
+  it("reuses the previous step when navigating back", () => {
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(tree("one", ["two"], 1));
+    });
+    act(() => {
+      renderer.update(tree("two", ["three", "one"], 2));
+    });
+
+    // one is the step just left: removed until the forward transition ends,
+    // then rendered hidden again as the previous step
+    expect(mounts.one).toBe(1);
+    mockCompletedGeneration = 2;
+    act(() => {
+      renderer.update(tree("two", ["three", "one"], 2));
+    });
+    expect(mounts.one).toBe(2);
+    expect(effects.one).toBe(1);
+
+    // back to one reuses that hidden instance instead of mounting it
+    act(() => {
+      renderer.update(tree("one", ["two"], 3));
+    });
+    expect(mounts.one).toBe(2);
+    expect(effects.one).toBe(2);
+    expect(mounts.two).toBe(1);
   });
 
   it("removes the step being left until its transition completes", () => {
@@ -171,5 +225,148 @@ describe("resolveRenderedPreloadedSteps", () => {
         99,
       ).map((step) => step.trayId),
     ).toEqual(["flow-three"]);
+  });
+});
+
+describe("TrayPreloadingHeader", () => {
+  const sheetOptions = resolveTrayStepOptions({});
+  const fullScreenOptions = resolveTrayStepOptions({ fullScreen: true });
+  const headers = {
+    one: <StepBody name="header-one" />,
+    two: <StepBody name="header-two" />,
+    three: <StepBody name="header-three" />,
+  };
+  const fullScreenSteps = new Set(["two"]);
+  const stepOptionsFor = (key: keyof typeof headers) =>
+    fullScreenSteps.has(key) ? fullScreenOptions : sheetOptions;
+  const headerStep = (key: keyof typeof headers): PresentedPreloadedStep => ({
+    trayId: `flow-${key}`,
+    header: headers[key],
+    content: null,
+    stepOptions: stepOptionsFor(key),
+  });
+  const headerTree = (
+    current: keyof typeof headers,
+    preloaded: (keyof typeof headers)[],
+    generation: number,
+  ) => (
+    <TrayParentTransitionProvider value={{ generation } as never}>
+      <TrayPreloadingHeader
+        current={{
+          trayId: `flow-${current}`,
+          header: headers[current],
+          stepOptions: stepOptionsFor(current),
+          fullScreen: fullScreenSteps.has(current),
+          fullScreenBoundaryExit: false,
+          isFirstRender: false,
+        }}
+        preloaded={preloaded.map(headerStep)}
+      />
+    </TrayParentTransitionProvider>
+  );
+
+  beforeEach(() => {
+    mockCompletedGeneration = 0;
+    for (const key of Object.keys(mounts)) delete mounts[key];
+    for (const key of Object.keys(effects)) delete effects[key];
+  });
+
+  it("preloads each neighbour header that is in the other mode", () => {
+    expect(
+      resolveRenderedPreloadedHeaders(
+        [headerStep("two"), headerStep("one")],
+        "fixed-header",
+        null,
+        0,
+      ).map((layer) => layer.key),
+    ).toEqual(["fullscreen-header#flow-two"]);
+
+    // both neighbours are sheet steps: each keeps its own hidden header, so
+    // going either way reuses the header rendered for that step
+    expect(
+      resolveRenderedPreloadedHeaders(
+        [headerStep("three"), headerStep("one")],
+        "fullscreen-header",
+        null,
+        0,
+      ).map((layer) => layer.key),
+    ).toEqual(["fixed-header#flow-three", "fixed-header#flow-one"]);
+  });
+
+  it("reuses the preloaded fullscreen header across the boundary", () => {
+    mockCompletedGeneration = 1;
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(headerTree("one", ["two"], 1));
+    });
+    expect(mounts["header-two"]).toBe(1);
+    expect(effects["header-two"]).toBeUndefined();
+
+    act(() => {
+      renderer.update(headerTree("two", ["three", "one"], 2));
+    });
+    expect(mounts["header-two"]).toBe(1);
+    expect(effects["header-two"]).toBe(1);
+  });
+
+  it("reuses the header kept for the step being returned to", () => {
+    mockCompletedGeneration = 1;
+    let renderer!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      renderer = TestRenderer.create(headerTree("two", ["three", "one"], 1));
+    });
+    expect(mounts["header-one"]).toBe(1);
+    expect(mounts["header-three"]).toBe(1);
+
+    // back to one: its own hidden header is shown, not three's
+    act(() => {
+      renderer.update(headerTree("one", ["two"], 2));
+    });
+    expect(mounts["header-one"]).toBe(1);
+    expect(effects["header-one"]).toBe(1);
+    expect(effects["header-three"]).toBeUndefined();
+  });
+});
+
+describe("step layer", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { useTrayStepLayer } = require(
+    "../../../runtime/tray-context",
+  ) as typeof import("../../../runtime/tray-context");
+  const seen: (string | null)[] = [];
+  const LayerReader = () => {
+    seen.push(useTrayStepLayer());
+    return null;
+  };
+
+  it("tells each kept-rendered step which step it belongs to", () => {
+    mockCompletedGeneration = 1;
+    seen.length = 0;
+    const layerStep = (key: string): PresentedPreloadedStep => ({
+      trayId: `flow-${key}`,
+      header: null,
+      content: <LayerReader />,
+      stepOptions: options,
+    });
+
+    act(() => {
+      TestRenderer.create(
+        <TrayParentTransitionProvider value={{ generation: 1 } as never}>
+          <TrayPreloadingContent
+            current={{
+              trayId: "flow-one",
+              content: <LayerReader />,
+              stepOptions: options,
+              fullScreen: false,
+              fullScreenBoundaryExit: false,
+              isFirstRender: false,
+            }}
+            preloaded={[layerStep("two")]}
+          />
+        </TrayParentTransitionProvider>,
+      );
+    });
+
+    expect(seen).toEqual(["flow-one", "flow-two"]);
   });
 });

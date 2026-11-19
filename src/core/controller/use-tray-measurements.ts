@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutChangeEvent } from "react-native";
 import { useSharedValue, type SharedValue } from "react-native-reanimated";
-import { log } from "../logger";
+import { isTrayDebugLoggingEnabled, log } from "../logger";
 import type {
   TrayGeometrySnapshot,
   TrayMeasurementOwner,
@@ -153,6 +153,12 @@ export const useTrayMeasurements = ({
   }, [footerHeight, measuredFooterHeight, renderedFooter]);
 
   useEffect(() => {
+    // the payload reads shared values (a synchronous UI-thread read each), so
+    // build it only when the log is actually written
+    if (!isTrayDebugLoggingEnabled()) {
+      return;
+    }
+
     log("MEASUREMENT GATE", {
       renderedTrayId,
       renderedFullScreen,

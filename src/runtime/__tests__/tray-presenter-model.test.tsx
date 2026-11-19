@@ -300,7 +300,12 @@ describe("step preloading", () => {
       stackLength: 1,
     });
 
-  it("keeps the next step rendered by default", () => {
+  const preloadedIds = (registration: TrayRegistration, index: number) =>
+    present(registration, index)?.preloadedSteps?.map(
+      (preloaded) => preloaded.trayId,
+    );
+
+  it("keeps the next and previous steps rendered by default", () => {
     const registration: TrayRegistration = {
       steps: [step("one"), step("two"), step("three")],
     };
@@ -308,15 +313,12 @@ describe("step preloading", () => {
     const tray = present(registration, 0);
 
     expect(tray?.preloadCapable).toBe(true);
-    expect(tray?.preloadedSteps?.map((preloaded) => preloaded.trayId)).toEqual(
-      ["flow-two"],
-    );
+    expect(preloadedIds(registration, 0)).toEqual(["flow-two"]);
     expect(tray?.preloadedSteps?.[0]?.content).toBe(
       registration.steps[1]!.content,
     );
-    expect(present(registration, 1)?.preloadedSteps?.[0]?.trayId).toBe(
-      "flow-three",
-    );
+    expect(preloadedIds(registration, 1)).toEqual(["flow-three", "flow-one"]);
+    expect(preloadedIds(registration, 2)).toEqual(["flow-two"]);
   });
 
   it("does not preload a step that opts out", () => {
@@ -324,36 +326,31 @@ describe("step preloading", () => {
       steps: [step("one"), step("two", { preload: false }), step("three")],
     };
 
-    expect(present(registration, 0)?.preloadedSteps).toEqual([]);
-    expect(present(registration, 1)?.preloadedSteps?.[0]?.trayId).toBe(
-      "flow-three",
-    );
+    expect(preloadedIds(registration, 0)).toEqual([]);
+    expect(preloadedIds(registration, 1)).toEqual(["flow-three", "flow-one"]);
+    expect(preloadedIds(registration, 2)).toEqual([]);
   });
 
-  it("preloads only the next step, not earlier ones", () => {
+  it("preloads into and out of fullscreen steps", () => {
     const registration: TrayRegistration = {
-      steps: [step("one"), step("two"), step("three")],
+      steps: [step("one"), step("two", { fullScreen: true }), step("three")],
     };
 
-    expect(present(registration, 2)?.preloadedSteps).toEqual([]);
-  });
-
-  it("does not preload across a fullscreen step", () => {
-    const toFullScreen: TrayRegistration = {
-      steps: [step("one"), step("two", { fullScreen: true })],
-    };
-    const fromFullScreen: TrayRegistration = {
-      steps: [step("one", { fullScreen: true }), step("two")],
-    };
-
-    expect(present(toFullScreen, 0)?.preloadedSteps).toEqual([]);
-    expect(present(fromFullScreen, 0)?.preloadedSteps).toEqual([]);
+    expect(preloadedIds(registration, 0)).toEqual(["flow-two"]);
+    expect(present(registration, 0)?.preloadedSteps?.[0]?.stepOptions)
+      .toMatchObject({ fullScreen: true });
+    expect(preloadedIds(registration, 1)).toEqual(["flow-three", "flow-one"]);
   });
 
   it("leaves single-step trays and fully opted-out trays unchanged", () => {
     const single = present({ steps: [step("one")] }, 0);
     const optedOut = present(
-      { steps: [step("one"), step("two", { preload: false })] },
+      {
+        steps: [
+          step("one", { preload: false }),
+          step("two", { preload: false }),
+        ],
+      },
       0,
     );
 

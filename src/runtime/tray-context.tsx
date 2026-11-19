@@ -3,6 +3,8 @@ export {
   TrayScopeProvider,
   TrayStoreProvider,
   TrayStepOptionsProvider,
+  TrayStepLayerProvider,
+  useTrayStepLayer,
   useTrayHost,
   useTrayHostActions,
   useTrayHostSelector,

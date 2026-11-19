@@ -126,8 +126,15 @@ const NO_PRELOADED_STEPS: readonly PresentedPreloadedStep[] = [];
 
 const preloadCapableBySteps = new WeakMap<TrayRegistration["steps"], boolean>();
 
+type TrayStepDescriptor = TrayRegistration["steps"][number];
+
+const canPreloadStep = (
+  step: TrayStepDescriptor | undefined,
+): step is TrayStepDescriptor =>
+  step !== undefined && step.options?.preload !== false;
+
 // Fixed per registration, like the motion capabilities: a tray in which any
-// step can be preloaded (any sheet step after the first that has not opted
+// step can be kept rendered (a multi-step tray with a step that has not opted
 // out) always renders its content as keyed layers, so a transition never
 // switches the content tree's shape midway. Single-step trays are unchanged.
 const isPreloadCapable = (registration: TrayRegistration) => {
@@ -137,50 +144,40 @@ const isPreloadCapable = (registration: TrayRegistration) => {
     return cached;
   }
 
-  const capable = registration.steps.some(
-    (step, index) =>
-      index > 0 &&
-      step.options?.preload !== false &&
-      step.options?.fullScreen !== true,
-  );
+  const capable =
+    registration.steps.length > 1 && registration.steps.some(canPreloadStep);
   preloadCapableBySteps.set(registration.steps, capable);
   return capable;
 };
 
-// The next step is kept rendered, hidden, unless it opts out or either step is
-// fullscreen (fullscreen content uses the boundary transition's own layers).
+// The neighbours of the current step are kept rendered, hidden: the next step
+// so moving forward reuses it, and the previous one so moving back does. A
+// step that opts out is mounted on the tap instead. Fullscreen steps take part
+// too: content renders in the same content region in either mode, and a
+// layer's fullscreen props are applied when it becomes current.
 const resolvePreloadedSteps = (
   rootTrayId: string,
   registration: TrayRegistration,
   trayIndex: number,
-  currentOptions: ResolvedTrayStepOptions,
 ): readonly PresentedPreloadedStep[] => {
-  const nextStep = registration.steps[trayIndex + 1];
+  const neighbours = [
+    registration.steps[trayIndex + 1],
+    registration.steps[trayIndex - 1],
+  ].filter(canPreloadStep);
 
-  if (
-    !nextStep ||
-    nextStep.options?.preload === false ||
-    currentOptions.fullScreen
-  ) {
+  if (neighbours.length === 0) {
     return NO_PRELOADED_STEPS;
   }
 
-  const nextOptions = resolveContextualStepOptions(
-    nextStep,
-    registration.footer != null,
-  );
-
-  if (nextOptions.fullScreen) {
-    return NO_PRELOADED_STEPS;
-  }
-
-  return [
-    {
-      trayId: `${rootTrayId}-${nextStep.key}`,
-      content: nextStep.content,
-      stepOptions: nextOptions,
-    },
-  ];
+  return neighbours.map((step) => ({
+    trayId: `${rootTrayId}-${step.key}`,
+    header: step.header ?? null,
+    content: step.content,
+    stepOptions: resolveContextualStepOptions(
+      step,
+      registration.footer != null,
+    ),
+  }));
 };
 
 // Keep one root controller mounted before the first presentation. The payload
@@ -256,6 +253,7 @@ export const arePreloadedStepsEquivalent = (
 
         return (
           step.trayId === other.trayId &&
+          step.header === other.header &&
           step.content === other.content &&
           areStepOptionsEquivalent(step.stepOptions, other.stepOptions)
         );
@@ -521,7 +519,6 @@ export const createPresentedTray = ({
       entry.trayId,
       registration,
       trayIndex,
-      stepOptions,
     ),
   };
 };

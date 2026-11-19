@@ -11,6 +11,7 @@ import {
   useTrayHostSelector,
   useTrayRuntimeStore,
   useTrayScope,
+  useTrayStepLayer,
 } from "../../runtime/tray-context";
 import {
   isTrayPageInRenderWindow,
@@ -40,7 +41,20 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   const parsed = useMemo(() => parseTrayPagesChildren(children), [children]);
   const totalPages = parsed.pages.length;
   const trayId = useTrayScope();
+  const stepLayer = useTrayStepLayer();
+  // Inside a preloading tray the pages belong to the step of their layer,
+  // which stays fixed even while another step is current. Selecting it
+  // instead of the active step keeps a preloaded step from re-rendering on
+  // every step change before it is shown.
+  const layerStepKey =
+    trayId && stepLayer?.startsWith(`${trayId}-`)
+      ? stepLayer.slice(trayId.length + 1)
+      : null;
   const activeStepKey = useTrayHostSelector((state) => {
+    if (layerStepKey !== null) {
+      return layerStepKey;
+    }
+
     if (!trayId) {
       return null;
     }

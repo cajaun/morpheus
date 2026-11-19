@@ -853,9 +853,11 @@ const TrayStepTransitionProviders = ({
 TrayStepTransitionProviders.displayName = "TrayStepTransitionProviders";
 
 // The sheet view that carries the layout transition. It reads the per-step
-// layout config from context, so a new config re-renders only this view.
+// layout config and whether to apply it from context, so a new config or a
+// flip of the flag re-renders only this view, not the sheet body.
+const TraySheetLayoutAnimationContext = React.createContext(false);
+
 const TraySheetLayoutView = ({
-  shouldUseLayoutAnimation,
   leadingStyle,
   trailingStyle,
   children,
@@ -864,13 +866,15 @@ const TraySheetLayoutView = ({
   React.ComponentProps<typeof Animated.View>,
   "layout" | "style" | "className"
 > & {
-  shouldUseLayoutAnimation: boolean;
   leadingStyle: React.ComponentProps<typeof Animated.View>["style"];
   trailingStyle: React.ComponentProps<typeof Animated.View>["style"];
   children: React.ReactNode;
 }) => {
   const value = React.useContext(TrayShellTransitionContext);
   const frame = React.useContext(TraySheetFrameContext);
+  const shouldUseLayoutAnimation = React.useContext(
+    TraySheetLayoutAnimationContext,
+  );
   const presentationFrameStyle = frame?.presentationFrameStyle;
   // same order as before: container, layout, frame, then container/visibility
   const style = useMemo(
@@ -1057,59 +1061,96 @@ const TraySheetSurface = React.memo(
       }
     }, [measureCommittedContent, renderSnapshotStore, renderedContent]);
 
-    return (
-      <TrayGestureRegion>
-        <TraySheetLayoutView
-          leadingStyle={sheetLeadingStyle}
-          trailingStyle={sheetTrailingStyle}
-          onLayout={instrumentationEnabled ? handleShellLayout : undefined}
-          shouldUseLayoutAnimation={shouldUseLayoutAnimation}
-        >
-          <Animated.View style={contentStyle}>
-            <Animated.View style={contentViewportStyle}>
-              <View
-                // Measure the content snapshot, not the animated boundary
-                // viewport that can retain the previous endpoint's height.
-                // The style is static, so a host View (not Animated.View)
-                // gives a ref with synchronous Fabric measure().
-                ref={contentMeasureRef}
-                collapsable={false}
-                onLayout={handleMeasuredContentLayout}
-                style={fullScreenContentStyle}
+    // The sheet body only changes with its own inputs. Keeping the element
+    // identity stable lets React skip it (and the gesture wrapper) when only
+    // the layout-animation flag flips, which happens twice per step change.
+    const sheetBody = useMemo(
+      () => (
+        <Animated.View style={contentStyle}>
+          <Animated.View style={contentViewportStyle}>
+            <View
+              // Measure the content snapshot, not the animated boundary
+              // viewport that can retain the previous endpoint's height.
+              // The style is static, so a host View (not Animated.View)
+              // gives a ref with synchronous Fabric measure().
+              ref={contentMeasureRef}
+              collapsable={false}
+              onLayout={handleMeasuredContentLayout}
+              style={fullScreenContentStyle}
+            >
+              <TrayContentCommitContext.Provider
+                value={measureCommittedContent}
               >
-                <TrayContentCommitContext.Provider
-                  value={measureCommittedContent}
-                >
-                  <TrayStepTransitionProviders>
-                    {hasHeader ? (
-                      <Animated.View style={headerStyle}>
-                        {renderSnapshotStore ? (
-                          <TraySnapshotRegion
-                            store={renderSnapshotStore}
-                            region="header"
-                          />
-                        ) : (
-                          <TrayRenderedNode node={renderedHeader} />
-                        )}
-                      </Animated.View>
-                    ) : null}
-                    {renderSnapshotStore ? (
-                      <TraySnapshotRegion
-                        store={renderSnapshotStore}
-                        region="content"
-                      />
-                    ) : (
-                      <TrayRenderedNode node={renderedContent} />
-                    )}
-                  </TrayStepTransitionProviders>
-                </TrayContentCommitContext.Provider>
-              </View>
-            </Animated.View>
-            {/* reserve footer space the footer itself is absolute and does not participate in content measurement */}
-            <Animated.View style={footerSpacerStyle} />
+                <TrayStepTransitionProviders>
+                  {hasHeader ? (
+                    <Animated.View style={headerStyle}>
+                      {renderSnapshotStore ? (
+                        <TraySnapshotRegion
+                          store={renderSnapshotStore}
+                          region="header"
+                        />
+                      ) : (
+                        <TrayRenderedNode node={renderedHeader} />
+                      )}
+                    </Animated.View>
+                  ) : null}
+                  {renderSnapshotStore ? (
+                    <TraySnapshotRegion
+                      store={renderSnapshotStore}
+                      region="content"
+                    />
+                  ) : (
+                    <TrayRenderedNode node={renderedContent} />
+                  )}
+                </TrayStepTransitionProviders>
+              </TrayContentCommitContext.Provider>
+            </View>
           </Animated.View>
-        </TraySheetLayoutView>
-      </TrayGestureRegion>
+          {/* reserve footer space the footer itself is absolute and does not participate in content measurement */}
+          <Animated.View style={footerSpacerStyle} />
+        </Animated.View>
+      ),
+      [
+        contentStyle,
+        contentViewportStyle,
+        footerSpacerStyle,
+        fullScreenContentStyle,
+        handleMeasuredContentLayout,
+        hasHeader,
+        headerStyle,
+        measureCommittedContent,
+        renderSnapshotStore,
+        renderedContent,
+        renderedHeader,
+      ],
+    );
+    const sheetTree = useMemo(
+      () => (
+        <TrayGestureRegion>
+          <TraySheetLayoutView
+            leadingStyle={sheetLeadingStyle}
+            trailingStyle={sheetTrailingStyle}
+            onLayout={instrumentationEnabled ? handleShellLayout : undefined}
+          >
+            {sheetBody}
+          </TraySheetLayoutView>
+        </TrayGestureRegion>
+      ),
+      [
+        handleShellLayout,
+        instrumentationEnabled,
+        sheetBody,
+        sheetLeadingStyle,
+        sheetTrailingStyle,
+      ],
+    );
+
+    return (
+      <TraySheetLayoutAnimationContext.Provider
+        value={shouldUseLayoutAnimation}
+      >
+        {sheetTree}
+      </TraySheetLayoutAnimationContext.Provider>
     );
   },
 );
@@ -1165,6 +1206,53 @@ const TraySurface = React.memo(
       hasFooter.value = surfaceFooter != null;
     }, [hasFooter, surfaceFooter]);
 
+    // Fixed footers stay outside the layout-animated shell; only a fullscreen
+    // boundary may move this layer, and then it follows the shell's explicit
+    // morph clock rather than content layout. The layer is built once per
+    // footer input so sheet-only updates (the layout-animation flag, boundary
+    // styles) skip it entirely.
+    const footerLayer = useMemo(
+      () => (
+        <TrayFooterSurface
+          className={surfaceFooterClassName}
+          hasFooter={Boolean(surfaceFooter)}
+          onLayout={handleVisibleFooterLayout}
+          style={[
+            trayStyles.footer,
+            dragStyle,
+            surfaceFooterStyle,
+            footerContainerStyle,
+            footerVisibilityStyle,
+          ]}
+        >
+          <Animated.View style={footerContentFrameStyle}>
+            <TrayOriginProgressProvider value={originProgress}>
+              {renderSnapshotStore ? (
+                <TraySnapshotRegion
+                  store={renderSnapshotStore}
+                  region="footer"
+                />
+              ) : (
+                <TrayRenderedNode node={surfaceFooter ?? null} />
+              )}
+            </TrayOriginProgressProvider>
+          </Animated.View>
+        </TrayFooterSurface>
+      ),
+      [
+        dragStyle,
+        footerContainerStyle,
+        footerContentFrameStyle,
+        footerVisibilityStyle,
+        handleVisibleFooterLayout,
+        originProgress,
+        renderSnapshotStore,
+        surfaceFooter,
+        surfaceFooterClassName,
+        surfaceFooterStyle,
+      ],
+    );
+
     return (
       <>
         <TraySheetSurface
@@ -1196,32 +1284,7 @@ const TraySurface = React.memo(
           fullScreenSafeAreaContentStyle={fullScreenSafeAreaContentStyle}
           hasHeader={surfaceHeader != null}
         />
-        {/* fixed footers stay outside the layout animated shell only a fullscreen boundary may move this layer and then it follows the shell s explicit morph clock rather than content layout */}
-        <TrayFooterSurface
-          className={surfaceFooterClassName}
-          hasFooter={Boolean(surfaceFooter)}
-          onLayout={handleVisibleFooterLayout}
-          style={[
-            trayStyles.footer,
-            dragStyle,
-            surfaceFooterStyle,
-            footerContainerStyle,
-            footerVisibilityStyle,
-          ]}
-        >
-          <Animated.View style={footerContentFrameStyle}>
-            <TrayOriginProgressProvider value={originProgress}>
-              {renderSnapshotStore ? (
-                <TraySnapshotRegion
-                  store={renderSnapshotStore}
-                  region="footer"
-                />
-              ) : (
-                <TrayRenderedNode node={surfaceFooter ?? null} />
-              )}
-            </TrayOriginProgressProvider>
-          </Animated.View>
-        </TrayFooterSurface>
+        {footerLayer}
       </>
     );
   },

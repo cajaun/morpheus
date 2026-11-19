@@ -239,17 +239,23 @@ that slice changes:
 const index = useTrayNavigationState((state) => state.index);
 ```
 
-### Preloading the next step
+### Preloading neighbouring steps
 
-By default, while a step is on screen Morpheus keeps the next step rendered
-inside a hidden React `<Activity>`. It renders at low priority after the
-current step, takes no space, and its effects (data fetching, subscriptions)
-start only once it is shown. Moving to it then reuses the rendered step instead
-of mounting it after the tap; it still animates in on the same transition clock
-as the sheet.
+By default, while a step is on screen Morpheus keeps the next and the previous
+step rendered inside a hidden React `<Activity>`. They render at low priority
+after the current step, take no space, and their effects (data fetching,
+subscriptions) start only once shown. Moving forward or back then reuses the
+rendered step instead of mounting it after the tap; it still animates in on the
+same transition clock as the sheet. This applies to fullscreen steps too.
 
-- Only the next step is kept rendered, so at most one extra step is in memory.
-- Sheet steps only: nothing is preloaded into or out of a fullscreen step.
+- Only the two neighbours are kept rendered, so at most two extra steps are in
+  memory.
+- A newly needed neighbour is rendered once the current transition finishes,
+  so preloading never competes with a step change that is starting. Moving
+  again before that mounts the step on the tap, as without preloading.
+- The step you just left is removed (so its exit animation plays) and is
+  rendered hidden again once the transition finishes. Like any remount, it
+  starts with fresh component state.
 - Code that runs during render (not in effects) runs while the step is still
   hidden. Opt a step out to mount it on the tap instead:
 

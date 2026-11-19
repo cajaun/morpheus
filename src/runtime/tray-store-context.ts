@@ -22,6 +22,13 @@ export const TrayStoreProvider = TrayStoreContext.Provider;
 export const TrayScopeProvider = TrayScopeContext.Provider;
 export const TrayStepOptionsProvider = TrayStepOptionsContext.Provider;
 
+// The tray id of the step a subtree belongs to, set by the layers a preloading
+// tray renders each step in. A step kept rendered while another step is
+// current reads its own step from this instead of the active one.
+const TrayStepLayerContext = createContext<string | null>(null);
+export const TrayStepLayerProvider = TrayStepLayerContext.Provider;
+export const useTrayStepLayer = () => useContext(TrayStepLayerContext);
+
 // require the runtime store from the nearest provider
 export const useTrayRuntimeStore = () => {
   const store = useContext(TrayStoreContext);

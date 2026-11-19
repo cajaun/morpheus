@@ -50,7 +50,10 @@ import {
 import { recordTrayTelemetry } from "./telemetry/tray-telemetry-buffer";
 import { markTrayStepContentReleased } from "./telemetry/tray-step-timing";
 import { useOptionalTrayMorphProgress } from "./core/tray-morph-progress";
-import type { TrayHeaderTransitionValue } from "./primitives/header-transition-context";
+import {
+  type TrayHeaderTransitionValue,
+  useTrayHeaderTransition,
+} from "./primitives/header-transition-context";
 import {
   TRAY_HEADER_CLOSE_BUTTON_SIZE,
   TRAY_HEADER_CONTENT_HEIGHT,
@@ -67,6 +70,8 @@ type Props = {
   stepKey?: string;
   skipEntering?: boolean;
   skipExiting?: boolean;
+  // TrayRevealedStepContent only: the step is kept rendered but not shown
+  hidden?: boolean;
 };
 
 export const MORPH_EASING = Easing.bezier(0.25, 1.0, 0.5, 1);
@@ -363,14 +368,15 @@ const createMorphExiting = (
   };
 };
 
-// Step content that can be mounted while hidden: a preloaded step inside a
-// hidden <Activity>. Reanimated's entering animation fires when a view is
-// mounted, which for a preloaded step is before it is shown, so this content
-// runs the same entering motion itself when it is shown. Effects inside a
-// hidden <Activity> are created only once it becomes visible, so the layout
-// effect below runs exactly when the step appears: on mount if it mounted
-// visible, otherwise on reveal. Exiting is unchanged: the step is removed, not
-// hidden, when it leaves, so the exiting animation still runs.
+// The animated wrapper of a step that can be kept rendered while hidden (a
+// preloaded step). It sits outside the step's <Activity>, so it mounts like
+// any visible view: Reanimated finishes setting it up on mount instead of on
+// reveal, and re-rendering it later never re-reads its initial style values.
+// Only the step's own content is inside the hidden <Activity>. While `hidden`,
+// the wrapper is invisible and holds no layout (its content is display: none);
+// when `hidden` turns false it runs the same entering motion the step would
+// get on mount, on the shared transition clock. Exiting is unchanged: the step
+// is removed, not hidden, when it leaves, so the exiting animation still runs.
 export const TrayRevealedStepContent: React.FC<Props> = ({
   children,
   style,
@@ -381,10 +387,11 @@ export const TrayRevealedStepContent: React.FC<Props> = ({
   stepKey,
   skipEntering = false,
   skipExiting = false,
+  hidden = false,
 }) => {
   const transitionStart = useTrayTransitionStart();
   const motionDirection = useTrayContentMotionDirection();
-  const opacity = useSharedValue(skipEntering ? 1 : 0);
+  const opacity = useSharedValue(skipEntering && !hidden ? 1 : 0);
   const contentScale = useSharedValue(1);
   const translateY = useSharedValue(0);
   const shownCountRef = useRef(0);
@@ -412,6 +419,10 @@ export const TrayRevealedStepContent: React.FC<Props> = ({
   }));
 
   useLayoutEffect(() => {
+    if (hidden) {
+      return;
+    }
+
     const latest = latestRef.current;
     const firstShow = shownCountRef.current === 0;
     shownCountRef.current += 1;
@@ -447,9 +458,9 @@ export const TrayRevealedStepContent: React.FC<Props> = ({
       contentScale.value = animations.scale;
       translateY.value = animations.translateY;
     })();
-    // runs on each show (see above), never on prop changes
+    // runs when the step is shown (see above), never on other prop changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hidden]);
 
   return (
     <Animated.View
@@ -601,7 +612,6 @@ const TrayHeaderTransitionRowImpl: React.FC<TrayHeaderTransitionRowProps> = ({
   className,
 }) => {
   const morphProgress = useOptionalTrayMorphProgress();
-  const transitionStart = useTrayTransitionStart();
   const rowWidth = useSharedValue(0);
   const titleStartWidth = useSharedValue(0);
   const titleWidth = useSharedValue(0);
@@ -611,9 +621,6 @@ const TrayHeaderTransitionRowImpl: React.FC<TrayHeaderTransitionRowProps> = ({
   const leftIdentity = resolveHeaderActionIdentity(left);
   const rightIdentity = resolveHeaderActionIdentity(right);
   const actionTransitionKey = `${left == null ? "none" : leftIdentity ?? "left"}:${right == null ? "none" : rightIdentity ?? "right"}`;
-  const wholeHeaderBoundaryAnimation =
-    transition.fullScreenBoundaryExit &&
-    transitionStart?.fullScreenChanged === true;
 
   useEffect(() => {
     previousLeftVisibleRef.current = centered;
@@ -697,28 +704,18 @@ const TrayHeaderTransitionRowImpl: React.FC<TrayHeaderTransitionRowProps> = ({
           onLayout={handleTitleLayout}
           style={[headerMotionStyles.titleLayer, titlePositionStyle]}
         >
-          <TrayStepContent
+          <TrayHeaderTransitionLayer
             stepKey={`${transition.stepKey}-header-title`}
-            scale={false}
-            fullScreenBoundaryExit={transition.fullScreenBoundaryExit}
-            skipEntering={
-              transition.skipEntering || wholeHeaderBoundaryAnimation
-            }
-            skipExiting={wholeHeaderBoundaryAnimation}
+            transition={transition}
           >
             {title}
-          </TrayStepContent>
+          </TrayHeaderTransitionLayer>
         </Animated.View>
       </View>
 
-      <TrayStepContent
+      <TrayHeaderTransitionLayer
         stepKey={`header-actions-${actionTransitionKey}`}
-        scale={false}
-        fullScreenBoundaryExit={transition.fullScreenBoundaryExit}
-        skipEntering={
-          transition.skipEntering || wholeHeaderBoundaryAnimation
-        }
-        skipExiting={wholeHeaderBoundaryAnimation}
+        transition={transition}
         style={headerMotionStyles.actionTransitionLayer}
         pointerEvents="box-none"
       >
@@ -736,8 +733,50 @@ const TrayHeaderTransitionRowImpl: React.FC<TrayHeaderTransitionRowProps> = ({
         >
           {right}
         </View>
-      </TrayStepContent>
+      </TrayHeaderTransitionLayer>
     </View>
+  );
+};
+
+// One animated header participant (the title, or the action group). It reads
+// the per-step transition itself so the row above, which owns the title's
+// animated position style, does not re-render for every transition: a header
+// kept rendered while hidden would otherwise re-render that animated view
+// before Reanimated has finished mounting it, re-reading its style values.
+const TrayHeaderTransitionLayer = ({
+  stepKey,
+  transition: fallbackTransition,
+  style,
+  pointerEvents,
+  children,
+}: {
+  stepKey: string;
+  transition: TrayHeaderTransitionValue;
+  style?: StyleProp<ViewStyle>;
+  pointerEvents?: Props["pointerEvents"];
+  children: React.ReactNode;
+}) => {
+  const transitionStart = useTrayTransitionStart();
+  // Read the header transition from context, not from the row: the row skips
+  // re-rendering when only these flags change (see
+  // areTrayHeaderTransitionRowPropsEqual), so its prop can be stale.
+  const transition = useTrayHeaderTransition() ?? fallbackTransition;
+  const wholeHeaderBoundaryAnimation =
+    transition.fullScreenBoundaryExit &&
+    transitionStart?.fullScreenChanged === true;
+
+  return (
+    <TrayStepContent
+      stepKey={stepKey}
+      scale={false}
+      fullScreenBoundaryExit={transition.fullScreenBoundaryExit}
+      skipEntering={transition.skipEntering || wholeHeaderBoundaryAnimation}
+      skipExiting={wholeHeaderBoundaryAnimation}
+      style={style}
+      pointerEvents={pointerEvents}
+    >
+      {children}
+    </TrayStepContent>
   );
 };
 
@@ -750,10 +789,12 @@ const areTrayHeaderTransitionRowPropsEqual = (
   previous.right === next.right &&
   previous.style === next.style &&
   previous.className === next.className &&
-  previous.transition.stepKey === next.transition.stepKey &&
-  previous.transition.skipEntering === next.transition.skipEntering &&
-  previous.transition.fullScreenBoundaryExit ===
-    next.transition.fullScreenBoundaryExit;
+  // The row itself only uses the step key. The skip/boundary flags are read
+  // by its transition layers from context, so a flag change (such as a kept
+  // rendered header being shown) does not re-render the row's animated title
+  // view, which would re-read its style values if it had not finished
+  // mounting yet.
+  previous.transition.stepKey === next.transition.stepKey;
 
 // Header actions are often recreated by the shell while their semantic inputs
 // stay unchanged. Keep the animation participant mounted across those shell

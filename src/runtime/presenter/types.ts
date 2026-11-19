@@ -10,6 +10,7 @@ import type {
 // A step kept rendered, hidden, so moving to it does not mount it.
 export type PresentedPreloadedStep = {
   trayId: string;
+  header: ReactNode;
   content: ReactNode;
   stepOptions: ResolvedTrayStepOptions;
 };

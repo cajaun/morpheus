@@ -13,7 +13,7 @@ import {
   markTrayStepRenderedCommit,
 } from "../../telemetry/tray-step-timing";
 import { markTrayBoundaryRenderedCommit } from "../../telemetry/tray-boundary-timing";
-import { log } from "../logger";
+import { isTrayDebugLoggingEnabled, log } from "../logger";
 
 type Params = {
   fullScreen?: boolean;
@@ -101,7 +101,9 @@ export const useTrayTransitionDiagnostics = ({
   );
 
   useEffect(() => {
-    if (!visible) {
+    // the payload reads shared values (a synchronous UI-thread read each), so
+    // build it only when the log is actually written
+    if (!visible || !isTrayDebugLoggingEnabled()) {
       return;
     }
 
