@@ -18,9 +18,11 @@ import {
   type TrayContentCommitTarget,
 } from "./tray-content-commit";
 import Animated, {
+  useAnimatedReaction,
   useDerivedValue,
   useSharedValue,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { GestureDetector } from "react-native-gesture-handler";
 import {
   KeyboardController,
@@ -45,7 +47,10 @@ import {
 import { logTrayProfilerCommit } from "../telemetry/tray-profiler";
 import { recordTrayTelemetry } from "../telemetry/tray-telemetry-buffer";
 import { markTrayBoundarySnapshotCommitted } from "../telemetry/tray-boundary-timing";
-import { markTrayStepRenderedCommit } from "../telemetry/tray-step-timing";
+import {
+  markTrayStepKeyboardGate,
+  markTrayStepRenderedCommit,
+} from "../telemetry/tray-step-timing";
 import { TrayMorphProgressProvider } from "./tray-morph-progress";
 import {
   openTrayKeyboardGate,
@@ -1985,6 +1990,9 @@ const TrayKeyboardCapableVisualView = React.memo(
     const keyboardArmedGeneration = useSharedValue(0);
     const keyboardStartedGeneration = useSharedValue(0);
     const keyboardArmedTarget = useSharedValue(1);
+    const keyboardGateWaitStartedAt = useSharedValue(0);
+    const keyboardGateOpenedAt = useSharedValue(0);
+    const keyboardGateOpenedBy = useSharedValue(0);
     const { progress: keyboardProgress } = useReanimatedKeyboardAnimation();
     // generation of a step that puts the keyboard away and has not dismissed
     // it yet; the dismissal waits for that step's layout to be ready
@@ -2007,8 +2015,14 @@ const TrayKeyboardCapableVisualView = React.memo(
         armedTarget: keyboardArmedTarget,
         keyboardProgress,
         onLayoutReady: dismissKeyboardForLayout,
+        waitStartedAt: keyboardGateWaitStartedAt,
+        openedAt: keyboardGateOpenedAt,
+        openedBy: keyboardGateOpenedBy,
       }),
       [
+        keyboardGateOpenedAt,
+        keyboardGateOpenedBy,
+        keyboardGateWaitStartedAt,
         dismissKeyboardForLayout,
         keyboardArmedGeneration,
         keyboardArmedTarget,
@@ -2038,14 +2052,45 @@ const TrayKeyboardCapableVisualView = React.memo(
         pendingKeyboardDismissRef.current = keyboardGateGeneration;
       }
 
+      keyboardGateWaitStartedAt.value = 0;
+      keyboardGateOpenedAt.value = 0;
+      keyboardGateOpenedBy.value = 0;
       keyboardArmedTarget.value = keyboardGateTarget;
       keyboardArmedGeneration.value = keyboardGateGeneration;
     }, [
+      keyboardGateOpenedAt,
+      keyboardGateOpenedBy,
+      keyboardGateWaitStartedAt,
       keyboardArmedGeneration,
       keyboardArmedTarget,
       keyboardGateGeneration,
       keyboardGateTarget,
     ]);
+
+    // instrumentation: report how and when the gate opened to the step trace
+    const gateInstrumented = isTrayInstrumentationEnabled();
+    const rootTrayId = props.rootTrayId;
+    const reportKeyboardGate = useCallback(
+      (waitStartedAt: number, openedAt: number, openedBy: number) => {
+        markTrayStepKeyboardGate(rootTrayId, waitStartedAt, openedAt, openedBy);
+      },
+      [rootTrayId],
+    );
+
+    useAnimatedReaction(
+      () => (gateInstrumented ? keyboardGateOpenedBy.value : 0),
+      (openedBy, previous) => {
+        if (openedBy > 0 && openedBy !== previous) {
+          scheduleOnRN(
+            reportKeyboardGate,
+            keyboardGateWaitStartedAt.value,
+            keyboardGateOpenedAt.value,
+            openedBy,
+          );
+        }
+      },
+      [gateInstrumented, reportKeyboardGate],
+    );
 
     // The keyboard's start runs on the UI thread on the frame it begins to
     // move, which is the frame the sheet and content should begin on too.

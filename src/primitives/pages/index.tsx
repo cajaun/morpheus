@@ -125,7 +125,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
                 key={(page.key as string | null) ?? `tray-page-${index}`}
                 index={index}
                 pageIndex={pager.pageIndex}
-                pageWidth={pager.pageWidth}
+                viewportWidth={pager.viewportWidth}
                 progress={pager.progress}
               >
                 {page}

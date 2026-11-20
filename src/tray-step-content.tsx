@@ -19,6 +19,7 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 import {
   FULL_SCREEN_CONTENT_EASING_POINTS,
+  FULL_SCREEN_CONTENT_EXIT_EASING_POINTS,
   FULL_SCREEN_ENTERING_DURATION,
   FULL_SCREEN_EXITING_DURATION,
   MORPH_ENTERING_DURATION,
@@ -78,6 +79,9 @@ export const MORPH_EASING = Easing.bezier(0.25, 1.0, 0.5, 1);
 export const SHEET_EASING = Easing.bezier(...SHEET_EASING_POINTS);
 export const FULL_SCREEN_CONTENT_EASING = Easing.bezier(
   ...FULL_SCREEN_CONTENT_EASING_POINTS,
+);
+const FULL_SCREEN_CONTENT_EXIT_EASING = Easing.bezier(
+  ...FULL_SCREEN_CONTENT_EXIT_EASING_POINTS,
 );
 
 // record the end of an entering content animation for timing inspection
@@ -297,7 +301,7 @@ const createMorphExiting = (
       ? FULL_SCREEN_EXITING_DURATION
       : MORPH_LAYOUT_DURATION;
     const easing = activeFullScreenBoundaryExit
-      ? FULL_SCREEN_CONTENT_EASING
+      ? FULL_SCREEN_CONTENT_EXIT_EASING
       : SHEET_EASING;
     const direction = motionDirection ?? FORWARD_CONTENT_MOTION;
     const targetScale = resolveMorphExitingScale({

@@ -3,6 +3,7 @@ import { describe, expect, it } from "@jest/globals";
 import {
   FULL_SCREEN_BOUNDARY_CONTENT_SCALE,
   FULL_SCREEN_CONTENT_EASING_POINTS,
+  FULL_SCREEN_CONTENT_EXIT_EASING_POINTS,
   FULL_SCREEN_ENTERING_DURATION,
   FULL_SCREEN_EXITING_DURATION,
   FULL_SCREEN_LAYOUT_DURATION,
@@ -15,8 +16,9 @@ import { BORDER_RADIUS, HORIZONTAL_MARGIN } from "../constants";
 
 describe("fullscreen animation contract", () => {
   it("keeps the video-derived fullscreen timing and easing values", () => {
-    expect(FULL_SCREEN_LAYOUT_DURATION).toBe(260);
-    expect(FULL_SCREEN_SHELL_EASING_POINTS).toEqual([0, 0, 0.58, 1]);
+    expect(FULL_SCREEN_LAYOUT_DURATION).toBe(300);
+    expect(FULL_SCREEN_SHELL_EASING_POINTS).toEqual([0.2, 0.3, 0.2, 1]);
+    expect(FULL_SCREEN_CONTENT_EXIT_EASING_POINTS).toEqual([0, 0, 0.58, 1]);
     expect(FULL_SCREEN_ENTERING_DURATION).toBe(250);
     expect(FULL_SCREEN_CONTENT_EASING_POINTS).toEqual([
       0.42,

@@ -43,7 +43,12 @@ export const useTrayPagesTransition = ({
   const [transitionFromIndex, setTransitionFromIndex] = useState<
     number | null
   >(null);
-  const [viewportWidthState, setViewportWidthState] = useState(SCREEN_WIDTH);
+  // The viewport resizes every frame while the tray crosses the fullscreen
+  // boundary. Keep its width out of React state: a state update per layout
+  // event re-rendered the pager mid-animation and re-laid out every page.
+  // Pages size themselves to the viewport natively; only the off-screen offset
+  // of a page transition needs the number, and it reads it on the UI thread.
+  const viewportWidth = useSharedValue(SCREEN_WIDTH);
   const progress = useSharedValue(resolvedInitialPage);
   const transitionTargetRef = useRef<number | null>(null);
   const transitionGenerationRef = useRef<number | null>(null);
@@ -51,7 +56,6 @@ export const useTrayPagesTransition = ({
     null,
   );
   const startedTransitionTargetRef = useRef<number | null>(null);
-  const pageWidth = viewportWidthState > 0 ? viewportWidthState : SCREEN_WIDTH;
 
   useEffect(() => {
     const nextIndex = clampPageIndex(pageIndex, totalPages);
@@ -104,14 +108,9 @@ export const useTrayPagesTransition = ({
         event.nativeEvent.layout.width || SCREEN_WIDTH,
       );
       viewportFrameRef.current = event.nativeEvent.layout;
-
-      if (Math.abs(nextWidth - viewportWidthState) < 0.5) {
-        return;
-      }
-
-      setViewportWidthState(nextWidth);
+      viewportWidth.value = nextWidth;
     },
-    [viewportWidthState],
+    [viewportWidth],
   );
 
   const setPage = useCallback(
@@ -272,7 +271,7 @@ export const useTrayPagesTransition = ({
   return {
     pageIndex,
     transitionFromIndex,
-    pageWidth,
+    viewportWidth,
     progress,
     handleViewportLayout,
     setPage,

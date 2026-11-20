@@ -42,8 +42,12 @@ type TrayStepTimingTrace = {
   // React commits observed while the transition was animating
   reactCommitsDuringLayout: number;
   keyboardIntentAt?: number;
+  keyboardFocusRequestedAt?: number;
   keyboardFocusAt?: number;
   keyboardWillShowAt?: number;
+  keyboardGateWaitStartedAt?: number;
+  keyboardGateOpenedAt?: number;
+  keyboardGateOpenedBy?: number;
 };
 
 export type TrayStepTimingSummary = {
@@ -69,6 +73,14 @@ export type TrayStepTimingSummary = {
   blockingReactRenderMs: number;
   reactCommitsDuringLayout: number;
   keyboardIntentToFocusMs?: number;
+  // the step's input asked for focus this long after the step committed
+  renderedCommitToFocusRequestMs?: number;
+  // native focus: from the focus() call to the input's onFocus event
+  focusRequestToFocusMs?: number;
+  // what let the sheet start on a step that brings up or puts away the
+  // keyboard. (The gate's own timestamps come from the UI runtime clock, which
+  // is not the JS clock these marks use, so they are not reported as spans.)
+  keyboardGateOpenedBy?: "keyboard-start" | "keyboard-progress" | "wait-limit";
   keyboardFocusToWillShowMs?: number;
   keyboardWillShowToLayoutStartMs?: number;
 };
@@ -223,6 +235,23 @@ const tryFinishTrace = (rootTrayId: string) => {
     snapshotReactRenderCount: trace.snapshotReactRenderCount,
     blockingReactRenderMs: round(trace.blockingReactRenderMs),
     reactCommitsDuringLayout: trace.reactCommitsDuringLayout,
+    keyboardGateOpenedBy:
+      trace.keyboardGateOpenedBy === 1
+        ? "keyboard-start"
+        : trace.keyboardGateOpenedBy === 2
+          ? "keyboard-progress"
+          : trace.keyboardGateOpenedBy === 3
+            ? "wait-limit"
+            : undefined,
+    renderedCommitToFocusRequestMs:
+      trace.keyboardFocusRequestedAt !== undefined
+        ? trace.keyboardFocusRequestedAt - trace.renderedCommitAt
+        : undefined,
+    focusRequestToFocusMs:
+      trace.keyboardFocusRequestedAt !== undefined &&
+      trace.keyboardFocusAt !== undefined
+        ? trace.keyboardFocusAt - trace.keyboardFocusRequestedAt
+        : undefined,
     keyboardIntentToFocusMs:
       trace.keyboardIntentAt !== undefined &&
       trace.keyboardFocusAt !== undefined
@@ -259,6 +288,42 @@ export const markTrayStepKeyboardIntent = (
 
   if (trace && trace.keyboardIntentAt === undefined) {
     trace.keyboardIntentAt = now();
+  }
+};
+
+// record the moment a step's input calls focus(), before native focus runs
+export const markTrayStepKeyboardFocusRequested = (
+  rootTrayId?: string | null,
+) => {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId) {
+    return;
+  }
+
+  const trace = tracesByRootTrayId.get(rootTrayId);
+
+  if (trace && trace.keyboardFocusRequestedAt === undefined) {
+    trace.keyboardFocusRequestedAt = now();
+  }
+};
+
+// record the keyboard gate's UI-thread timings for the current step trace
+export const markTrayStepKeyboardGate = (
+  rootTrayId: string | null | undefined,
+  waitStartedAt: number,
+  openedAt: number,
+  openedBy: number,
+) => {
+  if (!isTrayInstrumentationEnabled() || !rootTrayId) {
+    return;
+  }
+
+  const trace = tracesByRootTrayId.get(rootTrayId);
+
+  if (trace && trace.keyboardGateOpenedAt === undefined) {
+    trace.keyboardGateWaitStartedAt =
+      waitStartedAt > 0 ? waitStartedAt : undefined;
+    trace.keyboardGateOpenedAt = openedAt;
+    trace.keyboardGateOpenedBy = openedBy;
   }
 };
 
@@ -303,6 +368,7 @@ const TRACE_STAGES = [
   "contentReleasedAt",
   "layoutFinishedAt",
   "keyboardIntentAt",
+  "keyboardFocusRequestedAt",
   "keyboardFocusAt",
   "keyboardWillShowAt",
 ] as const;

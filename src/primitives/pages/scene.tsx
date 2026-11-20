@@ -12,12 +12,12 @@ export const TrayPagesScene: React.FC<{
   children: React.ReactNode;
   index: number;
   pageIndex: number;
-  pageWidth: number;
+  viewportWidth: SharedValue<number>;
   progress: SharedValue<number>;
-}> = ({ children, index, pageIndex, pageWidth, progress }) => {
-  const offscreenOffset = pageWidth / 3;
+}> = ({ children, index, pageIndex, viewportWidth, progress }) => {
   const animatedStyle = useAnimatedStyle(
     () => {
+      const offscreenOffset = viewportWidth.value / 3;
       // fade each page with the same clock that moves it
       const pageProgress = interpolate(
         progress.value,
@@ -40,14 +40,14 @@ export const TrayPagesScene: React.FC<{
         ],
       };
     },
-    [index, offscreenOffset, progress],
+    [index, progress, viewportWidth],
   );
 
   return (
     <Animated.View
       collapsable={false}
       pointerEvents={pageIndex === index ? "auto" : "none"}
-      style={[styles.pageLayer, { width: pageWidth }, animatedStyle]}
+      style={[styles.pageLayer, animatedStyle]}
     >
       <View style={styles.pageSlot}>{children}</View>
     </Animated.View>
@@ -59,11 +59,13 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
   },
+  // fills the viewport natively, so a resizing viewport needs no React render
   pageLayer: {
     position: "absolute",
     top: 0,
     bottom: 0,
     left: 0,
+    right: 0,
     overflow: "hidden",
   },
 });

@@ -11,7 +11,10 @@ import {
   useTrayHostActions,
   useTrayScope,
 } from "../runtime/tray-context";
-import { markTrayStepKeyboardFocus } from "../telemetry/tray-step-timing";
+import {
+  markTrayStepKeyboardFocus,
+  markTrayStepKeyboardFocusRequested,
+} from "../telemetry/tray-step-timing";
 
 // The ref a TrayTextInput forwards: the underlying React Native TextInput.
 export type TrayTextInputRef = React.ComponentRef<typeof TextInput>;
@@ -50,9 +53,10 @@ export const TrayTextInput: TrayTextInputComponent = forwardRef<
       }
 
       anticipateKeyboard();
+      markTrayStepKeyboardFocusRequested(trayId);
       // autofocus is manual so keyboard anticipation can run before focus
       ref.current?.focus();
-    }, [anticipateKeyboard, autoFocus]);
+    }, [anticipateKeyboard, autoFocus, trayId]);
 
     const handleFocus = useCallback<NonNullable<TextInputProps["onFocus"]>>(
       (event) => {

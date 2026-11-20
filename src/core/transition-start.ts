@@ -48,6 +48,25 @@ export type TrayKeyboardGate = {
   // that puts the keyboard away dismisses it here, so the keyboard starts with
   // the sheet instead of at the step commit, ahead of the sheet's layout.
   onLayoutReady?: (generation: number) => void;
+  // diagnostics, reset when the gate is armed: UI-thread time the layout first
+  // waited, time the gate opened, and what opened it (1 keyboard start signal,
+  // 2 keyboard progress already moving, 3 the wait limit)
+  waitStartedAt?: SharedValue<number>;
+  openedAt?: SharedValue<number>;
+  openedBy?: SharedValue<number>;
+};
+
+const recordTrayKeyboardGateOpened = (
+  gate: TrayKeyboardGate,
+  by: number,
+  at: number,
+) => {
+  "worklet";
+
+  if (gate.openedBy && gate.openedAt && gate.openedBy.value === 0) {
+    gate.openedAt.value = at;
+    gate.openedBy.value = by;
+  }
 };
 
 // A keyboard that never moves (no input focused, or a hardware keyboard with
@@ -59,6 +78,10 @@ export const TRAY_KEYBOARD_GATE_MAX_WAIT_MS = 120;
 // open the gate from the keyboard's UI-thread start signal
 export const openTrayKeyboardGate = (gate: TrayKeyboardGate) => {
   "worklet";
+
+  if (gate.startedGeneration.value !== gate.armedGeneration.value) {
+    recordTrayKeyboardGateOpened(gate, 1, performance.now());
+  }
 
   gate.startedGeneration.value = gate.armedGeneration.value;
 };
@@ -80,8 +103,14 @@ const isTrayKeyboardGateClosed = (
   }
 
   const keyboardStartProgress = 1 - gate.armedTarget.value;
+  const closed =
+    Math.abs(gate.keyboardProgress.value - keyboardStartProgress) < 0.01;
 
-  return Math.abs(gate.keyboardProgress.value - keyboardStartProgress) < 0.01;
+  if (!closed) {
+    recordTrayKeyboardGateOpened(gate, 2, performance.now());
+  }
+
+  return closed;
 };
 
 // startedAt is the shared clock start this participant follows; joinedAt is
@@ -199,6 +228,7 @@ interface TransitionStartAnimation
   waitingForStart: boolean;
   started: boolean;
   gateWaitStartedAt: number;
+  framesHeld: number;
   diagnosticStarted: boolean;
   diagnosticCompleted: boolean;
 }
@@ -215,6 +245,7 @@ type WithTrayTransitionStart = <T extends AnimatableValue>(
   waitForClock?: boolean,
   waitForLayoutStart?: boolean,
   keyboardGate?: TrayKeyboardGate,
+  startHoldFrames?: number,
 ) => T;
 
 // join every participant to one ui thread clock
@@ -230,6 +261,10 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
   waitForClock = false,
   waitForLayoutStart = false,
   keyboardGate?: TrayKeyboardGate,
+  // layout participant only: UI frames to hold the clock before it starts, so
+  // native work for content that just appeared lands on frames where nothing
+  // moves yet
+  startHoldFrames = 0,
 ): Animation<TransitionStartAnimation> {
   "worklet";
 
@@ -252,16 +287,36 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         const clockNotStarted = startedGeneration.value < generation;
         const layoutNotStarted =
           layoutStartedGeneration.value < generation;
-        const keyboardNotStarted =
+        const keyboardGateClosed =
           participant === "layout" &&
-          isTrayKeyboardGateClosed(keyboardGate, generation) &&
+          isTrayKeyboardGateClosed(keyboardGate, generation);
+        const keyboardNotStarted =
+          keyboardGateClosed &&
           now - animation.gateWaitStartedAt < TRAY_KEYBOARD_GATE_MAX_WAIT_MS;
+
+        if (keyboardGate?.waitStartedAt && keyboardNotStarted) {
+          if (keyboardGate.waitStartedAt.value === 0) {
+            keyboardGate.waitStartedAt.value = now;
+          }
+        } else if (keyboardGate && keyboardGateClosed) {
+          recordTrayKeyboardGateOpened(keyboardGate, 3, now);
+        }
         if (
           !completed &&
           ((waitForClock && clockNotStarted) ||
             (waitForLayoutStart && layoutNotStarted) ||
             keyboardNotStarted)
         ) {
+          animation.waitingForStart = true;
+          return;
+        }
+
+        if (
+          participant === "layout" &&
+          !completed &&
+          animation.framesHeld < startHoldFrames
+        ) {
+          animation.framesHeld += 1;
           animation.waitingForStart = true;
           return;
         }
@@ -402,6 +457,7 @@ export const withTrayTransitionStart = function <T extends AnimationObject>(
         waitingForStart: false,
         started: false,
         gateWaitStartedAt: 0,
+        framesHeld: 0,
         diagnosticStarted: false,
         diagnosticCompleted: false,
       };

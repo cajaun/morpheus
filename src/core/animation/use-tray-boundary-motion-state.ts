@@ -10,7 +10,11 @@ import {
   type SharedValue,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { FULL_SCREEN_LAYOUT_DURATION } from "../constants";
+import {
+  FULL_SCREEN_ENTER_HOLD_FRAMES,
+  FULL_SCREEN_LAYOUT_DURATION,
+  FULL_SCREEN_SHELL_EASING_POINTS,
+} from "../constants";
 import { describeTrayTransition } from "../diagnostics/tray-transition-diagnostics";
 import { isTrayDebugLoggingEnabled, log, logWorklet } from "../logger";
 import { withTrayTransitionStart } from "../transition-start";
@@ -221,6 +225,9 @@ export const useTrayBoundaryMotionState = ({
   // shell move while the content is still missing, and the content joins the
   // shared clock late. Wait for this generation's content commit first; the
   // clock starts on the next UI frame after it.
+  const entersFullScreen =
+    transitionContract?.fullScreenChanged === true &&
+    transitionContract.to?.mode === "fullScreen";
   const waitForContentCommit =
     contentCommittedGeneration !== undefined &&
     shouldBoundaryWaitForContentCommit(transitionContract);
@@ -266,7 +273,7 @@ export const useTrayBoundaryMotionState = ({
           1,
           {
             duration: FULL_SCREEN_LAYOUT_DURATION,
-            easing: Easing.bezier(0, 0, 0.58, 1),
+            easing: Easing.bezier(...FULL_SCREEN_SHELL_EASING_POINTS),
           },
           (finished) => {
             "worklet";
@@ -287,11 +294,16 @@ export const useTrayBoundaryMotionState = ({
         transitionGeneration,
         "layout",
         onTransitionStartSignal,
+        false,
+        false,
+        undefined,
+        entersFullScreen ? FULL_SCREEN_ENTER_HOLD_FRAMES : 0,
       );
     },
     [
       boundaryActive,
       contentCommittedGeneration,
+      entersFullScreen,
       morphProgress,
       morphStartedGeneration,
       onTransitionComplete,

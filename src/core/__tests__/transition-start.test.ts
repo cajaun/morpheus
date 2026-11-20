@@ -536,4 +536,36 @@ describe("tray transition start synchronization", () => {
       expect(clock.startedAt.value).toBe(100);
     });
   });
+
+  it("holds the layout clock for the requested frames before starting", () => {
+    const startedGeneration = shared(0);
+    const startedAt = shared(0);
+    const layoutStartedGeneration = shared(0);
+    const completedGeneration = shared(0);
+    const inner = createAnimation();
+    const layout = withTrayTransitionStart(
+      inner as unknown as number,
+      startedGeneration,
+      startedAt,
+      layoutStartedGeneration,
+      completedGeneration,
+      5,
+      "layout",
+      undefined,
+      false,
+      false,
+      undefined,
+      2,
+    ) as unknown as AnimationObject<number>;
+
+    layout.onStart(layout, 0, 100, null);
+    layout.onFrame(layout, 116);
+    expect(inner.onStart).not.toHaveBeenCalled();
+    expect(layoutStartedGeneration.value).toBe(0);
+
+    layout.onFrame(layout, 133);
+    expect(inner.onStart).toHaveBeenCalledWith(inner, 0, 133, null);
+    expect(layoutStartedGeneration.value).toBe(5);
+    expect(startedAt.value).toBe(133);
+  });
 });
