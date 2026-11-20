@@ -787,6 +787,7 @@ describe("useTrayContentSync", () => {
     const footerHeight = shared(0);
     const footer = <React.Fragment />;
     let beginOpenMeasurement: ((hasFooter: boolean) => void) | null = null;
+    let handleContentLayout: ((event: never) => void) | null = null;
     let handleVisibleFooterLayout: ((event: never) => void) | null = null;
     let measurementState:
       | ReturnType<typeof useTrayMeasurements>["state"]
@@ -802,6 +803,9 @@ describe("useTrayContentSync", () => {
 
       measurementState = measurements.state;
       beginOpenMeasurement = measurements.actions.beginOpenMeasurement;
+      handleContentLayout = measurements.handlers.handleContentLayout as (
+        event: never,
+      ) => void;
       handleVisibleFooterLayout =
         measurements.handlers.handleVisibleFooterLayout as (
           event: never,
@@ -823,8 +827,14 @@ describe("useTrayContentSync", () => {
       beginOpenMeasurement?.(true);
     });
 
+    act(() => {
+      handleContentLayout?.({
+        nativeEvent: { layout: { height: 240, width: 320, x: 0, y: 0 } },
+      } as never);
+    });
+
     expect(measurementState).not.toBeNull();
-    expect(measurementState!.footerMeasured).toBe(true);
+    expect(measurementState!.isReadyToOpen).toBe(true);
     expect(footerHeight.value).toBe(64);
   });
 

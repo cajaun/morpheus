@@ -25,6 +25,7 @@ jest.mock("react-native-worklets", () => ({
 }));
 
 jest.mock("../../logger", () => ({
+  isTrayDebugLoggingEnabled: jest.fn(() => false),
   log: jest.fn(),
   logWorklet: jest.fn(),
 }));

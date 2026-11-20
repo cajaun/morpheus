@@ -160,11 +160,19 @@ describe("Tray", () => {
     });
 
     const footer = renderer!.root.find(
-      (node) => node.props.onLayout === mockFooterLayoutHandler,
+      (node) =>
+        node.props.pointerEvents === "auto" &&
+        typeof node.props.onLayout === "function",
     );
 
     expect(footer).toBeDefined();
+    expect(isInsideSheetSurface(footer)).toBe(false);
     expect(footer.props.pointerEvents).toBe("auto");
+
+    footer.props.onLayout({
+      nativeEvent: { layout: { height: 64, width: 320, x: 0, y: 0 } },
+    });
+    expect(mockFooterLayoutHandler).toHaveBeenCalled();
   });
 
   it("keeps the backdrop interactive when visible and not dismissible", () => {
