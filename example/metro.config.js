@@ -15,11 +15,6 @@ config.resolver.extraNodeModules = {
   morpheus: workspaceRoot,
 };
 
-// The example depends on "react-native-morpheus": "file:..", so npm links
-// node_modules/react-native-morpheus back to the repo root. Expo's Metro file
-// map crashes ("Failed to collapse") when a lookup goes through a symlink to
-// an ancestor of the project root, so resolve Morpheus straight to its source
-// (the package's "react-native" export) instead of through that link.
 const morpheusEntries = {
   "react-native-morpheus": path.join(workspaceRoot, "src/index.ts"),
   "react-native-morpheus/constants": path.join(workspaceRoot, "src/constants.ts"),

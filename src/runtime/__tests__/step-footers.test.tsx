@@ -79,7 +79,7 @@ describe("per-step footers", () => {
     ],
   };
 
-  it("keys shared footers by id, own footers by step, and none when absent", () => {
+  it("keys footers by id, footers without one by the shared default, and none when absent", () => {
     const a = present(registration, 0);
     const b = present(registration, 1);
     const c = present(registration, 2);
@@ -87,7 +87,7 @@ describe("per-step footers", () => {
 
     expect(a.stepFooterKey).toBe("id:continue");
     expect(b.stepFooterKey).toBe("id:continue");
-    expect(c.stepFooterKey).toBe("step:c");
+    expect(c.stepFooterKey).toBe("default");
     expect(d.stepFooterKey).toBeNull();
     expect(d.stepFooter).toBeNull();
     // step-footer trays leave the fixed footer layer unused
@@ -97,13 +97,28 @@ describe("per-step footers", () => {
     expect(d.stepOptions.hasFooter).toBe(false);
   });
 
+  it("keeps one footer across consecutive steps whose footers have no id", () => {
+    const plain: TrayRegistration = {
+      steps: [
+        { key: "a", content: <Text>a</Text>, footer: <TrayFooter><Text>Next</Text></TrayFooter> },
+        { key: "b", content: <Text>b</Text>, footer: <TrayFooter><Text>Done</Text></TrayFooter> },
+        { key: "c", content: <Text>c</Text>, footer: <TrayFooter id="pay"><Text>Pay</Text></TrayFooter>, footerId: "pay" },
+      ],
+    };
+
+    expect(present(plain, 0).stepFooterKey).toBe("default");
+    expect(present(plain, 1).stepFooterKey).toBe("default");
+    // a different id marks a different footer
+    expect(present(plain, 2).stepFooterKey).toBe("id:pay");
+  });
+
   it("uses the root footer as the default for steps without their own", () => {
     const rootFooter = <TrayFooter><Text>Root</Text></TrayFooter>;
     const withRoot: TrayRegistration = { ...registration, footer: rootFooter };
     const d = present(withRoot, 3);
 
     expect(d.stepFooter).toBe(rootFooter);
-    expect(d.stepFooterKey).toBe("root");
+    expect(d.stepFooterKey).toBe("default");
     expect(d.stepOptions.hasFooter).toBe(true);
   });
 
@@ -122,8 +137,8 @@ describe("per-step footers", () => {
     expect(a.footer).toBeNull();
     expect(a.stepFooter).toBe(rootFooter);
     // one key across the steps keeps the footer on screen
-    expect(a.stepFooterKey).toBe("root");
-    expect(b.stepFooterKey).toBe("root");
+    expect(a.stepFooterKey).toBe("default");
+    expect(b.stepFooterKey).toBe("default");
   });
 
   it("keeps a trigger-morph footer on the fixed footer layer", () => {

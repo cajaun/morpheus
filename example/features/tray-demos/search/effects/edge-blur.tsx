@@ -7,8 +7,6 @@ import MaskedViewBase from "@react-native-masked-view/masked-view";
 import { easeGradient } from "react-native-easing-gradient";
 import { useTrayDemoTheme } from "../../theme";
 
-// @react-native-masked-view/masked-view 0.3.2 ships class typings that predate
-// @types/react 19.3 and React Native 0.88, so give it a plain component type.
 type MaskedViewProps = ViewProps & {
   maskElement: React.ReactElement;
   androidRenderingMode?: "software" | "hardware";

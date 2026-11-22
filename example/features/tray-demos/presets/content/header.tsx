@@ -24,7 +24,6 @@ export default function Header({
   leftLabel?: React.ReactNode | string;
   shouldClose?: boolean;
 }) {
-  // one handler keeps the chrome contract stable across first and later steps
   const isBackMode = !!onBack && step > 0;
 
   const handlePress = async () => {

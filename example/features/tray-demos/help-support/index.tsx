@@ -66,12 +66,6 @@ const SupportFlowHeader = ({
   );
 };
 
-// The steps after the chooser share one footer (same id): the Continue
-// button stays on screen while those steps change, and only its label and
-// enabled state follow the step. The chooser has no footer, so the button
-// comes in with Choose Areas and leaves when going back to the chooser.
-const HELP_FOOTER_ID = "help-continue";
-
 const HelpSupportTray = () => {
   const [selectedFlow, setSelectedFlow] = useState<HelpKind>("bug");
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
@@ -103,7 +97,7 @@ const HelpSupportTray = () => {
           selectedAreas={selectedAreas}
           onToggleArea={toggleArea}
         />
-        <Tray.Footer id={HELP_FOOTER_ID} exit="withContent">
+        <Tray.Footer exit="withContent">
           <SupportFooterButton
             label="Continue"
             disabled={selectedAreas.length === 0}
@@ -131,14 +125,14 @@ const HelpSupportTray = () => {
           onChangeSubject={setSubject}
           onChangeDetails={setDetails}
         />
-        <Tray.Footer id={HELP_FOOTER_ID}>
+        <Tray.Footer>
           <SupportFooterButton label="Continue" disabled={!canSubmitMessage} />
         </Tray.Footer>
       </Tray.Step>
       <Tray.Step key={`help-attach-${selectedFlow}`}>
         <SupportFlowHeader title="Attach Media" />
         <AttachMediaStep flow={selectedFlow} />
-        <Tray.Footer id={HELP_FOOTER_ID}>
+        <Tray.Footer>
           <SupportFooterButton label="Continue" />
         </Tray.Footer>
       </Tray.Step>
@@ -148,7 +142,7 @@ const HelpSupportTray = () => {
       >
         <SupportFlowHeader title="Your Details" />
         <YourDetailsStep />
-        <Tray.Footer id={HELP_FOOTER_ID}>
+        <Tray.Footer>
           <SupportFooterButton label="Continue to Submit" action="close" />
         </Tray.Footer>
       </Tray.Step>

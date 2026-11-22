@@ -9,12 +9,6 @@ import {
   PaymentMethodHeader,
 } from "../add-payment-method";
 
-// One footer shared by both keyboard steps (same id): it stays on screen,
-// riding the keyboard, while the steps change; only its label and action
-// follow the step. It enters with Add Wallet Address and leaves when going
-// back to the method list.
-const WALLET_FOOTER_ID = "wallet-action";
-
 const WalletFooterButton = ({
   step,
   address,
@@ -35,10 +29,6 @@ const WalletFooterButton = ({
   );
 };
 
-// Add Payment Method, cut down to the keyboard path: Stablecoin Wallet goes
-// straight to Add Wallet Address, then Address Details. Both steps focus a
-// text field, so this exercises entering, handing over and leaving the
-// keyboard between sheet steps.
 const AddPaymentMethodKeyboardTray = () => {
   const [address, setAddress] = useState("");
 
@@ -69,7 +59,7 @@ const AddPaymentMethodKeyboardTray = () => {
           onChangeAddress={setAddress}
           showAction={false}
         />
-        <Tray.Footer id={WALLET_FOOTER_ID}>
+        <Tray.Footer>
           <WalletFooterButton step="address" address={address} />
         </Tray.Footer>
       </Tray.Step>
@@ -86,7 +76,7 @@ const AddPaymentMethodKeyboardTray = () => {
           onChangeAddress={setAddress}
           showAction={false}
         />
-        <Tray.Footer id={WALLET_FOOTER_ID}>
+        <Tray.Footer>
           <WalletFooterButton step="details" address={address} />
         </Tray.Footer>
       </Tray.Step>

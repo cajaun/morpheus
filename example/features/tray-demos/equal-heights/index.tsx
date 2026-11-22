@@ -10,10 +10,6 @@ import { trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
 import { PrimaryButton } from "../shared/primary-button";
 
-// Every step measures to exactly the same height: a fixed-height card, one
-// line of copy and one button. The tray's height never changes between steps,
-// so this exercises step changes that have no resize animation. The titles
-// differ in length so the header title still has to slide between steps.
 const CARD_HEIGHT = 200;
 
 const STEPS = [

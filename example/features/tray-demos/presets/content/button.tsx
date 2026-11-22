@@ -29,7 +29,6 @@ type Props = {
   primaryColor?: string;
 };
 
-// this preset preserves footer width so step changes do not reflow the tray
 export const AnimatedOnboardingButton: React.FC<Props> = ({
   step,
   totalSteps,
@@ -41,7 +40,6 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
 }) => {
   const isLastStep = step === totalSteps - 1;
 
-  // callers can override the default onboarding rule without forking the preset
   const shouldShowSecondary =
     showSecondary !== undefined ? showSecondary : step > 0 && !isLastStep;
   const morphProgress = useTrayMorphProgress();
@@ -58,7 +56,6 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
     const previousConfig = previousSecondaryConfigRef.current;
 
     if (previousConfig.step === step && previousConfig.target === nextTarget) {
-      // Incidental rerenders during one morph must not rewrite its endpoints.
       return;
     }
 
@@ -112,7 +109,6 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
         justifyContent: "center",
       }}
     >
-      {/* the secondary slot stays in layout so the primary width transition stays smooth */}
       <Animated.View
         style={[
           {
@@ -141,7 +137,6 @@ export const AnimatedOnboardingButton: React.FC<Props> = ({
         </PressableScale>
       </Animated.View>
 
-      {/* the primary action expands into the released space instead of remounting */}
       <Animated.View
         style={[
           rPrimaryStyle,

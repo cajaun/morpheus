@@ -47,7 +47,7 @@ export type TrayStepDefinition = {
   key: string;
   header?: React.ReactNode;
   content: React.ReactNode;
-  // a footer inside the step, consecutive steps sharing footerId keep one footer layer
+  // a footer inside the step, consecutive footers share one layer unless their ids differ
   footer?: React.ReactNode;
   footerId?: string;
   options?: TrayStepOptions;

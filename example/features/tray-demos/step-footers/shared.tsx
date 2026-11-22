@@ -9,7 +9,6 @@ import {
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
 import { trayDemoText } from "@/shared/theme/tokens";
 
-// Back on later steps, close on the first.
 export const StepFooterHeader = ({ title }: { title: string }) => {
   const { close, back } = useTrayNavigation();
   const { index } = useTrayNavigationState();
@@ -38,11 +37,6 @@ export const StepFooterHeader = ({ title }: { title: string }) => {
   );
 };
 
-// The Aave tray's header: the first step closes from the right; later steps
-// go back from the left (and have no close button). Which kind a step has is
-// fixed per step (`first`), not read from the live step index: every step's
-// header re-renders when the index changes, so the leaving header would
-// switch its buttons before the transition and nothing would animate.
 export const AaveStyleStepHeader = ({
   title,
   first = false,

@@ -38,8 +38,6 @@ export const SupportChooserStep = ({
   );
 };
 
-// The flow's Continue button is one footer shared by every step after the
-// chooser (see index.tsx), so each step's own state lives in the tray.
 export const SupportFooterButton = ({
   label,
   disabled = false,

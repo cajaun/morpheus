@@ -3,12 +3,6 @@ import { ExampleTrigger } from "../shared/example-trigger";
 import { PrimaryButton } from "../shared/primary-button";
 import { DemoCard, DemoCopy, StepFooterHeader } from "./shared";
 
-// Every step has the same body (fixed card, one line of copy).
-// - One -> Two: each has its own footer (no id) of the same height, so the
-//   tray's height does not change at all; the footers cross-fade with the
-//   steps and no resize runs.
-// - Two -> Three: the body is the same height but step three has no footer,
-//   so only the footer's share of the height changes and the sheet shrinks.
 const CARD_HEIGHT = 180;
 
 const Body = ({
@@ -50,7 +44,7 @@ const FooterEqualHeightsTray = () => (
         icon="1.circle.fill"
         copy="Same height as step two, footer included."
       />
-      <Tray.Footer>
+      <Tray.Footer id="one">
         <NextButton label="Continue" />
       </Tray.Footer>
     </Tray.Step>
@@ -63,7 +57,7 @@ const FooterEqualHeightsTray = () => (
         icon="2.circle.fill"
         copy="A different footer of the same height."
       />
-      <Tray.Footer>
+      <Tray.Footer id="two">
         <NextButton label="Continue" />
       </Tray.Footer>
     </Tray.Step>

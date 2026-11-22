@@ -1,7 +1,6 @@
 const tintColorLight = "#0a7ea4";
 const tintColorDark = "#fff";
 
-// keep legacy tokens isolated so newer tray demos can ignore them
 export const Colors = {
   light: {
     text: "#11181C",

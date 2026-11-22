@@ -71,29 +71,18 @@ export type AnimatedFlowButtonProps = {
   haptics?: boolean;
   style?: StyleProp<ViewStyle>;
 
-  /** @deprecated Use layout.width. */
   width?: number;
-  /** @deprecated Use layout.primaryCollapsedWidth. */
   minimumPrimaryWidth?: number;
-  /** @deprecated Use animation.duration. */
   animationDuration?: number;
-  /** @deprecated Use animation.splitProgress. */
   splitProgress?: SharedValue<number> | null;
-  /** @deprecated Use primaryAction.onPress. */
   onNext?: () => void;
-  /** @deprecated Use primaryAction.onPress for the last step. */
   onFinish?: () => void;
-  /** @deprecated Use secondaryAction.onPress. */
   onSecondaryPress?: () => void;
-  /** @deprecated Use primaryAction.backgroundColor. */
   primaryBackgroundColor?: string;
-  /** @deprecated Use secondaryAction.backgroundColor. */
   secondaryBackgroundColor?: string;
-  /** @deprecated Use secondaryAction.visible. */
   showSecondary?: boolean;
 };
 
-// this footer keeps one stable footprint while the secondary action appears
 export const AnimatedFlowButton: React.FC<AnimatedFlowButtonProps> = ({
   step,
   totalSteps,

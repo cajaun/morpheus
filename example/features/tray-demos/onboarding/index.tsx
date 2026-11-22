@@ -381,7 +381,6 @@ const EXPAND_FROM_TRIGGER_TRANSITION = {
 
 const sharedStepOptions = {
   className: "bg-white",
-  // footerStyle: ONBOARDING_FOOTER_STYLE,
 } as const;
 
 export const OnboardingPageHeader = () => {
@@ -711,7 +710,6 @@ const BackgroundScalePreview = () => (
   </View>
 );
 
-// The Footer Fullscreen demo's Continue footer, shared by every step.
 const ONBOARDING_ROOT_FOOTER = (
   <Tray.Footer>
     <NextButton label="Continue" />

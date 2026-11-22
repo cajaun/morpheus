@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { isValidElement, type ReactNode } from "react";
 import { type TrayRegistration } from "../../tray-context";
 
 // a tray that opens from its trigger morphs the trigger into its footer, which stays on the fixed footer layer
@@ -24,9 +24,10 @@ export const usesStepFooters = (registration: TrayRegistration) => {
   return true;
 };
 
-export const ROOT_STEP_FOOTER_KEY = "root";
+// footers without an id share this key, so consecutive steps with a footer keep one on screen by default
+export const DEFAULT_STEP_FOOTER_KEY = "default";
 
-// the step's footer node and layer key, a shared id keeps one layer across steps
+// the step's footer node and layer key, footers without an id share one layer and an id marks a different footer
 export const resolveStepFooter = (
   registration: TrayRegistration,
   step: TrayRegistration["steps"][number],
@@ -38,12 +39,26 @@ export const resolveStepFooter = (
   if (step.footer != null) {
     return {
       node: step.footer,
-      key: step.footerId != null ? `id:${step.footerId}` : `step:${step.key}`,
+      key:
+        step.footerId != null
+          ? `id:${step.footerId}`
+          : DEFAULT_STEP_FOOTER_KEY,
     };
   }
 
   if (registration.footer != null) {
-    return { node: registration.footer, key: ROOT_STEP_FOOTER_KEY };
+    // a root footer honors its own id the same way a step footer does
+    const rootFooterId = isValidElement<{ id?: unknown }>(registration.footer)
+      ? registration.footer.props.id
+      : undefined;
+
+    return {
+      node: registration.footer,
+      key:
+        typeof rootFooterId === "string"
+          ? `id:${rootFooterId}`
+          : DEFAULT_STEP_FOOTER_KEY,
+    };
   }
 
   return null;

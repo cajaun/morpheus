@@ -1,30 +1,20 @@
 import React from "react";
 import { View } from "react-native";
-import AboutAaveTray from "./about-aave";
 import AddStablecoinsTray from "./add-stablecoins";
 import AddPaymentMethodTray from "./add-payment-method";
 import AddPaymentMethodKeyboardTray from "./add-payment-method-keyboard";
 import ChangeAvatarTray from "./change-avatar";
 import type { UsageVariant } from "./component-presentation/types";
-import CreatingWalletsInfoTray from "./creating-wallets-info";
-import ColorIndexTray from "./color-index";
-import DynamicHeightsTray from "./dynamic-heights";
 import EqualHeightsTray from "./equal-heights";
-import FooterStepsTray, {
-  FooterExitWithContentTray,
-} from "./step-footers/four-steps";
+import FooterStepsTray from "./step-footers/four-steps";
 import FooterEqualHeightsTray from "./step-footers/equal-heights";
 import FooterFullScreenTray from "./step-footers/fullscreen";
 import ExpandFromTriggerDemo from "./expand-from-trigger";
 import HelpSupportTray from "./help-support";
-import IdentityRateBoostTray from "./identity-rate-boost";
 import AaveExample from "./aave-tray";
 import NotificationsTray from "./notifications";
 import OnboardingExample from "./onboarding";
-import PayFromTray from "./pay-from";
 import RemoveWalletWarningTray from "./remove-wallet-warning";
-import Send from "./send";
-import WalletGroupTray from "./wallet-group";
 import WatchAddressTray from "./watch-address";
 import WatchingWalletsInfoTray from "./watching-wallets-info";
 import { useTrayDemoTheme } from "./theme";
@@ -40,7 +30,6 @@ const TrayExampleFrame = ({ children }: TrayExampleFrameProps) => {
     <View
       style={{
         alignItems: "center",
-        // backgroundColor: theme.background,
         backgroundColor: "#FFFFFFF",
         flex: 1,
         justifyContent: "center",
@@ -53,15 +42,6 @@ const TrayExampleFrame = ({ children }: TrayExampleFrameProps) => {
 };
 
 export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
-  {
-    value: "color-index",
-    label: "Color Index",
-    content: (
-      <TrayExampleFrame>
-        <ColorIndexTray />
-      </TrayExampleFrame>
-    ),
-  },
   {
     value: "aave",
     label: "Aave",
@@ -117,15 +97,6 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     ),
   },
   {
-    value: "dynamic-heights",
-    label: "Dynamic Heights",
-    content: (
-      <TrayExampleFrame>
-        <DynamicHeightsTray />
-      </TrayExampleFrame>
-    ),
-  },
-  {
     value: "equal-heights",
     label: "Equal Heights",
     content: (
@@ -140,15 +111,6 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     content: (
       <TrayExampleFrame>
         <FooterStepsTray />
-      </TrayExampleFrame>
-    ),
-  },
-  {
-    value: "footer-exit-with-content",
-    label: "Footer Exit With Content",
-    content: (
-      <TrayExampleFrame>
-        <FooterExitWithContentTray />
       </TrayExampleFrame>
     ),
   },
@@ -180,24 +142,6 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     ),
   },
   {
-    value: "pay-from",
-    label: "Pay From",
-    content: (
-      <TrayExampleFrame>
-        <PayFromTray />
-      </TrayExampleFrame>
-    ),
-  },
-  {
-    value: "send",
-    label: "Send",
-    content: (
-      <TrayExampleFrame>
-        <Send />
-      </TrayExampleFrame>
-    ),
-  },
-  {
     value: "watch-address",
     label: "Watch Address",
     content: (
@@ -225,33 +169,6 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     ),
   },
   {
-    value: "creating-wallets",
-    label: "Creating Wallets",
-    content: (
-      <TrayExampleFrame>
-        <CreatingWalletsInfoTray />
-      </TrayExampleFrame>
-    ),
-  },
-  {
-    value: "about-aave",
-    label: "About Aave",
-    content: (
-      <TrayExampleFrame>
-        <AboutAaveTray />
-      </TrayExampleFrame>
-    ),
-  },
-  {
-    value: "identity-rate-boost",
-    label: "Identity Boost",
-    content: (
-      <TrayExampleFrame>
-        <IdentityRateBoostTray />
-      </TrayExampleFrame>
-    ),
-  },
-  {
     value: "expand-from-trigger",
     label: "Expand From Trigger",
     content: <ExpandFromTriggerDemo showBackLink={false} />,
@@ -260,14 +177,5 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     value: "remove-wallet-warning",
     label: "Remove Wallet",
     content: <RemoveWalletWarningTray />,
-  },
-  {
-    value: "wallet-group",
-    label: "Wallet Group",
-    content: (
-      <TrayExampleFrame>
-        <WalletGroupTray />
-      </TrayExampleFrame>
-    ),
   },
 ];

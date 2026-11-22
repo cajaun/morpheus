@@ -8,7 +8,7 @@ export type TrayFooterProps = {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   className?: string;
-  // inside Tray.Step, consecutive steps sharing an id keep one footer on screen, without an id the footer enters and leaves with its step
+  // consecutive steps with a footer keep one on screen, a different id marks a different footer that enters and leaves with its step
   id?: string;
   // defaults to inPlace
   exit?: TrayFooterExit;

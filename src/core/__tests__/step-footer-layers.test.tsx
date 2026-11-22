@@ -87,7 +87,7 @@ describe("step footer placement", () => {
     const store = createStepFooterStore();
 
     store.commit(payload("one", null, { isFirstRender: true }));
-    store.commit(payload("two", "step:two", { fullScreen: true }));
+    store.commit(payload("two", "default", { fullScreen: true }));
 
     expect(store.getSnapshot().placement).toBe("pinned");
   });

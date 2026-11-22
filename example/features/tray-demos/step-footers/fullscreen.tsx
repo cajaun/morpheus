@@ -5,10 +5,6 @@ import { ExampleTrigger } from "../shared/example-trigger";
 import { PrimaryButton } from "../shared/primary-button";
 import { DemoCard, DemoCopy, StepFooterHeader } from "./shared";
 
-// Sheet -> fullscreen -> fullscreen.
-// - Step one (sheet) and step two (fullscreen) share a footer (same id): it
-//   stays pinned to the bottom while the tray expands to fullscreen.
-// - Step three (fullscreen) has no footer: it leaves with step two.
 const FULL_SCREEN_OPTIONS = {
   fullScreen: true,
   shouldScaleBackground: false,
@@ -22,10 +18,6 @@ export const NextButton = ({ label }: { label: string }) => {
   return <PrimaryButton label={label} onPress={next} />;
 };
 
-// Fixed sizes, not flex: while the tray expands, the fullscreen content area
-// grows every frame, and flex children would re-lay out with it (the card
-// would grow downward). Laid out at its final size, the content rises with
-// the tray's top edge, the way content moves in a sheet.
 const FullScreenBody = ({
   color,
   title,
@@ -72,7 +64,7 @@ const FooterFullScreenTray = () => (
           <DemoCard height={160} color="#DDF5FF" tint="#09B6F4" icon="rectangle.expand.vertical" />
         </Tray.Section>
       </Tray.Body>
-      <Tray.Footer id="main">
+      <Tray.Footer>
         <NextButton label="Continue" />
       </Tray.Footer>
     </Tray.Step>
@@ -84,7 +76,7 @@ const FooterFullScreenTray = () => (
         title="Same footer"
 
       />
-      <Tray.Footer id="main">
+      <Tray.Footer>
         <NextButton label="Continue" />
       </Tray.Footer>
     </Tray.Step>

@@ -175,28 +175,6 @@ export const UsageVariantFlatList = ({
         viewabilityConfig={viewabilityConfig}
       />
 
-      {/* <PressableScale
-        onPress={openSelector}
-        style={[
-          styles.pagination,
-          {
-            bottom: insets.bottom + 34,
-          },
-        ]}
-      >
-        <View style={{ gap: 4 }}>
-          {data.map((item, index) => (
-            <PaginationIndicator
-              key={item.value}
-              index={index}
-              itemSize={height}
-              label={item.label}
-              scrollY={scrollY}
-            />
-          ))}
-        </View>
-      </PressableScale> */}
-
       <UsageVariantsSelect
         data={data}
         listRef={listRef}

@@ -461,7 +461,6 @@ const PaymentMethodCard = ({
 export const AddPaymentMethodStep = ({
   bankAccountEnabled = true,
 }: {
-  // the keyboard variant only follows the stablecoin wallet path
   bankAccountEnabled?: boolean;
 }) => {
   const { next } = useTrayNavigation();
@@ -573,8 +572,6 @@ const AddressField = ({
   </PaymentFieldShell>
 );
 
-// `showAction={false}` leaves the button out, for a tray that puts it in a
-// footer shared with the next step (Add Payment Method Keyboard).
 export const AddWalletAddressStep = ({
   address,
   onChangeAddress,
