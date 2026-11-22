@@ -1,7 +1,7 @@
 import { Tray, useTrayNavigation } from "react-native-morpheus";
 import { ExampleTrigger } from "../shared/example-trigger";
 import { PrimaryButton } from "../shared/primary-button";
-import { DemoCard, DemoCopy, StepFooterHeader } from "./shared";
+import { AaveStyleStepHeader, DemoCard, DemoCopy } from "./shared";
 
 const CARD_HEIGHT = 180;
 
@@ -37,33 +37,33 @@ const FooterEqualHeightsTray = () => (
     </Tray.Trigger>
 
     <Tray.Step key="footer-equal-one">
-      <StepFooterHeader title="One" />
+      <AaveStyleStepHeader title="A title" first />
       <Body
         color="#DDF5FF"
         tint="#09B6F4"
         icon="1.circle.fill"
         copy="Same height as step two, footer included."
       />
-      <Tray.Footer id="one">
+      <Tray.Footer >
         <NextButton label="Continue" />
       </Tray.Footer>
     </Tray.Step>
 
     <Tray.Step key="footer-equal-two">
-      <StepFooterHeader title="A much longer title" />
+      <AaveStyleStepHeader title="A much longer title" />
       <Body
         color="#FFE9DD"
         tint="#FF7A2F"
         icon="2.circle.fill"
         copy="A different footer of the same height."
       />
-      <Tray.Footer id="two">
+      <Tray.Footer exit="withContent">
         <NextButton label="Continue" />
       </Tray.Footer>
     </Tray.Step>
 
     <Tray.Step key="footer-equal-three">
-      <StepFooterHeader title="Three" />
+      <AaveStyleStepHeader title="A not so long title" />
       <Body
         color="#E4F8E9"
         tint="#22C766"

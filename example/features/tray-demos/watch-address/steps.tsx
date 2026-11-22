@@ -16,8 +16,25 @@ import {
   FamilyAccountIcon,
   WalletActionRow,
 } from "./components";
-import { OnboardingPageHeader } from "../shared/onboarding-page-header";
 import type { WalletAction } from "./types";
+
+const PageTitle = ({ children }: { children: React.ReactNode }) => (
+  <Text
+    className="font-semibold text-[#2D2E30]"
+    style={{ fontSize: 32, lineHeight: 34, letterSpacing: 0.2 }}
+  >
+    {children}
+  </Text>
+);
+
+const PageSubtitle = ({ children }: { children: React.ReactNode }) => (
+  <Text
+    className="font-medium text-[#A0A4AA]"
+    style={{ fontSize: 21, lineHeight: 28, letterSpacing: 0.15 }}
+  >
+    {children}
+  </Text>
+);
 
 export const WatchAddressHeader = ({
   title,
@@ -115,10 +132,6 @@ export const WatchAddressChooserStep = ({
 export const AddExistingWalletStep = () => {
   return (
     <Tray.Pages>
-      <Tray.Pages.Header shell>
-        <OnboardingPageHeader showProgress={false} />
-      </Tray.Pages.Header>
-
       <Tray.Page className="flex-1">
         <Tray.Body style={{ paddingHorizontal: 0, flex: 1 }}>
           <ExistingWalletHero />
@@ -271,35 +284,13 @@ export const CreateNewWalletStep = () => {
 
   return (
     <Tray.Pages>
-      <Tray.Pages.Header shell>
-        <OnboardingPageHeader />
-      </Tray.Pages.Header>
-
       <Tray.Page className="flex-1">
         <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
           <Tray.Section style={{ gap: 0 }}>
             <View style={{ gap: 18 }}>
-              <Text
-                className="font-semibold text-[#2D2E30]"
-                style={{
-                  fontSize: 32,
-                  lineHeight: 34,
-                  letterSpacing: 0.2,
-                }}
-              >
-                Name Your Wallet
-              </Text>
+              <PageTitle>Name Your Wallet</PageTitle>
 
-              <Text
-                className="font-medium text-[#A0A4AA]"
-                style={{
-                  fontSize: 21,
-                  lineHeight: 28,
-                  letterSpacing: 0.15,
-                }}
-              >
-                Choose a nickname for your wallet.
-              </Text>
+              <PageSubtitle>Choose a nickname for your wallet.</PageSubtitle>
             </View>
 
             <View style={{ paddingTop: 28 }}>
@@ -345,28 +336,12 @@ export const CreateNewWalletStep = () => {
         <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
           <Tray.Section style={{ gap: 0 }}>
             <View style={{ gap: 12 }}>
-              <Text
-                className="font-semibold text-[#2D2E30]"
-                style={{
-                  fontSize: 32,
-                  lineHeight: 34,
-                  letterSpacing: 0.2,
-                }}
-              >
-                Choose a Color
-              </Text>
+              <PageTitle>Choose a Color</PageTitle>
 
-              <Text
-                className="font-medium text-[#A0A4AA]"
-                style={{
-                  fontSize: 21,
-                  lineHeight: 28,
-                  letterSpacing: 0.15,
-                }}
-              >
+              <PageSubtitle>
                 Great. Now choose a color for your{"\n"}wallet, you can always
                 edit this later.
-              </Text>
+              </PageSubtitle>
             </View>
 
             <View style={{ paddingTop: 58 }}>
@@ -383,28 +358,12 @@ export const CreateNewWalletStep = () => {
         <Tray.Body style={{ paddingHorizontal: 40, flex: 1 }}>
           <Tray.Section style={{ gap: 0, flex: 1 }}>
             <View style={{ gap: 12 }}>
-              <Text
-                className="font-semibold text-[#2D2E30]"
-                style={{
-                  fontSize: 32,
-                  lineHeight: 34,
-                  letterSpacing: 0.2,
-                }}
-              >
-                Set a Display Image
-              </Text>
+              <PageTitle>Set a Display Image</PageTitle>
 
-              <Text
-                className="font-medium text-[#A0A4AA]"
-                style={{
-                  fontSize: 21,
-                  lineHeight: 28,
-                  letterSpacing: 0.15,
-                }}
-              >
+              <PageSubtitle>
                 Finally, let's choose an avatar for your{"\n"}wallet. This is
                 visible only to you.
-              </Text>
+              </PageSubtitle>
             </View>
 
             <View

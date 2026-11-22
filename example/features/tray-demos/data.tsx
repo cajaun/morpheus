@@ -5,14 +5,13 @@ import AddPaymentMethodTray from "./add-payment-method";
 import AddPaymentMethodKeyboardTray from "./add-payment-method-keyboard";
 import ChangeAvatarTray from "./change-avatar";
 import type { UsageVariant } from "./component-presentation/types";
-import EqualHeightsTray from "./equal-heights";
 import FooterStepsTray from "./step-footers/four-steps";
 import FooterEqualHeightsTray from "./step-footers/equal-heights";
 import FooterFullScreenTray from "./step-footers/fullscreen";
 import ExpandFromTriggerDemo from "./expand-from-trigger";
 import HelpSupportTray from "./help-support";
 import AaveExample from "./aave-tray";
-import NotificationsTray from "./notifications";
+import NotificationsTray from "./notis";
 import OnboardingExample from "./onboarding";
 import RemoveWalletWarningTray from "./remove-wallet-warning";
 import WatchAddressTray from "./watch-address";
@@ -93,15 +92,6 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     content: (
       <TrayExampleFrame>
         <ChangeAvatarTray />
-      </TrayExampleFrame>
-    ),
-  },
-  {
-    value: "equal-heights",
-    label: "Equal Heights",
-    content: (
-      <TrayExampleFrame>
-        <EqualHeightsTray />
       </TrayExampleFrame>
     ),
   },

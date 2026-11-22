@@ -2,14 +2,16 @@ import { Text, View, useWindowDimensions } from "react-native";
 import { Tray, useTrayNavigation } from "react-native-morpheus";
 import { trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
+import { OnboardingPageHeader } from "../shared/onboarding-page-header";
 import { PrimaryButton } from "../shared/primary-button";
-import { DemoCard, DemoCopy, StepFooterHeader } from "./shared";
+import { AaveStyleStepHeader, DemoCard, DemoCopy } from "./shared";
 
 const FULL_SCREEN_OPTIONS = {
   fullScreen: true,
   shouldScaleBackground: false,
   fullScreenSafeAreaTop: true,
   fullScreenDraggable: false,
+  fullScreenCloseBehavior: "returnToShell",
 } as const;
 
 export const NextButton = ({ label }: { label: string }) => {
@@ -18,7 +20,7 @@ export const NextButton = ({ label }: { label: string }) => {
   return <PrimaryButton label={label} onPress={next} />;
 };
 
-const FullScreenBody = ({
+const FullScreenCard = ({
   color,
   title,
   copy,
@@ -30,8 +32,8 @@ const FullScreenBody = ({
   const { height } = useWindowDimensions();
 
   return (
-    <Tray.Body fullScreen style={{ paddingTop: 0 }}>
-      <View style={{ gap: 16 }}>
+    <Tray.Body style={{ flex: 1 }}>
+      <Tray.Section style={{ gap: 16 }}>
         <View
           style={{
             height: Math.round(height * 0.5),
@@ -46,7 +48,7 @@ const FullScreenBody = ({
           </Text>
         </View>
         {copy ? <DemoCopy>{copy}</DemoCopy> : null}
-      </View>
+      </Tray.Section>
     </Tray.Body>
   );
 };
@@ -58,10 +60,15 @@ const FooterFullScreenTray = () => (
     </Tray.Trigger>
 
     <Tray.Step key="footer-full-sheet">
-      <StepFooterHeader title="Sheet" />
+      <AaveStyleStepHeader title="Sheet" first />
       <Tray.Body>
         <Tray.Section style={{ gap: 16 }}>
-          <DemoCard height={160} color="#DDF5FF" tint="#09B6F4" icon="rectangle.expand.vertical" />
+          <DemoCard
+            height={160}
+            color="#DDF5FF"
+            tint="#09B6F4"
+            icon="rectangle.expand.vertical"
+          />
         </Tray.Section>
       </Tray.Body>
       <Tray.Footer>
@@ -70,24 +77,40 @@ const FooterFullScreenTray = () => (
     </Tray.Step>
 
     <Tray.Step key="footer-full-one" options={FULL_SCREEN_OPTIONS}>
-      <StepFooterHeader title="Fullscreen" />
-      <FullScreenBody
-        color="#FFE9DD"
-        title="Same footer"
-
-      />
+      <OnboardingPageHeader />
+      
+      <Tray.Pages>
+        <Tray.Page className="flex-1">
+          <FullScreenCard color="#FFE9DD" title="Same footer" />
+        </Tray.Page>
+        <Tray.Page className="flex-1">
+          <FullScreenCard
+            color="#FFF3D6"
+            title="Still the same footer"
+            copy="Swipe between pages, the footer stays put."
+          />
+        </Tray.Page>
+      </Tray.Pages>
       <Tray.Footer>
         <NextButton label="Continue" />
       </Tray.Footer>
     </Tray.Step>
 
     <Tray.Step key="footer-full-two" options={FULL_SCREEN_OPTIONS}>
-      <StepFooterHeader title="No footer" />
-      <FullScreenBody
-        color="#E4F8E9"
-        title="Footer gone"
-        copy="The footer left with the previous step. Go back to bring it in."
-      />
+      <OnboardingPageHeader />
+
+      <Tray.Pages>
+        <Tray.Page className="flex-1">
+          <FullScreenCard
+            color="#E4F8E9"
+            title="Footer gone"
+            copy="The footer left with the previous step. Go back to bring it in."
+          />
+        </Tray.Page>
+        <Tray.Page className="flex-1">
+          <FullScreenCard color="#E8F1FF" title="Another page" />
+        </Tray.Page>
+      </Tray.Pages>
     </Tray.Step>
   </Tray.Root>
 );

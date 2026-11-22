@@ -7,7 +7,7 @@ import { PressableScale } from "@/shared/ui/pressable-scale";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { TRAY_ITEM_RADIUS } from "react-native-morpheus/constants";
 
-export const CREATE_WALLET_COLORS = [
+const CREATE_WALLET_COLORS = [
   "#F24160",
   "#E63E9D",
   "#C63AE7",
@@ -66,7 +66,7 @@ export const WalletActionRow = ({
           backgroundColor: iconColor,
         }}
       >
-        <SymbolView name={icon} tintColor="#FFFFFF"  weight="semibold" />
+        <SymbolView name={icon} tintColor="#FFFFFF" weight="semibold" />
       </View>
 
       <View style={{ flex: 1 }}>
@@ -299,58 +299,6 @@ export const FamilyAccountIcon = () => {
         weight="medium"
         style={{ marginTop: 17 }}
       />
-    </View>
-  );
-};
-
-export const CreateWalletNameHint = () => {
-  return (
-    <View
-      style={{
-        borderWidth: 1,
-        borderColor: "#E8EAEE",
-        borderStyle: "dashed",
-        borderRadius: 28,
-        paddingHorizontal: 20,
-        paddingTop: 14,
-        paddingBottom: 18,
-        alignItems: "center",
-        gap: 8,
-      }}
-    >
-      <View
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: 7,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#FFFFFF",
-          borderWidth: 1,
-          borderColor: "#E6E8ED",
-          marginTop: -26,
-        }}
-      >
-        <View
-          style={{
-            width: 12,
-            height: 4,
-            borderRadius: 999,
-            backgroundColor: "#7EBEFE",
-          }}
-        />
-      </View>
-
-      <Text
-        className="font-medium text-center text-[#A5A9B0]"
-        style={{
-          fontSize: 16,
-          lineHeight: 24,
-          letterSpacing: 0.12,
-        }}
-      >
-        Your new address will add to Wallet Group 2.{"\n"}Change group
-      </Text>
     </View>
   );
 };

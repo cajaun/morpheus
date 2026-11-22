@@ -468,10 +468,6 @@ const SecondStep = () => {
 const ThirdStep = () => {
   return (
     <Tray.Pages>
-      <Tray.Pages.Header shell>
-        <OnboardingPageHeader />
-      </Tray.Pages.Header>
-
       <Tray.Page className="flex-1">
         <Tray.Body style={{ flex: 1 }}>
           <Tray.Section>
