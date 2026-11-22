@@ -8,7 +8,12 @@ import React, {
 } from "react";
 import { TrayContentCommitContext } from "../../tray-content-commit";
 import { TrayStepContent } from "../../../tray-step-content";
-import { TrayContentFooterSlot, TrayStepFooterLayers } from "../../step-footer";
+import {
+  TrayContentFooterSlot,
+  TrayExitingFooterSlot,
+  TrayStepFooterLayers,
+  useStepFooterLayerRecorder,
+} from "../../step-footer";
 import {
   TrayPreloadingContent,
   TrayPreloadingHeader,
@@ -71,6 +76,7 @@ export const PresentedTrayRegion = ({
     [payload.fullScreenBoundaryExit, payload.isFirstRender, payload.trayId],
   );
 
+  const recordLayer = useStepFooterLayerRecorder();
   let regionNode: React.ReactNode = null;
 
   if (
@@ -142,10 +148,14 @@ export const PresentedTrayRegion = ({
             anchorScaleToTop={payload.fullScreen}
             fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
             skipEntering={payload.isFirstRender}
+            onLayout={recordLayer(payload.trayId)}
           >
             {payload.content}
             <TrayContentFooterSlot trayId={payload.trayId} />
           </TrayStepContent>
+          <TrayExitingFooterSlot
+            fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
+          />
         </TrayStepOptionsProvider>
       </TrayScopeProvider>
     );

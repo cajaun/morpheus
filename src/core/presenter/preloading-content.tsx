@@ -1,4 +1,5 @@
 import React, { Activity } from "react";
+import type { LayoutChangeEvent } from "react-native";
 import type { PresentedPreloadedStep } from "../../runtime/presenter/types";
 import {
   TrayStepLayerProvider,
@@ -6,7 +7,11 @@ import {
 } from "../../runtime/tray-context";
 import type { ResolvedTrayStepOptions } from "../../runtime/types";
 import { TrayRevealedStepContent } from "../../tray-step-content";
-import { TrayContentFooterSlot } from "../step-footer";
+import {
+  TrayContentFooterSlot,
+  TrayExitingFooterSlot,
+  useStepFooterLayerRecorder,
+} from "../step-footer";
 import {
   useLeftLayer,
   useSettledLayers,
@@ -42,6 +47,7 @@ const renderLayer = (
   anchorScaleToTop: boolean,
   fullScreenBoundaryExit: boolean,
   skipEntering: boolean,
+  onLayout?: (event: LayoutChangeEvent) => void,
 ) => (
   // layers share element types and step keys so a hidden layer becomes the current one, the animated wrapper sits outside the Activity
   <TrayRevealedStepContent
@@ -52,6 +58,7 @@ const renderLayer = (
     fullScreenBoundaryExit={fullScreenBoundaryExit}
     skipEntering={skipEntering}
     hidden={mode === "hidden"}
+    onLayout={onLayout}
   >
     <Activity mode={mode}>
       <TrayStepLayerProvider value={trayId}>
@@ -78,6 +85,7 @@ export const TrayPreloadingContent = ({
   preloaded: readonly PresentedPreloadedStep[];
 }) => {
   const { left, completedGeneration, settled } = useLeftLayer(current.trayId);
+  const recordLayer = useStepFooterLayerRecorder();
   const hiddenSteps = useSettledLayers(
     resolveRenderedPreloadedSteps(
       preloaded,
@@ -97,6 +105,7 @@ export const TrayPreloadingContent = ({
       current.fullScreen,
       current.fullScreenBoundaryExit,
       current.isFirstRender,
+      recordLayer(current.trayId),
     ),
     ...hiddenSteps.map((step) =>
       renderLayer(
@@ -109,5 +118,10 @@ export const TrayPreloadingContent = ({
         false,
       ),
     ),
+    // a footer leaving with the outgoing layer, positioned below that layer's content
+    <TrayExitingFooterSlot
+      key="step-footer-exiting"
+      fullScreenBoundaryExit={current.fullScreenBoundaryExit}
+    />,
   ];
 };

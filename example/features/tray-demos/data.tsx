@@ -10,7 +10,9 @@ import CreatingWalletsInfoTray from "./creating-wallets-info";
 import ColorIndexTray from "./color-index";
 import DynamicHeightsTray from "./dynamic-heights";
 import EqualHeightsTray from "./equal-heights";
-import FooterStepsTray from "./step-footers/four-steps";
+import FooterStepsTray, {
+  FooterExitWithContentTray,
+} from "./step-footers/four-steps";
 import FooterEqualHeightsTray from "./step-footers/equal-heights";
 import FooterFullScreenTray from "./step-footers/fullscreen";
 import ExpandFromTriggerDemo from "./expand-from-trigger";
@@ -138,6 +140,15 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     content: (
       <TrayExampleFrame>
         <FooterStepsTray />
+      </TrayExampleFrame>
+    ),
+  },
+  {
+    value: "footer-exit-with-content",
+    label: "Footer Exit With Content",
+    content: (
+      <TrayExampleFrame>
+        <FooterExitWithContentTray />
       </TrayExampleFrame>
     ),
   },

@@ -1,12 +1,17 @@
 import React from "react";
 import { StyleProp, View, ViewStyle } from "react-native";
 
+// how a footer leaves when the next step shows another footer or none, inPlace fades it where it is, withContent leaves with its step's content the way an entering footer arrives
+export type TrayFooterExit = "inPlace" | "withContent";
+
 export type TrayFooterProps = {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   className?: string;
   // inside Tray.Step, consecutive steps sharing an id keep one footer on screen, without an id the footer enters and leaves with its step
   id?: string;
+  // defaults to inPlace
+  exit?: TrayFooterExit;
 };
 
 // a semantic wrapper, the shell renders footers on their own layer

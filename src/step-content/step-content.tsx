@@ -27,6 +27,7 @@ export const TrayRevealedStepContent: React.FC<TrayStepContentProps> = ({
   skipEntering = false,
   skipExiting = false,
   hidden = false,
+  onLayout,
 }) => {
   const transitionStart = useTrayTransitionStart();
   const motionDirection = useTrayContentMotionDirection();
@@ -118,6 +119,7 @@ export const TrayRevealedStepContent: React.FC<TrayStepContentProps> = ({
         revealStyle,
       ]}
       pointerEvents={pointerEvents}
+      onLayout={onLayout}
       exiting={
         skipExiting
           ? undefined
@@ -145,6 +147,7 @@ export const TrayStepContent: React.FC<TrayStepContentProps> = ({
   stepKey,
   skipEntering = false,
   skipExiting = false,
+  onLayout,
 }) => {
   const transitionStart = useTrayTransitionStart();
   const motionDirection = useTrayContentMotionDirection();
@@ -180,6 +183,7 @@ export const TrayStepContent: React.FC<TrayStepContentProps> = ({
         style,
       ]}
       pointerEvents={pointerEvents}
+      onLayout={onLayout}
       // the first render skips entering because the shell open is the arrival cue
       entering={
         skipEntering

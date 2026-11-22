@@ -43,10 +43,17 @@ const LastStep = () => {
 
 // The footer is written inline as <Tray.Footer> in each step: the step
 // compiler looks for Tray.Footer elements directly inside Tray.Step.
-const FooterStepsTray = () => (
+// exit="withContent" makes the footer leave with step three's content instead of fading where it is
+const FooterStepsTray = ({
+  exit,
+  label = "Footer Steps",
+}: {
+  exit?: "inPlace" | "withContent";
+  label?: string;
+}) => (
   <Tray.Root stepOptions={{ className: "bg-white"}}>
     <Tray.Trigger haptics="feedback">
-      <ExampleTrigger label="Footer Steps" />
+      <ExampleTrigger label={label} />
     </Tray.Trigger>
 
     <Tray.Step key="footer-one">
@@ -57,7 +64,7 @@ const FooterStepsTray = () => (
         tint="#09B6F4"
         icon="1.circle.fill"
       />
-      <Tray.Footer id="continue">
+      <Tray.Footer id="continue" >
         <ContinueButton label="Continue" />
       </Tray.Footer>
     </Tray.Step>
@@ -83,7 +90,7 @@ const FooterStepsTray = () => (
         tint="#22C766"
         icon="3.circle.fill"
       />
-  <Tray.Footer id="continue">
+  <Tray.Footer id="continue" exit={exit}>
         <ContinueButton label="Continue" />
       </Tray.Footer>
     </Tray.Step>
@@ -100,5 +107,9 @@ const ContinueButton = ({ label }: { label: string }) => {
 
   return <PrimaryButton label={label} onPress={next} />;
 };
+
+export const FooterExitWithContentTray = () => (
+  <FooterStepsTray exit="withContent" label="Footer Exit With Content" />
+);
 
 export default FooterStepsTray;

@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleProp, ViewStyle } from "react-native";
+import { LayoutChangeEvent, StyleProp, ViewStyle } from "react-native";
 
 // content transitions share one motion language for every step swap
 export type TrayStepContentProps = {
@@ -14,4 +14,5 @@ export type TrayStepContentProps = {
   skipExiting?: boolean;
   // TrayRevealedStepContent, the step stays rendered but hidden
   hidden?: boolean;
+  onLayout?: (event: LayoutChangeEvent) => void;
 };

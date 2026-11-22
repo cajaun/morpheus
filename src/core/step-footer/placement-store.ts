@@ -1,7 +1,24 @@
-import React, { useCallback, useContext, useSyncExternalStore } from "react";
+import React, {
+  isValidElement,
+  useCallback,
+  useContext,
+  useSyncExternalStore,
+} from "react";
 import { type StyleProp, type ViewStyle } from "react-native";
 
 export type TrayStepFooterPlacement = "pinned" | "content";
+
+export type TrayStepFooterExitMode = "inPlace" | "withContent";
+
+// a pinned footer handed to the content it leaves with, drawn below that content until the transition completes
+export type TrayStepFooterExiting = {
+  key: string;
+  node: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+  className?: string;
+  hostTrayId: string;
+  generation: number;
+};
 
 export type TrayStepFooterState = {
   key: string | null;
@@ -15,6 +32,9 @@ export type TrayStepFooterState = {
   generation: number;
   // pinned after entering in the content, shown at once without motion
   settled: boolean;
+  // how this footer leaves, read from its Tray.Footer exit prop
+  exit: TrayStepFooterExitMode;
+  exiting: TrayStepFooterExiting | null;
 };
 
 export const EMPTY_STEP_FOOTER_STATE: TrayStepFooterState = {
@@ -24,7 +44,17 @@ export const EMPTY_STEP_FOOTER_STATE: TrayStepFooterState = {
   hostTrayId: null,
   generation: 0,
   settled: false,
+  exit: "inPlace",
+  exiting: null,
 };
+
+// the exit prop of the Tray.Footer element a step declares
+export const resolveStepFooterExit = (
+  node: React.ReactNode,
+): TrayStepFooterExitMode =>
+  isValidElement<{ exit?: unknown }>(node) && node.props.exit === "withContent"
+    ? "withContent"
+    : "inPlace";
 
 export type TrayStepFooterPayload = {
   trayId: string;
@@ -53,6 +83,7 @@ export const resolveStepFooterState = (
     style: payload.footerStyle,
     className: payload.footerClassName,
     hostTrayId: payload.trayId,
+    exit: resolveStepFooterExit(payload.stepFooter),
   };
 
   if (key === previous.key) {
@@ -64,6 +95,25 @@ export const resolveStepFooterState = (
         previous.placement === "content" ? generation : previous.generation,
     };
   }
+
+  // a pinned footer that leaves with its content hands its last frame to the outgoing step, an unsettled one already lives there
+  const exiting: TrayStepFooterExiting | null =
+    previous.key != null &&
+    previous.exit === "withContent" &&
+    previous.placement === "pinned" &&
+    previous.hostTrayId != null &&
+    previous.hostTrayId !== payload.trayId &&
+    generation > 0 &&
+    !payload.isFirstRender
+      ? {
+          key: previous.key,
+          node: previous.node,
+          style: previous.style,
+          className: previous.className,
+          hostTrayId: previous.hostTrayId,
+          generation,
+        }
+      : null;
 
   const entersWithContent =
     key != null &&
@@ -78,6 +128,7 @@ export const resolveStepFooterState = (
     placement: entersWithContent ? "content" : "pinned",
     generation,
     settled: false,
+    exiting,
   };
 };
 
@@ -92,19 +143,25 @@ export const areStepFooterStatesEqual = (
   left.placement === right.placement &&
   left.hostTrayId === right.hostTrayId &&
   left.generation === right.generation &&
-  left.settled === right.settled;
+  left.settled === right.settled &&
+  left.exit === right.exit &&
+  left.exiting === right.exiting;
 
 export type TrayStepFooterStore = {
   getSnapshot: () => TrayStepFooterState;
   subscribe: (listener: () => void) => () => void;
   // place the footer of a committed step
   commit: (payload: TrayStepFooterPayload) => void;
-  // pin an entering footer once its transition completes
+  // pin an entering footer and drop an exiting one once their transition completes
   settle: (generation: number) => void;
+  // each step layer's bottom edge in the content region, where an exiting footer sits
+  recordContentHeight: (trayId: string, height: number) => void;
+  getContentHeight: (trayId: string) => number | undefined;
 };
 
 export const createStepFooterStore = (): TrayStepFooterStore => {
   let state = EMPTY_STEP_FOOTER_STATE;
+  const contentHeights = new Map<string, number>();
   const listeners = new Set<() => void>();
   const set = (next: TrayStepFooterState) => {
     if (areStepFooterStatesEqual(state, next)) {
@@ -123,10 +180,22 @@ export const createStepFooterStore = (): TrayStepFooterStore => {
     },
     commit: (payload) => set(resolveStepFooterState(state, payload)),
     settle: (generation) => {
-      if (state.placement === "content" && state.generation === generation) {
-        set({ ...state, placement: "pinned", settled: true });
+      let next = state;
+
+      if (next.placement === "content" && next.generation === generation) {
+        next = { ...next, placement: "pinned", settled: true };
       }
+
+      if (next.exiting !== null && next.exiting.generation <= generation) {
+        next = { ...next, exiting: null };
+      }
+
+      set(next);
     },
+    recordContentHeight: (trayId, height) => {
+      contentHeights.set(trayId, height);
+    },
+    getContentHeight: (trayId) => contentHeights.get(trayId),
   };
 };
 

@@ -38,7 +38,7 @@ const SupportFlowHeader = ({
   title: string;
   left?: ReactNode;
 }) => {
-  const { back,close } = useTrayNavigation();
+  const { back, close } = useTrayNavigation();
 
   return (
     <Tray.Header withSeparator>
@@ -103,14 +103,18 @@ const HelpSupportTray = () => {
           selectedAreas={selectedAreas}
           onToggleArea={toggleArea}
         />
-        <Tray.Footer id={HELP_FOOTER_ID}>
+        <Tray.Footer id={HELP_FOOTER_ID} exit="withContent">
           <SupportFooterButton
             label="Continue"
             disabled={selectedAreas.length === 0}
           />
         </Tray.Footer>
       </Tray.Step>
-      <Tray.Step key={`help-compose-${selectedFlow}`} options={{ keyboardAware: true }}>
+      
+      <Tray.Step
+        key={`help-compose-${selectedFlow}`}
+        options={{ keyboardAware: true }}
+      >
         <SupportFlowHeader
           title={
             selectedFlow === "feedback"
@@ -138,7 +142,10 @@ const HelpSupportTray = () => {
           <SupportFooterButton label="Continue" />
         </Tray.Footer>
       </Tray.Step>
-      <Tray.Step key={`help-details-${selectedFlow}`} options={{ keyboardAware: true }}>
+      <Tray.Step
+        key={`help-details-${selectedFlow}`}
+        options={{ keyboardAware: true }}
+      >
         <SupportFlowHeader title="Your Details" />
         <YourDetailsStep />
         <Tray.Footer id={HELP_FOOTER_ID}>

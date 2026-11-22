@@ -11,6 +11,8 @@ import Animated, { useAnimatedReaction } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { measureTrayNode } from "./measure-node";
 import { TrayRevealedStepContent } from "../tray-step-content";
+import { createMorphExiting } from "../step-content/morph-animations";
+import { useTrayContentMotionDirection } from "./transition-motion-direction";
 import { useTrayTransitionStart } from "./transition-start";
 import {
   BORDER_RADIUS,
@@ -24,15 +26,18 @@ import {
 } from "./step-footer/contexts";
 import {
   useStepFooterState,
-  type TrayStepFooterState,
+  type TrayStepFooterExiting,
 } from "./step-footer/placement-store";
 export {
   EMPTY_STEP_FOOTER_STATE,
   resolveStepFooterState,
   createStepFooterStore,
+  resolveStepFooterExit,
   TrayStepFooterStoreContext,
 } from "./step-footer/placement-store";
 export type {
+  TrayStepFooterExiting,
+  TrayStepFooterExitMode,
   TrayStepFooterPlacement,
   TrayStepFooterState,
   TrayStepFooterPayload,
@@ -69,12 +74,20 @@ const useFooterReport = () => {
 };
 
 // the footer body, the same in both places, reports its height in the commit that shows it and on later resizes
+type TrayStepFooterBodyFooter = Pick<
+  TrayStepFooterExiting,
+  "node" | "style" | "className"
+> & { key: string | null };
+
 const TrayStepFooterBody = ({
   state,
   inContent,
+  reports = true,
 }: {
-  state: TrayStepFooterState;
+  state: TrayStepFooterBodyFooter;
   inContent: boolean;
+  // an exiting copy never sets the reserve, the next step owns it
+  reports?: boolean;
 }) => {
   const metrics = useContext(TrayStepFooterMetricsContext);
   const frameStyle = useContext(TrayStepFooterFrameStyleContext);
@@ -84,17 +97,21 @@ const TrayStepFooterBody = ({
   keyRef.current = state.key;
 
   useLayoutEffect(() => {
+    if (!reports) {
+      return;
+    }
+
     measureTrayNode(nodeRef.current, (_x, _y, _width, height) => {
       if (height > 0) {
         report(height);
       }
     });
-  }, [report, state.key, state.node]);
+  }, [report, reports, state.key, state.node]);
 
   const key = state.key;
   const handleLayout = useCallback(
     (event: LayoutChangeEvent) => {
-      if (key !== keyRef.current) {
+      if (!reports || key !== keyRef.current) {
         return;
       }
 
@@ -102,7 +119,7 @@ const TrayStepFooterBody = ({
         metrics?.remeasureContentRef.current?.();
       }
     },
-    [key, metrics, report],
+    [key, metrics, report, reports],
   );
 
   return (
@@ -142,6 +159,58 @@ export const TrayContentFooterSlot = ({ trayId }: { trayId: string }) => {
   );
 };
 
+// records where each step layer's content ends in the content region, below the header, where an exiting footer starts
+export const useStepFooterLayerRecorder = () => {
+  const { store } = useStepFooterState();
+
+  return useCallback(
+    (trayId: string) => (event: LayoutChangeEvent) => {
+      const { y, height } = event.nativeEvent.layout;
+      store?.recordContentHeight(trayId, y + height);
+    },
+    [store],
+  );
+};
+
+// draws a footer leaving with its step below that step's outgoing content, on the content's exit clock
+export const TrayExitingFooterSlot = ({
+  fullScreenBoundaryExit,
+}: {
+  fullScreenBoundaryExit: boolean;
+}) => {
+  const { store, state } = useStepFooterState();
+  const transitionStart = useTrayTransitionStart();
+  const motionDirection = useTrayContentMotionDirection();
+  const exiting = state.exiting;
+
+  if (exiting === null) {
+    return null;
+  }
+
+  const top = store?.getContentHeight(exiting.hostTrayId);
+
+  if (top === undefined) {
+    return null;
+  }
+
+  return (
+    <Animated.View
+      key={`${exiting.key}:${exiting.generation}`}
+      style={[styles.exitingSlot, { top }]}
+      pointerEvents="none"
+      // mounted with the step change, the content's exit animation runs as this copy's entrance so both leave on one clock
+      entering={createMorphExiting(
+        false,
+        fullScreenBoundaryExit,
+        transitionStart,
+        motionDirection,
+      )}
+    >
+      <TrayStepFooterBody state={exiting} inContent reports={false} />
+    </Animated.View>
+  );
+};
+
 // the pinned footer layer
 export const TrayStepFooterLayers = ({
   skipEntering,
@@ -154,8 +223,10 @@ export const TrayStepFooterLayers = ({
   const { store, state } = useStepFooterState();
   const report = useFooterReport();
   const transitionStart = useTrayTransitionStart();
-  const pendingGeneration =
-    state.placement === "content" ? state.generation : 0;
+  const pendingGeneration = Math.max(
+    state.placement === "content" ? state.generation : 0,
+    state.exiting?.generation ?? 0,
+  );
 
   // a step without a footer releases the reserve before the sheet measures the new content
   useLayoutEffect(() => {
@@ -206,6 +277,8 @@ export const TrayStepFooterLayers = ({
       scale={false}
       // show at once when it arrives from the content or with the opening tray, fade in place otherwise
       skipEntering={skipEntering || state.settled}
+      // a footer that leaves with its content hands off to the exiting slot instead of fading here
+      skipExiting={state.exit === "withContent"}
       fullScreenBoundaryExit={fullScreenBoundaryExit}
       pointerEvents="box-none"
     >
@@ -235,5 +308,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: "100%",
+  },
+  exitingSlot: {
+    position: "absolute",
+    left: 0,
+    right: 0,
   },
 });
