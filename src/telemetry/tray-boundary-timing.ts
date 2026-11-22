@@ -167,10 +167,7 @@ export const markTrayBoundarySnapshotPublished = (
   setObservedAt(rootTrayId, contract, "snapshotPublishedAt", trayId);
 };
 
-// The snapshot is published when the rendered snapshot state has committed,
-// not when a passive effect requests that state update. Keep the old export
-// above for callers that already use the telemetry hook, while giving the
-// committed boundary a name that matches its lifecycle position.
+// the rendered snapshot commit boundary, the older export stays for existing callers
 export const markTrayBoundarySnapshotCommitted =
   markTrayBoundarySnapshotPublished;
 

@@ -11,7 +11,7 @@ import {
 import { resolveFullscreenReturnHeaderPadding } from "../frame-style-math";
 import { useTrayFrameStyles } from "../use-tray-frame-styles";
 
-// probe frame policy by reading returned animated style objects directly
+// frame policy read from the returned style objects
 jest.mock("react-native-reanimated", () => {
   const Reanimated = jest.requireActual("react-native-reanimated/mock");
 
@@ -26,16 +26,15 @@ jest.mock("react-native-reanimated", () => {
   };
 });
 
-// useAnimatedStyle is mocked to return the plain style object, so read every
-// style as a plain record (Reanimated types it as an opaque handle)
+// the useAnimatedStyle mock returns plain style objects, read as plain records
 type FrameStyles = {
   [K in keyof ReturnType<typeof useTrayFrameStyles>]: Record<string, unknown>;
 };
 
-// create a minimal shared value for frame style probes
+// a minimal shared value for frame style probes
 const shared = <T,>(value: T) => ({ value });
 
-// render the frame policy with controlled geometry inputs
+// the frame policy with controlled geometry inputs
 const renderFrameStyles = ({
   contentHeight = 320,
   contentHeightSnapshot = contentHeight,
@@ -260,14 +259,14 @@ describe("useTrayFrameStyles", () => {
       );
     });
 
-    // returning from fullscreen temporarily owns a concrete sheet frame
+    // a fullscreen return owns a concrete sheet frame for a while
     expect(styles!.trayLayoutStyle.height).toBe(400);
 
     act(() => {
       renderer!.update(<Probe prepared={false} />);
     });
 
-    // cleanup must leave the promoted endpoint in place so releasing the temporary frame does not trigger a second intrinsic-layout pass
+    // cleanup keeps the promoted endpoint so releasing the frame triggers no second intrinsic layout pass
     expect(styles!.trayLayoutStyle.height).toBe(400);
   });
 
@@ -346,7 +345,7 @@ describe("useTrayFrameStyles", () => {
     expect(settledFullscreen.footerContainerStyle.bottom).toBe(
       HORIZONTAL_MARGIN,
     );
-    // fullscreen and sheet footer frames share the same anchor to prevent a return drop
+    // fullscreen and sheet footer frames share one anchor so a return never drops
     expect(source.footerContainerStyle.bottom).toBe(
       settledFullscreen.footerContainerStyle.bottom,
     );

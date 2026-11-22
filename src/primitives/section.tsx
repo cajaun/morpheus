@@ -32,23 +32,23 @@ type TraySectionProps = {
   contentClassName?: string;
 };
 
-// section height accepts several authoring styles but collapses to one layout unit
+// section height accepts several authoring styles and resolves to one layout unit
 const resolveHeight = (
   maxHeight?: number | `${number}%`,
   maxHeightRatio?: number,
 ) => {
-  // explicit ratios win because they capture tray intent across device sizes
+  // explicit ratios win because they capture intent across device sizes
   if (typeof maxHeightRatio === "number") {
     return SCREEN_HEIGHT * maxHeightRatio;
   }
 
-  // fallback input supports ratios pixels and percent strings for convenience
+  // the fallback accepts ratios, pixels and percent strings
   if (maxHeight !== undefined) {
     if (typeof maxHeight === "number") {
-      // values at or below one are interpreted as normalized screen ratios
+      // values at or below one are screen ratios
       if (maxHeight <= 1) return SCREEN_HEIGHT * maxHeight;
 
-      // larger numbers are treated as explicit pixel caps
+      // larger numbers are pixel caps
       return maxHeight;
     }
 
@@ -58,11 +58,11 @@ const resolveHeight = (
     }
   }
 
-  // default stops short of fullscreen so headers and footers still breathe
+  // the default stops short of fullscreen so headers and footers keep room
   return SCREEN_HEIGHT * 0.70;
 };
 
-// one primitive covers static and scrollable sections to keep step markup uniform
+// one primitive for static and scrollable sections keeps step markup uniform
 export const TraySection: React.FC<TraySectionProps> = ({
   children,
   scrollable = false,
@@ -119,7 +119,7 @@ export const TraySection: React.FC<TraySectionProps> = ({
           keyboardDismissMode={
             Platform.OS === "ios" ? "interactive" : "on-drag"
           }
-          // taps inside tray forms should not dismiss the keyboard before controls run
+          // taps inside tray forms reach their controls before the keyboard dismisses
           keyboardShouldPersistTaps="handled"
         >
           {contentChildren}
@@ -138,7 +138,7 @@ export const TraySection: React.FC<TraySectionProps> = ({
       ]}
       className={className}
     >
-      {/* static sections keep intrinsic height so the tray shell measures them directly */}
+      {/* static sections keep intrinsic height so the shell measures them */}
       {contentChildren}
     </View>
   );
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     paddingBottom: TRAY_SECTION_PADDING_BOTTOM,
   },
   footerAwareSection: {
-    // let the footer own the 16pt content to button gap
+    // the footer owns the 16pt gap between content and button
     paddingBottom: 0,
   },
   actionAwareSection: {
@@ -161,11 +161,11 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   actionSlotWithPreviousContent: {
-    // the base section gap is 16pt; add 12pt to reach the footer's 28pt action gap
+    // the base section gap is 16pt, 12pt more reaches the footer's 28pt action gap
     marginTop: TRAY_SECTION_ACTION_GAP - TRAY_ITEM_GAP,
   },
   actionSlotWithoutPreviousContent: {
-    // the base section top padding is 24pt; add 4pt to reach the footer's 28pt action inset
+    // the base section top padding is 24pt, 4pt more reaches the footer's 28pt action inset
     marginTop: TRAY_SECTION_ACTION_GAP - TRAY_SECTION_PADDING_TOP,
   },
   scrollView: {

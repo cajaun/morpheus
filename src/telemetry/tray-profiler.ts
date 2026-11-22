@@ -2,7 +2,7 @@ import React from "react";
 import { isTrayInstrumentationEnabled } from "./config";
 import { recordTrayTelemetry } from "./tray-telemetry-buffer";
 
-// log profiler commits only while the explicit development instrumentation flag is enabled
+// log profiler commits while development instrumentation is on
 export const logTrayProfilerCommit = (
   id: string,
   phase: "mount" | "update" | "nested-update",
@@ -27,9 +27,7 @@ export const logTrayProfilerCommit = (
   });
 };
 
-// Add a profiling boundary without changing the rendered tree when telemetry
-// is disabled. Region boundaries are intentionally opt-in so production and
-// normal development renders do not pay for extra Profiler fibers.
+// a profiling boundary that leaves the tree unchanged when telemetry is off
 export const profileTrayRegion = (
   id: string,
   children: React.ReactNode,

@@ -1,6 +1,6 @@
 import { TRIGGER_MORPH_DURATION } from "./motion";
 
-// describe the collapsed trigger geometry used before the shell owns layout
+// collapsed trigger geometry used before the shell owns layout
 export const EXPAND_FROM_TRIGGER_OPEN_DURATION = TRIGGER_MORPH_DURATION;
 export const EXPAND_FROM_TRIGGER_CLOSE_DURATION = TRIGGER_MORPH_DURATION;
 export const EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT = 50;

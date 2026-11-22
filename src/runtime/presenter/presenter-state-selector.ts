@@ -27,9 +27,7 @@ const arePresenterRegistrationsEquivalent = (
   previous.transition === next.transition &&
   previous.parentTrayId === next.parentTrayId;
 
-// Keep the presenter subscribed to only registrations that can currently
-// produce a host. Inactive Tray.Nested registrations still belong in the
-// runtime registry, but they must not rebuild the mounted presenter tree.
+// the presenter subscribes to registrations that can produce a host, inactive nested ones stay out
 export const createTrayPresenterStateSelector = () => {
   let previousState: TrayHostStateValue | null = null;
   let previousSelection: TrayPresenterState | null = null;
@@ -66,8 +64,7 @@ export const createTrayPresenterStateSelector = () => {
       return previousSelection;
     }
 
-    // A transition-only update changes presentation scope, not registration
-    // data. Reuse the selected registry instead of copying every active host.
+    // a transition-only update reuses the selected registry
     let registry = previousSelection?.registry;
 
     if (relevantRegistrationChanged || registry === undefined) {
@@ -132,8 +129,7 @@ const areParentMotionCapabilityInputsEquivalent = (
     previous.steps === next.steps &&
     previous.transition === next.transition);
 
-// Prepared shells depend on presentation registration data, not page progress.
-// Keep the selected snapshot stable when TrayPages only updates `pages`.
+// prepared shells depend on registration data, so page progress keeps the snapshot stable
 export const createPreparedNestedTraySelector = () => {
   let previousState: TrayHostStateValue | null = null;
   let previousRegistry: TrayHostStateValue["registry"] | null = null;
@@ -167,8 +163,7 @@ export const createPreparedNestedTraySelector = () => {
       const parentRegistration = state.registry[registration.parentTrayId];
       const previousRegistration = previousSelection?.[trayId];
 
-      // Build the hidden host only once the parent's transition is done. A
-      // host that was already prepared is kept.
+      // build the hidden host once the parent's transition is done, an existing prepared host stays
       if (
         registration.deferHostPreparation === true &&
         previousRegistration === undefined
@@ -178,9 +173,7 @@ export const createPreparedNestedTraySelector = () => {
       const previousParentRegistration =
         previousState?.registry[registration.parentTrayId];
 
-      // A pages-only registration replaces the registry object but leaves
-      // prepared-host inputs unchanged. Reuse the prior result without
-      // rescanning its parent's steps or rebuilding this entry.
+      // a pages-only registration reuses the prior result without rescanning the parent's steps
       if (
         previousRegistration !== undefined &&
         arePreparedNestedTrayFieldsEquivalent(

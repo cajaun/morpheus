@@ -1,11 +1,4 @@
-// In-memory sink for high-frequency diagnostics (per-commit profiler samples,
-// per-step content markers). Writing these to the console during a transition
-// costs JS-thread time and distorts the very profile being captured, so they
-// are kept in a bounded ring buffer and exported in one call after capture:
-//
-//   globalThis.__TRAY_TELEMETRY__?.flush()
-//
-// Low-frequency summaries (one per transition) still log directly.
+// bounded in-memory sink for high-frequency diagnostics, export via globalThis.__TRAY_TELEMETRY__?.flush()
 const MAX_RECORDED_EVENTS = 4096;
 
 export type TrayTelemetryEvent = {

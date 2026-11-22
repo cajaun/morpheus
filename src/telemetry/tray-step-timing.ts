@@ -1,414 +1,30 @@
 import { isTrayInstrumentationEnabled } from "./config";
+import {
+  tracesByRootTrayId,
+  rootTrayIdByPresentedTrayId,
+  retireTrace,
+  now,
+  getTrace,
+  setTraceTrayId,
+  tryFinishTrace,
+  logIncompleteTrace,
+  type TrayStepReactRenderSample,
+  type TrayProfilerPhase,
+} from "./step-timing/trace-store";
+export {
+  markTrayStepKeyboardIntent,
+  markTrayStepKeyboardFocusRequested,
+  markTrayStepKeyboardGate,
+  markTrayStepKeyboardFocus,
+  markTrayStepKeyboardWillShow,
+} from "./step-timing/keyboard-marks";
+export type {
+  TrayProfilerPhase,
+  TrayStepReactRender,
+  TrayStepTimingSummary,
+} from "./step-timing/trace-store";
 
-export type TrayProfilerPhase = "mount" | "update" | "nested-update";
-
-// Keep profiler samples separate from the lifecycle clock. React's profiler
-// timestamps describe a renderer sample, while the lifecycle marks below use
-// the JS performance clock for cross-system ordering.
-export type TrayStepReactRender = {
-  phase: TrayProfilerPhase;
-  actualDurationMs: number;
-  baseDurationMs: number;
-  profilerStartTimeMs: number;
-  profilerCommitTimeMs: number;
-  profilerSpanMs: number;
-};
-
-type TrayStepReactRenderSample = TrayStepReactRender & {
-  observedAt: number;
-};
-
-// trace one step transition from request through layout finish
-type TrayStepTimingTrace = {
-  rootTrayId: string;
-  trayId?: string;
-  transitionGeneration?: number;
-  requestedAt: number;
-  presenterResolvedAt?: number;
-  slotCommittedAt?: number;
-  snapshotAt?: number;
-  renderedCommitAt?: number;
-  shellLayoutAt?: number;
-  layoutConfiguredAt?: number;
-  layoutStartedAt?: number;
-  contentReleasedAt?: number;
-  layoutFinishedAt?: number;
-  incomingReactRender?: TrayStepReactRenderSample;
-  snapshotReactRender?: TrayStepReactRenderSample;
-  incomingReactRenderCount: number;
-  snapshotReactRenderCount: number;
-  // React render time spent before the animation started (blocks the tap)
-  blockingReactRenderMs: number;
-  // React commits observed while the transition was animating
-  reactCommitsDuringLayout: number;
-  keyboardIntentAt?: number;
-  keyboardFocusRequestedAt?: number;
-  keyboardFocusAt?: number;
-  keyboardWillShowAt?: number;
-  keyboardGateWaitStartedAt?: number;
-  keyboardGateOpenedAt?: number;
-  keyboardGateOpenedBy?: number;
-};
-
-export type TrayStepTimingSummary = {
-  rootTrayId: string;
-  trayId: string;
-  transitionGeneration?: number;
-  requestToPresenterResolvedMs: number;
-  presenterResolvedToSlotStateCommitMs: number;
-  requestToSnapshotPublicationMs: number;
-  snapshotPublicationToRenderedCommitMs: number;
-  renderedCommitToShellLayoutMs: number;
-  renderedCommitToLayoutConfiguredMs: number;
-  layoutConfiguredToLayoutStartMs: number;
-  renderedCommitToLayoutStartMs: number;
-  snapshotToLayoutStartMs: number;
-  requestToLayoutStartMs: number;
-  layoutStartToContentReleaseMs: number;
-  layoutStartToFinishMs: number;
-  incomingReactRender?: TrayStepReactRender;
-  snapshotReactRender?: TrayStepReactRender;
-  incomingReactRenderCount: number;
-  snapshotReactRenderCount: number;
-  blockingReactRenderMs: number;
-  reactCommitsDuringLayout: number;
-  keyboardIntentToFocusMs?: number;
-  // the step's input asked for focus this long after the step committed
-  renderedCommitToFocusRequestMs?: number;
-  // native focus: from the focus() call to the input's onFocus event
-  focusRequestToFocusMs?: number;
-  // what let the sheet start on a step that brings up or puts away the
-  // keyboard. (The gate's own timestamps come from the UI runtime clock, which
-  // is not the JS clock these marks use, so they are not reported as spans.)
-  keyboardGateOpenedBy?: "keyboard-start" | "keyboard-progress" | "wait-limit";
-  keyboardFocusToWillShowMs?: number;
-  keyboardWillShowToLayoutStartMs?: number;
-};
-
-const MAX_RECORDED_SUMMARIES = 50;
-const tracesByRootTrayId = new Map<string, TrayStepTimingTrace>();
-const rootTrayIdByPresentedTrayId = new Map<string, string>();
-// transition generation of the last trace finished or replaced per root. A
-// late mark from that generation must not attach its generation to the next
-// trace, which would then reject every mark of the transition it measures.
-// Equality, not ordering, so a tray whose generations restart is unaffected.
-const retiredGenerationByRootTrayId = new Map<string, number>();
-
-const retireTrace = (trace: TrayStepTimingTrace) => {
-  if (trace.transitionGeneration === undefined) {
-    return;
-  }
-
-  retiredGenerationByRootTrayId.set(
-    trace.rootTrayId,
-    trace.transitionGeneration,
-  );
-};
-
-// read one clock source for every step timing mark
-const now = () => globalThis.performance?.now?.() ?? Date.now();
-
-const round = (value: number) => Number(value.toFixed(2));
-
-const toRenderSummary = (
-  sample: TrayStepReactRenderSample | undefined,
-): TrayStepReactRender | undefined =>
-  sample
-    ? {
-        phase: sample.phase,
-        actualDurationMs: round(sample.actualDurationMs),
-        baseDurationMs: round(sample.baseDurationMs),
-        profilerStartTimeMs: round(sample.profilerStartTimeMs),
-        profilerCommitTimeMs: round(sample.profilerCommitTimeMs),
-        profilerSpanMs: round(sample.profilerSpanMs),
-      }
-    : undefined;
-
-// Associate every mark with the request that owns it. A transition generation
-// may only become available after navigation resolves, so the first mark may
-// attach it lazily; a later generation must never mutate an older trace.
-const getTrace = (rootTrayId: string, transitionGeneration?: number) => {
-  const trace = tracesByRootTrayId.get(rootTrayId);
-
-  if (!trace) {
-    return undefined;
-  }
-
-  const retiredGeneration = retiredGenerationByRootTrayId.get(rootTrayId);
-
-  if (
-    transitionGeneration !== undefined &&
-    transitionGeneration === retiredGeneration
-  ) {
-    return undefined;
-  }
-
-  if (
-    transitionGeneration !== undefined &&
-    trace.transitionGeneration !== undefined &&
-    trace.transitionGeneration !== transitionGeneration
-  ) {
-    return undefined;
-  }
-
-  if (
-    transitionGeneration !== undefined &&
-    trace.transitionGeneration === undefined
-  ) {
-    trace.transitionGeneration = transitionGeneration;
-  }
-
-  return trace;
-};
-
-const setTraceTrayId = (trace: TrayStepTimingTrace, trayId: string) => {
-  if (trace.trayId !== undefined && trace.trayId !== trayId) {
-    return false;
-  }
-
-  trace.trayId = trayId;
-  rootTrayIdByPresentedTrayId.set(trayId, trace.rootTrayId);
-  return true;
-};
-
-// retain only the latest step timing summaries for inspection
-const writeSummary = (summary: TrayStepTimingSummary) => {
-  const timingGlobal = globalThis as typeof globalThis & {
-    __TRAY_STEP_TIMINGS__?: TrayStepTimingSummary[];
-  };
-  const existing = timingGlobal.__TRAY_STEP_TIMINGS__ ?? [];
-
-  timingGlobal.__TRAY_STEP_TIMINGS__ = [
-    ...existing,
-    summary,
-  ].slice(-MAX_RECORDED_SUMMARIES);
-};
-
-// publish a summary only after every required stage has a timestamp
-const tryFinishTrace = (rootTrayId: string) => {
-  const trace = tracesByRootTrayId.get(rootTrayId);
-
-  if (
-    !trace ||
-    trace.trayId === undefined ||
-    trace.presenterResolvedAt === undefined ||
-    trace.slotCommittedAt === undefined ||
-    trace.snapshotAt === undefined ||
-    trace.renderedCommitAt === undefined ||
-    trace.shellLayoutAt === undefined ||
-    trace.layoutConfiguredAt === undefined ||
-    trace.layoutStartedAt === undefined ||
-    trace.contentReleasedAt === undefined ||
-    trace.layoutFinishedAt === undefined
-  ) {
-    return;
-  }
-
-  const summary: TrayStepTimingSummary = {
-    rootTrayId,
-    trayId: trace.trayId,
-    transitionGeneration: trace.transitionGeneration,
-    requestToPresenterResolvedMs:
-      trace.presenterResolvedAt - trace.requestedAt,
-    presenterResolvedToSlotStateCommitMs:
-      trace.slotCommittedAt - trace.presenterResolvedAt,
-    requestToSnapshotPublicationMs: trace.snapshotAt - trace.requestedAt,
-    snapshotPublicationToRenderedCommitMs:
-      trace.renderedCommitAt - trace.snapshotAt,
-    renderedCommitToShellLayoutMs:
-      trace.shellLayoutAt - trace.renderedCommitAt,
-    renderedCommitToLayoutConfiguredMs:
-      trace.layoutConfiguredAt - trace.renderedCommitAt,
-    layoutConfiguredToLayoutStartMs:
-      trace.layoutStartedAt - trace.layoutConfiguredAt,
-    renderedCommitToLayoutStartMs:
-      trace.layoutStartedAt - trace.renderedCommitAt,
-    snapshotToLayoutStartMs: trace.layoutStartedAt - trace.snapshotAt,
-    requestToLayoutStartMs: trace.layoutStartedAt - trace.requestedAt,
-    layoutStartToContentReleaseMs:
-      trace.contentReleasedAt - trace.layoutStartedAt,
-    layoutStartToFinishMs:
-      trace.layoutFinishedAt - trace.layoutStartedAt,
-    incomingReactRender: toRenderSummary(trace.incomingReactRender),
-    snapshotReactRender: toRenderSummary(trace.snapshotReactRender),
-    incomingReactRenderCount: trace.incomingReactRenderCount,
-    snapshotReactRenderCount: trace.snapshotReactRenderCount,
-    blockingReactRenderMs: round(trace.blockingReactRenderMs),
-    reactCommitsDuringLayout: trace.reactCommitsDuringLayout,
-    keyboardGateOpenedBy:
-      trace.keyboardGateOpenedBy === 1
-        ? "keyboard-start"
-        : trace.keyboardGateOpenedBy === 2
-          ? "keyboard-progress"
-          : trace.keyboardGateOpenedBy === 3
-            ? "wait-limit"
-            : undefined,
-    renderedCommitToFocusRequestMs:
-      trace.keyboardFocusRequestedAt !== undefined
-        ? trace.keyboardFocusRequestedAt - trace.renderedCommitAt
-        : undefined,
-    focusRequestToFocusMs:
-      trace.keyboardFocusRequestedAt !== undefined &&
-      trace.keyboardFocusAt !== undefined
-        ? trace.keyboardFocusAt - trace.keyboardFocusRequestedAt
-        : undefined,
-    keyboardIntentToFocusMs:
-      trace.keyboardIntentAt !== undefined &&
-      trace.keyboardFocusAt !== undefined
-        ? trace.keyboardFocusAt - trace.keyboardIntentAt
-        : undefined,
-    keyboardFocusToWillShowMs:
-      trace.keyboardFocusAt !== undefined &&
-      trace.keyboardWillShowAt !== undefined
-        ? trace.keyboardWillShowAt - trace.keyboardFocusAt
-        : undefined,
-    keyboardWillShowToLayoutStartMs:
-      trace.keyboardWillShowAt !== undefined
-        ? trace.layoutStartedAt - trace.keyboardWillShowAt
-        : undefined,
-  };
-
-  writeSummary(summary);
-  retireTrace(trace);
-  tracesByRootTrayId.delete(rootTrayId);
-  rootTrayIdByPresentedTrayId.delete(trace.trayId);
-
-  console.log("[TrayStepPerf]", JSON.stringify(summary));
-};
-
-// record the first point where navigation knows the next step will need the keyboard
-export const markTrayStepKeyboardIntent = (
-  rootTrayId?: string | null,
-) => {
-  if (!isTrayInstrumentationEnabled() || !rootTrayId) {
-    return;
-  }
-
-  const trace = tracesByRootTrayId.get(rootTrayId);
-
-  if (trace && trace.keyboardIntentAt === undefined) {
-    trace.keyboardIntentAt = now();
-  }
-};
-
-// record the moment a step's input calls focus(), before native focus runs
-export const markTrayStepKeyboardFocusRequested = (
-  rootTrayId?: string | null,
-) => {
-  if (!isTrayInstrumentationEnabled() || !rootTrayId) {
-    return;
-  }
-
-  const trace = tracesByRootTrayId.get(rootTrayId);
-
-  if (trace && trace.keyboardFocusRequestedAt === undefined) {
-    trace.keyboardFocusRequestedAt = now();
-  }
-};
-
-// record the keyboard gate's UI-thread timings for the current step trace
-export const markTrayStepKeyboardGate = (
-  rootTrayId: string | null | undefined,
-  waitStartedAt: number,
-  openedAt: number,
-  openedBy: number,
-) => {
-  if (!isTrayInstrumentationEnabled() || !rootTrayId) {
-    return;
-  }
-
-  const trace = tracesByRootTrayId.get(rootTrayId);
-
-  if (trace && trace.keyboardGateOpenedAt === undefined) {
-    trace.keyboardGateWaitStartedAt =
-      waitStartedAt > 0 ? waitStartedAt : undefined;
-    trace.keyboardGateOpenedAt = openedAt;
-    trace.keyboardGateOpenedBy = openedBy;
-  }
-};
-
-// record native input focus without logging every keyboard frame
-export const markTrayStepKeyboardFocus = (
-  rootTrayId?: string | null,
-) => {
-  if (!isTrayInstrumentationEnabled() || !rootTrayId) {
-    return;
-  }
-
-  const trace = tracesByRootTrayId.get(rootTrayId);
-
-  if (trace && trace.keyboardFocusAt === undefined) {
-    trace.keyboardFocusAt = now();
-  }
-};
-
-// record the native keyboard animation boundary used by KeyboardStickyView
-export const markTrayStepKeyboardWillShow = (
-  rootTrayId?: string | null,
-) => {
-  if (!isTrayInstrumentationEnabled() || !rootTrayId) {
-    return;
-  }
-
-  const trace = tracesByRootTrayId.get(rootTrayId);
-
-  if (trace && trace.keyboardWillShowAt === undefined) {
-    trace.keyboardWillShowAt = now();
-  }
-};
-
-const TRACE_STAGES = [
-  "presenterResolvedAt",
-  "slotCommittedAt",
-  "snapshotAt",
-  "renderedCommitAt",
-  "shellLayoutAt",
-  "layoutConfiguredAt",
-  "layoutStartedAt",
-  "contentReleasedAt",
-  "layoutFinishedAt",
-  "keyboardIntentAt",
-  "keyboardFocusRequestedAt",
-  "keyboardFocusAt",
-  "keyboardWillShowAt",
-] as const;
-
-// A trace replaced by the next request never reached every stage. Log what it
-// did record (ms after the request) and which stages never happened, so a
-// transition that skips a stage is visible instead of silently dropped.
-const logIncompleteTrace = (trace: TrayStepTimingTrace) => {
-  const recorded: Record<string, number> = {};
-  const missing: string[] = [];
-
-  for (const stage of TRACE_STAGES) {
-    const at = trace[stage];
-
-    if (at === undefined) {
-      missing.push(stage);
-    } else {
-      recorded[stage] = round(at - trace.requestedAt);
-    }
-  }
-
-  if (trace.trayId !== undefined) {
-    rootTrayIdByPresentedTrayId.delete(trace.trayId);
-  }
-
-  console.log(
-    "[TrayStepPerf:incomplete]",
-    JSON.stringify({
-      rootTrayId: trace.rootTrayId,
-      trayId: trace.trayId,
-      transitionGeneration: trace.transitionGeneration,
-      recordedMsAfterRequest: recorded,
-      missing,
-      blockingReactRenderMs: round(trace.blockingReactRenderMs),
-      reactCommitsDuringLayout: trace.reactCommitsDuringLayout,
-    }),
-  );
-};
-
-// start a step trace at the navigation request boundary
+// start a step trace at the navigation request
 export const markTrayStepRequested = (
   rootTrayId?: string,
   transitionGeneration?: number,
@@ -435,9 +51,7 @@ export const markTrayStepRequested = (
   });
 };
 
-// record when the render snapshot publication is requested. This is the state
-// update boundary, not the React commit boundary; the latter is recorded by
-// markTrayStepRenderedCommit.
+// snapshot publication request, the React commit is markTrayStepRenderedCommit
 export const markTrayStepSnapshotPublished = (
   rootTrayId?: string,
   trayId?: string,
@@ -458,7 +72,7 @@ export const markTrayStepSnapshotPublished = (
   }
 };
 
-// record when the presenter resolves the new step payload
+// the presenter resolves the new step payload
 export const markTrayStepPresenterResolved = (
   rootTrayId?: string,
   transitionGeneration?: number,
@@ -479,7 +93,7 @@ export const markTrayStepPresenterResolved = (
   }
 };
 
-// record when the host slot commits the resolved payload
+// the host slot commits the resolved payload
 export const markTrayStepSlotCommitted = (
   rootTrayId?: string,
   transitionGeneration?: number,
@@ -500,11 +114,7 @@ export const markTrayStepSlotCommitted = (
   }
 };
 
-// Record every presenter-owned React render. We classify the first render
-// before snapshot publication as the incoming/staging render and the first
-// render after publication as the committed snapshot render. The profiler's
-// own timestamps stay inside the sample; observedAt is only used for this
-// ordering decision and is never reported as React render start.
+// classify presenter renders around snapshot publication, observedAt orders them and is never reported
 export const markTrayStepReactRenderStarted = (
   rootTrayId: string | undefined,
   trayId: string | undefined,
@@ -546,9 +156,7 @@ export const markTrayStepReactRenderStarted = (
     trace.reactCommitsDuringLayout += 1;
   }
 
-  if (
-    trace.snapshotAt === undefined
-  ) {
+  if (trace.snapshotAt === undefined) {
     trace.incomingReactRenderCount += 1;
     if (trace.incomingReactRender === undefined) {
       trace.incomingReactRender = sample;
@@ -563,7 +171,7 @@ export const markTrayStepReactRenderStarted = (
   tryFinishTrace(rootTrayId);
 };
 
-// record when native layout begins consuming the new geometry
+// native layout starts consuming the new geometry
 export const markTrayStepLayoutStarted = (
   rootTrayId: string | undefined,
   trayId: string | undefined,
@@ -586,7 +194,7 @@ export const markTrayStepLayoutStarted = (
   }
 };
 
-// record when native layout accepts the transition configuration
+// native layout accepts the transition configuration
 export const markTrayStepLayoutConfigured = (
   rootTrayId: string | undefined,
   trayId: string | undefined,
@@ -608,7 +216,7 @@ export const markTrayStepLayoutConfigured = (
   }
 };
 
-// record when the shell reports its committed layout
+// the shell reports its committed layout
 export const markTrayStepShellLayout = (
   rootTrayId?: string,
   trayId?: string,
@@ -620,16 +228,12 @@ export const markTrayStepShellLayout = (
 
   const trace = getTrace(rootTrayId, transitionGeneration);
 
-  if (
-    trace &&
-    trace.trayId === trayId &&
-    trace.shellLayoutAt === undefined
-  ) {
+  if (trace && trace.trayId === trayId && trace.shellLayoutAt === undefined) {
     trace.shellLayoutAt = now();
   }
 };
 
-// record when native layout finishes and try to close the trace
+// native layout finishes, try to close the trace
 export const markTrayStepLayoutFinished = (
   rootTrayId: string | undefined,
   trayId: string | undefined,
@@ -652,7 +256,7 @@ export const markTrayStepLayoutFinished = (
   }
 };
 
-// record when the rendered snapshot commits to the host tree
+// the rendered snapshot commits to the host tree
 export const markTrayStepRenderedCommit = (
   rootTrayId?: string,
   trayId?: string,
@@ -674,10 +278,8 @@ export const markTrayStepRenderedCommit = (
   }
 };
 
-// record when incoming content releases its entering transition
-export const markTrayStepContentReleased = (
-  trayId: string,
-) => {
+// incoming content releases its entering transition
+export const markTrayStepContentReleased = (trayId: string) => {
   if (!isTrayInstrumentationEnabled()) {
     return;
   }
@@ -691,9 +293,7 @@ export const markTrayStepContentReleased = (
   const trace = tracesByRootTrayId.get(rootTrayId);
 
   if (trace && trace.contentReleasedAt === undefined) {
-    // The worklet timestamp has a different time origin from JS. This
-    // callback is already scheduled on RN, so mark the observable release
-    // boundary with the same clock used by the rest of this trace.
+    // the worklet timestamp has another time origin, so mark the release on this trace's JS clock
     trace.contentReleasedAt = now();
     tryFinishTrace(rootTrayId);
   }

@@ -4,7 +4,7 @@ import { describe, expect, it, jest } from "@jest/globals";
 import type { SharedValue } from "react-native-reanimated";
 import { useTrayOpenCloseLifecycle } from "../use-tray-open-close-lifecycle";
 
-// execute worklets immediately so lifecycle ownership can be inspected without native timing
+// worklets run at once so lifecycle ownership is inspectable without native timing
 jest.mock("react-native-reanimated", () => ({
   runOnUI: (worklet: (...args: any[]) => void) =>
     (...args: any[]) => worklet(...args),
@@ -18,7 +18,7 @@ jest.mock("react-native-reanimated", () => ({
   },
 }));
 
-// run lifecycle callbacks synchronously so the completion handoff is observable
+// lifecycle callbacks run synchronously so the completion handoff is observable
 jest.mock("react-native-worklets", () => ({
   scheduleOnRN: (callback: (...args: any[]) => void, ...args: any[]) =>
     callback(...args),
@@ -30,10 +30,10 @@ jest.mock("../../logger", () => ({
   logWorklet: jest.fn(),
 }));
 
-// create a mutable shared value for the lifecycle harness
+// a mutable shared value for the lifecycle harness
 const shared = <T,>(value: T) => ({ value }) as SharedValue<T>;
 
-// render one opening mode with controlled lifecycle callbacks
+// one opening mode with controlled lifecycle callbacks
 const renderOpeningLifecycle = (open?: "slide" | "expandFromTrigger") => {
   const enableLayout = jest.fn();
   const onTransitionCompleted = jest.fn();

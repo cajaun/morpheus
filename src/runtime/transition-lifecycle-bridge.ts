@@ -12,7 +12,7 @@ type ReportParams = {
   at?: number;
 };
 
-// all lifecycle phase reports pass through this boundary so callers cannot accidentally report a phase for a missing or already-replaced generation
+// every phase report passes here so callers cannot report for a missing or replaced generation
 export const reportTrayTransitionPhase = ({
   lifecycle,
   generation,

@@ -54,8 +54,7 @@ describe("useSheetTrayKeyboard step changes", () => {
     mockDismiss.mockClear();
   });
 
-  // the keyboard gate dismisses when the step's layout is ready to move, so
-  // the keyboard starts with the sheet rather than at the step commit
+  // the keyboard gate dismisses when the step's layout is ready so the keyboard starts with the sheet
   it("leaves a sheet step that puts the keyboard away to the keyboard gate", () => {
     changeStep({});
 

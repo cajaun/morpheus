@@ -5,7 +5,7 @@ import type { SharedValue } from "react-native-reanimated";
 import { useTrayContentSync } from "../use-tray-content-sync";
 import { useTrayMeasurements } from "../use-tray-measurements";
 
-// probe content publication against fullscreen and sheet geometry races
+// content publication against fullscreen and sheet geometry races
 const shared = (value: number) => ({ value }) as SharedValue<number>;
 
 describe("useTrayContentSync", () => {
@@ -478,7 +478,7 @@ describe("useTrayContentSync", () => {
       );
     });
 
-    // incoming fullscreen must not resize the source sheet before its snapshot changes
+    // an incoming fullscreen step leaves the source sheet size alone until its snapshot changes
     expect(contentHeight.value).toBe(240);
     expect(resolveIncomingContentHeight).toHaveBeenCalledTimes(1);
     expect(restoreContentHeight).not.toHaveBeenCalled();
@@ -503,7 +503,7 @@ describe("useTrayContentSync", () => {
       );
     });
 
-    // catching up the rendered snapshot must not replay fullscreen height preparation
+    // catching up the rendered snapshot skips replaying fullscreen height preparation
     expect(contentHeight.value).toBe(240);
     expect(resolveIncomingContentHeight).toHaveBeenCalledTimes(1);
     expect(restoreContentHeight).not.toHaveBeenCalled();
@@ -521,7 +521,7 @@ describe("useTrayContentSync", () => {
       );
     });
 
-    // returning to sheet leases the measured frame through the layout animation
+    // returning to a sheet leases the measured frame through the layout animation
     expect(onSheetFramePrepared).toHaveBeenCalledWith(
       304,
       "target",

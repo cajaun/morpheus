@@ -1,4 +1,4 @@
-// define immutable measurement ownership for tray geometry
+// immutable measurement ownership for tray geometry
 import type {
   TrayPresentationEndpoint,
   TrayPresentationMode,
@@ -71,7 +71,7 @@ export type TrayTransitionParticipant = {
   endpoint: TrayPresentationEndpoint;
 };
 
-// create an immutable owner key for one measured presentation endpoint
+// an immutable owner key for one measured presentation endpoint
 export const createTrayMeasurementOwner = ({
   rootTrayId,
   endpoint,

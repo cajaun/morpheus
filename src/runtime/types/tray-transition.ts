@@ -5,7 +5,7 @@ import type {
   TrayTransitionParticipant,
 } from "./tray-geometry";
 
-// transition contracts describe navigation knowledge without depending on presenter measurement or animation implementations
+// transition contracts describe navigation without presenter measurement or animation
 export type TrayPresentationMode = "sheet" | "fullScreen";
 
 export type TrayTransitionReason =
@@ -34,7 +34,7 @@ export type TrayPresentationEndpoint = {
   readonly stepKey: string;
   readonly pageIndex?: number;
   readonly mode: TrayPresentationMode;
-  /** Whether this endpoint keeps the sheet attached to the software keyboard. */
+  /** whether this endpoint keeps the sheet attached to the software keyboard */
   readonly keyboardAware?: boolean;
 };
 

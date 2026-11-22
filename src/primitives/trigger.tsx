@@ -21,7 +21,7 @@ const NOTIFICATION_HAPTICS = {
   "notification-error": Haptics.NotificationFeedbackType.Error,
 } as const;
 
-// trigger is the intent boundary where haptics telemetry and open state begin
+// the trigger starts haptics, telemetry and open state
 type TrayTriggerImpactHaptics = keyof typeof IMPACT_HAPTICS;
 type TrayTriggerNotificationHaptics = keyof typeof NOTIFICATION_HAPTICS;
 
@@ -48,9 +48,9 @@ export type TrayTriggerProps = PressableProps & {
   haptics?: TrayTriggerHaptics;
 };
 
-// translate public haptic options into native feedback calls
+// public haptic options to native feedback calls
 const fireTriggerHaptics = (haptics: TrayTriggerHaptics) => {
-  // object syntax exposes the native enum without leaking that shape to every caller
+  // object syntax exposes the native enum without imposing it on every caller
   if (typeof haptics === "object") {
     switch (haptics.type) {
       case "selection":
@@ -69,7 +69,7 @@ const fireTriggerHaptics = (haptics: TrayTriggerHaptics) => {
     }
   }
 
-  // string presets cover common feedback without forcing enum imports into screens
+  // string presets cover common feedback without enum imports
   if (typeof haptics === "string") {
     if (haptics in IMPACT_HAPTICS) {
       void Haptics.impactAsync(
@@ -88,7 +88,7 @@ const fireTriggerHaptics = (haptics: TrayTriggerHaptics) => {
 
   switch (haptics) {
     case false:
-      // false is the escape hatch for silent triggers
+      // false gives a silent trigger
       return;
     case "selection":
       void Haptics.selectionAsync();
@@ -99,7 +99,7 @@ const fireTriggerHaptics = (haptics: TrayTriggerHaptics) => {
   }
 };
 
-// open the scoped tray from a press while applying optional feedback
+// open the scoped tray from a press with optional feedback
 export const TrayTrigger: React.FC<TrayTriggerProps> = ({
   children,
   onPress,
@@ -110,7 +110,7 @@ export const TrayTrigger: React.FC<TrayTriggerProps> = ({
   const { openTray } = useTrayHostActions();
 
   if (!trayId) {
-    // triggers need a scope so runtime knows which registered tray to open
+    // a trigger needs a scope so the runtime knows which tray to open
     throw new Error("Tray.Trigger must be used within Tray.Root");
   }
 
@@ -118,7 +118,7 @@ export const TrayTrigger: React.FC<TrayTriggerProps> = ({
     <Pressable
       {...rest}
       onPress={(event) => {
-        // telemetry and feedback belong to the press edge not the resulting open state
+        // telemetry and feedback belong to the press edge, not the open state
         markTrayTriggerPressed(trayId);
         fireTriggerHaptics(haptics);
         onPress?.(event);

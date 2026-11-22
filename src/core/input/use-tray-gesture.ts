@@ -4,7 +4,6 @@ import { Gesture } from "react-native-gesture-handler";
 import { withSpring } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-// drag logic stays small because dismissal feel depends on predictable thresholds
 type Params = {
   translateY: { value: number };
   totalHeight: { value: number };
@@ -15,7 +14,7 @@ type Params = {
   onRequestClose: () => void;
 };
 
-// build the pan gesture that maps drag distance into close or snap behavior
+// the pan gesture maps drag distance into close or snap
 export const useTrayGesture = ({
   translateY,
   totalHeight,
@@ -25,8 +24,7 @@ export const useTrayGesture = ({
   fullScreenDraggable,
   onRequestClose,
 }: Params) => {
-  // Keep gesture worklets stable when a parent replaces its close callback;
-  // the ref still dispatches the latest callback on the JS runtime.
+  // gesture worklets stay stable when a parent replaces its close callback, the ref dispatches the latest one
   const onRequestCloseRef = useRef(onRequestClose);
   useProfiledTrayLayoutEffect("useTrayGesture.updateCloseHandler", () => {
     onRequestCloseRef.current = onRequestClose;
@@ -41,21 +39,21 @@ export const useTrayGesture = ({
     return Gesture.Pan()
       .enabled(interactive && dragEnabled)
       .onStart(() => {
-        // capture current offset so a drag can start while a spring is mid flight
+        // capture the current offset so a drag can start mid-spring
         context.value = { y: Math.max(0, translateY.value) };
       })
 
       .onUpdate((e) => {
         const raw = e.translationY + context.value.y;
 
-        // upward pulls get resistance so the tray does not overshoot above its dock
+        // upward pulls get resistance so the tray never overshoots its dock
         const resisted = raw > 0 ? raw : raw * 0.2;
 
         translateY.value = Math.max(0, resisted);
       })
 
       .onEnd((e) => {
-        // combine distance and velocity so a short fast flick can still dismiss
+        // distance and velocity combine so a short fast flick can dismiss
         const closeThreshold = totalHeight.value * 0.4;
 
         const shouldClose =

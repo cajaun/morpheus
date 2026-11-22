@@ -1,4 +1,4 @@
-// verify geometry properties share one native layout start
+// geometry properties share one native layout start
 import { describe, expect, it, jest } from "@jest/globals";
 import type {
   AnimationObject,
@@ -84,7 +84,7 @@ const layoutProgressTestState = (
   }
 ).__trayLayoutTest;
 
-// create the shared value shape expected by layout helpers
+// the shared value shape layout helpers expect
 const shared = <T,>(value: T) => ({ value }) as SharedValue<T>;
 
 const layoutValues: LayoutAnimationsValues = {

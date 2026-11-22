@@ -1,10 +1,10 @@
-// verify lifecycle phases and geometry ownership follow one generation
+// lifecycle phases and geometry ownership follow one generation
 import { describe, expect, it } from "@jest/globals";
 import { createTrayTransitionContract } from "../transition-contract";
 import { createTrayTransitionLifecycle } from "../transition-lifecycle";
 import { createTrayMeasurementOwner } from "../types";
 
-// build a contract whose endpoint identity follows the generation
+// a contract whose endpoint identity follows the generation
 const contract = (generation: number) =>
   createTrayTransitionContract({
     generation,

@@ -11,7 +11,7 @@ type AuthoredElement = React.ReactElement<{
   children?: React.ReactNode;
 }>;
 
-// flatten fragments so conditional and mapped step groups compile consistently
+// flatten fragments so conditional and mapped step groups compile alike
 const flattenChildren = (children: React.ReactNode): React.ReactNode[] => {
   const flattened: React.ReactNode[] = [];
 
@@ -31,7 +31,7 @@ const flattenChildren = (children: React.ReactNode): React.ReactNode[] => {
   return flattened;
 };
 
-// identify declarative steps and leave triggers in the rendered tree
+// declarative steps compile, triggers stay in the rendered tree
 const isTrayStepElement = (
   child: React.ReactNode,
 ): child is React.ReactElement<TrayStepProps> =>
@@ -42,7 +42,7 @@ const isTrayFooterElement = (
 ): child is React.ReactElement<TrayFooterProps> =>
   React.isValidElement(child) && child.type === TrayFooter;
 
-// turn one declarative step into the definition consumed by the existing runtime
+// one declarative step into the definition the runtime consumes
 const compileStep = (
   step: React.ReactElement<TrayStepProps>,
   index: number,
@@ -90,7 +90,7 @@ const compileStep = (
   };
 };
 
-// compile declarative children before registration while keeping runtime contracts unchanged
+// compile declarative children before registration with the runtime contracts unchanged
 export const compileTraySteps = (
   children: React.ReactNode,
   stepOptions?: TrayStepOptions,

@@ -1,5 +1,4 @@
-// verify a nested tray waits for its parent's transition to complete before
-// asking for a prepared host, without timers
+// a nested tray waits for its parent's transition before asking for a prepared host, without timers
 import { describe, expect, it, jest } from "@jest/globals";
 import React from "react";
 import TestRenderer, { act } from "react-test-renderer";
@@ -13,7 +12,7 @@ jest.mock("react-native-reanimated", () => {
   const ReactActual = jest.requireActual("react") as typeof import("react");
 
   return {
-    // like Reanimated, react outside render; here after every commit
+    // reactions run outside render, here after every commit
     useAnimatedReaction: (
       prepare: () => boolean,
       react: (value: boolean, previous: boolean | null) => void,

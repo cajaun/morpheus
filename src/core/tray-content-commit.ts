@@ -1,25 +1,17 @@
 import React from "react";
 import type { SharedValue } from "react-native-reanimated";
 
-// Lets the content region tell the animated sheet that new step content has
-// committed, and which transition generation that content belongs to (the
-// generation of the payload the region rendered, not the shell's latest
-// one). The sheet records it for the boundary clock and, when synchronous
-// measurement is enabled, measures the content in the same commit.
+// the content region reports a commit and its payload's generation, the sheet records it for the boundary clock and can measure in the same commit
 export const TrayContentCommitContext = React.createContext<
   ((generation?: number) => void) | null
 >(null);
 
-// Where the shell records the generation of the last committed step content.
-// The fullscreen-to-sheet clock waits on it so incoming content mounts before
-// the shell starts moving. Stable for the shell's lifetime.
+// where the shell records the generation of the last committed content, the fullscreen-to-sheet clock waits on it
 export type TrayContentCommitTarget = {
   committedGeneration: SharedValue<number>;
-  // used when a commit cannot name its own generation (raw node content)
+  // used when a commit cannot name its own generation
   shellGenerationRef: { current: number };
-  // Called when a step's content commits at the same height as the content it
-  // replaces, so no layout transition will run for that generation. The shell
-  // decides whether this transition needs a stand-in layout participant.
+  // called when content commits at the same height, so the shell decides on a stand-in layout participant
   commitWithoutResizeRef?: { current: ((generation: number) => void) | null };
 };
 

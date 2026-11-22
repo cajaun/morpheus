@@ -13,12 +13,10 @@ import { compileTraySteps } from "./tray-step-compiler";
 import { useParentTransitionSettled } from "./tray-parent-transition";
 import { useTrayPages } from "../pages-context";
 
-// Whether the tray's pages (if any) are at rest. Driven by the page clock (a
-// UI-thread shared value), not timers. Outside Tray.Pages the fallback clock
-// is always at rest.
+// whether the tray's pages rest, driven by the page clock, the fallback clock outside Tray.Pages always rests
 const usePagesAtRest = () => {
   const { pageIndex, progress } = useTrayPages();
-  // read once on mount, so a trigger mounted mid page transition starts deferred
+  // read once on mount so a trigger mounted mid page transition starts deferred
   const [atRest, setAtRest] = useState(
     () => Math.abs(progress.value - pageIndex) < 0.001,
   );
@@ -45,8 +43,7 @@ export type TrayNestedProps = Omit<PressableProps, "onPress"> & {
   onPress?: PressableProps["onPress"];
 };
 
-// register a child tray and open it from the current tray scope
-// register a nested tray while keeping its parent scope available to triggers
+// register a nested tray and keep its parent scope for triggers
 export const TrayNested: React.FC<TrayNestedProps> = ({
   id,
   children,
@@ -67,12 +64,7 @@ export const TrayNested: React.FC<TrayNestedProps> = ({
     () => compileTraySteps(children, stepOptions),
     [children, stepOptions],
   );
-  // A nested tray usually mounts with its parent's step content, in the middle
-  // of the parent's transition. Register right away so it can always open,
-  // but let the presenter build its hidden prepared host only after that
-  // transition completes, so the host mount stays off its critical path.
-  // The same holds for a page transition: a trigger swapped in as a page
-  // changes would otherwise mount the hidden host during the page spring.
+  // register at once so the tray can open, the hidden prepared host builds after the parent's step or page transition completes
   const parentTransitionSettled = useParentTransitionSettled();
   const pagesAtRest = usePagesAtRest();
   const deferHostPreparation = !parentTransitionSettled || !pagesAtRest;

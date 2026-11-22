@@ -9,13 +9,13 @@ import {
   markTrayStepSnapshotPublished,
 } from "../tray-step-timing";
 
-// keep the disabled-path test explicit while repository diagnostics are enabled
+// the disabled path stays tested while repository diagnostics are on
 jest.mock("../config", () => ({
   TRAY_INSTRUMENTATION_ENABLED: false,
   isTrayInstrumentationEnabled: () => false,
 }));
 
-// verify disabled diagnostics leave globals and console untouched
+// disabled diagnostics leave globals and console untouched
 const timingGlobal = globalThis as typeof globalThis & {
   __TRAY_OPEN_TIMINGS__?: unknown[];
   __TRAY_STEP_TIMINGS__?: unknown[];

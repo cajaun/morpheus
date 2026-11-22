@@ -1,4 +1,4 @@
-// expose presenter internals through one local boundary
+// presenter internals behind one local boundary
 export { NestedTrayStack, RootTraySlots } from "./host-slots";
 export {
   arePresentedTrayListsEquivalent,

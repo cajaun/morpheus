@@ -14,11 +14,11 @@ const terminalPhases = new Set<TrayTransitionPhase>([
   "cancelled",
 ]);
 
-// check whether a lifecycle phase can accept more transition work
+// whether a lifecycle phase accepts more transition work
 export const isTrayTransitionTerminal = (phase: TrayTransitionPhase) =>
   terminalPhases.has(phase);
 
-// read one clock source for lifecycle event timestamps
+// one clock source for lifecycle event timestamps
 const now = () => performance.now();
 const MAX_TRANSITION_HISTORY = 100;
 const phaseOrder: Partial<Record<TrayTransitionPhase, number>> = {
@@ -29,13 +29,13 @@ const phaseOrder: Partial<Record<TrayTransitionPhase, number>> = {
   completed: 4,
 };
 
-// check whether a phase has consumed the provisional contract
+// whether a phase has consumed the provisional contract
 const isAtOrAfterPreparation = (phase: TrayTransitionPhase) => {
   const order = phaseOrder[phase];
   return order !== undefined && order >= phaseOrder.prepared!;
 };
 
-// verify that measured geometry belongs to the declared endpoint
+// measured geometry belongs to the declared endpoint
 const endpointMatchesOwner = (
   endpoint: TrayTransitionContract["from"],
   owner: TrayMeasurementOwner,
@@ -53,7 +53,7 @@ const endpointMatchesOwner = (
   );
 };
 
-// derive planned participants from shared region behavior
+// planned participants from shared region behaviour
 const resolveContractParticipants = (
   contract: TrayTransitionContract,
 ): TrayTransitionParticipant[] =>
@@ -102,7 +102,7 @@ const resolveContractParticipants = (
     return participants;
   });
 
-// create the lifecycle ledger that owns generation and phase transitions
+// the lifecycle ledger that owns generations and phase transitions
 export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
   const records = new Map<number, TrayTransitionLifecycleRecord>();
   let activeGeneration: number | null = null;
@@ -144,7 +144,7 @@ export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
     }
 
     if (record.phase === phase) {
-      // native and react callbacks can repeat phase publication is idempotent
+      // native and React callbacks can repeat, phase publication is idempotent
       return true;
     }
 
@@ -156,7 +156,7 @@ export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
       nextOrder !== undefined &&
       nextOrder < currentOrder
     ) {
-      // late react and native callbacks cannot move a transaction backwards
+      // late React and native callbacks never move a transaction backwards
       return false;
     }
 

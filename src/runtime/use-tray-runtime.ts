@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import type { TrayHostActionsValue, TrayRuntimeStore } from "./types";
 import { createTrayRuntimeStore } from "./store/create-tray-runtime-store";
 
-// the store instance must outlive provider rerenders or subscriptions break
+// the store instance outlives provider renders so subscriptions hold
 type Params = {
   anticipateKeyboard: () => void;
   prepareKeyboardHandoff: () => void;
@@ -20,7 +20,7 @@ export const useTrayRuntime = ({
   const runtimeRef = useRef<TrayRuntimeStore | null>(null);
 
   if (!runtimeRef.current) {
-    // create once because downstream hooks hold references to this store object
+    // create once because downstream hooks hold this store object
     runtimeRef.current = createTrayRuntimeStore({
       anticipateKeyboard,
       prepareKeyboardHandoff,
@@ -30,7 +30,7 @@ export const useTrayRuntime = ({
   }
 
   useEffect(() => {
-    // swap dependencies in place so the store keeps identity but gains fresh handlers
+    // swap dependencies in place so the store keeps its identity
     runtimeRef.current?.setDependencies({
       anticipateKeyboard,
       prepareKeyboardHandoff,

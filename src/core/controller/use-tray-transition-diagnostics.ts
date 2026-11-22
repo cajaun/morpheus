@@ -101,8 +101,7 @@ export const useTrayTransitionDiagnostics = ({
   );
 
   useEffect(() => {
-    // the payload reads shared values (a synchronous UI-thread read each), so
-    // build it only when the log is actually written
+    // the payload reads shared values on the UI thread, so build it when the log is written
     if (!visible || !isTrayDebugLoggingEnabled()) {
       return;
     }

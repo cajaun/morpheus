@@ -1,31 +1,11 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-} from "react";
-import {
-  type LayoutChangeEvent,
-  StyleProp,
-  ViewStyle,
-} from "react-native";
-import { useSharedValue } from "react-native-reanimated";
+import React, { useCallback, useMemo } from "react";
+import { StyleProp, ViewStyle } from "react-native";
 import { log } from "./logger";
-import { SCREEN_HEIGHT } from "./constants";
-import {
-  resolveBoundaryProgress,
-  resolveFullscreenReturnHeaderPadding,
-} from "./animation/frame-style-math";
 import type {
   TrayTransitionContract,
   TrayTransitionLifecycle,
   TrayTransitionOptions,
 } from "../runtime/types";
-import { isTrayInstrumentationEnabled } from "../telemetry/config";
-import { useProfiledTrayLayoutEffect } from "../telemetry/tray-layout-effect-profiler";
-import {
-  markTrayStepShellLayout,
-} from "../telemetry/tray-step-timing";
-import { markTrayBoundaryShellLayout } from "../telemetry/tray-boundary-timing";
 import { useTrayContentSync } from "./controller/use-tray-content-sync";
 import { useTrayAssignmentReset } from "./controller/use-tray-assignment-reset";
 import { useTrayGeometryOwnership } from "./controller/use-tray-geometry-ownership";
@@ -33,11 +13,18 @@ import { useTrayHeightCache } from "./controller/use-tray-height-cache";
 import { useTrayMeasurements } from "./controller/use-tray-measurements";
 import { useTrayOpenCloseLifecycle } from "./controller/use-tray-open-close-lifecycle";
 import { useTrayPresentationState } from "./controller/use-tray-presentation-state";
+import {
+  useControllerSharedValues,
+  useControllerVisualState,
+} from "./controller/use-controller-boundary";
+import { useShellLayoutHandler } from "./controller/use-shell-layout-handler";
+import { useContentHeightRefresh } from "./controller/use-content-height-refresh";
+import { useTransitionClockValues } from "./controller/use-transition-clock-values";
+import { useContentHeightCallbacks } from "./controller/use-content-height-callbacks";
 import { useTrayRenderState } from "./controller/use-tray-render-state";
 import { useTrayTransitionCallbacks } from "./controller/use-tray-transition-callbacks";
 import { useTrayTransitionDiagnostics } from "./controller/use-tray-transition-diagnostics";
 
-// compose tray policy before the shell renders
 type Params = {
   assignmentId?: number;
   prepared?: boolean;
@@ -64,7 +51,7 @@ type Params = {
   onClose: () => void;
 };
 
-// compose measurement render and lifecycle hooks into one tray controller
+// measurement, render and lifecycle hooks composed into one tray controller
 export const useTrayController = ({
   assignmentId = 0,
   prepared = false,
@@ -110,37 +97,21 @@ export const useTrayController = ({
     footerClassName,
     transitionContract,
   });
-  const transitionStartedGeneration = useSharedValue(0);
-  const transitionStartedAt = useSharedValue(0);
-  const transitionLayoutStartedGeneration = useSharedValue(0);
-  const transitionCompletedGeneration = useSharedValue(0);
-  const transitionGenerationValue = useSharedValue(
-    transitionContract?.generation ?? 0,
-  );
-  const fullScreenChangedValue = useSharedValue(
-    transitionContract?.fullScreenChanged ? 1 : 0,
-  );
-  const morphProgress = useSharedValue(1);
-
-  useProfiledTrayLayoutEffect("useTrayController.syncTransitionValues", () => {
-    // keep exiting content on the current transition descriptor
-    transitionGenerationValue.value = transitionContract?.generation ?? 0;
-    fullScreenChangedValue.value = transitionContract?.fullScreenChanged
-      ? 1
-      : 0;
-  }, [
-    fullScreenChangedValue,
-    transitionContract?.fullScreenChanged,
-    transitionContract?.generation,
-    transitionGenerationValue,
-  ]);
+  const transitionClock = useTransitionClockValues(transitionContract);
+  const {
+    transitionStartedAt,
+    transitionStartedGeneration,
+    transitionLayoutStartedGeneration,
+    transitionCompletedGeneration,
+    morphProgress,
+  } = transitionClock;
 
   const presentationFullScreen = renderState.state.renderedFullScreen;
   const isEnteringFullScreen = !!fullScreen && !presentationFullScreen;
-  // keep frame mode and keyed content in the same commit
+  // frame mode and keyed content change in the same commit
   const frameFullScreen = presentationFullScreen;
 
-  // own shared values read by gestures animations and layout
+  // shared values read by gestures, animations and layout
   const presentation = useTrayPresentationState({
     visible,
     renderedFooter: renderState.state.renderedFooter,
@@ -186,131 +157,34 @@ export const useTrayController = ({
   const resolveRenderedContentHeight =
     presentation.helpers.resolveRenderedContentHeight;
 
-  const handleSheetContentHeightMeasured = useCallback(
-    (resolvedHeight: number, measuredTrayId?: string) => {
-      const activeTransition = activeTransitionRef.current;
-
-      if (
-        !activeTransition ||
-        !activeTransition.fullScreenChanged ||
-        activeTransition.to?.mode !== "sheet" ||
-        renderedFullScreenRef.current ||
-        activeTrayIdRef.current !== measuredTrayId ||
-        !Number.isFinite(resolvedHeight) ||
-        resolvedHeight <= 1
-      ) {
-        return;
-      }
-
-      const footer = presentation.shared.footerHeight.value;
-      handleSheetFramePrepared(
-        resolvedHeight + footer,
-        "target",
-        resolvedHeight,
-        measuredTrayId,
-      );
-    },
-    [
-      activeTrayIdRef,
+  const { handleSheetContentHeightMeasured, resolveMeasuredContentHeight } =
+    useContentHeightCallbacks({
       activeTransitionRef,
-      handleSheetFramePrepared,
-      presentation.shared.footerHeight,
       renderedFullScreenRef,
-    ],
-  );
-
-  const resolveMeasuredContentHeight = useCallback(
-    (measuredHeight: number) => {
-      if (!isEnteringFullScreen) {
-        const resolvedHeight = resolveRenderedContentHeight(measuredHeight);
-
-        // The fullscreen header transition owns a temporary bottom gap. It
-        // is visual spacing, not intrinsic sheet content. Remove its current
-        // lifecycle-owned contribution before the return frame is cached so a
-        // fullscreen-only 16pt gap cannot become permanent sheet geometry.
-        const returningHeaderPadding =
-          resolveFullscreenReturnHeaderPadding({
-            progress: resolveBoundaryProgress(
-              morphProgress.value,
-              transitionContract?.generation,
-              transitionStartedGeneration.value,
-              transitionLayoutStartedGeneration.value,
-              transitionCompletedGeneration.value,
-              transitionContract?.fullScreenChanged === true,
-            ),
-            returningToSheet:
-              returningToSheetRef.current &&
-              transitionContract?.fullScreenChanged === true &&
-              transitionContract.to?.mode === "sheet",
-            hasHeader: renderState.state.renderedHeader != null,
-          });
-        const intrinsicSheetHeight = Math.max(
-          0,
-          resolvedHeight - returningHeaderPadding,
-        );
-
-        // sheet mode trusts measured content and footer policy
-        log("RESOLVE CONTENT HEIGHT", {
-          trayId,
-          measuredHeight,
-          resolvedHeight,
-          returningHeaderPadding,
-          intrinsicSheetHeight,
-          visible,
-          incomingFullScreen: !!fullScreen,
-          renderedFullScreen: presentationFullScreen,
-          isEnteringFullScreen,
-          footerHeight: presentation.shared.footerHeight.value,
-          mode: "rendered-presentation",
-        });
-
-        return intrinsicSheetHeight;
-      }
-
-      const resolvedHeight = Math.max(
-        0,
-        SCREEN_HEIGHT - presentation.shared.footerHeight.value,
-      );
-
-      // entering fullscreen uses viewport math before fullscreen content has settled
-      log("RESOLVE CONTENT HEIGHT", {
-        trayId,
-        measuredHeight,
-        resolvedHeight,
-        visible,
-        incomingFullScreen: !!fullScreen,
-        renderedFullScreen: presentationFullScreen,
-        isEnteringFullScreen,
-        footerHeight: presentation.shared.footerHeight.value,
-        mode: "entering-fullscreen",
-      });
-
-      return resolvedHeight;
-    },
-    [
+      activeTrayIdRef,
+      handleSheetFramePrepared,
+      footerHeight: presentation.shared.footerHeight,
       isEnteringFullScreen,
-      fullScreen,
-      morphProgress,
-      renderState.state.renderedHeader,
       resolveRenderedContentHeight,
-      presentationFullScreen,
-      returningToSheetRef,
-      presentation.shared.footerHeight,
-      transitionCompletedGeneration,
+      morphProgress,
       transitionContract,
-      transitionLayoutStartedGeneration,
       transitionStartedGeneration,
+      transitionLayoutStartedGeneration,
+      transitionCompletedGeneration,
+      returningToSheetRef,
+      hasRenderedHeader: renderState.state.renderedHeader != null,
       trayId,
       visible,
-    ],
-  );
+      fullScreen,
+      presentationFullScreen,
+    });
 
   const heightCache = useTrayHeightCache({
     fullScreen,
     contentHeight: presentation.shared.contentHeight,
     measurementOwner,
   });
-  // gate the first open spring until geometry is known
+  // the first open spring waits until geometry is known
   const measurements = useTrayMeasurements({
     contentHeight: presentation.shared.contentHeight,
     footerHeight: presentation.shared.footerHeight,
@@ -389,36 +263,15 @@ export const useTrayController = ({
     clearPreparedSheetFrame,
   });
 
-  useEffect(() => {
-    if (!visible) {
-      return;
-    }
-
-    // ignore live prop changes until the rendered snapshot and last measurement match
-    if (
-      renderState.state.renderedTrayId !== trayId ||
-      measurements.refs.latestMeasuredTrayIdRef.current !==
-        renderState.state.renderedTrayId
-    ) {
-      return;
-    }
-
-    if (measurements.shared.measuredContentHeight.value <= 0) {
-      return;
-    }
-
-    // refresh the shared content height when keyboard or presentation policy changes
-    presentation.shared.contentHeight.value =
-      resolveMeasuredContentHeight(measurements.shared.measuredContentHeight.value);
-  }, [
-    measurements.shared.measuredContentHeight,
-    measurements.refs.latestMeasuredTrayIdRef,
-    resolveMeasuredContentHeight,
-    presentation.shared.contentHeight,
-    renderState.state.renderedTrayId,
-    trayId,
+  useContentHeightRefresh({
     visible,
-  ]);
+    trayId,
+    renderedTrayId: renderState.state.renderedTrayId,
+    latestMeasuredTrayIdRef: measurements.refs.latestMeasuredTrayIdRef,
+    measuredContentHeight: measurements.shared.measuredContentHeight,
+    contentHeight: presentation.shared.contentHeight,
+    resolveMeasuredContentHeight,
+  });
 
   const clearRenderState = renderState.actions.clear;
   const resetMeasurements = measurements.actions.reset;
@@ -452,7 +305,7 @@ export const useTrayController = ({
     },
   });
 
-  // run the open close state machine around measured geometry
+  // the open and close state machine around measured geometry
   const openCloseLifecycle = useTrayOpenCloseLifecycle({
     visible,
     rootTrayId,
@@ -518,30 +371,12 @@ export const useTrayController = ({
     onClose?.();
   }, [onClose]);
 
-  const handleShellLayout = useCallback(
-    (event: LayoutChangeEvent) => {
-      handleGeometryMeasured({ shellFrame: event.nativeEvent.layout });
-
-      if (isTrayInstrumentationEnabled()) {
-        markTrayStepShellLayout(
-          rootTrayId,
-          renderedTrayIdRef.current,
-          renderedTransitionContract?.generation,
-        );
-        markTrayBoundaryShellLayout(
-          rootTrayId,
-          renderedTransitionContract,
-          renderedTrayIdRef.current,
-        );
-      }
-    },
-    [
-      handleGeometryMeasured,
-      renderedTrayIdRef,
-      renderedTransitionContract,
-      rootTrayId,
-    ],
-  );
+  const handleShellLayout = useShellLayoutHandler({
+    rootTrayId,
+    renderedTrayIdRef,
+    renderedTransitionContract,
+    handleGeometryMeasured,
+  });
 
   const imperativeApi = useMemo(
     () => ({
@@ -551,102 +386,27 @@ export const useTrayController = ({
       close: () => {
         handleRequestClose();
       },
-      // expose active state through the shared value read by worklets
+      // worklets read active state through this shared value
       isActive: () => !!presentation.shared.active.value,
     }),
     [handleRequestClose, presentation.shared.active],
   );
 
-  // Keep the controller boundary referentially stable. The host owns the
-  // controller lifecycle, while the visual surface can now skip a render
-  // when none of its actual inputs changed.
-  const shared = useMemo(
-    () => ({
-      translateY: presentation.shared.translateY,
-      contentHeight: presentation.shared.contentHeight,
-      footerHeight: presentation.shared.footerHeight,
-      active: presentation.shared.active,
-      context: presentation.shared.context,
-      hasFooter: presentation.shared.hasFooter,
-      surfaceOpacity: presentation.shared.surfaceOpacity,
-      totalHeight: presentation.shared.totalHeight,
-      progress: presentation.shared.progress,
-      originProgress: presentation.shared.originProgress,
-      morphProgress,
-      transitionGenerationValue,
-      fullScreenChangedValue,
-      transitionStartedAt,
-      transitionStartedGeneration,
-      transitionLayoutStartedGeneration,
-      transitionCompletedGeneration,
-      originTargetContentHeight: presentation.shared.originTargetContentHeight,
-    }),
-    [
-      presentation.shared.active,
-      presentation.shared.contentHeight,
-      presentation.shared.context,
-      presentation.shared.footerHeight,
-      presentation.shared.hasFooter,
-      presentation.shared.originProgress,
-      presentation.shared.originTargetContentHeight,
-      presentation.shared.progress,
-      presentation.shared.surfaceOpacity,
-      presentation.shared.totalHeight,
-      presentation.shared.translateY,
-      morphProgress,
-      transitionCompletedGeneration,
-      transitionGenerationValue,
-      transitionLayoutStartedGeneration,
-      transitionStartedAt,
-      transitionStartedGeneration,
-      fullScreenChangedValue,
-    ],
+  // the controller boundary stays referentially stable so the visual surface can skip renders
+  const shared = useControllerSharedValues(
+    presentation.shared,
+    transitionClock,
   );
   const contentHeightSnapshot =
     measurements.refs.latestResolvedContentHeightRef.current;
-  const state = useMemo(
-    () => ({
-      layoutEnabled: measurements.state.layoutEnabled,
-      contentHeightSnapshot,
-      preparedSheetFrame: geometry.state.preparedSheetFrame,
-      isSurfaceReady: openCloseLifecycle.state.isSurfaceReady,
-      renderedFooter: renderState.state.renderedFooter,
-      renderedHeader: renderState.state.renderedHeader,
-      renderedContent: renderState.state.renderedContent,
-      renderedTrayId: renderState.state.renderedTrayId,
-      renderedFullScreen: renderState.state.renderedFullScreen,
-      renderedFullScreenBackgroundScale:
-        renderState.state.renderedFullScreenBackgroundScale,
-      frameFullScreen,
-      renderedFullScreenDraggable:
-        renderState.state.renderedFullScreenDraggable,
-      renderedFullScreenSafeAreaTop:
-        renderState.state.renderedFullScreenSafeAreaTop,
-      renderedContainerStyle: renderState.state.renderedContainerStyle,
-      renderedClassName: renderState.state.renderedClassName,
-      renderedFooterStyle: renderState.state.renderedFooterStyle,
-      renderedFooterClassName: renderState.state.renderedFooterClassName,
-    }),
-    [
-      contentHeightSnapshot,
-      frameFullScreen,
-      geometry.state.preparedSheetFrame,
-      measurements.state.layoutEnabled,
-      openCloseLifecycle.state.isSurfaceReady,
-      renderState.state.renderedClassName,
-      renderState.state.renderedContainerStyle,
-      renderState.state.renderedContent,
-      renderState.state.renderedFooter,
-      renderState.state.renderedFooterClassName,
-      renderState.state.renderedFooterStyle,
-      renderState.state.renderedFullScreen,
-      renderState.state.renderedFullScreenBackgroundScale,
-      renderState.state.renderedFullScreenDraggable,
-      renderState.state.renderedFullScreenSafeAreaTop,
-      renderState.state.renderedHeader,
-      renderState.state.renderedTrayId,
-    ],
-  );
+  const state = useControllerVisualState({
+    renderedState: renderState.state,
+    layoutEnabled: measurements.state.layoutEnabled,
+    contentHeightSnapshot,
+    preparedSheetFrame: geometry.state.preparedSheetFrame,
+    isSurfaceReady: openCloseLifecycle.state.isSurfaceReady,
+    frameFullScreen,
+  });
   const {
     handleContentLayout,
     handleVisibleFooterLayout,

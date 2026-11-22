@@ -1,4 +1,4 @@
-// verify pure state derivations keep stack and transition data aligned
+// pure state derivations keep stack and transition data aligned
 import { describe, expect, it } from "@jest/globals";
 import type {
   TrayHostStateValue,
@@ -12,7 +12,7 @@ import {
   resolveSharedRegions,
 } from "../tray-runtime-state";
 
-// build an endpoint for shared region derivation tests
+// an endpoint for shared region derivation tests
 const endpoint = (
   stepIndex: number,
   mode: TrayPresentationEndpoint["mode"],

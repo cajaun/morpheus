@@ -29,7 +29,7 @@ type Params = {
   transitions: TrayTransitionLifecycle;
 };
 
-// pager transitions own page geometry and spring lifecycle
+// pager transitions own page geometry and the spring lifecycle
 export const useTrayPagesTransition = ({
   initialPage,
   totalPages,
@@ -43,11 +43,7 @@ export const useTrayPagesTransition = ({
   const [transitionFromIndex, setTransitionFromIndex] = useState<
     number | null
   >(null);
-  // The viewport resizes every frame while the tray crosses the fullscreen
-  // boundary. Keep its width out of React state: a state update per layout
-  // event re-rendered the pager mid-animation and re-laid out every page.
-  // Pages size themselves to the viewport natively; only the off-screen offset
-  // of a page transition needs the number, and it reads it on the UI thread.
+  // the viewport resizes every frame across a fullscreen boundary, so its width lives in a shared value the page offset reads on the UI thread
   const viewportWidth = useSharedValue(SCREEN_WIDTH);
   const progress = useSharedValue(resolvedInitialPage);
   const transitionTargetRef = useRef<number | null>(null);

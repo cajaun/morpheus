@@ -13,7 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-// shared press feedback keeps tray actions consistent without coupling them to one button implementation
+// shared press feedback for tray actions, independent of any button implementation
 export type TrayPressableScaleProps = Omit<
   PressableProps,
   "children" | "onPress" | "style"
@@ -25,9 +25,7 @@ export type TrayPressableScaleProps = Omit<
 };
 
 const ANIMATION_DURATION = 250;
-// press-in starts on the touch-down frame: a quick tap is released in well
-// under 100 ms, and any activation delay would leave it with no feedback at
-// all before the action runs
+// press-in starts on the touch-down frame because a quick tap releases in under 100 ms
 const PRESS_IN_DURATION = 120;
 const TAP_MAX_DISTANCE = 8;
 

@@ -10,7 +10,7 @@ export type TrayAnimationContract = {
   fullScreenBoundaryExit: boolean;
 };
 
-// accept a transition only when its target matches the rendered endpoint
+// a transition counts when its target matches the rendered endpoint
 const transitionTargetsPresentation = (
   transition: TrayTransitionContract | null,
   endpoint: TrayPresentationEndpoint,
@@ -23,7 +23,7 @@ const transitionTargetsPresentation = (
     return false;
   }
 
-  // keep a missing page index provisional while tray pages registration catches up
+  // a missing page index stays provisional while page registration catches up
   if (
     transition.reason !== "pageChange" &&
     transition.to.pageIndex === undefined
@@ -34,8 +34,7 @@ const transitionTargetsPresentation = (
   return transition.to.pageIndex === endpoint.pageIndex;
 };
 
-// preserve adjacent fullscreen boundary behavior while the active transition owns direction
-// check whether neighboring steps cross a fullscreen boundary
+// whether neighbouring steps cross a fullscreen boundary
 export const hasAdjacentFullScreenBoundary = (
   registration: TrayRegistration,
   stepIndex: number,
@@ -63,7 +62,7 @@ export const hasAdjacentFullScreenBoundary = (
   );
 };
 
-// resolve content animation policy from registration and transition state
+// content animation policy from registration and transition state
 export const resolveTrayAnimationContract = ({
   registration,
   endpoint,
@@ -79,7 +78,7 @@ export const resolveTrayAnimationContract = ({
     ? transition
     : null,
   isFirstRender: previousIndex === undefined,
-  // keep the established visual policy exact while the real navigation edge is now also available through transition
+  // the established visual policy holds while the transition also carries the navigation edge
   fullScreenBoundaryExit: hasAdjacentFullScreenBoundary(
     registration,
     endpoint.stepIndex,

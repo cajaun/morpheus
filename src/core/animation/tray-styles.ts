@@ -5,7 +5,7 @@ import {
   TRAY_VERTICAL_PADDING,
 } from "../constants";
 
-// static styles stay separate so motion code only reasons about changing values
+// static styles stay apart so motion code reasons about changing values
 export const styles = StyleSheet.create({
   container: {
     position: "absolute",

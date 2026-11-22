@@ -1,4 +1,4 @@
-// verify transition contracts preserve endpoint and region invariants
+// transition contracts keep endpoint and region invariants
 import { describe, expect, it } from "@jest/globals";
 import type {
   TrayPresentationEndpoint,
@@ -11,7 +11,7 @@ import {
   resolveTrayPresentationEndpoint,
 } from "../transition-contract";
 
-// build endpoints for the boundary decision table
+// endpoints for the boundary decision table
 const endpoint = (
   mode: TrayPresentationEndpoint["mode"],
   stepIndex = 0,

@@ -13,8 +13,7 @@ import type {
 
 export { clampTrayStepIndex } from "../tray-step-index";
 
-// pure runtime derivation keeps store commands focused on mutation and notification
-// create the empty state from the shared keyboard dependency
+// the empty state from the shared keyboard dependency
 export const createInitialTrayHostState = (): TrayHostStateValue => ({
   registry: {},
   activeTrayId: null,
@@ -24,8 +23,7 @@ export const createInitialTrayHostState = (): TrayHostStateValue => ({
   lastTransition: null,
 });
 
-// stack ownership is derived once so every command agrees on the active tray
-// derive active tray fields from the top stack entry
+// active tray fields from the top stack entry
 export const withActiveTrayFromStack = (
   state: TrayHostStateValue,
 ): TrayHostStateValue => {
@@ -38,7 +36,7 @@ export const withActiveTrayFromStack = (
   };
 };
 
-// resolve the presentation endpoint for the active stack entry
+// the presentation endpoint of the active stack entry
 export const resolveActiveTrayEndpoint = (
   state: TrayHostStateValue,
 ) => {
@@ -50,7 +48,7 @@ export const resolveActiveTrayEndpoint = (
   });
 };
 
-// derive presentation mode and options from one registered endpoint
+// presentation mode and options from one registered endpoint
 const resolveEndpointPresentation = (
   state: TrayHostStateValue,
   endpoint: TrayPresentationEndpoint | null,
@@ -65,7 +63,7 @@ const resolveEndpointPresentation = (
   return step && registration ? { registration, step } : null;
 };
 
-// describe which shell regions persist across the transition
+// shell regions that persist across the transition
 export const resolveSharedRegions = (
   current: TrayHostStateValue,
   next: TrayHostStateValue,
@@ -125,7 +123,6 @@ export const resolveSharedRegions = (
   ];
 };
 
-// transition contracts capture navigation before presenter code renders it
 // attach one generation and endpoint pair to the next navigation state
 export const withTrayTransition = (
   current: TrayHostStateValue,
@@ -149,7 +146,7 @@ export const withTrayTransition = (
   };
 };
 
-// repair a provisional transition when registration reveals final step data
+// repair a provisional transition when registration reveals the final step data
 export const reconcileTransitionAfterRegistration = (
   current: TrayHostStateValue,
   next: TrayHostStateValue,
@@ -186,7 +183,7 @@ export const reconcileTransitionAfterRegistration = (
     return next;
   }
 
-  // registration can settle after navigation so repair the target in place
+  // registration can settle after navigation, so repair the target in place
   return {
     ...next,
     lastTransition: createTrayTransitionContract({
@@ -254,7 +251,7 @@ export const clampTrayRuntimeState = (
   });
 };
 
-// resolve normalized options for the active registered step
+// normalized options of the active registered step
 export const resolveActiveStepOptions = (
   state: TrayHostStateValue,
 ) => {

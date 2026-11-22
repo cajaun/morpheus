@@ -90,9 +90,9 @@ describe("per-step footers", () => {
     expect(c.stepFooterKey).toBe("step:c");
     expect(d.stepFooterKey).toBeNull();
     expect(d.stepFooter).toBeNull();
-    // the legacy fixed footer layer is not used by step-footer trays
+    // step-footer trays leave the fixed footer layer unused
     expect(a.footer).toBeNull();
-    // sections drop their bottom padding only on steps that have a footer
+    // sections drop their bottom padding on steps with a footer
     expect(a.stepOptions.hasFooter).toBe(true);
     expect(d.stepOptions.hasFooter).toBe(false);
   });
@@ -121,7 +121,7 @@ describe("per-step footers", () => {
 
     expect(a.footer).toBeNull();
     expect(a.stepFooter).toBe(rootFooter);
-    // one key across the steps: the footer stays on screen
+    // one key across the steps keeps the footer on screen
     expect(a.stepFooterKey).toBe("root");
     expect(b.stepFooterKey).toBe("root");
   });

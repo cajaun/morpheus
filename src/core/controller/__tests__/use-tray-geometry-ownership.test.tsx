@@ -1,4 +1,4 @@
-// verify measured frames stay owned by the active transition
+// measured frames stay owned by the active transition
 import React from "react";
 import { describe, expect, it } from "@jest/globals";
 import TestRenderer, { act } from "react-test-renderer";
@@ -6,7 +6,7 @@ import type { SharedValue } from "react-native-reanimated";
 import type { TrayTransitionContract } from "../../../runtime/types";
 import { useTrayGeometryOwnership } from "../use-tray-geometry-ownership";
 
-// create the shared completion value used by ownership probes
+// the shared completion value ownership probes use
 const shared = <T,>(value: T) => ({ value }) as SharedValue<T>;
 
 const returnToSheetTransition: TrayTransitionContract = {

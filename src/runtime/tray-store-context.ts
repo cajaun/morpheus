@@ -12,7 +12,7 @@ import type {
   TrayRuntimeStore,
 } from "./types";
 
-// context exposes stable runtime services without mixing them with navigation policy
+// stable runtime services, apart from navigation policy
 const TrayStoreContext = createContext<TrayRuntimeStore | null>(null);
 const TrayScopeContext = createContext<string | null>(null);
 const TrayStepOptionsContext =
@@ -22,14 +22,12 @@ export const TrayStoreProvider = TrayStoreContext.Provider;
 export const TrayScopeProvider = TrayScopeContext.Provider;
 export const TrayStepOptionsProvider = TrayStepOptionsContext.Provider;
 
-// The tray id of the step a subtree belongs to, set by the layers a preloading
-// tray renders each step in. A step kept rendered while another step is
-// current reads its own step from this instead of the active one.
+// tray id of the step a subtree belongs to, a hidden preloaded step reads its own step from it
 const TrayStepLayerContext = createContext<string | null>(null);
 export const TrayStepLayerProvider = TrayStepLayerContext.Provider;
 export const useTrayStepLayer = () => useContext(TrayStepLayerContext);
 
-// require the runtime store from the nearest provider
+// the runtime store from the nearest provider
 export const useTrayRuntimeStore = () => {
   const store = useContext(TrayStoreContext);
 
@@ -40,7 +38,7 @@ export const useTrayRuntimeStore = () => {
   return store;
 };
 
-// subscribe to one stable selection from the external tray store
+// subscribe to one stable selection of the external tray store
 export const useTrayHostSelector = <T,>(
   selector: (state: TrayHostStateValue) => T,
 ) => {
@@ -51,7 +49,7 @@ export const useTrayHostSelector = <T,>(
     value: T;
   } | null>(null);
 
-  // cache each selector result for one store snapshot this satisfies usesyncexternalstore's stable-snapshot requirement even for object selectors
+  // cache each selector result per store snapshot to meet useSyncExternalStore's stable-snapshot rule
   const getSnapshot = useCallback(
     () => {
       const state = store.getState();
@@ -85,32 +83,32 @@ export const useTrayHostSelector = <T,>(
   );
 };
 
-// read the complete host state for low level integrations
+// the complete host state for low-level integrations
 export const useTrayHostState = () => useTrayHostSelector((state) => state);
 
-// expose imperative host actions without subscribing to state changes
+// imperative host actions without a state subscription
 export const useTrayHostActions = () => useTrayRuntimeStore().actions;
 
-// expose lifecycle records to diagnostics and integration code
+// lifecycle records for diagnostics and integration code
 export const useTrayTransitionLifecycle = () =>
   useTrayRuntimeStore().transitions;
 
-// combine host state and actions for the public convenience hook
+// host state and actions for the public convenience hook
 export const useTrayHost = () => {
   const state = useTrayHostState();
   const actions = useTrayHostActions();
 
-  // this merged hook supports tests and low level integrations
+  // the merged hook supports tests and low-level integrations
   return {
     ...state,
     ...actions,
   };
 };
 
-// read the nearest tray scope used by triggers and navigation hooks
+// the nearest tray scope for triggers and navigation hooks
 export const useTrayScope = () => useContext(TrayScopeContext);
 
-// read normalized options for the current tray step subtree
+// normalized options of the current step subtree
 export const useTrayStepOptions = () =>
   useContext(TrayStepOptionsContext);
 

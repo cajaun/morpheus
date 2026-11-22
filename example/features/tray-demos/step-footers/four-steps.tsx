@@ -44,7 +44,7 @@ const LastStep = () => {
 // The footer is written inline as <Tray.Footer> in each step: the step
 // compiler looks for Tray.Footer elements directly inside Tray.Step.
 const FooterStepsTray = () => (
-  <Tray.Root stepOptions={{ className: "bg-white" }}>
+  <Tray.Root stepOptions={{ className: "bg-white"}}>
     <Tray.Trigger haptics="feedback">
       <ExampleTrigger label="Footer Steps" />
     </Tray.Trigger>

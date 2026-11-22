@@ -5,9 +5,7 @@ import TestRenderer, { act } from "react-test-renderer";
 import { TrayHeaderRow } from "../header";
 import { TrayHeaderTransitionProvider } from "../header-transition-context";
 
-// The header row keeps its animated participants (title position and the
-// title/action transition layers) on Reanimated, while static containers are
-// plain native views that are not flattened, so the native hierarchy matches.
+// animated header participants stay on Reanimated, static containers are plain native views kept unflattened
 describe("TrayHeaderRow transition structure", () => {
   it("keeps animated layers animated and static containers as unflattened views", () => {
     let renderer: TestRenderer.ReactTestRenderer;
@@ -54,14 +52,13 @@ describe("TrayHeaderRow transition structure", () => {
         typeof node.props.onLayout === "function",
     );
 
-    // title and action groups still run the synchronized enter/exit motion
+    // title and action groups run the synchronized enter and exit motion
     expect(transitionLayers.length).toBe(2);
-    // only the title layer and the two transition layers mount through
-    // Reanimated; the static containers no longer do
+    // the title layer and the two transition layers mount through Reanimated, static containers do not
     expect(reanimatedViews.length).toBe(3);
     // row, title viewport and both control slots stay real native views
     expect(staticContainers.length).toBeGreaterThanOrEqual(4);
-    // the row and the title layer still report layout for title centering
+    // the row and the title layer report layout for title centering
     expect(rowWithLayout.length).toBeGreaterThanOrEqual(1);
     expect(root.findAllByType(Text).map((node) => node.props.children)).toEqual(
       expect.arrayContaining(["Title", "back", "close"]),

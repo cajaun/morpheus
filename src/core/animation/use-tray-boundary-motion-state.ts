@@ -1,24 +1,16 @@
 import { useRef } from "react";
 import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import {
-  Easing,
   useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   runOnUI,
-  withTiming,
   type SharedValue,
 } from "react-native-reanimated";
-import { scheduleOnRN } from "react-native-worklets";
-import {
-  FULL_SCREEN_ENTER_HOLD_FRAMES,
-  FULL_SCREEN_LAYOUT_DURATION,
-  FULL_SCREEN_SHELL_EASING_POINTS,
-} from "../constants";
 import { describeTrayTransition } from "../diagnostics/tray-transition-diagnostics";
 import { isTrayDebugLoggingEnabled, log, logWorklet } from "../logger";
-import { withTrayTransitionStart } from "../transition-start";
 import type { TrayTransitionContract } from "../../runtime/types";
+import { useBoundaryClockStart } from "./use-boundary-clock-start";
 
 type Params = {
   presentationFullScreen: boolean;
@@ -34,7 +26,7 @@ type Params = {
   transitionCompletedGeneration: SharedValue<number>;
   transitionContract: TrayTransitionContract | null;
   boundaryGeometryReady?: boolean;
-  // generation of the step content currently mounted (see tray-content-commit)
+  // generation of the mounted step content, see tray-content-commit
   contentCommittedGeneration?: SharedValue<number>;
   onTransitionStart?: (
     startedAt: number,
@@ -46,10 +38,7 @@ type Params = {
   ) => void;
 };
 
-// Whether a boundary's clock must wait for the target step's content commit.
-// Only fullscreen-to-sheet step changes wait: there the target height can be
-// known a commit before the content mounts. Only a step change re-commits the
-// content region, so anything else must not wait (it would wait forever).
+// fullscreen-to-sheet step changes wait for the target content commit because their height is known a commit early, other changes would wait forever
 export const shouldBoundaryWaitForContentCommit = (
   contract: TrayTransitionContract | null | undefined,
 ) =>
@@ -57,7 +46,7 @@ export const shouldBoundaryWaitForContentCommit = (
   contract.stepChanged === true &&
   contract.to?.mode === "sheet";
 
-// derive boundary geometry from shell morph progress instead of a second transition system
+// boundary geometry derives from shell morph progress instead of a second transition system
 export const useTrayBoundaryMotionState = ({
   presentationFullScreen,
   renderedFullScreenBackgroundScale,
@@ -113,7 +102,7 @@ export const useTrayBoundaryMotionState = ({
       !boundaryGeometryReady;
 
     if (waitingForSheetGeometry) {
-      // keep the previous mode latched until the target sheet owns a valid frame this preserves the existing boundary clock start contract
+      // the previous mode stays latched until the target sheet owns a valid frame, which keeps the clock start contract
       if (isTrayDebugLoggingEnabled()) {
         log("BOUNDARY CONFIG WAITING FOR SHEET GEOMETRY", {
           boundaryGeometryReady,
@@ -145,9 +134,7 @@ export const useTrayBoundaryMotionState = ({
     }
 
     if (isBoundaryTransition) {
-      // Capture the live source frame and publish the boundary setup together
-      // on the UI runtime. Reading these values here on JS can block while it
-      // synchronizes with an in-flight boundary reaction.
+      // capture the live source frame and publish the boundary setup together on the UI runtime, a JS read can block on an in-flight boundary reaction
       runOnUI(
         (
           nextBackgroundScale: number,
@@ -165,7 +152,7 @@ export const useTrayBoundaryMotionState = ({
           morphProgress.value = 0;
 
           if (!enteringFullScreen) {
-            // rounded sheet corners must reveal the app behind the surface before the shell begins returning from the viewport
+            // rounded sheet corners reveal the app behind the surface before the shell leaves the viewport
             surfaceFillOpacity.value = 0;
           }
         },
@@ -175,8 +162,7 @@ export const useTrayBoundaryMotionState = ({
     }
 
     if (!hasBoundaryContract) {
-      // useSharedValue already initialized these values from the same target
-      // values on this first commit, so skip redundant UI-thread writes.
+      // useSharedValue already holds these values on the first commit, so skip the UI-thread writes
       if (isInitialCommit && !modeChanged) {
         return;
       }
@@ -220,11 +206,7 @@ export const useTrayBoundaryMotionState = ({
   ]);
 
   const transitionGeneration = transitionContract?.generation ?? 0;
-  // Returning to a sheet can know its target height (from cache) one commit
-  // before the target step's content mounts. Starting the clock then lets the
-  // shell move while the content is still missing, and the content joins the
-  // shared clock late. Wait for this generation's content commit first; the
-  // clock starts on the next UI frame after it.
+  // a returning sheet can know its height a commit before its content mounts, so the clock waits for this generation's content commit
   const entersFullScreen =
     transitionContract?.fullScreenChanged === true &&
     transitionContract.to?.mode === "fullScreen";
@@ -232,90 +214,21 @@ export const useTrayBoundaryMotionState = ({
     contentCommittedGeneration !== undefined &&
     shouldBoundaryWaitForContentCommit(transitionContract);
 
-  useAnimatedReaction(
-    () => ({
-      active: boundaryActive.value,
-      startedGeneration: transitionStartedGeneration.value,
-      completedGeneration: transitionCompletedGeneration.value,
-      contentCommitted:
-        !waitForContentCommit ||
-        (contentCommittedGeneration?.value ?? 0) >= transitionGeneration,
-    }),
-    (state) => {
-      // let the shell own the clock so frame footer and content join one timestamp
-      if (
-        !state.active ||
-        !state.contentCommitted ||
-        transitionGeneration <= 0 ||
-        state.completedGeneration >= transitionGeneration ||
-        morphStartedGeneration.value === transitionGeneration
-      ) {
-        return;
-      }
-
-      morphStartedGeneration.value = transitionGeneration;
-      logWorklet("BOUNDARY CLOCK START", {
-        generation: transitionGeneration,
-        startedAt: transitionStartedAt.value,
-        startedGeneration: state.startedGeneration,
-        layoutStartedGeneration: transitionLayoutStartedGeneration.value,
-        completedGeneration: state.completedGeneration,
-        morphProgress: morphProgress.value,
-      });
-      const onTransitionStartSignal = onTransitionStart
-        ? (startedAt: number, generation: number) => {
-            "worklet";
-            scheduleOnRN(onTransitionStart, startedAt, generation);
-          }
-        : undefined;
-      morphProgress.value = withTrayTransitionStart(
-        withTiming(
-          1,
-          {
-            duration: FULL_SCREEN_LAYOUT_DURATION,
-            easing: Easing.bezier(...FULL_SCREEN_SHELL_EASING_POINTS),
-          },
-          (finished) => {
-            "worklet";
-
-            if (finished && onTransitionComplete) {
-              scheduleOnRN(
-                onTransitionComplete,
-                performance.now(),
-                transitionGeneration,
-              );
-            }
-          },
-        ),
-        transitionStartedGeneration,
-        transitionStartedAt,
-        transitionLayoutStartedGeneration,
-        transitionCompletedGeneration,
-        transitionGeneration,
-        "layout",
-        onTransitionStartSignal,
-        false,
-        false,
-        undefined,
-        entersFullScreen ? FULL_SCREEN_ENTER_HOLD_FRAMES : 0,
-      );
-    },
-    [
-      boundaryActive,
-      contentCommittedGeneration,
-      entersFullScreen,
-      morphProgress,
-      morphStartedGeneration,
-      onTransitionComplete,
-      onTransitionStart,
-      transitionCompletedGeneration,
-      transitionGeneration,
-      transitionLayoutStartedGeneration,
-      transitionStartedAt,
-      transitionStartedGeneration,
-      waitForContentCommit,
-    ],
-  );
+  useBoundaryClockStart({
+    boundaryActive,
+    morphStartedGeneration,
+    morphProgress,
+    transitionStartedGeneration,
+    transitionStartedAt,
+    transitionLayoutStartedGeneration,
+    transitionCompletedGeneration,
+    contentCommittedGeneration,
+    waitForContentCommit,
+    transitionGeneration,
+    entersFullScreen,
+    onTransitionStart,
+    onTransitionComplete,
+  });
 
   useAnimatedReaction(
     () => ({

@@ -1,11 +1,11 @@
-// keep diagnostic logging isolated so investigation does not change animation behavior
+// diagnostic logging stays isolated so investigation never changes animation behaviour
 const DEBUG = false;
 
 let sequence = 0;
 
 export const isTrayDebugLoggingEnabled = () => DEBUG;
 
-// write ordered diagnostics while the timing investigation is enabled
+// ordered diagnostics while the timing investigation is on
 export const log = (...args: any[]) => {
   if (DEBUG) {
     sequence += 1;
@@ -13,9 +13,7 @@ export const log = (...args: any[]) => {
   }
 };
 
-// Worklet diagnostics must stay on the worklet console path. Passing the
-// module logger through scheduleOnRN can make Worklets resolve it as a stale
-// Metro worklet hash during a native transition.
+// worklet diagnostics use the worklet console, scheduling the module logger can resolve a stale Metro worklet hash
 export const logWorklet = (label: string, details?: unknown) => {
   "worklet";
 

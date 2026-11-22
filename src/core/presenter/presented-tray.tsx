@@ -1,387 +1,26 @@
-// adapt runtime payloads into the animated native shell
-import React, {
-  useCallback,
-  useContext,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useSyncExternalStore,
-} from "react";
-import { TrayContentCommitContext } from "../tray-content-commit";
+// runtime payloads adapted into the animated native shell
+import React, { useCallback, useMemo, useRef } from "react";
 import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
-import { TrayStepContent } from "../../tray-step-content";
 import {
   createStepFooterStore,
-  TrayContentFooterSlot,
-  TrayStepFooterLayers,
   TrayStepFooterRegionContext,
   TrayStepFooterStoreContext,
 } from "../step-footer";
-import {
-  TrayPreloadingContent,
-  TrayPreloadingHeader,
-} from "./preloading-content";
-import { TrayHeaderTransitionProvider } from "../../primitives/header-transition-context";
-import {
-  TrayScopeProvider,
-  TrayStepOptionsProvider,
-  useTrayRuntimeStore,
-} from "../../runtime/tray-context";
+import { useTrayRuntimeStore } from "../../runtime/tray-context";
 import { isTrayInstrumentationEnabled } from "../../telemetry/config";
-import {
-  logTrayProfilerCommit,
-  profileTrayRegion,
-} from "../../telemetry/tray-profiler";
+import { logTrayProfilerCommit } from "../../telemetry/tray-profiler";
 import { markTrayBoundaryReactRender } from "../../telemetry/tray-boundary-timing";
 import { markTrayStepReactRenderStarted } from "../../telemetry/tray-step-timing";
 import { Tray } from "../tray";
 import type { PresentedTrayProps } from "../../runtime/presenter/types";
+import { arePresentedTraysEquivalent } from "../../runtime/presenter/model";
 import {
-  arePreloadedStepsEquivalent,
-  arePresentedTraysEquivalent,
-} from "../../runtime/presenter/model";
-import type { PresentedPreloadedStep } from "../../runtime/presenter/types";
+  createPresentedTrayPayloadStore,
+  type PresentedTrayPayloadStore,
+} from "./regions/payload-store";
+import { PresentedTrayRegion } from "./regions/presented-tray-region";
 
-const NO_PRELOADED_STEPS: readonly PresentedPreloadedStep[] = [];
-
-type PresentedTrayRegionName = "header" | "content" | "footer" | "stepFooter";
-
-type PresentedTrayPayloadStore = {
-  getSnapshot: () => PresentedTrayProps["payload"];
-  subscribe: (listener: () => void) => () => void;
-  publish: (payload: PresentedTrayProps["payload"]) => void;
-};
-
-type PresentedTrayRegionPayload = Pick<
-  PresentedTrayProps["payload"],
-  | "rootTrayId"
-  | "trayId"
-  | "stepOptions"
-  | "header"
-  | "content"
-  | "footer"
-  | "stepFooter"
-  | "stepFooterKey"
-  | "footerStyle"
-  | "footerClassName"
-  | "fullScreen"
-  | "fullScreenBoundaryExit"
-  | "isFirstRender"
-  | "preloadCapable"
-  | "preloadedSteps"
->;
-
-const createPresentedTrayPayloadStore = (
-  initialPayload: PresentedTrayProps["payload"],
-): PresentedTrayPayloadStore => {
-  let currentPayload = initialPayload;
-  const listeners = new Set<() => void>();
-
-  return {
-    getSnapshot: () => currentPayload,
-    subscribe: (listener) => {
-      listeners.add(listener);
-
-      return () => listeners.delete(listener);
-    },
-    publish: (payload) => {
-      if (payload === currentPayload) {
-        return;
-      }
-
-      currentPayload = payload;
-      listeners.forEach((listener) => listener());
-    },
-  };
-};
-
-const arePresentedTrayStepOptionsEquivalent = (
-  previous: PresentedTrayRegionPayload["stepOptions"],
-  next: PresentedTrayRegionPayload["stepOptions"],
-) =>
-  previous === next ||
-  (previous.hasFooter === next.hasFooter &&
-    previous.scale === next.scale &&
-    previous.keyboardAware === next.keyboardAware &&
-    previous.fullScreen === next.fullScreen &&
-    previous.shouldScaleBackground === next.shouldScaleBackground &&
-    previous.fullScreenBackgroundScale === next.fullScreenBackgroundScale &&
-    previous.fullScreenDraggable === next.fullScreenDraggable &&
-    previous.fullScreenCloseBehavior === next.fullScreenCloseBehavior &&
-    previous.fullScreenTransition === next.fullScreenTransition &&
-    previous.fullScreenSafeAreaTop === next.fullScreenSafeAreaTop &&
-    previous.style === next.style &&
-    previous.className === next.className &&
-    previous.footerStyle === next.footerStyle &&
-    previous.footerClassName === next.footerClassName &&
-    previous.preload === next.preload);
-
-const arePresentedTrayRegionPayloadsEquivalent = (
-  region: PresentedTrayRegionName,
-  previous: PresentedTrayRegionPayload,
-  next: PresentedTrayRegionPayload,
-) => {
-  if (
-    previous.rootTrayId !== next.rootTrayId ||
-    previous.stepOptions === undefined ||
-    !arePresentedTrayStepOptionsEquivalent(
-      previous.stepOptions,
-      next.stepOptions,
-    )
-  ) {
-    return false;
-  }
-
-  if (region === "stepFooter") {
-    return (
-      previous.stepFooter === next.stepFooter &&
-      previous.stepFooterKey === next.stepFooterKey &&
-      previous.footerStyle === next.footerStyle &&
-      previous.footerClassName === next.footerClassName &&
-      previous.fullScreen === next.fullScreen &&
-      previous.fullScreenBoundaryExit === next.fullScreenBoundaryExit &&
-      previous.isFirstRender === next.isFirstRender
-    );
-  }
-
-  if (region === "footer") {
-    // The footer node is shared across steps in the common onboarding shape.
-    // Its navigation hook observes the runtime store directly, so a new
-    // step id or header/body node does not require rebuilding this wrapper.
-    return previous.footer === next.footer;
-  }
-
-  return (
-    previous.trayId === next.trayId &&
-    previous.fullScreen === next.fullScreen &&
-    previous.fullScreenBoundaryExit === next.fullScreenBoundaryExit &&
-    previous.isFirstRender === next.isFirstRender &&
-    (region === "header"
-      ? previous.header === next.header
-      : previous.content === next.content) &&
-    (previous.preloadCapable ?? false) === (next.preloadCapable ?? false) &&
-    arePreloadedStepsEquivalent(previous.preloadedSteps, next.preloadedSteps)
-  );
-};
-
-// Each visual region has a different reconciliation boundary. Select the
-// fields that can affect that region and preserve the selection object when
-// those fields are unchanged. This keeps a stable footer from reconciling
-// just because the step header/body payload changed.
-const createPresentedTrayRegionSelector = (
-  region: PresentedTrayRegionName,
-) => {
-  let previousPayload: PresentedTrayRegionPayload | null = null;
-  let previousSelection: PresentedTrayRegionPayload | null = null;
-
-  return (payload: PresentedTrayProps["payload"]) => {
-    const nextPayload: PresentedTrayRegionPayload = {
-      rootTrayId: payload.rootTrayId,
-      trayId: payload.trayId,
-      stepOptions: payload.stepOptions,
-      header: region === "header" ? payload.header : null,
-      content: region === "content" ? payload.content : null,
-      footer: region === "footer" ? payload.footer : null,
-      stepFooter: region === "stepFooter" ? payload.stepFooter ?? null : null,
-      stepFooterKey:
-        region === "stepFooter" ? payload.stepFooterKey ?? null : null,
-      footerStyle: region === "stepFooter" ? payload.footerStyle : undefined,
-      footerClassName:
-        region === "stepFooter" ? payload.footerClassName : undefined,
-      fullScreen: payload.fullScreen,
-      fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
-      isFirstRender: payload.isFirstRender,
-      preloadCapable:
-        region === "footer" || region === "stepFooter"
-          ? undefined
-          : payload.preloadCapable,
-      preloadedSteps:
-        region === "footer" || region === "stepFooter"
-          ? undefined
-          : payload.preloadedSteps,
-    };
-
-    if (
-      previousPayload !== null &&
-      previousSelection !== null &&
-      arePresentedTrayRegionPayloadsEquivalent(
-        region,
-        previousPayload,
-        nextPayload,
-      )
-    ) {
-      return previousSelection;
-    }
-
-    previousPayload = nextPayload;
-    previousSelection = nextPayload;
-    return nextPayload;
-  };
-};
-
-// Keep the shell-facing region elements stable while the latest committed
-// payload flows through a small external store. This removes wrapper/context
-// reconstruction from the presenter's hot path without changing the payload
-// ordering used by Tray's render snapshot barrier.
-const PresentedTrayRegion = ({
-  store,
-  region,
-  assignmentId,
-}: {
-  store: PresentedTrayPayloadStore;
-  region: PresentedTrayRegionName;
-  assignmentId: number;
-}) => {
-  const selectRegion = useMemo(
-    () => createPresentedTrayRegionSelector(region),
-    [region],
-  );
-  const getRegionSnapshot = useCallback(
-    () => selectRegion(store.getSnapshot()),
-    [selectRegion, store],
-  );
-  const payload = useSyncExternalStore(
-    store.subscribe,
-    getRegionSnapshot,
-    getRegionSnapshot,
-  );
-
-  const notifyContentCommitted = useContext(TrayContentCommitContext);
-  const notifyRef = useRef(notifyContentCommitted);
-  notifyRef.current = notifyContentCommitted;
-
-  // New step content mounts in this region's commit; ask the sheet to
-  // measure it now so the target height is ready before the frame.
-  useLayoutEffect(() => {
-    if (region === "content" && payload.content != null) {
-      // report the generation of the payload this region rendered
-      notifyRef.current?.(store.getSnapshot().transitionContract?.generation);
-    }
-  }, [payload.content, payload.trayId, region, store]);
-
-  const headerTransitionValue = useMemo(
-    () => ({
-      stepKey: payload.trayId,
-      skipEntering: payload.isFirstRender,
-      fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
-    }),
-    [payload.fullScreenBoundaryExit, payload.isFirstRender, payload.trayId],
-  );
-
-  let regionNode: React.ReactNode = null;
-
-  if (region === "header" && payload.header && payload.preloadCapable === true) {
-    regionNode = (
-      <TrayScopeProvider value={payload.rootTrayId}>
-        <TrayPreloadingHeader
-          current={{
-            trayId: payload.trayId,
-            header: payload.header,
-            stepOptions: payload.stepOptions,
-            fullScreen: payload.fullScreen,
-            fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
-            isFirstRender: payload.isFirstRender,
-          }}
-          preloaded={payload.preloadedSteps ?? NO_PRELOADED_STEPS}
-        />
-      </TrayScopeProvider>
-    );
-  } else if (region === "header" && payload.header) {
-    regionNode = (
-      <TrayScopeProvider value={payload.rootTrayId}>
-        <TrayStepOptionsProvider value={payload.stepOptions}>
-          <TrayStepContent
-            stepKey={
-              payload.fullScreen ? "fullscreen-header" : "fixed-header"
-            }
-            scale={false}
-            fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
-            skipEntering={payload.isFirstRender}
-          >
-            <TrayHeaderTransitionProvider value={headerTransitionValue}>
-              {payload.header}
-            </TrayHeaderTransitionProvider>
-          </TrayStepContent>
-        </TrayStepOptionsProvider>
-      </TrayScopeProvider>
-    );
-  }
-
-  if (
-    region === "content" &&
-    payload.content != null &&
-    payload.preloadCapable === true
-  ) {
-    regionNode = (
-      <TrayScopeProvider value={payload.rootTrayId}>
-        <TrayPreloadingContent
-          current={{
-            trayId: payload.trayId,
-            content: payload.content,
-            stepOptions: payload.stepOptions,
-            fullScreen: payload.fullScreen,
-            fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
-            isFirstRender: payload.isFirstRender,
-          }}
-          preloaded={payload.preloadedSteps ?? NO_PRELOADED_STEPS}
-        />
-      </TrayScopeProvider>
-    );
-  } else if (region === "content" && payload.content != null) {
-    regionNode = (
-      <TrayScopeProvider value={payload.rootTrayId}>
-        <TrayStepOptionsProvider value={payload.stepOptions}>
-          <TrayStepContent
-            stepKey={payload.trayId}
-            scale={payload.stepOptions.scale}
-            anchorScaleToTop={payload.fullScreen}
-            fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
-            skipEntering={payload.isFirstRender}
-          >
-            {payload.content}
-            <TrayContentFooterSlot trayId={payload.trayId} />
-          </TrayStepContent>
-        </TrayStepOptionsProvider>
-      </TrayScopeProvider>
-    );
-  }
-
-  if (region === "footer" && payload.footer) {
-    regionNode = (
-      <TrayScopeProvider value={payload.rootTrayId}>
-        <TrayStepOptionsProvider value={payload.stepOptions}>
-          {payload.footer}
-        </TrayStepOptionsProvider>
-      </TrayScopeProvider>
-    );
-  }
-
-  if (region === "stepFooter") {
-    regionNode = (
-      <TrayScopeProvider value={payload.rootTrayId}>
-        <TrayStepOptionsProvider value={payload.stepOptions}>
-          <TrayStepFooterLayers
-            skipEntering={payload.isFirstRender}
-            fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
-          />
-        </TrayStepOptionsProvider>
-      </TrayScopeProvider>
-    );
-  }
-
-  return profileTrayRegion(
-    `tray-region:${payload.trayId}:${region}`,
-    regionNode,
-    {
-      region,
-      rootTrayId: payload.rootTrayId,
-      trayId: payload.trayId,
-      assignmentId,
-    },
-  );
-};
-
-// render one resolved payload through the animated shell and content layers
+// one resolved payload through the animated shell and content layers
 const PresentedTray = ({
   payload,
   assignmentId,
@@ -430,15 +69,10 @@ const PresentedTray = ({
 
   const stepFooterStore = stepFooterStoreRef.current.store;
 
-  // Publish after the host commit. Regions therefore never observe a payload
-  // that the animated shell has not committed, which preserves close and
-  // fullscreen transition ordering. Closing hosts intentionally retain their
-  // last visible region payload; the Tray controller owns the close snapshot
-  // and clears it when the native close lifecycle completes.
+  // publish after the host commit so regions never see a payload the shell has not committed, closing hosts keep their last payload
   useProfiledTrayLayoutEffect("PresentedTray.publishPayload", () => {
     if (payload.visible) {
-      // place the step's footer first so its new place renders in the same
-      // commit as the step's regions
+      // place the step's footer first so it renders in the same commit as the step's regions
       if (payload.stepFooterKey !== undefined) {
         stepFooterStore.commit(payload);
       }
@@ -450,7 +84,7 @@ const PresentedTray = ({
   const hasHeader = Boolean(payload.header);
   const hasContent = payload.content != null;
   const hasFooter = Boolean(payload.footer);
-  // fixed per registration: the tray authors footers per step
+  // fixed per registration, the tray renders footers per step
   const hasStepFooterLayer = payload.stepFooterKey !== undefined;
 
   const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(

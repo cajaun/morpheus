@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 
-// separators stay opinionated because they are part of the tray chrome language
+// separators carry fixed styling as part of the tray chrome
 export const TraySeparator: React.FC<{
   style?: StyleProp<ViewStyle>;
   className?: string;

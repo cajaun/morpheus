@@ -5,13 +5,11 @@ export type TrayFooterProps = {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   className?: string;
-  // Inside a Tray.Step, consecutive steps whose footers share an id keep one
-  // footer on screen (only its contents update). Without an id the footer
-  // belongs to its step and enters and leaves with that step's content.
+  // inside Tray.Step, consecutive steps sharing an id keep one footer on screen, without an id the footer enters and leaves with its step
   id?: string;
 };
 
-// footer is a semantic wrapper because the shell renders it on a separate layer
+// a semantic wrapper, the shell renders footers on their own layer
 export const TrayFooter: React.FC<TrayFooterProps> = ({
   children,
   style,

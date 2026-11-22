@@ -24,9 +24,7 @@ type NavigationActions = Pick<
   | "requestPageTransition"
 >;
 
-// Native keyboard visibility is owned by the focused input. For a sheet to
-// sheet keyboard transition, transfer that ownership before replacing the
-// current step subtree so iOS never observes a no-first-responder interval.
+// the focused input owns keyboard visibility, so a keyboard handoff transfers it before the step subtree swaps
 const shouldPrepareKeyboardHandoff = (
   state: TrayHostStateValue,
   nextIndex: number,
@@ -51,9 +49,7 @@ const shouldPrepareKeyboardHandoff = (
   );
 };
 
-// Warm the native keyboard path from navigation intent. This must happen
-// before the step commit so the first regular-to-keyboard transition does not
-// pay the controller startup cost after the new step has mounted.
+// warm the native keyboard from navigation intent before the step commit
 const shouldAnticipateKeyboard = (
   state: TrayHostStateValue,
   nextIndex: number,
@@ -78,7 +74,7 @@ const shouldAnticipateKeyboard = (
   );
 };
 
-// navigation commands own stack changes and transition contract creation
+// navigation commands own stack changes and transition contracts
 export const createTrayRuntimeNavigationActions = ({
   getState,
   setState,

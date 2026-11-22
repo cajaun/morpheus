@@ -8,8 +8,7 @@ export type KeyboardSheetTransitionIntent = {
   leavesKeyboard: boolean;
 };
 
-// Resolve keyboard ownership once from the immutable transition descriptor so
-// the shell, content, and sticky host cannot drift into different policies.
+// resolve keyboard ownership once from the transition descriptor so shell, content and sticky host share one policy
 export const resolveKeyboardSheetTransitionIntent = (
   transition: TrayTransitionContract | null | undefined,
 ): KeyboardSheetTransitionIntent => {
@@ -33,9 +32,7 @@ export const resolveKeyboardSheetTransitionIntent = (
   };
 };
 
-// Keyboard handoff is a sheet-to-sheet step change where either endpoint owns
-// the keyboard. Fullscreen boundaries deliberately stay on their existing
-// transition clock and are not classified by this helper.
+// a keyboard handoff is a sheet-to-sheet step change where either endpoint owns the keyboard, fullscreen boundaries stay on their own clock
 export const isKeyboardAwareSheetStepTransition = (
   transition: TrayTransitionContract | null | undefined,
 ) => {

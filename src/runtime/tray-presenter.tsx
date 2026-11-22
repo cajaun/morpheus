@@ -19,8 +19,7 @@ import {
   type PresentedTrayRenderer,
 } from "./presenter";
 
-// resolve runtime stack entries into root and nested host groups
-// resolve runtime stack entries into root and nested host presentations
+// runtime stack entries resolved into root and nested host presentations
 export const TrayPresenter: React.FC<{
   renderHost: PresentedTrayRenderer;
 }> = ({ renderHost }) => {

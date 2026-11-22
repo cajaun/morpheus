@@ -7,7 +7,7 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 
-// render one mounted page layer during idle or transition windows
+// one mounted page layer during idle or transition windows
 export const TrayPagesScene: React.FC<{
   children: React.ReactNode;
   index: number;
@@ -18,7 +18,7 @@ export const TrayPagesScene: React.FC<{
   const animatedStyle = useAnimatedStyle(
     () => {
       const offscreenOffset = viewportWidth.value / 3;
-      // fade each page with the same clock that moves it
+      // each page fades on the clock that moves it
       const pageProgress = interpolate(
         progress.value,
         [index - 1, index, index + 1],

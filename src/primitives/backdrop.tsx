@@ -7,7 +7,7 @@ import { Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ABSOLUTE_FILL, BACKDROP_OPACITY } from "../core/constants";
 
-// backdrop input blocking is separate from backdrop opacity on purpose
+// input blocking and opacity are separate backdrop concerns
 type BackdropProps = {
   onTap: () => void;
   isRendered: boolean;

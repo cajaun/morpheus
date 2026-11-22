@@ -3,7 +3,7 @@ import { describe, expect, it } from "@jest/globals";
 import TestRenderer, { act } from "react-test-renderer";
 import { useTrayDragStyle } from "../use-tray-drag-style";
 
-// probe the composed transform without starting a native animation
+// the composed transform without a native animation
 jest.mock("react-native-reanimated", () => {
   const Reanimated = jest.requireActual("react-native-reanimated/mock");
 

@@ -7,7 +7,7 @@ import type {
 } from "../../runtime/types";
 export type { KeyboardTransitionMode } from "../../runtime/types";
 
-// describe the shell payload after the presenter resolves a step
+// shell payload after the presenter resolves a step
 export type TrayProps = {
   assignmentId?: number;
   prepared?: boolean;
@@ -22,9 +22,9 @@ export type TrayProps = {
   footer?: React.ReactNode;
   trayId?: string;
   keyboardAware?: boolean;
-  /** @internal Registration-wide keyboard motion capability. */
+  /** @internal registration-wide keyboard motion capability */
   keyboardStickyCapable?: boolean;
-  /** @internal Registration-wide fullscreen boundary motion capability. */
+  /** @internal registration-wide fullscreen boundary motion capability */
   fullScreenMotionCapable?: boolean;
   fullScreen?: boolean;
   fullScreenBackgroundScale?: number;
@@ -47,12 +47,12 @@ export type TrayRef = {
   isActive: () => boolean;
 };
 
-// lease one concrete sheet endpoint so fullscreen geometry cannot become sheet layout authority
+// lease one sheet endpoint so fullscreen geometry never becomes sheet layout authority
 export type TraySheetFrame = {
   endpointKey: string;
   generation: number;
   totalHeight: number;
-  // body height is captured with the frame so the inner viewport can be synchronously bounded before its animated boundary style runs
+  // body height captured with the frame so the inner viewport bounds before its animated style runs
   contentHeight: number;
 };
 

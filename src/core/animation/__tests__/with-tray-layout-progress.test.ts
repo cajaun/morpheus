@@ -1,4 +1,4 @@
-// verify layout progress follows the supplied animation clock
+// layout progress follows the supplied animation clock
 import { describe, expect, it, jest } from "@jest/globals";
 import type {
   AnimatableValue,
@@ -18,10 +18,10 @@ jest.mock("react-native-reanimated", () => {
   };
 });
 
-// create the shared progress value used by the animation wrapper
+// the shared progress value the animation wrapper writes
 const shared = (value: number) => ({ value }) as SharedValue<number>;
 
-// create a controllable geometry animation for progress assertions
+// a controllable geometry animation for progress assertions
 const createGeometryAnimation = () => {
   let target = 70;
   let finished = false;

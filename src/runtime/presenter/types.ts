@@ -6,8 +6,7 @@ import type {
   TrayTransitionOptions,
 } from "../types";
 
-// describe resolved payloads after runtime state becomes presentable shell props
-// A step kept rendered, hidden, so moving to it does not mount it.
+// a step kept rendered and hidden so moving to it mounts nothing
 export type PresentedPreloadedStep = {
   trayId: string;
   header: ReactNode;
@@ -19,18 +18,14 @@ export type PresentedTray = {
   rootTrayId: string;
   trayId: string;
   keyboardAware?: boolean;
-  // Capabilities are fixed for a registration so optional motion hosts never
-  // switch component types during a step transition.
+  // capabilities are fixed per registration so motion hosts never switch component types mid-transition
   keyboardStickyCapable?: boolean;
   fullScreenMotionCapable?: boolean;
   stepOptions: ResolvedTrayStepOptions;
   header: ReactNode;
   content: ReactNode;
   footer: ReactNode;
-  // The footer of the current step when the tray authors footers per step
-  // (any Tray.Footer inside a Tray.Step). It renders in keyed layers: a new
-  // key enters and the old one leaves with the step's content; the same key
-  // stays on screen. `footer` above is then null.
+  // footer of the current step for trays with step footer layers, footer above is then null
   stepFooter?: ReactNode;
   stepFooterKey?: string | null;
   fullScreenBoundaryExit: boolean;
@@ -49,10 +44,9 @@ export type PresentedTray = {
   stackIndex: number;
   visible: boolean;
   interactive: boolean;
-  // Fixed per registration: the tray has at least one preload step, so its
-  // content renders as keyed layers that a preloaded step can be reused from.
+  // fixed per registration, content renders as keyed layers a preloaded step reuses
   preloadCapable?: boolean;
-  // Steps currently kept rendered, hidden (the next step, when it preloads).
+  // steps kept rendered and hidden
   preloadedSteps?: readonly PresentedPreloadedStep[];
 };
 
@@ -61,9 +55,7 @@ export type TrayHostSlot = {
   payload: PresentedTray | null;
   visible: boolean;
   interactive: boolean;
-  // A prepared slot owns a mounted host but is not part of the presented stack.
-  // It is reused for the next root tray instead of mounting the controller on
-  // the trigger's critical path.
+  // a prepared slot owns a mounted host outside the presented stack, reused by the next root tray
   prepared?: boolean;
 };
 

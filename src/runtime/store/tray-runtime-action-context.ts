@@ -1,4 +1,4 @@
-// define the services shared by runtime action modules
+// services shared by the runtime action modules
 import type {
   TrayHostActionsValue,
   TrayHostStateValue,

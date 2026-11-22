@@ -3,7 +3,7 @@ import { useTrayDragStyle } from "./use-tray-drag-style";
 import { useTrayFrameStyles } from "./use-tray-frame-styles";
 import { useTrayVisibilityStyles } from "./use-tray-visibility-styles";
 
-// collect shell motion styles so the view tree reads one animation contract
+// one animation contract for the shell view tree
 export const useTrayAnimatedStyles = ({
   translateY,
   contentHeight,

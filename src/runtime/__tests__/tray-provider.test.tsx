@@ -24,7 +24,7 @@ jest.mock("react-native-keyboard-controller", () => ({
   KeyboardProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-// tests isolate runtime behavior by replacing the animated shell with a dumb host
+// a dumb host replaces the animated shell so runtime behaviour stays isolated
 jest.mock("../../core/tray", () => {
   const ReactNative = require("react-native");
 
@@ -72,20 +72,20 @@ let activeRenderer: TestRenderer.ReactTestRenderer | null = null;
 let rerenderNavigation: (() => void) | null = null;
 let navigationActionsRenderCount = 0;
 
-// test spies surface hook state without coupling assertions to rendered text
+// spies surface hook state without asserting on rendered text
 const HostSpy = () => {
   latestHost = useTrayHost();
   return null;
 };
 
-// expose navigation state so assertions can inspect it
+// navigation state for assertions
 const FlowSpy = () => {
   latestNavigation = useTrayNavigation();
   latestNavigationState = useTrayNavigationState();
   return null;
 };
 
-// rerender a navigation consumer without changing tray state
+// re-render a navigation consumer without changing tray state
 const NavigationRerenderProbe = () => {
   const [, setRevision] = useState(0);
   rerenderNavigation = () => setRevision((revision) => revision + 1);
@@ -93,14 +93,14 @@ const NavigationRerenderProbe = () => {
   return null;
 };
 
-// action-only consumers should not subscribe to step state changes
+// action-only consumers stay unsubscribed from step state
 const NavigationActionsProbe = () => {
   navigationActionsRenderCount += 1;
   latestNavigationActions = useTrayNavigationActions();
   return null;
 };
 
-// collect rendered host nodes without depending on visual content
+// rendered host nodes without depending on visual content
 const getRenderedTrayHosts = () =>
   activeRenderer!.root.findAll(
     (node) =>
@@ -108,7 +108,7 @@ const getRenderedTrayHosts = () =>
       node.props.testID === "tray-host",
   );
 
-// create a declarative step for provider navigation scenarios
+// a declarative step for provider navigation scenarios
 const step = (key: string, options?: TrayStepOptions) => (
   <Tray.Step key={key} options={options}>
     <Tray.Body>
@@ -484,7 +484,7 @@ describe("TrayProvider runtime", () => {
       latestHost!.openTray("beta");
     });
 
-    // beta waits in pending state while alpha owns the visible closing host
+    // beta waits pending while alpha owns the closing host
     expect(getRenderedTrayHosts().length).toBeLessThanOrEqual(2);
     expect(
       getRenderedTrayHosts().some(
@@ -518,7 +518,7 @@ describe("TrayProvider runtime", () => {
 
     const renderedHosts = getRenderedTrayHosts();
 
-    // replacement host should not mount until alpha reports close completion
+    // the replacement host waits for alpha's close completion
     expect(renderedHosts).toHaveLength(1);
     expect(renderedHosts.find((host) => host.props.rootTrayId === "alpha")?.props.visible).toBe(false);
     expect(renderedHosts.find((host) => host.props.rootTrayId === "beta")).toBeUndefined();

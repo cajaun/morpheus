@@ -20,7 +20,7 @@ import {
   TRAY_HEADER_PADDING_TOP,
 } from "../core/constants";
 
-// header spacing is centralized so tray surfaces share one visual grid
+// header spacing lives here so tray surfaces share one visual grid
 export const TrayHeader: React.FC<{
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -60,9 +60,7 @@ export const TrayHeader: React.FC<{
   );
 };
 
-// HeaderRow owns the positional controls while the library owns their shared
-// transition. A left control centers the title; a right control never changes
-// title placement.
+// the row positions controls and the library animates them, a left control centers the title and a right control leaves it in place
 export const TrayHeaderRow: React.FC<{
   children: React.ReactNode;
   left?: React.ReactNode;
@@ -138,8 +136,7 @@ const HeaderTransitionRow: React.FC<HeaderTransitionRowProps> = ({
   );
 };
 
-// Standardized positional control so every tray header shares the same hit
-// target regardless of what the control does.
+// one positional control so every header shares the same hit target
 export const TrayHeaderButton: React.FC<
   Omit<PressableProps, "children" | "style"> & {
     children: React.ReactNode;

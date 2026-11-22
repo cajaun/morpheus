@@ -1,7 +1,7 @@
 import type { TrayTransitionOptions } from "../../runtime/types";
 import type { TraySheetFrame } from "../types/tray";
 
-// share animated style contracts across frame drag and visibility hooks
+// animated style contracts shared by the frame, drag and visibility hooks
 type AnimatedValue<T> = {
   value: T;
 };

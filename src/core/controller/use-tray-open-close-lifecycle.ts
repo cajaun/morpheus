@@ -35,7 +35,7 @@ import {
 
 type Params = TrayLifecycleParams;
 
-// coordinate opening and closing springs with measurement and lifecycle state
+// opening and closing springs coordinated with measurement and lifecycle state
 export const useTrayOpenCloseLifecycle = ({
   visible,
   rootTrayId,
@@ -103,7 +103,7 @@ export const useTrayOpenCloseLifecycle = ({
   }, [originGeometryLeaseRef]);
 
   const doOpenSpring = useCallback(() => {
-    // refs beat react state here because layout callbacks can land between renders
+    // refs instead of React state because layout callbacks land between renders
     const nextFooterHeight =
       latestMeasuredFooterHeightRef.current > 0
         ? latestMeasuredFooterHeightRef.current
@@ -140,7 +140,7 @@ export const useTrayOpenCloseLifecycle = ({
 
     onTransitionStarted?.({ owner: "tray-open" });
 
-    // the ui thread spring owns the visible open transition from travel to zero
+    // the UI thread spring owns the visible open from travel to zero
     runOnUI(
       (
         nextOpenTravel: number,
@@ -151,14 +151,14 @@ export const useTrayOpenCloseLifecycle = ({
 
         shared.footerHeight.value = nextFooterHeightValue;
         shared.animationTravel.value = nextOpenTravel;
-        // trigger expansion starts already at translate zero and reveals through origin progress
+        // trigger expansion starts at translate zero and reveals through origin progress
         shared.translateY.value = expandFromTrigger ? 0 : nextOpenTravel;
         shared.originProgress.value = expandFromTrigger ? 0 : 1;
         shared.surfaceOpacity.value = 1;
         shared.active.value = true;
 
         if (expandFromTrigger) {
-          // trigger origin open keeps explicit geometry until a later sheet change requests layout ownership
+          // a trigger-origin open keeps explicit geometry until a later sheet change takes layout ownership
           shared.originProgress.value = withTiming(
             1,
             { duration: EXPAND_FROM_TRIGGER_OPEN_DURATION },
@@ -183,7 +183,7 @@ export const useTrayOpenCloseLifecycle = ({
           TRAY_SPRING_CONFIG,
           (finished) => {
             if (finished) {
-              // normal sheet open enables later morphs after the travel spring lands
+              // a normal sheet open enables later morphs once the travel spring lands
               scheduleOnRN(
                 markTrayOpenFinished,
                 rootTrayId ?? trayId ?? "unknown",
@@ -218,7 +218,7 @@ export const useTrayOpenCloseLifecycle = ({
 
   useProfiledTrayLayoutEffect("useTrayOpenCloseLifecycle.visibility", () => {
     if (visible) {
-      // hide the shell until we know the geometry that defines the spring travel
+      // hide the shell until the geometry that defines the spring travel is known
       shared.translateY.value = SCREEN_HEIGHT;
       shared.originProgress.value =
         transition?.open === "expandFromTrigger" ? 0 : 1;
@@ -238,18 +238,16 @@ export const useTrayOpenCloseLifecycle = ({
 
       markTrayOpenStarted(rootTrayId ?? trayId ?? "unknown", trayId);
       showLatestSnapshot();
-      // measurement must restart after snapshot publication because content identity may change
+      // measurement restarts after snapshot publication because content identity may change
       beginOpenMeasurement(!!footer);
       if (isTrayDebugLoggingEnabled()) {
         log("OPEN — waiting for measurement");
       }
     } else {
       setIsSurfaceReady(true);
-      // Closing is a terminal snapshot boundary. If a step update is still
-      // waiting for the passive content publication, commit the latest props
-      // before the shell starts moving so the previous step cannot reappear.
+      // closing is a terminal snapshot boundary, so commit the latest props before the shell moves and the previous step cannot reappear
       showLatestSnapshot();
-      // close travel must never be shorter than the current drag offset
+      // close travel covers at least the current drag offset
       const currentTranslateY = shared.translateY.value;
       const closeTravel = resolveTrayCloseTravel(
         resolveClosedTranslateY,
@@ -282,7 +280,7 @@ export const useTrayOpenCloseLifecycle = ({
         currentTranslateY < 8;
 
       if (shouldReverseExpand) {
-        // reverse the origin progress instead of running a vertical close spring
+        // reverse the origin progress instead of a vertical close spring
         shared.translateY.value = 0;
         shared.originProgress.value = withTiming(
           0,
@@ -331,7 +329,7 @@ export const useTrayOpenCloseLifecycle = ({
         },
       );
     }
-    // visibility is the boundary for open and close work eslint-disable-next-line react-hooks/exhaustive-deps
+    // visibility bounds open and close work
   }, [visible]);
 
   useEffect(() => {
@@ -339,7 +337,7 @@ export const useTrayOpenCloseLifecycle = ({
       return;
     }
 
-    // open once the shell has enough information to avoid snapping after paint
+    // open once the shell knows enough to avoid a snap after paint
     log("PENDING OPEN — all measurements ready", {
       footer:
         latestMeasuredFooterHeightRef.current > 0

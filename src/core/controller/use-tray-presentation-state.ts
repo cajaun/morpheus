@@ -6,21 +6,19 @@ import {
 } from "react-native-reanimated";
 import { HORIZONTAL_MARGIN, SCREEN_HEIGHT } from "../constants";
 
-// presentation state owns the shared values read across gesture layout and lifecycle code
 type Params = {
   visible: boolean;
   renderedFooter?: ReactNode;
   presentationFullScreen: boolean;
 };
 
-// own shared geometry values consumed by gesture and animation worklets
+// shared geometry values read by gesture, layout and lifecycle worklets
 export const useTrayPresentationState = ({
   visible,
   renderedFooter,
   presentationFullScreen,
 }: Params) => {
-  // Sheets sit 8pt above the screen edge so the system home indicator can
-  // remain over the surface, matching the reference tray.
+  // sheets sit 8pt above the screen edge so the home indicator stays over the surface
   const sheetBottomInset = HORIZONTAL_MARGIN;
 
   const translateY = useSharedValue(SCREEN_HEIGHT);
@@ -36,7 +34,7 @@ export const useTrayPresentationState = ({
   const originTargetContentHeight = useSharedValue(0);
 
   useEffect(() => {
-    // footer presence is shared with worklets so spacer height can update off the js thread
+    // worklets read footer presence so the spacer height updates off the JS thread
     hasFooter.value = !!renderedFooter;
   }, [hasFooter, renderedFooter]);
 
@@ -46,8 +44,7 @@ export const useTrayPresentationState = ({
         return measuredHeight;
       }
 
-      // fullscreen owns the viewport; keyboard-aware sheet motion is handled
-      // by the native sticky host, not by fullscreen geometry.
+      // fullscreen owns the viewport, the native sticky host handles keyboard-aware sheet motion
       return Math.max(0, SCREEN_HEIGHT - footerHeight.value);
     },
     [footerHeight, presentationFullScreen],
@@ -55,7 +52,7 @@ export const useTrayPresentationState = ({
 
   const totalHeight = useDerivedValue(() => {
     if (presentationFullScreen) {
-      // fullscreen dismissal and drag thresholds use viewport height instead of content height
+      // fullscreen dismissal and drag thresholds use the viewport height
       return SCREEN_HEIGHT;
     }
 
@@ -82,7 +79,7 @@ export const useTrayPresentationState = ({
       return 0;
     }
 
-    // progress remains normalized even when the user drags past the closed position
+    // progress stays normalized when a drag passes the closed position
     const travel = Math.min(
       Math.max(translateY.value, 0),
       animationTravel.value,
@@ -101,7 +98,7 @@ export const useTrayPresentationState = ({
         return -1;
       }
 
-      // once open content height changes should update the close travel baseline
+      // an open tray's content height sets the close travel baseline
       return totalHeight.value;
     },
     (nextTravel, previousTravel) => {

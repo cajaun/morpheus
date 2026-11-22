@@ -1,16 +1,9 @@
-// Keep diagnostics opt-in. Set this to true only for a profiling run.
-export const TRAY_INSTRUMENTATION_ENABLED = true;
+// diagnostics stay opt-in, true for a profiling run
+export const TRAY_INSTRUMENTATION_ENABLED = false;
 
-// allow diagnostics only in development when the feature flag is enabled
+// diagnostics run in development with the flag on
 export const isTrayInstrumentationEnabled = () =>
   __DEV__ && TRAY_INSTRUMENTATION_ENABLED;
 
-// Measure newly committed step content synchronously in the commit that
-// mounts it (Fabric) instead of waiting for the native onLayout round trip.
-// Disabled: the sheet morph is a Reanimated layout transition that starts
-// only when a React commit changes native layout. Writing the target height
-// early applies it before that commit lands, so the transition (and the
-// step's entering animation, which waits on its clock) never starts. Only
-// enable once geometry is driven by shared values instead of layout
-// transitions.
+// off because an early synchronous height lands before the commit that starts the sheet's layout transition, enable once geometry runs on shared values
 export const TRAY_SYNC_CONTENT_MEASUREMENT_ENABLED = false;

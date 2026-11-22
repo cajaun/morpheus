@@ -9,7 +9,7 @@ import {
 } from "../../constants";
 import { useTrayVisibilityStyles } from "../use-tray-visibility-styles";
 
-// probe reveal and footer grid policy without native interpolation timing
+// reveal and footer grid policy without native interpolation timing
 jest.mock("react-native-reanimated", () => {
   const Reanimated = jest.requireActual("react-native-reanimated/mock");
 
@@ -24,8 +24,7 @@ jest.mock("react-native-reanimated", () => {
   };
 });
 
-// useAnimatedStyle is mocked to return the plain style object, so read every
-// style as a plain record (Reanimated types it as an opaque handle)
+// the useAnimatedStyle mock returns plain style objects, read as plain records
 type VisibilityStyles = {
   [K in keyof ReturnType<typeof useTrayVisibilityStyles>]: Record<
     string,
@@ -33,10 +32,10 @@ type VisibilityStyles = {
   >;
 };
 
-// create a minimal shared value for visibility style probes
+// a minimal shared value for visibility style probes
 const shared = <T,>(value: T) => ({ value });
 
-// render visibility styles with one origin configuration
+// visibility styles with one origin configuration
 const renderVisibilityStyles = ({
   origin,
 }: {

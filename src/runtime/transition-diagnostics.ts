@@ -1,10 +1,10 @@
-// turn runtime endpoints into stable diagnostic records
+// runtime endpoints as stable diagnostic records
 import type {
   TrayPresentationEndpoint,
   TrayTransitionContract,
 } from "./types";
 
-// reduce an endpoint to fields useful in diagnostic output
+// an endpoint reduced to its diagnostic fields
 export const describeTrayEndpoint = (
   endpoint: TrayPresentationEndpoint | null | undefined,
 ) =>
@@ -18,7 +18,7 @@ export const describeTrayEndpoint = (
       }
     : null;
 
-// reduce a transition contract to stable diagnostic output
+// a transition contract reduced to stable diagnostic output
 export const describeTrayTransition = (
   transition: TrayTransitionContract | null | undefined,
 ) =>

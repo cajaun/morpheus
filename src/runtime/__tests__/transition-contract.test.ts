@@ -12,7 +12,7 @@ import {
   resolveTrayAnimationContract,
 } from "../presenter/animation-contract";
 
-// build endpoints with explicit step and presentation identity
+// endpoints with explicit step and presentation identity
 const endpoint = (
   stepIndex: number,
   mode: TrayPresentationEndpoint["mode"],
@@ -165,7 +165,7 @@ describe("tray transition contract", () => {
       generation: 8,
       reason: "nextStep",
       from: endpoint(0, "sheet"),
-      // the target page is not registered when the runtime first resolves the step boundary
+      // the target page registers after the runtime first resolves the step boundary
       to: endpoint(1, "fullScreen"),
     });
 

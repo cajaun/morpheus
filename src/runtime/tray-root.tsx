@@ -29,7 +29,7 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
   transition,
 }) => {
   const reactId = useId();
-  // explicit ids support deterministic tests and cross component references
+  // explicit ids support deterministic tests and cross-component references
   const trayId = useMemo(() => id ?? `tray-${reactId}`, [id, reactId]);
   const { registerTray, unregisterTray } = useTrayHostActions();
   const steps = useMemo(
@@ -38,7 +38,7 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
   );
   const registration = useMemo<TrayRegistration>(
     () => ({
-      // memoized registration preserves identity until authored tray inputs change
+      // the memoized registration keeps identity until authored inputs change
       steps,
       footer,
       dismissible,
@@ -48,20 +48,20 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
   );
 
   useProfiledTrayLayoutEffect("TrayRoot.registerTray", () => {
-    // register steps before paint so dynamic keys avoid an extra passive frame
+    // register before paint so dynamic keys skip an extra passive frame
     registerTray(trayId, registration);
   }, [registration, registerTray, trayId]);
 
   useEffect(
     () => () => {
-      // unmount should clear the registry entry even if the tray was active
+      // unmount clears the registry entry even for an active tray
       unregisterTray(trayId);
     },
     [trayId, unregisterTray],
   );
 
   return (
-    // scope lets triggers and navigation hooks resolve the nearest tray registration
+    // the scope lets triggers and navigation hooks find the nearest registration
     <TrayScopeProvider value={trayId}>{children}</TrayScopeProvider>
   );
 };

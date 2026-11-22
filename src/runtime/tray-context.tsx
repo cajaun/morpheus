@@ -1,4 +1,4 @@
-// reexport runtime hooks and contracts from one module
+// runtime hooks and contracts from one module
 export {
   TrayScopeProvider,
   TrayStoreProvider,

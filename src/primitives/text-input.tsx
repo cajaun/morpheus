@@ -16,16 +16,15 @@ import {
   markTrayStepKeyboardFocusRequested,
 } from "../telemetry/tray-step-timing";
 
-// The ref a TrayTextInput forwards: the underlying React Native TextInput.
+// the ref a TrayTextInput forwards, the underlying TextInput
 export type TrayTextInputRef = React.ComponentRef<typeof TextInput>;
 
-// Named explicitly so published type definitions do not depend on React
-// Native's internal TextInput instance type.
+// named so published types skip React Native's internal TextInput instance type
 type TrayTextInputComponent = React.ForwardRefExoticComponent<
   TextInputProps & React.RefAttributes<TrayTextInputRef>
 >;
 
-// wrap textinput so focus behavior participates in tray keyboard policy
+// a TextInput whose focus takes part in the tray keyboard policy
 export const TrayTextInput: TrayTextInputComponent = forwardRef<
   TrayTextInputRef,
   TextInputProps
@@ -35,7 +34,7 @@ export const TrayTextInput: TrayTextInputComponent = forwardRef<
     const trayId = useTrayScope();
     const { anticipateKeyboard, registerFocusable } = useTrayHostActions();
 
-    // forward the native input ref while keeping tray focus registration local
+    // forward the native input ref and keep tray focus registration local
     useImperativeHandle(forwardedRef, () => ref.current as TrayTextInputRef);
 
     useEffect(() => {
@@ -43,7 +42,7 @@ export const TrayTextInput: TrayTextInputComponent = forwardRef<
         return;
       }
 
-      // registration lets tray level close logic blur the active field before dismissal
+      // registration lets tray close logic blur the active field before dismissal
       return registerFocusable(trayId, ref);
     }, [registerFocusable, trayId]);
 
@@ -54,13 +53,13 @@ export const TrayTextInput: TrayTextInputComponent = forwardRef<
 
       anticipateKeyboard();
       markTrayStepKeyboardFocusRequested(trayId);
-      // autofocus is manual so keyboard anticipation can run before focus
+      // manual autofocus lets keyboard anticipation run before focus
       ref.current?.focus();
     }, [anticipateKeyboard, autoFocus, trayId]);
 
     const handleFocus = useCallback<NonNullable<TextInputProps["onFocus"]>>(
       (event) => {
-        // manual focus should follow the same pre keyboard path as autofocus
+        // manual focus follows the same pre-keyboard path as autofocus
         anticipateKeyboard();
         markTrayStepKeyboardFocus(trayId);
         props.onFocus?.(event);

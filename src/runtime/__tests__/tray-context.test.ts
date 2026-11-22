@@ -2,7 +2,7 @@ import { describe, expect, it } from "@jest/globals";
 import { DEFAULT_FULL_SCREEN_BACKGROUND_SCALE } from "../../core/constants";
 import { resolveTrayStepOptions } from "../tray-context";
 
-// probe runtime option normalization before presenter payload creation
+// runtime option normalization before presenter payload creation
 describe("resolveTrayStepOptions", () => {
   it("keeps fullscreen background scale neutral by default", () => {
     expect(resolveTrayStepOptions().shouldScaleBackground).toBe(false);

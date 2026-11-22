@@ -1,4 +1,4 @@
-// group static shell spacing so tray surfaces share one visual grid
+// static shell spacing shared by every tray surface
 export const HORIZONTAL_MARGIN = 8;
 export const BORDER_RADIUS = 40;
 export const BACKDROP_OPACITY = 1 / 3;
@@ -22,7 +22,7 @@ export const TRAY_FOOTER_PADDING_BOTTOM = 28;
 export const TRAY_SECTION_ACTION_GAP = TRAY_FOOTER_PADDING_TOP;
 export const TRAY_SECTION_ACTION_PADDING_BOTTOM = TRAY_FOOTER_PADDING_BOTTOM;
 export const TRAY_PRIMARY_BUTTON_HEIGHT = 50;
-// preserve the established two-point visual clearance above the keyboard
+// two-point clearance above the keyboard
 export const TRAY_KEYBOARD_GAP = 2;
 
 export const FULL_SCREEN_HEADER_HORIZONTAL_PADDING =

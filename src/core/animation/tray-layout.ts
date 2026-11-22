@@ -21,7 +21,7 @@ type TrayLayoutTransitionParams = {
   transitionLayoutStartedGeneration: SharedValue<number>;
   transitionCompletedGeneration: SharedValue<number>;
   morphProgress: SharedValue<number>;
-  // armed only for sheet steps that bring up or put away the keyboard
+  // armed for sheet steps that bring up or put away the keyboard
   keyboardGate?: TrayKeyboardGate;
   onConfigure?: (configuredAt: number, transitionGeneration: number) => void;
   onStart?: (startedAt: number, transitionGeneration: number) => void;
@@ -31,7 +31,7 @@ type TrayLayoutTransitionParams = {
 type GeometryKey = "originY" | "height" | "width";
 type GeometryAnimationMap = Partial<Record<GeometryKey, AnimationObject>>;
 
-// combine changing shell dimensions under one native transition clock
+// every changing shell dimension runs on one native transition clock
 export const createTrayLayoutTransition = ({
   transitionGeneration,
   transitionStartedAt,
@@ -53,12 +53,11 @@ export const createTrayLayoutTransition = ({
     "worklet";
 
     if (onConfigure) {
-      // configuration fires before native animation start so timing can split setup from motion
+      // configuration fires before the native animation starts so timing separates setup from motion
       scheduleOnRN(onConfigure, performance.now(), transitionGeneration);
     }
 
-    // an armed keyboard step is ready to move: let the keyboard start now so
-    // its start signal opens the gate this layout is about to wait on
+    // an armed keyboard step starts the keyboard now so its start signal opens the gate this layout waits on
     if (
       keyboardGate?.onLayoutReady &&
       transitionGeneration > 0 &&
@@ -68,7 +67,7 @@ export const createTrayLayoutTransition = ({
     }
 
     
-    // fullscreen boundaries are owned by usetrayboundarymotionstate native layout animation is intentionally reserved for ordinary sheet changes
+    // fullscreen boundaries belong to useTrayBoundaryMotionState, native layout animation serves sheet changes
     const animation = buildTransition(values);
     const geometryAnimations = animation.animations as unknown as
       GeometryAnimationMap;
@@ -97,7 +96,7 @@ export const createTrayLayoutTransition = ({
     const geometryAnimation = geometryAnimations[geometryClock.key];
 
     if (geometryAnimation !== undefined) {
-      // join changing geometry under one clock so the footer edge stays stable and the header morphs in sync with the body 
+      // changing geometry joins one clock so the footer edge holds and the header morphs with the body
       for (const candidate of geometryCandidates) {
         const candidateAnimation = geometryAnimations[candidate.key];
         const isGeometryClock = candidate.key === geometryClock.key;
@@ -172,14 +171,7 @@ type TrayLayoutWithoutResizeParams = {
   onComplete?: (finishedAt: number, transitionGeneration: number) => void;
 };
 
-// A sheet step change whose new step measures to the same height changes no
-// native layout, so the layout transition above never runs. It is the
-// participant that opens the content barrier, starts the shared clock and
-// completes the generation, so without it the step change never finishes:
-// the incoming content waits forever and the next navigation is blocked.
-// Run the same participant on morphProgress instead, with the sheet's own
-// duration and curve, so everything that follows the clock behaves exactly
-// as it would after a resize.
+// a step at an unchanged height gets no native layout transition, so this participant opens the content barrier, starts and completes the clock on morphProgress with the sheet's duration and curve
 export const startTrayLayoutWithoutResize = ({
   transitionGeneration,
   transitionStartedAt,

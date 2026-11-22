@@ -19,8 +19,7 @@ import {
 } from "../presenter/model";
 import type { PresentedTray, TrayHostSlot } from "../presenter/types";
 
-// probe presenter model decisions without mounting host slots
-// create a registered step node for presenter model tests
+// a registered step node for presenter model tests
 const step = (
   key: string,
   options?: TrayRegistration["steps"][number]["options"],
@@ -30,7 +29,7 @@ const step = (
   options,
 });
 
-// create a minimal presented payload for slot ordering tests
+// a minimal presented payload for slot ordering tests
 const presented = (rootTrayId: string): PresentedTray => ({
   rootTrayId,
   trayId: `${rootTrayId}-one`,
@@ -54,7 +53,7 @@ const presented = (rootTrayId: string): PresentedTray => ({
   interactive: true,
 });
 
-// create a host slot with explicit visibility and interaction state
+// a host slot with explicit visibility and interaction state
 const slot = (
   payload: PresentedTray | null,
   visible: boolean,

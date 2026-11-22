@@ -14,7 +14,7 @@ import type {
 import { createInitialTrayHostState } from "./tray-runtime-state";
 import { markTrayBoundaryRequested } from "../../telemetry/tray-boundary-timing";
 
-// create the external store that joins navigation state to lifecycle records
+// the external store joining navigation state to lifecycle records
 export const createTrayRuntimeStore = (
   initialDependencies: TrayRuntimeDependencies,
 ): TrayRuntimeStore => {
@@ -32,7 +32,7 @@ export const createTrayRuntimeStore = (
   };
 
   const emitChange = () => {
-    // external store subscribers need one notification after each state write
+    // subscribers get one notification per state write
     listeners.forEach((listener) => listener());
   };
 
@@ -45,7 +45,7 @@ export const createTrayRuntimeStore = (
       typeof nextState === "function" ? nextState(state) : nextState;
 
     if (resolvedState === state) {
-      // identical state skips subscriber work after no op actions
+      // identical state skips subscriber work
       return;
     }
 
@@ -60,9 +60,9 @@ export const createTrayRuntimeStore = (
         const refined = transitions.refineContract(resolvedState.lastTransition);
 
         if (refined !== false) {
-          // the descriptor is still provisional and may be refined in place
+          // a provisional descriptor can be refined in place
         } else {
-          // a sealed descriptor cannot be rewritten reissue the transition atomically so the lifecycle and presenter share one new identity
+          // a sealed descriptor is reissued atomically so lifecycle and presenter share one new identity
           const generation = allocateTransitionGeneration();
           const reissuedTransition = {
             ...resolvedState.lastTransition,

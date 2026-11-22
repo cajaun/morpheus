@@ -4,9 +4,7 @@ import TestRenderer, { act } from "react-test-renderer";
 import { Tray } from "../tray";
 import type { TrayTransitionContract } from "../../runtime/types";
 
-// Per-step transition values reach the step content through context, so a
-// step change re-renders the content's transition consumers in the same
-// render while the memoized sheet internals skip.
+// per-step transition values reach step content through context, the memoized sheet internals skip the step change
 const mockProbeRecords: Array<{
   generation: number | undefined;
   direction: number;
@@ -74,7 +72,7 @@ jest.mock("../animation/tray-layout", () => ({
   createTrayLayoutTransition: () => undefined,
 }));
 
-// Real animated styles are stable useAnimatedStyle handles; mirror that.
+// real animated styles are stable useAnimatedStyle handles, the mock mirrors that
 let mockAnimatedStyles: Record<string, unknown> = {
   footerSpacerStyle: {},
   trayLayoutStyle: {},
@@ -105,8 +103,7 @@ let mockController: unknown = null;
 jest.mock("../use-tray-controller", () => ({
   useTrayController: () => {
     if (mockController) {
-      // The real controller's layout handlers close over per-step state, so
-      // each render hands out new handler identities. Mirror that.
+      // the real controller hands out new layout handler identities per render, the mock mirrors that
       const controller = mockController as {
         handlers: Record<string, unknown>;
       };
@@ -239,14 +236,13 @@ describe("Tray shell transition values", () => {
       renderer!.update(element("two", contract(2, "backward", "two")));
     });
 
-    // the content consumer received the new clock and direction in this render
+    // the content consumer got the new clock and direction in this render
     expect(mockProbeRecords.length).toBeGreaterThan(recordsBefore);
     expect(mockProbeRecords[mockProbeRecords.length - 1]).toEqual({
       generation: 2,
       direction: -1,
     });
-    // the memoized sheet internals did not re-render for the step change
-    // (identity check; host props hold refs that are too large to diff)
+    // the memoized sheet internals skipped the step change, checked by identity
     expect(findContentMeasureView().props === propsBefore).toBe(true);
   });
 
@@ -279,7 +275,7 @@ describe("Tray shell transition values", () => {
     const propsBefore = findContentMeasureView().props;
     const lockedFrame = { height: 312 };
 
-    // the frame lock engages: only presentationFrameStyle changes
+    // the frame lock engages and presentationFrameStyle changes alone
     mockAnimatedStyles = { ...mockAnimatedStyles, presentationFrameStyle: lockedFrame };
     act(() => {
       renderer!.update(element());

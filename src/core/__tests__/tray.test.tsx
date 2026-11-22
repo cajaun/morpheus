@@ -3,7 +3,7 @@ import { describe, expect, it, jest } from "@jest/globals";
 import TestRenderer, { act } from "react-test-renderer";
 import { Tray } from "../tray";
 
-// probe shell rendering while native animation modules are replaced by stable hosts
+// shell rendering with native animation modules replaced by stable hosts
 const mockCloseHandler = jest.fn();
 const mockFooterLayoutHandler = jest.fn();
 const mockContentLayoutHandler = jest.fn();
@@ -42,7 +42,7 @@ jest.mock("react-native-keyboard-controller", () => ({
   },
 }));
 
-// exercise the opt-in synchronous content measurement path
+// the opt-in synchronous content measurement path
 jest.mock("../../telemetry/config", () => ({
   ...(jest.requireActual("../../telemetry/config") as object),
   TRAY_SYNC_CONTENT_MEASUREMENT_ENABLED: true,
@@ -223,7 +223,7 @@ describe("Tray", () => {
     expect(measure).toHaveBeenCalled();
     expect(mockContentLayoutHandler).not.toHaveBeenCalled();
 
-    // Fabric answers synchronously; the result flows through the onLayout path
+    // Fabric answers synchronously and the result flows through the onLayout path
     const callback = measure.mock.calls[0]![0] as (
       x: number,
       y: number,

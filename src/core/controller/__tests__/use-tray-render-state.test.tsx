@@ -6,7 +6,7 @@ import {
   useTrayRenderState,
 } from "../use-tray-render-state";
 
-// probe committed render snapshots without mounting the animated shell
+// committed render snapshots without mounting the animated shell
 describe("useTrayRenderState", () => {
   it("does not rerender when the latest snapshot is already committed", () => {
     const content = "content";

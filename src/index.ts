@@ -16,7 +16,7 @@ import { TrayNested } from "./runtime/tray-nested";
 import { TrayRoot } from "./runtime/tray-root";
 import { TrayStep } from "./runtime/tray-step";
 
-// centralize exports here so screens depend on one tray surface area
+// one export surface for screens
 export { TrayProvider } from "./core/tray-provider";
 export { useTrayOriginProgress } from "./core/tray-origin-progress";
 export { useTrayMorphProgress } from "./core/tray-morph-progress";
@@ -48,8 +48,7 @@ export type { TrayTextInputRef } from "./primitives/text-input";
 export type { TrayRootProps } from "./runtime/tray-root";
 export { useOptionalTrayPages, useTrayPages } from "./pages-context";
 
-// Typed by reference to each component so published type definitions stay
-// portable across React Native versions (no inlined internal types).
+// typed by reference to each component so published types stay portable across React Native versions
 type TrayNamespace = {
   Root: typeof TrayRoot;
   Nested: typeof TrayNested;
@@ -68,7 +67,7 @@ type TrayNamespace = {
   Step: typeof TrayStep;
 };
 
-// the namespace mirrors the mental model used by tray authors
+// the namespace mirrors how tray authors think about a tray
 export const Tray: TrayNamespace = {
   Root: TrayRoot,
   Nested: TrayNested,

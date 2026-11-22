@@ -63,9 +63,7 @@ const FULL_SCREEN_FOOTER_ORIGIN_CONTAINER_STYLE = {
   bottom: HORIZONTAL_MARGIN + TRAY_FOOTER_PADDING_BOTTOM,
 };
 
-// A tray with no fullscreen-capable step cannot enter the boundary transition
-// system. Keep its sheet geometry and interaction styles, without registering
-// the fullscreen boundary worklets used by the general animation hook.
+// a tray without fullscreen steps keeps sheet geometry and interaction styles and skips the fullscreen boundary worklets
 export const useTraySheetAnimatedStyles = ({
   translateY,
   contentHeight,

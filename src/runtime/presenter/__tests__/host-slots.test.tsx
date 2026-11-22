@@ -57,7 +57,7 @@ const HostNode = ({
     return () => {
       lifecycle.push(`unmount:${trayId}`);
     };
-    // This test tracks component lifetime, not prop updates.
+    // tracks component lifetime, not prop updates
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

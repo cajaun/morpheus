@@ -1,19 +1,14 @@
-import {
-  RefObject,
-  useEffect,
-  useRef,
-  type ReactNode,
-} from "react";
+import { RefObject, useEffect, useRef, type ReactNode } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import { markTrayStepSnapshotPublished } from "../../telemetry/tray-step-timing";
 import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import type { TrayTransitionContract } from "../../runtime/types";
+import { useContentSyncDebugLog } from "./use-content-sync-debug-log";
 import { isTrayDebugLoggingEnabled, log } from "../logger";
 import { describeTrayTransition } from "../diagnostics/tray-transition-diagnostics";
 import { isKeyboardAwareSheetStepTransition } from "../input/keyboard-transition";
 
-// this hook decides when new props should update the committed shell snapshot
 type Params = {
   visible: boolean;
   interactive: boolean;
@@ -81,7 +76,7 @@ type Params = {
   onPrepared?: (details: Record<string, unknown>) => void;
 };
 
-// decide when incoming props can replace the committed shell snapshot
+// decide when incoming props replace the committed shell snapshot
 export const useTrayContentSync = ({
   visible,
   interactive,
@@ -141,34 +136,29 @@ export const useTrayContentSync = ({
   const onSheetFramePreparedRef = useRef(onSheetFramePrepared);
   onSheetFramePreparedRef.current = onSheetFramePrepared;
 
-  // Sheet keyboard handoffs publish the incoming snapshot before paint. The
-  // passive effect below then only clears the latch instead of publishing a
-  // second copy of the same snapshot.
+  // sheet keyboard handoffs publish the incoming snapshot before paint, the passive effect then clears this latch
   const keyboardSnapshotPublishedRef = useRef<string | undefined>(undefined);
 
-  // prepare geometry before paint without publishing incoming react nodes
+  // prepare geometry before paint without publishing incoming React nodes
   useProfiledTrayLayoutEffect("useTrayContentSync.prepareVisibleContent", () => {
     if (!visible) {
       return;
     }
 
     if (justOpenedRef.current) {
-      // first open already prepared geometry through measurement callbacks
+      // first open prepared geometry through measurement callbacks
       justOpenedRef.current = false;
       return;
     }
 
-    // The measurement hook updates these JS refs alongside the shared values.
-    // Prefer the refs here so preparation does not synchronously fetch those
-    // measurements from the UI runtime. Keep the shared-value fallback for
-    // callers that provide the hook's minimal test/compatibility shape.
+    // JS refs mirror the shared values so preparation never reads from the UI runtime, the shared values serve callers with the minimal shape
     const measuredContentHeightValue =
       latestMeasuredContentHeightRef?.current ?? measuredContentHeight.value;
     const measuredFooterHeightValue =
       latestMeasuredFooterHeightRef?.current ?? measuredFooterHeight.value;
 
     if (renderedTrayId !== trayId || renderedFullScreen !== !!fullScreen) {
-      // preserve source visuals until native geometry starts then let the canonical layout worklet advance this same value to one
+      // source visuals hold until native geometry starts, then the layout worklet advances this value to one
       morphProgress.value = 0;
     }
 
@@ -189,7 +179,7 @@ export const useTrayContentSync = ({
       });
     }
 
-    // retain the last footer height when detached layout briefly reports zero during a boundary
+    // keep the last footer height when the detached layout reports zero during a boundary
     const nextFooterHeight =
       measuredFooterHeightValue > 0
         ? measuredFooterHeightValue
@@ -209,7 +199,7 @@ export const useTrayContentSync = ({
         );
       }
 
-      // defer fullscreen measurement until its snapshot commits and the boundary clock starts
+      // fullscreen measurement waits for its snapshot commit and the boundary clock
       const incomingHeight = resolveIncomingContentHeightRef.current(
         measuredContentHeightValue,
       );
@@ -242,10 +232,7 @@ export const useTrayContentSync = ({
         trayId,
         measuredContentHeightValue,
         "sheet",
-        // A fullscreen source measurement or a previous step's body height is
-        // not an intrinsic fallback for a new sheet endpoint. Boundary returns
-        // may use only the target's last validated intrinsic frame as a
-        // provisional floor; ordinary sheet changes may reuse a trusted cache.
+        // a fullscreen source or an earlier step's height is no fallback for a new sheet endpoint, boundary returns use the target's last validated frame and sheet changes a trusted cache
         !returningFromFullScreen && !renderedFullScreen && !targetStepChanged,
       );
 
@@ -253,10 +240,7 @@ export const useTrayContentSync = ({
         renderedFullScreen &&
         cachedBoundaryReturnHeight !== undefined
       ) {
-        // A fullscreen return must not wait for a new constrained native frame
-        // when this endpoint already owns a validated intrinsic sheet frame.
-        // The target is still measured after its snapshot mounts, and a newer
-        // intrinsic layout may replace this provisional frame.
+        // a fullscreen return starts from the endpoint's validated sheet frame, a newer intrinsic layout can replace it after the snapshot mounts
         contentHeight.value = cachedBoundaryReturnHeight;
       }
 
@@ -267,7 +251,7 @@ export const useTrayContentSync = ({
       ) {
         const targetContentHeight =
           cachedBoundaryReturnHeight ?? restoredContentHeight!;
-        // sheet return leases the measured frame until the layout transition finishes
+        // a sheet return leases the measured frame until the layout transition finishes
         onSheetFramePreparedRef.current?.(
           targetContentHeight + nextFooterHeight,
           "target",
@@ -279,9 +263,7 @@ export const useTrayContentSync = ({
         !renderedFullScreen &&
         renderedTrayId !== trayId
       ) {
-        // promote cached target height for ordinary sheet-to-sheet changes;
-        // fullscreen returns use the separate provisional path above so the
-        // target snapshot can be revalidated in sheet topology.
+        // sheet-to-sheet changes promote the cached target height, fullscreen returns use the provisional path above
         const cachedContentHeight =
           readCachedSheetContentHeightRef.current?.(trayId);
 
@@ -306,7 +288,7 @@ export const useTrayContentSync = ({
       morphProgress: morphProgress.value,
       renderedTransition: describeTrayTransition(renderedTransitionContract),
     });
-    // shell level swaps key off tray identity not every prop change eslint-disable-next-line react-hooks/exhaustive-deps
+    // shell swaps key off tray identity, not every prop change
   }, [trayId, visible, fullScreen, morphProgress, onPrepared]);
 
   useProfiledTrayLayoutEffect("useTrayContentSync.publishKeyboardSnapshot", () => {
@@ -334,14 +316,14 @@ export const useTrayContentSync = ({
     visible,
   ]);
 
-  // publish visual content after native layout can derive the sheet frame
+  // publish visual content once native layout can derive the sheet frame
   useEffect(() => {
     if (!visible) {
       return;
     }
 
     if (renderedTrayId === trayId) {
-      // same key updates can sync nodes without replaying snapshot publication
+      // same-key updates sync nodes without replaying snapshot publication
       syncRenderedNodes(trayId);
       return;
     }
@@ -351,7 +333,7 @@ export const useTrayContentSync = ({
       return;
     }
 
-    // key changes publish a new snapshot after pre paint geometry preparation
+    // key changes publish a new snapshot after pre-paint geometry preparation
     markTrayStepSnapshotPublished(
       rootTrayId,
       trayId,
@@ -378,58 +360,23 @@ export const useTrayContentSync = ({
     visible,
   ]);
 
-  useEffect(() => {
-    if (!visible || !isTrayDebugLoggingEnabled()) {
-      return;
-    }
-
-    log("LIVE STEP PROPS", {
-      trayId,
-      hasContent: content != null,
-      hasFooter: footer != null,
-      hasHeader: header != null,
-      incomingFullScreen: fullScreen,
-      fullScreenBackgroundScale,
-      renderedFullScreen,
-      hasContainerStyle: containerStyle != null,
-      hasFooterStyle: footerStyle != null,
-      className,
-      footerClassName,
-      interactive,
-    });
-  }, [
-    className,
-    containerStyle,
+  useContentSyncDebugLog({
+    visible,
+    trayId,
     content,
-    header,
     footer,
-    footerClassName,
-    footerStyle,
+    header,
     fullScreen,
     fullScreenBackgroundScale,
-    interactive,
     renderedFullScreen,
-    trayId,
-    visible,
-  ]);
-
-  useEffect(() => {
-    if (!isTrayDebugLoggingEnabled()) {
-      return;
-    }
-
-    log("RENDERED CONTENT CHANGED", {
-      trayId: renderedTrayId,
-      hasContent: renderedContent !== null,
-      hasFooter: renderedFooter !== null,
-      hasHeader: renderedHeader !== null,
-      fullScreen: renderedFullScreen,
-    });
-  }, [
+    containerStyle,
+    footerStyle,
+    className,
+    footerClassName,
+    interactive,
+    renderedTrayId,
     renderedContent,
     renderedFooter,
     renderedHeader,
-    renderedFullScreen,
-    renderedTrayId,
-  ]);
+  });
 };

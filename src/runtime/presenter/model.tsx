@@ -1,8 +1,5 @@
-import type { ReactNode } from "react";
 import {
-  DEFAULT_TRAY_STEP_OPTIONS,
   resolveTrayStepOptions,
-  type ResolvedTrayStepOptions,
   type TrayRegistration,
   type TrayStackEntry,
   type TrayTransitionContract,
@@ -10,375 +7,32 @@ import {
 import { resolveTrayPresentationEndpoint } from "../transition-contract";
 import { clampTrayStepIndex } from "../tray-step-index";
 import { resolveTrayAnimationContract } from "./animation-contract";
-import type { TrayStepDefinition } from "../types";
-import type {
-  PresentedPreloadedStep,
-  PresentedTray,
-  TrayHostSlot,
-} from "./types";
-
-type ContextualStepOptionsCache = {
-  withFooter?: ResolvedTrayStepOptions;
-  withoutFooter?: ResolvedTrayStepOptions;
-};
-
-// Registered step definitions are immutable runtime descriptors. Cache the
-// resolved options by descriptor so presenter derivation does not allocate a
-// fresh options object on every unrelated store notification.
-const contextualStepOptionsCache = new WeakMap<
-  TrayStepDefinition,
-  ContextualStepOptionsCache
->();
-
-const resolveContextualStepOptions = (
-  step: TrayStepDefinition,
-  hasFooter: boolean,
-): ResolvedTrayStepOptions => {
-  const cached = contextualStepOptionsCache.get(step) ?? {};
-  const cachedOptions = hasFooter ? cached.withFooter : cached.withoutFooter;
-
-  if (cachedOptions !== undefined) {
-    return cachedOptions;
-  }
-
-  const resolvedOptions = resolveTrayStepOptions(step.options);
-
-  if (resolvedOptions.hasFooter === hasFooter) {
-    if (hasFooter) {
-      cached.withFooter = resolvedOptions;
-    } else {
-      cached.withoutFooter = resolvedOptions;
-    }
-
-    contextualStepOptionsCache.set(step, cached);
-
-    return resolvedOptions;
-  }
-
-  const contextualOptions = {
-    ...resolvedOptions,
-    hasFooter,
-  };
-
-  if (hasFooter) {
-    cached.withFooter = contextualOptions;
-  } else {
-    cached.withoutFooter = contextualOptions;
-  }
-
-  contextualStepOptionsCache.set(step, cached);
-
-  return contextualOptions;
-};
-
-// convert registered tray state into the payload consumed by host slots
-// create an empty host slot that cannot receive input or render content
-export const createIdleSlot = (): TrayHostSlot => ({
-  assignmentId: 0,
-  payload: null,
-  visible: false,
-  interactive: false,
-  prepared: false,
-});
-
-const PREPARED_ROOT_HOST_ID = "__morpheus_prepared_root_host__";
-// The root host is pre-mounted and reused for different registrations. Keep
-// both motion paths ready so a root presentation never mounts them on demand.
-const ROOT_TRAY_MOTION_CAPABILITIES = {
-  keyboardStickyCapable: true,
-  fullScreenMotionCapable: true,
-} as const;
-
-type TrayMotionCapabilities = {
-  keyboardStickyCapable: boolean;
-  fullScreenMotionCapable: boolean;
-};
-
-const trayMotionCapabilitiesBySteps = new WeakMap<
-  TrayRegistration["steps"],
-  TrayMotionCapabilities
->();
-
-const getTrayMotionCapabilities = (
-  registration: TrayRegistration,
-): TrayMotionCapabilities => {
-  const cached = trayMotionCapabilitiesBySteps.get(registration.steps);
-
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  // Step descriptors are fixed for a registration. Scan the full set so a
-  // transition never changes the motion component tree midway through a tray.
-  const capabilities = {
-    keyboardStickyCapable: registration.steps.some(
-      (step) => step.options?.keyboardAware === true,
-    ),
-    fullScreenMotionCapable: registration.steps.some(
-      (step) => step.options?.fullScreen === true,
-    ),
-  };
-
-  trayMotionCapabilitiesBySteps.set(registration.steps, capabilities);
-  return capabilities;
-};
-
-const NO_PRELOADED_STEPS: readonly PresentedPreloadedStep[] = [];
-
-// A tray that opens from its trigger morphs the trigger into its footer; that
-// footer stays on the fixed footer layer, which owns the morph.
-const usesOriginFooterTransition = (registration: TrayRegistration) =>
-  registration.transition?.open === "expandFromTrigger" ||
-  registration.transition?.close === "collapseToTrigger" ||
-  registration.transition?.origin === "fullScreenFooter";
-
-// Fixed per registration: every footer renders through the per-step footer
-// layers (a root footer is the default for steps without their own), except
-// a root-only footer of a tray that morphs from its trigger.
-export const usesStepFooters = (registration: TrayRegistration) => {
-  const stepsDefineFooters = registration.steps.some(
-    (step) => step.footer != null,
-  );
-
-  if (stepsDefineFooters) {
-    return true;
-  }
-
-  if (registration.footer == null || usesOriginFooterTransition(registration)) {
-    return false;
-  }
-
-  return true;
-};
-
-const ROOT_STEP_FOOTER_KEY = "root";
-
-export const resolveStepFooter = (
-  registration: TrayRegistration,
-  step: TrayRegistration["steps"][number],
-): { node: ReactNode; key: string } | null => {
-  if (!usesStepFooters(registration)) {
-    return null;
-  }
-
-  if (step.footer != null) {
-    return {
-      node: step.footer,
-      key:
-        step.footerId != null ? `id:${step.footerId}` : `step:${step.key}`,
-    };
-  }
-
-  if (registration.footer != null) {
-    return { node: registration.footer, key: ROOT_STEP_FOOTER_KEY };
-  }
-
-  return null;
-};
-
-const stepHasFooter = (
-  registration: TrayRegistration,
-  step: TrayRegistration["steps"][number],
-) => step.footer != null || registration.footer != null;
-
-const preloadCapableBySteps = new WeakMap<TrayRegistration["steps"], boolean>();
-
-type TrayStepDescriptor = TrayRegistration["steps"][number];
-
-const canPreloadStep = (
-  step: TrayStepDescriptor | undefined,
-): step is TrayStepDescriptor =>
-  step !== undefined && step.options?.preload !== false;
-
-// Fixed per registration, like the motion capabilities: a tray in which any
-// step can be kept rendered (a multi-step tray with a step that has not opted
-// out) always renders its content as keyed layers, so a transition never
-// switches the content tree's shape midway. Single-step trays are unchanged.
-const isPreloadCapable = (registration: TrayRegistration) => {
-  const cached = preloadCapableBySteps.get(registration.steps);
-
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  const capable =
-    registration.steps.length > 1 && registration.steps.some(canPreloadStep);
-  preloadCapableBySteps.set(registration.steps, capable);
-  return capable;
-};
-
-// The neighbours of the current step are kept rendered, hidden: the next step
-// so moving forward reuses it, and the previous one so moving back does. A
-// step that opts out is mounted on the tap instead. Fullscreen steps take part
-// too: content renders in the same content region in either mode, and a
-// layer's fullscreen props are applied when it becomes current.
-const resolvePreloadedSteps = (
-  rootTrayId: string,
-  registration: TrayRegistration,
-  trayIndex: number,
-): readonly PresentedPreloadedStep[] => {
-  const neighbours = [
-    registration.steps[trayIndex + 1],
-    registration.steps[trayIndex - 1],
-  ].filter(canPreloadStep);
-
-  if (neighbours.length === 0) {
-    return NO_PRELOADED_STEPS;
-  }
-
-  return neighbours.map((step) => ({
-    trayId: `${rootTrayId}-${step.key}`,
-    header: step.header ?? null,
-    content: step.content,
-    stepOptions: resolveContextualStepOptions(
-      step,
-      stepHasFooter(registration, step),
-    ),
-  }));
-};
-
-// Keep one root controller mounted before the first presentation. The payload
-// is intentionally inert: no content, no interaction, and no transition.
-// The real tray payload replaces it without changing the host assignment key.
-export const createPreparedRootSlot = (
-  assignmentId = 1,
-): TrayHostSlot => ({
-  assignmentId,
-  payload: {
-    rootTrayId: PREPARED_ROOT_HOST_ID,
-    trayId: `${PREPARED_ROOT_HOST_ID}-step`,
-    stepOptions: DEFAULT_TRAY_STEP_OPTIONS,
-    header: null,
-    content: null,
-    footer: null,
-    fullScreenBoundaryExit: false,
-    isFirstRender: true,
-    fullScreen: false,
-    fullScreenBackgroundScale: 1,
-    fullScreenSafeAreaTop: false,
-    fullScreenDraggable: true,
-    ...ROOT_TRAY_MOTION_CAPABILITIES,
-    dismissible: false,
-    transitionContract: null,
-    transition: undefined,
-    stackIndex: 0,
-    visible: false,
-    interactive: false,
-  },
-  visible: false,
-  interactive: false,
-  prepared: true,
-});
-
-// Presenter state is derived from the runtime store. Preserve existing
-// objects when the derived payload is semantically unchanged so an unrelated
-// store notification cannot force every host shell through React again.
-const areStepOptionsEquivalent = (
-  left: ResolvedTrayStepOptions,
-  right: ResolvedTrayStepOptions,
-) =>
-  left === right ||
-  (left.hasFooter === right.hasFooter &&
-    left.scale === right.scale &&
-    left.keyboardAware === right.keyboardAware &&
-    left.fullScreen === right.fullScreen &&
-    left.shouldScaleBackground === right.shouldScaleBackground &&
-    left.fullScreenBackgroundScale === right.fullScreenBackgroundScale &&
-    left.fullScreenDraggable === right.fullScreenDraggable &&
-    left.fullScreenCloseBehavior === right.fullScreenCloseBehavior &&
-    left.fullScreenTransition === right.fullScreenTransition &&
-    left.fullScreenSafeAreaTop === right.fullScreenSafeAreaTop &&
-    left.style === right.style &&
-    left.className === right.className &&
-    left.footerStyle === right.footerStyle &&
-    left.footerClassName === right.footerClassName &&
-    left.preload === right.preload);
-
-// compare preloaded steps by identity of what they render
-export const arePreloadedStepsEquivalent = (
-  left: readonly PresentedPreloadedStep[] | undefined,
-  right: readonly PresentedPreloadedStep[] | undefined,
-) => {
-  const leftSteps = left ?? NO_PRELOADED_STEPS;
-  const rightSteps = right ?? NO_PRELOADED_STEPS;
-
-  return (
-    leftSteps === rightSteps ||
-    (leftSteps.length === rightSteps.length &&
-      leftSteps.every((step, index) => {
-        const other = rightSteps[index]!;
-
-        return (
-          step.trayId === other.trayId &&
-          step.header === other.header &&
-          step.content === other.content &&
-          areStepOptionsEquivalent(step.stepOptions, other.stepOptions)
-        );
-      }))
-  );
-};
-
-export const arePresentedTraysEquivalent = (
-  left: PresentedTray | null,
-  right: PresentedTray | null,
-) =>
-  left === right ||
-  (left !== null &&
-    right !== null &&
-    left.rootTrayId === right.rootTrayId &&
-    left.trayId === right.trayId &&
-    left.keyboardAware === right.keyboardAware &&
-    (left.keyboardStickyCapable ?? true) ===
-      (right.keyboardStickyCapable ?? true) &&
-    (left.fullScreenMotionCapable ?? true) ===
-      (right.fullScreenMotionCapable ?? true) &&
-    areStepOptionsEquivalent(left.stepOptions, right.stepOptions) &&
-    left.header === right.header &&
-    left.content === right.content &&
-    left.footer === right.footer &&
-    (left.stepFooter ?? null) === (right.stepFooter ?? null) &&
-    left.stepFooterKey === right.stepFooterKey &&
-    left.fullScreenBoundaryExit === right.fullScreenBoundaryExit &&
-    left.isFirstRender === right.isFirstRender &&
-    left.fullScreen === right.fullScreen &&
-    left.fullScreenBackgroundScale === right.fullScreenBackgroundScale &&
-    left.fullScreenSafeAreaTop === right.fullScreenSafeAreaTop &&
-    left.fullScreenDraggable === right.fullScreenDraggable &&
-    left.dismissible === right.dismissible &&
-    left.transitionContract === right.transitionContract &&
-    left.transition === right.transition &&
-    left.containerStyle === right.containerStyle &&
-    left.className === right.className &&
-    left.footerStyle === right.footerStyle &&
-    left.footerClassName === right.footerClassName &&
-    left.stackIndex === right.stackIndex &&
-    left.visible === right.visible &&
-    left.interactive === right.interactive &&
-    (left.preloadCapable ?? false) === (right.preloadCapable ?? false) &&
-    arePreloadedStepsEquivalent(left.preloadedSteps, right.preloadedSteps));
-
-export const areTrayHostSlotsEquivalent = (
-  left: [TrayHostSlot, TrayHostSlot],
-  right: [TrayHostSlot, TrayHostSlot],
-) =>
-  left.every((slot, index) => {
-    const nextSlot = right[index];
-
-    return (
-      slot.assignmentId === nextSlot.assignmentId &&
-      slot.visible === nextSlot.visible &&
-      slot.interactive === nextSlot.interactive &&
-      (slot.prepared ?? false) === (nextSlot.prepared ?? false) &&
-      arePresentedTraysEquivalent(slot.payload, nextSlot.payload)
-    );
-  });
-
-export const arePresentedTrayListsEquivalent = (
-  left: PresentedTray[],
-  right: PresentedTray[],
-) =>
-  left.length === right.length &&
-  left.every((host, index) => arePresentedTraysEquivalent(host, right[index]!));
+import type { PresentedTray } from "./types";
+import { resolveContextualStepOptions } from "./payload/step-options";
+import {
+  usesStepFooters,
+  resolveStepFooter,
+  stepHasFooter,
+} from "./payload/step-footers";
+import { isPreloadCapable, resolvePreloadedSteps } from "./payload/preloading";
+import {
+  ROOT_TRAY_MOTION_CAPABILITIES,
+  getTrayMotionCapabilities,
+} from "./payload/host-slots";
+export {
+  createIdleSlot,
+  createPreparedRootSlot,
+  resolveNextActiveSlotIndex,
+  resolveOrderedHostSlots,
+} from "./payload/host-slots";
+export {
+  areStepOptionsEquivalent,
+  arePreloadedStepsEquivalent,
+  arePresentedTraysEquivalent,
+  areTrayHostSlotsEquivalent,
+  arePresentedTrayListsEquivalent,
+} from "./payload/equivalence";
+export { usesStepFooters, resolveStepFooter } from "./payload/step-footers";
 
 export const resolvePresenterTransitionScope = ({
   transition,
@@ -422,8 +76,7 @@ export const resolvePresenterTransitionScope = ({
     ) ||
     nestedHostsWereRemoved;
   const nestedOnlyTransition =
-    transition.reason === "openNested" ||
-    transition.reason === "closeNested";
+    transition.reason === "openNested" || transition.reason === "closeNested";
 
   return {
     root: affectsRoot && !nestedOnlyTransition ? transition : null,
@@ -431,58 +84,7 @@ export const resolvePresenterTransitionScope = ({
   };
 };
 
-// choose the next host slot without reusing the current visible slot
-export const resolveNextActiveSlotIndex = (
-  slots: [TrayHostSlot, TrayHostSlot],
-  previousActiveSlotIndex: number | null,
-) => {
-  if (previousActiveSlotIndex !== null) {
-    // alternate slots so outgoing and incoming root trays can overlap safely
-    return previousActiveSlotIndex === 0 ? 1 : 0;
-  }
-
-  // Claim the prepared controller before an unmounted slot. This keeps the
-  // first real presentation on the host that was mounted during provider
-  // startup.
-  const preparedSlotIndex = slots.findIndex(
-    (slot) => slot.prepared === true && !slot.visible,
-  );
-
-  if (preparedSlotIndex >= 0) {
-    return preparedSlotIndex;
-  }
-
-  const idleSlotIndex = slots.findIndex((slot) => slot.payload === null);
-
-  if (idleSlotIndex >= 0) {
-    return idleSlotIndex;
-  }
-
-  const hiddenSlotIndex = slots.findIndex((slot) => !slot.visible);
-
-  return hiddenSlotIndex >= 0 ? hiddenSlotIndex : 0;
-};
-
-// order hosts so interactive content sits above retained content
-export const resolveOrderedHostSlots = (
-  hostSlots: [TrayHostSlot, TrayHostSlot],
-) =>
-  hostSlots
-    .map((slot, index) => ({
-      index,
-      slot,
-      // interactive hosts render last so they receive touches above closing hosts
-      priority: slot.interactive ? 2 : slot.visible ? 1 : 0,
-    }))
-    .sort((left, right) => {
-      if (left.priority !== right.priority) {
-        return left.priority - right.priority;
-      }
-
-      return left.index - right.index;
-    });
-
-// convert registry state into the payload consumed by the shell presenter
+// registry state to the payload the shell presenter consumes
 export const createPresentedTray = ({
   entry,
   registration,
@@ -494,8 +96,7 @@ export const createPresentedTray = ({
 }: {
   entry: TrayStackEntry;
   registration: TrayRegistration;
-  // Preserve capabilities already mounted on this live host when registration
-  // input changes; in particular, let a keyboard lease finish its handoff.
+  // keep capabilities already mounted on a live host so a keyboard lease can finish its handoff
   previousMotionCapabilities?: Pick<
     PresentedTray,
     "keyboardStickyCapable" | "fullScreenMotionCapable"
@@ -556,11 +157,13 @@ export const createPresentedTray = ({
     stepOptions,
     header: step.header ?? null,
     content: step.content,
-    footer: usesStepFooters(registration) ? null : registration.footer ?? null,
+    footer: usesStepFooters(registration)
+      ? null
+      : (registration.footer ?? null),
     stepFooter: stepFooter?.node ?? null,
-    // undefined marks a tray without per-step footers (no footer layer)
+    // undefined marks a tray without step footer layers
     stepFooterKey: usesStepFooters(registration)
-      ? stepFooter?.key ?? null
+      ? (stepFooter?.key ?? null)
       : undefined,
     fullScreenBoundaryExit: animationContract.fullScreenBoundaryExit,
     isFirstRender: animationContract.isFirstRender,
@@ -573,7 +176,7 @@ export const createPresentedTray = ({
     transition: registration.transition,
     containerStyle: stepOptions.style,
     className: stepOptions.className,
-    // the tray surface owns the shell background footer styling is opt in so the detached fixed control layer cannot create a second shell surface
+    // the tray surface owns the shell background, footer styling is opt-in so the footer layer never forms a second surface
     footerStyle: stepOptions.footerStyle,
     footerClassName: stepOptions.footerClassName,
     stackIndex,
@@ -588,9 +191,7 @@ export const createPresentedTray = ({
   };
 };
 
-// Mount a content-free nested shell while its trigger is mounted. The parent
-// can change a nested presentation's boundary mode, so callers pass the
-// parent's static fullscreen capability into this prepared payload.
+// a content-free nested shell mounts with its trigger and takes the parent's fullscreen capability
 export const createPreparedNestedTray = (
   rootTrayId: string,
   registration: TrayRegistration,

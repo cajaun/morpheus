@@ -11,7 +11,7 @@ type Params = {
   measurementOwner?: TrayMeasurementOwner;
 };
 
-// cache heights so tray swaps preserve geometry between related presentations
+// cached heights let tray swaps keep geometry between related presentations
 export const useTrayHeightCache = ({
   fullScreen,
   contentHeight,
@@ -38,7 +38,7 @@ export const useTrayHeightCache = ({
         return;
       }
 
-      // only intrinsic sheet geometry is reusable fullscreen measurements are viewport endpoints not body endpoints for a later sheet
+      // intrinsic sheet geometry is reusable, fullscreen measurements are viewport endpoints
       contentHeightCacheRef.current[trayId] = {
         height: resolvedHeight,
         owner: measurementOwner,
@@ -70,9 +70,7 @@ export const useTrayHeightCache = ({
       }
 
       if (!allowMeasuredFallback) {
-        // A fullscreen-origin handoff must validate the sheet endpoint in
-        // sheet topology. This also prevents a previously clipped frame from
-        // surviving a retry as if it were a trusted intrinsic measurement.
+        // a fullscreen-origin handoff validates the sheet endpoint in sheet topology, so a clipped frame cannot pass as trusted
         contentHeight.value = 0;
         return undefined;
       }

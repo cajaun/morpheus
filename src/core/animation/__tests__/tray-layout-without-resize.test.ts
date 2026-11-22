@@ -1,4 +1,4 @@
-// a sheet step change at the same height still starts, syncs and completes
+// a sheet step change at an unchanged height still starts, syncs and completes
 import { describe, expect, it, jest } from "@jest/globals";
 import type { AnimationObject, SharedValue } from "react-native-reanimated";
 import { startTrayLayoutWithoutResize } from "../tray-layout";
@@ -73,7 +73,7 @@ describe("startTrayLayoutWithoutResize", () => {
 
     animation.onStart(animation, 0, 100, null);
 
-    // content waiting on the layout start can now join the shared clock
+    // content waiting on the layout start joins the shared clock
     expect(values.transitionLayoutStartedGeneration.value).toBe(generation);
     expect(values.transitionStartedGeneration.value).toBe(generation);
     expect(values.transitionStartedAt.value).toBe(100);

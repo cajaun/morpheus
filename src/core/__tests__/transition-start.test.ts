@@ -1,4 +1,4 @@
-// verify every transition participant joins the same ui clock
+// every transition participant joins the same UI clock
 import { describe, expect, it, jest } from "@jest/globals";
 import type {
   AnimatableValue,
@@ -27,7 +27,7 @@ jest.mock("react-native-reanimated", () => {
 });
 
 jest.mock("react-native-worklets", () => {
-  // Worklets' own mock: the real module needs its native part under Jest
+  // the Worklets mock, the real module needs its native part
   const Worklets = jest.requireActual(
     "react-native-worklets/lib/module/mock",
   ) as Record<string, unknown>;
@@ -41,10 +41,10 @@ jest.mock("react-native-worklets", () => {
   };
 });
 
-// create the shared value shape used by worklet tests
+// the shared value shape worklet tests use
 const shared = (value: number) => ({ value }) as SharedValue<number>;
 
-// create a controllable animation stub for clock assertions
+// a controllable animation stub for clock assertions
 const createAnimation = () => {
   const animation: AnimationObject<number> = {
     current: 0,
@@ -468,7 +468,7 @@ describe("tray transition start synchronization", () => {
       expect(clock.layoutStartedGeneration.value).toBe(0);
       expect(clock.startedGeneration.value).toBe(0);
 
-      // the keyboard begins moving on the UI thread
+      // the keyboard starts moving on the UI thread
       openTrayKeyboardGate(gate);
       layout.onFrame(layout, 133);
       content.onFrame(content, 133);

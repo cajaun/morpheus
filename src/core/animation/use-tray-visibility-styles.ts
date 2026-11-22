@@ -27,7 +27,7 @@ const ZERO_CONTENT_PADDING_STYLE = {
   paddingTop: 0,
 };
 
-// coordinate surface content and footer visibility with shell progress
+// surface content and footer visibility follow shell progress
 export const useTrayVisibilityStyles = ({
   originProgress,
   shouldUseOriginTransition,
@@ -36,7 +36,7 @@ export const useTrayVisibilityStyles = ({
 }: Params) => {
   const surfaceVisibilityStyle = useAnimatedStyle(
     () => ({
-      // The trigger-origin gate takes precedence over ordinary visibility.
+      // the trigger-origin gate wins over ordinary visibility
       opacity:
         shouldUseOriginTransition &&
         !(originProgress.value > EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS)
@@ -54,7 +54,7 @@ export const useTrayVisibilityStyles = ({
 
     if (!shouldUseOriginTransition) {
       return {
-        // keep visible footer content on the sheet grid in fullscreen
+        // visible footer content stays on the sheet grid in fullscreen
         alignSelf: "center",
         width: sheetContentWidth,
       };
@@ -67,7 +67,7 @@ export const useTrayVisibilityStyles = ({
 
     return {
       alignSelf: "center",
-      // footer content narrows from trigger width to the inner sheet grid
+      // footer content narrows from the trigger width to the sheet grid
       width: interpolate(originProgress.value, [0, 1], [
         collapsedWidth,
         sheetContentWidth,

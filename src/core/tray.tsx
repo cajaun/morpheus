@@ -3,9 +3,7 @@ import { TrayVisualView } from "./tray-visual-view";
 import { useTrayController } from "./use-tray-controller";
 import type { TrayProps, TrayRef } from "./types";
 
-// Keep React state, measurement, and transition lifecycle ownership in the
-// host. The visual/native subtree is isolated so unrelated controller commits
-// do not re-run gesture, keyboard, or animated-style hooks.
+// the host owns React state, measurement and lifecycle, the isolated visual subtree skips gesture, keyboard and style hooks on unrelated commits
 const TrayImplementation = forwardRef<TrayRef, TrayProps>(
   (
     {
@@ -184,9 +182,7 @@ const TrayImplementation = forwardRef<TrayRef, TrayProps>(
 
 TrayImplementation.displayName = "Tray";
 
-// Presenter updates that leave a host's effective props unchanged should not
-// rerun the controller hook graph. State updates owned by Tray still render
-// normally through this memo boundary.
+// presenter updates that leave a host's props unchanged skip the controller hook graph
 const Tray = React.memo(TrayImplementation);
 Tray.displayName = "Tray";
 

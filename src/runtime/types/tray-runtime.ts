@@ -5,11 +5,10 @@ import type { SharedValue } from "react-native-reanimated";
 import type { TrayTransitionContract } from "./tray-transition";
 import type { TrayTransitionLifecycle } from "./tray-transition";
 
-// retained as a public compatibility type; transition contracts now carry the
-// immutable keyboard ownership decision directly.
+// public compatibility type, transition contracts carry the keyboard ownership decision
 export type KeyboardTransitionMode = "idle" | "entering" | "exiting";
 
-// keep runtime contracts separate from context hook implementation
+// runtime contracts apart from the context hook implementation
 export type TrayFullScreenCloseBehavior = "dismiss" | "returnToShell";
 export type TrayFullScreenTransition = "morph" | "slide";
 export type TrayOpenTransition = "slide" | "expandFromTrigger";
@@ -35,14 +34,7 @@ export type TrayStepOptions = {
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
   footerClassName?: string;
-  /**
-   * Keep this step rendered, hidden, while it is the next or previous step,
-   * so moving to it (forward or back) reuses the rendered step instead of
-   * mounting it on the tap. The hidden step renders at low priority after the
-   * current step is on screen, and its effects run only once it is shown
-   * (React `<Activity>`). Applies to sheet and fullscreen steps. On by
-   * default; set `false` to mount the step on the tap instead.
-   */
+  /** keep this step rendered hidden while it neighbours the current step so moving to it reuses it, on by default, false mounts it on the tap */
   preload?: boolean;
 };
 
@@ -55,8 +47,7 @@ export type TrayStepDefinition = {
   key: string;
   header?: React.ReactNode;
   content: React.ReactNode;
-  // A footer authored inside the step. It enters and leaves with the step;
-  // consecutive steps whose footers share `footerId` keep one footer layer.
+  // a footer inside the step, consecutive steps sharing footerId keep one footer layer
   footer?: React.ReactNode;
   footerId?: string;
   options?: TrayStepOptions;
@@ -68,13 +59,9 @@ export type TrayRegistration = {
   dismissible?: boolean;
   transition?: TrayTransitionOptions;
   pages?: TrayPagesRegistration;
-  /** Owning tray scope for an internally registered nested tray. */
+  /** owning tray scope of an internally registered nested tray */
   parentTrayId?: string;
-  /**
-   * Internal: the nested tray is registered and can open, but its hidden
-   * prepared host is not built yet. Set while the parent's transition is
-   * still running so the host mount stays off that transition's critical path.
-   */
+  /** internal, the nested tray can open but its prepared host waits for the parent's transition */
   deferHostPreparation?: boolean;
 };
 
@@ -121,7 +108,7 @@ export type TrayHostStateValue = {
   activeIndex: number;
   stack: TrayStackEntry[];
   transitionGeneration: number;
-  // retained descriptor used by the presenter lifecycle activity is exposed separately by traytransitionlifecyclegetactive()
+  // retained descriptor for the presenter, lifecycle activity comes from TrayTransitionLifecycle.getActive()
   lastTransition: TrayTransitionContract | null;
 };
 

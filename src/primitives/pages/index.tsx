@@ -31,7 +31,7 @@ type TrayPagesProps = {
   className?: string;
 };
 
-// coordinate page parsing registration and animated page rendering
+// page parsing, registration and animated page rendering
 const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   children,
   initialPage = 0,
@@ -42,10 +42,7 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
   const totalPages = parsed.pages.length;
   const trayId = useTrayScope();
   const stepLayer = useTrayStepLayer();
-  // Inside a preloading tray the pages belong to the step of their layer,
-  // which stays fixed even while another step is current. Selecting it
-  // instead of the active step keeps a preloaded step from re-rendering on
-  // every step change before it is shown.
+  // pages in a preloading tray belong to their layer's step, so a hidden step skips re-rendering on every step change
   const layerStepKey =
     trayId && stepLayer?.startsWith(`${trayId}-`)
       ? stepLayer.slice(trayId.length + 1)
@@ -59,15 +56,13 @@ const TrayPagesRoot: React.FC<TrayPagesProps> = ({
       return null;
     }
 
-    // page registration follows the active step key instead of global index
+    // page registration follows the active step key instead of the global index
     const stackEntry = state.stack.find((entry) => entry.trayId === trayId);
     const stepIndex = stackEntry?.index ?? state.activeIndex;
 
     return state.registry[trayId]?.steps[stepIndex]?.key ?? null;
   });
-  // Pages only needs imperative runtime commands here. Subscribing to the
-  // complete host snapshot makes shell, geometry, and presentation writes
-  // rerender the entire pages subtree even when page state is unchanged.
+  // pages read the imperative runtime commands, a full snapshot subscription would re-render the pages subtree on every shell write
   const { registerTrayPages, requestPageTransition } = useTrayHostActions();
   const runtime = useTrayRuntimeStore();
   const pager = useTrayPagesTransition({

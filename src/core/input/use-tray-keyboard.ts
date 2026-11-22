@@ -28,10 +28,7 @@ export const useTrayKeyboard = () => {
     KeyboardController.preload();
   }, []);
 
-  // Pay the native keyboard startup cost while the tray provider is mounting,
-  // never on the user's first keyboard-step press. KeyboardController guards
-  // this natively, so this remains safe when the app's KeyboardProvider also
-  // has its default preload enabled.
+  // pay the native keyboard startup cost while the provider mounts, KeyboardController guards repeat preloads
   useEffect(() => {
     preloadKeyboard();
   }, [preloadKeyboard]);
@@ -59,8 +56,7 @@ type SheetKeyboardParams = {
   transitionGeneration?: number;
 };
 
-// Keep the sticky host enabled during the native dismissal handoff. This hook
-// is rendered inside KeyboardProvider by the tray shell.
+// the sticky host stays enabled through the native dismissal handoff
 export const useSheetTrayKeyboard = ({
   rootTrayId,
   visible,
@@ -81,13 +77,9 @@ export const useSheetTrayKeyboard = ({
     targetOwnsKeyboard: false,
     sheetStepTransition: false,
   });
-  // Either source carries the target's resolved keyboard intent. Keeping the
-  // values additive protects the handoff while a provisional transition
-  // contract is being reconciled with the registered step options.
+  // either source carries the target's keyboard intent, so a provisional contract cannot drop it
   const targetOwnsKeyboard = keyboardAware || targetKeyboardAware;
-  // The lease is a native-dismissal handoff, not UI state. Derive its visible
-  // lifetime from keyboard visibility so hiding the keyboard does not require
-  // a second React render just to disable the sticky host.
+  // keyboard visibility bounds the lease, so hiding the keyboard needs no extra render to disable the sticky host
   const stickyEnabled =
     targetOwnsKeyboard || (keyboardLeaseRef.current && keyboardVisible);
 
@@ -145,19 +137,14 @@ export const useSheetTrayKeyboard = ({
 
     keyboardOwnershipRef.current = visible && targetOwnsKeyboard;
 
-    // The target intent enables motion immediately. Only acquire the lease
-    // after native visibility is confirmed while retaining the close handoff.
+    // target intent enables motion at once, the lease waits for confirmed native visibility
     if (targetOwnsKeyboard && keyboardVisible) {
       keyboardLeaseRef.current = true;
     } else if (!keyboardVisible) {
       keyboardLeaseRef.current = false;
     }
 
-    // A sheet step-to-step transition never dismisses here. A keyboard to
-    // keyboard handoff belongs to the focused input (an imperative dismissal
-    // creates a visible close/reopen), and a step that puts the keyboard away
-    // dismisses it when its layout is ready to move, through the keyboard
-    // gate, so the keyboard and the sheet start on the same frame.
+    // sheet step changes never dismiss here, the focused input owns keyboard-to-keyboard handoffs and the keyboard gate dismisses for steps that leave the keyboard
     const shouldDismiss =
       closingTray || (leavingKeyboardStep && !sheetStepTransition);
 

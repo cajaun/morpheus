@@ -5,9 +5,7 @@ import {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-// The transition a parent tray's step content was mounted in. generation is 0
-// when there is nothing to wait for (an open, or a contract without a shell
-// participant that completes it).
+// the transition a parent's step content mounted in, generation 0 means nothing to wait for
 export type TrayParentTransition = {
   generation: number;
   completedGeneration: SharedValue<number>;
@@ -19,9 +17,7 @@ export const TrayParentTransitionContext =
 export const TrayParentTransitionProvider =
   TrayParentTransitionContext.Provider;
 
-// True once the parent's transition has completed. Settles once and stays
-// settled. Driven by the transition's own completion (a UI-thread shared
-// value), not by timers. Outside a transition it is settled from the start.
+// true once the parent's transition completes, settles once and stays settled
 export const useParentTransitionSettled = () => {
   const parentTransition = useContext(TrayParentTransitionContext);
   const generation = parentTransition?.generation ?? 0;
@@ -49,8 +45,7 @@ export const useParentTransitionSettled = () => {
   return settled;
 };
 
-// The parent's latest completed transition generation, as React state. Driven
-// by the transition's own completion (a UI-thread shared value), not timers.
+// the parent's latest completed transition generation as React state
 export const useParentCompletedGeneration = () => {
   const parentTransition = useContext(TrayParentTransitionContext);
   const completedGeneration = parentTransition?.completedGeneration;

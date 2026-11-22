@@ -7,7 +7,7 @@ import {
   SCREEN_WIDTH,
 } from "../constants";
 
-// hold boundary progress at the correct lifecycle phase
+// hold boundary progress at the phase the transition lifecycle has reached
 export const resolveBoundaryProgress = (
   progress: number,
   transitionGeneration: number | undefined,
@@ -37,7 +37,7 @@ export const resolveBoundaryProgress = (
   return progress;
 };
 
-// remove only the transient fullscreen header spacing from a returning sheet measurement
+// remove the transient fullscreen header gap from a returning sheet measurement
 export const resolveFullscreenReturnHeaderPadding = ({
   progress,
   returningToSheet,
@@ -57,7 +57,7 @@ export const resolveFullscreenReturnHeaderPadding = ({
   return FULL_SCREEN_HEADER_BOTTOM_GAP * (1 - settledProgress);
 };
 
-// check whether a boundary transition can read its shared clock
+// a boundary reads its shared clock once the clock has started for its generation
 export const isBoundaryClockStarted = (
   transitionGeneration: number | undefined,
   transitionStartedGeneration: number | undefined,
@@ -75,7 +75,7 @@ export const isBoundaryClockStarted = (
   );
 };
 
-// keep a sheet target in measurement mode until its frame is ready
+// a sheet target stays in measurement mode until its frame is ready
 export const isTargetSheetMeasurementPending = ({
   fullScreenBoundaryTransition,
   sourceFullScreen,
@@ -104,7 +104,7 @@ export const isTargetSheetMeasurementPending = ({
   );
 };
 
-// derive shell bounds from the source and target presentation modes
+// shell bounds come from the source and target presentation modes
 export const resolveBoundaryShellStyle = ({
   progress,
   sourceFullScreen,
@@ -148,7 +148,7 @@ export const resolveBoundaryShellStyle = ({
   };
 };
 
-// derive the content viewport from the same boundary phase as the shell
+// the content viewport follows the same boundary phase as the shell
 export const resolveBoundaryContentStyle = ({
   progress,
   boundaryClockStarted,
@@ -170,8 +170,7 @@ export const resolveBoundaryContentStyle = ({
 
   if (measurementPending) {
     return {
-      // Once the sheet snapshot is rendered, release it from the animated
-      // boundary so native layout can derive the complete intrinsic height.
+      // a rendered sheet snapshot leaves the animated boundary so native layout derives its intrinsic height
       position: "relative" as const,
       top: 0,
       bottom: "auto" as const,
@@ -208,7 +207,7 @@ export const resolveBoundaryContentStyle = ({
   };
 };
 
-// choose intrinsic or fullscreen content sizing during a boundary change
+// intrinsic or fullscreen content sizing during a boundary change
 export const resolveBoundaryContentViewportStyle = ({
   boundaryClockStarted,
   fullScreenBoundaryTransition,
@@ -230,7 +229,7 @@ export const resolveBoundaryContentViewportStyle = ({
     return targetFullScreen ? { flex: 1 } : {};
   }
 
-  // hold the shell on its source frame until the target sheet is measured
+  // the shell holds its source frame until the target sheet is measured
   if (targetSheetMeasurementPending) {
     return {
       flex: 0,
@@ -238,7 +237,7 @@ export const resolveBoundaryContentViewportStyle = ({
     };
   }
 
-  // keep content viewport phase aligned with shell boundary phase
+  // content viewport phase matches the shell boundary phase
   const contentFullScreen = boundaryClockStarted
     ? targetFullScreen
     : sourceFullScreen;
@@ -260,7 +259,7 @@ export const resolveBoundaryContentViewportStyle = ({
   return {};
 };
 
-// preserve the source viewport while the target sheet waits for measurement
+// the source viewport holds while the target sheet waits for measurement
 export const resolveBoundaryContentSourceViewportStyle = ({
   fullScreenBoundaryTransition,
   sourceFullScreen,
@@ -280,13 +279,13 @@ export const resolveBoundaryContentSourceViewportStyle = ({
     return undefined;
   }
 
-  // preserve a minimum until the animated style publishes its boundary phase
+  // a minimum height holds until the animated style publishes its boundary phase
   return {
     minHeight: sourceContentHeight,
   };
 };
 
-// derive header padding from the active boundary progress
+// header padding follows the active boundary progress
 export const resolveBoundaryHeaderPadding = ({
   progress,
   sourceFullScreen,

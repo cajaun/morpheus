@@ -4,7 +4,7 @@ import {
   isTrayPageInRenderWindow,
 } from "../pages/model";
 
-// probe pager window rules without rendering animated page layers
+// pager window rules without rendering animated page layers
 describe("TrayPages render window", () => {
   it("clamps requested pages into the registered range", () => {
     expect(clampPageIndex(-1, 3)).toBe(0);

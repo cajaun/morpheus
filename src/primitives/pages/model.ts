@@ -6,7 +6,7 @@ import {
   TrayPagesHeaderSlot,
 } from "./slots";
 
-// keep page movement rules testable without rendering the pager
+// page movement rules stay testable without rendering the pager
 export const PAGE_SPRING_CONFIG = {
   stiffness: 600,
   damping: 48,
@@ -14,7 +14,7 @@ export const PAGE_SPRING_CONFIG = {
   overshootClamping: true,
 } as const;
 
-// keep a page index inside the registered page range
+// clamp a page index to the registered range
 export const clampPageIndex = (index: number, totalPages: number) => {
   if (totalPages <= 0) {
     return 0;
@@ -23,7 +23,7 @@ export const clampPageIndex = (index: number, totalPages: number) => {
   return Math.max(0, Math.min(index, totalPages - 1));
 };
 
-// keep only current and transitioning pages mounted
+// current and transitioning pages stay mounted
 export const isTrayPageInRenderWindow = (
   index: number,
   pageIndex: number,
@@ -36,7 +36,7 @@ export type ParsedTrayPages = {
   pages: React.ReactElement[];
 };
 
-// child parsing keeps pager structure independent from transition state
+// child parsing keeps pager structure apart from transition state
 export const parseTrayPagesChildren = (
   children: React.ReactNode,
 ): ParsedTrayPages => {

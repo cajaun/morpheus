@@ -42,17 +42,13 @@ if (__DEV__) {
   profileGlobal.__TRAY_LAYOUT_EFFECT_PROFILE__ = profile;
 }
 
-// Temporary dev-only timing to identify slow tray commit effects. Store
-// records in memory: console logging inside a layout effect is itself charged
-// to React's effect duration and can distort the profile. Call
-// globalThis.__TRAY_LAYOUT_EFFECT_PROFILE__.flush() after capture to export.
+// dev-only timing of slow commit effects, records stay in memory, flush via globalThis.__TRAY_LAYOUT_EFFECT_PROFILE__
 export const useProfiledTrayLayoutEffect = (
   label: string,
   effect: EffectCallback,
   dependencies: DependencyList,
 ) => {
-  // Callers provide the dependency list for the effect body; keeping that
-  // list explicit preserves each existing effect's scheduling semantics.
+  // callers provide the dependency list so each effect keeps its scheduling
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
     if (!isTrayInstrumentationEnabled()) {

@@ -14,7 +14,7 @@ import {
   type TrayStepTimingSummary,
 } from "../tray-step-timing";
 
-// probe full step timing summaries through the public mark functions
+// full step timing summaries through the public mark functions
 jest.mock("../config", () => ({
   TRAY_INSTRUMENTATION_ENABLED: true,
   isTrayInstrumentationEnabled: () => true,
@@ -147,7 +147,7 @@ describe("tray step timing", () => {
     const root = "late-mark-root";
     const target = "late-mark-root-feedback";
 
-    // step 2 never receives its shell layout before the next request
+    // step 2 never gets its shell layout before the next request
     markTrayStepRequested(root);
     markTrayStepPresenterResolved(root, 2, "late-mark-root-areas");
     markTrayStepRequested(root);

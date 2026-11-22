@@ -4,7 +4,7 @@ import type {
   TrayStepOptions,
 } from "./types";
 
-// normalize optional step configuration before the presenter reads it
+// normalized step configuration the presenter reads
 export const DEFAULT_TRAY_STEP_OPTIONS: ResolvedTrayStepOptions = {
   hasFooter: false,
   scale: true,

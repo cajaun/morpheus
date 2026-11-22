@@ -1,4 +1,4 @@
-// verify which boundary transitions wait for the target content commit
+// which boundary transitions wait for the target content commit
 import { describe, expect, it, jest } from "@jest/globals";
 import type { TrayTransitionContract } from "../../../runtime/types";
 

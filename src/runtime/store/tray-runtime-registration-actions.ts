@@ -31,7 +31,7 @@ const areTrayPagesEquivalent = (
   previous.setPage === next.setPage &&
   previous.progress === next.progress;
 
-// registration commands keep the runtime registry aligned with rendered trays
+// registration commands keep the registry aligned with rendered trays
 export const createTrayRuntimeRegistrationActions = ({
   getState,
   setState,

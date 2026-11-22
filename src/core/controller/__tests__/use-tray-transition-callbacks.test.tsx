@@ -1,4 +1,4 @@
-// verify layout callbacks release the correct transition generation
+// layout callbacks release the right transition generation
 import React from "react";
 import { describe, expect, it, jest } from "@jest/globals";
 import type { SharedValue } from "react-native-reanimated";
@@ -7,7 +7,7 @@ import type { TrayTransitionContract } from "../../../runtime/types";
 import type { TraySheetFrame } from "../../types/tray";
 import { useTrayTransitionCallbacks } from "../use-tray-transition-callbacks";
 
-// create the shared footer value used by callback probes
+// the shared footer value callback probes use
 const shared = <T,>(value: T) => ({ value }) as SharedValue<T>;
 
 const sheetToSheetTransition: TrayTransitionContract = {
@@ -33,7 +33,7 @@ const sheetToSheetTransition: TrayTransitionContract = {
   sharedRegions: [],
 };
 
-// render lifecycle callbacks with one prepared sheet frame
+// lifecycle callbacks with one prepared sheet frame
 const renderCallbacks = (transition: TrayTransitionContract) => {
   const activeTrayIdRef = { current: "root-content-one" };
   const activeTransitionGenerationRef = { current: transition.generation };

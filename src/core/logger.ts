@@ -1,4 +1,4 @@
-// expose the runtime logger to core callers
+// the runtime logger for core callers
 export {
   isTrayDebugLoggingEnabled,
   log,

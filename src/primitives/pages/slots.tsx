@@ -2,7 +2,7 @@ import React from "react";
 import { StyleProp, StyleSheet, ViewStyle } from "react-native";
 import Animated from "react-native-reanimated";
 
-// separate page chrome slots from page content children
+// page chrome slots apart from page content children
 export const TrayPagesHeaderSlot: React.FC<{
   children: React.ReactNode;
   shell?: boolean;
@@ -12,7 +12,7 @@ export const TrayPagesHeaderSlot: React.FC<{
 
 TrayPagesHeaderSlot.displayName = "TrayPagesHeader";
 
-// render footer content with its authored visual styling
+// footer content with its authored styling
 export const TrayPagesFooterSlot: React.FC<{
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;

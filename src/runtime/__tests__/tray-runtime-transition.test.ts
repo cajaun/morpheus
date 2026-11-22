@@ -1,13 +1,13 @@
-// verify navigation and registration preserve transition identity
+// navigation and registration keep transition identity
 import { describe, expect, it, jest } from "@jest/globals";
 import type { SharedValue } from "react-native-reanimated";
 import { createTrayRuntimeStore } from "../store/create-tray-runtime-store";
 import type { TrayPagesRegistration, TrayRegistration } from "../types";
 
-// create the shared value shape used by runtime transition tests
+// the shared value shape runtime transition tests use
 const sharedValue = (value: number) => ({ value }) as SharedValue<number>;
 
-// build a store with inert external dependencies
+// a store with inert external dependencies
 const createStore = (
   prepareKeyboardHandoff: () => void = () => undefined,
   anticipateKeyboard: () => void = () => undefined,
@@ -19,7 +19,7 @@ const createStore = (
     registerFocusable: () => () => undefined,
   });
 
-// build page registration data for fullscreen page transitions
+// page registration data for fullscreen page transitions
 const pages = (pageIndex: number): TrayPagesRegistration => ({
   stepKey: "fullscreen",
   pageIndex,

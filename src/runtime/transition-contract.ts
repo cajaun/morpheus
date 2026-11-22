@@ -12,7 +12,7 @@ import type {
   TraySharedRegionContract,
 } from "./types";
 
-// derive an endpoint from stack identity and registered step data
+// an endpoint from stack identity and registered step data
 export const resolveTrayPresentationEndpoint = ({
   entry,
   registration,
@@ -51,7 +51,7 @@ export const resolveTrayPresentationEndpoint = ({
   };
 };
 
-// derive forward or backward motion from the step indexes
+// forward or backward motion from the step indexes
 const resolveDirection = (
   reason: TrayTransitionReason,
   from: TrayPresentationEndpoint | null,
@@ -94,7 +94,7 @@ const resolveBoundary = (
     return "closing";
   }
 
-  // nested/root entries are separate host surfaces their mode values must not be interpreted as one shell morphing between sheet and fullscreen
+  // nested and root entries are separate host surfaces, so their modes never form one shell morph
   if (from.trayId !== to.trayId) {
     return reason === "closeNested" ? "closing" : "opening";
   }
@@ -112,7 +112,7 @@ const resolveBoundary = (
     : "sheetToSheet";
 };
 
-// build the immutable identity and shared region plan for a transition
+// the immutable identity and shared region plan of a transition
 export const createTrayTransitionContract = ({
   generation,
   reason,

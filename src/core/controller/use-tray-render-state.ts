@@ -1,222 +1,24 @@
-import React, {
-  useCallback,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useCallback, useRef, useState } from "react";
 import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
-import { StyleProp, ViewStyle } from "react-native";
 import { RenderedTrayState } from "../types";
-import type { TrayTransitionContract } from "../../runtime/types";
 import { log } from "../logger";
-import { describeTrayTransition } from "../diagnostics/tray-transition-diagnostics";
 import { markTrayBoundarySnapshotCommitted } from "../../telemetry/tray-boundary-timing";
+import {
+  createTrayRenderSnapshotStore,
+  toRenderedTrayState,
+  areTrayStatesEqual,
+  areTrayShellPresentationStatesEqual,
+  areTrayShellStatesEqual,
+  commitTraySnapshot,
+  describeTrayState,
+  type TraySnapshot,
+  type InternalRenderedTrayState,
+  type TrayRenderSnapshotStore,
+} from "./tray-render-snapshot-store";
+export { useTrayRenderSnapshot, useTrayRenderSnapshotRegion } from "./tray-render-snapshot-store";
+export type { TrayRenderSnapshotStore } from "./tray-render-snapshot-store";
 
-// render state holds the committed payload while newer props continue to stream in
-type TraySnapshot = {
-  prepared?: boolean;
-  visible?: boolean;
-  rootTrayId?: string;
-  header?: React.ReactNode;
-  content?: React.ReactNode;
-  footer?: React.ReactNode;
-  trayId?: string;
-  keyboardAware?: boolean;
-  fullScreen?: boolean;
-  fullScreenBackgroundScale?: number;
-  fullScreenSafeAreaTop?: boolean;
-  fullScreenDraggable?: boolean;
-  containerStyle?: StyleProp<ViewStyle>;
-  className?: string;
-  footerStyle?: StyleProp<ViewStyle>;
-  footerClassName?: string;
-  transitionContract?: TrayTransitionContract | null;
-};
-
-type InternalRenderedTrayState = RenderedTrayState;
-
-export type TrayRenderSnapshotStore = {
-  getSnapshot: () => RenderedTrayState;
-  subscribe: (listener: () => void) => () => void;
-  publish: (snapshot: RenderedTrayState) => void;
-};
-
-const createTrayRenderSnapshotStore = (
-  initialSnapshot: RenderedTrayState,
-): TrayRenderSnapshotStore => {
-  let snapshot = initialSnapshot;
-  const listeners = new Set<() => void>();
-
-  return {
-    getSnapshot: () => snapshot,
-    subscribe: (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    publish: (nextSnapshot) => {
-      if (snapshot === nextSnapshot) {
-        return;
-      }
-
-      snapshot = nextSnapshot;
-      listeners.forEach((listener) => listener());
-    },
-  };
-};
-
-// The visual subtree can receive a committed payload without making the
-// controller host reconcile its measurement and lifecycle hooks again.
-export const useTrayRenderSnapshot = (
-  store: TrayRenderSnapshotStore,
-) =>
-  useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
-
-// Subscribe to one payload region without making the subscriber observe the
-// other regions. The store publishes one coherent snapshot, but React's
-// external-store contract compares the selected snapshot with Object.is. A
-// stable region getter therefore prevents an unchanged header/footer from
-// reconciling when only the step body changes.
-export const useTrayRenderSnapshotRegion = <T extends keyof RenderedTrayState>(
-  store: TrayRenderSnapshotStore,
-  region: T,
-): RenderedTrayState[T] => {
-  const getRegionSnapshot = React.useCallback(
-    () => store.getSnapshot()[region],
-    [region, store],
-  );
-
-  return useSyncExternalStore(
-    store.subscribe,
-    getRegionSnapshot,
-    getRegionSnapshot,
-  );
-};
-
-// convert a prop snapshot into the normalized rendered shell shape
-const toRenderedTrayState = ({
-  header,
-  content,
-  footer,
-  trayId,
-  keyboardAware,
-  fullScreen,
-  fullScreenBackgroundScale,
-  fullScreenSafeAreaTop,
-  fullScreenDraggable,
-  containerStyle,
-  className,
-  footerStyle,
-  footerClassName,
-  transitionContract,
-}: TraySnapshot): RenderedTrayState => ({
-  header: header ?? null,
-  content: content ?? null,
-  footer: footer ?? null,
-  trayId,
-  keyboardAware,
-  fullScreen,
-  fullScreenBackgroundScale,
-  fullScreenSafeAreaTop,
-  fullScreenDraggable,
-  containerStyle,
-  className,
-  footerStyle,
-  footerClassName,
-  transitionContract,
-});
-
-// compare shell snapshots before publishing another render
-const areTrayStatesEqual = (
-  current: RenderedTrayState,
-  next: RenderedTrayState,
-) =>
-  current.header === next.header &&
-  current.content === next.content &&
-  current.footer === next.footer &&
-  current.trayId === next.trayId &&
-  current.keyboardAware === next.keyboardAware &&
-  current.fullScreen === next.fullScreen &&
-  current.fullScreenBackgroundScale === next.fullScreenBackgroundScale &&
-  current.fullScreenSafeAreaTop === next.fullScreenSafeAreaTop &&
-  current.fullScreenDraggable === next.fullScreenDraggable &&
-  current.containerStyle === next.containerStyle &&
-  current.className === next.className &&
-  current.footerStyle === next.footerStyle &&
-  current.footerClassName === next.footerClassName &&
-  current.transitionContract === next.transitionContract;
-
-// Region payloads are delivered through the snapshot store. The controller
-// host only needs another React state commit when shell topology/configuration
-// changes; replacing an already-mounted header/body/footer node does not
-// require rerunning the measurement and animation hook graph.
-const areTrayShellPresentationStatesEqual = (
-  current: RenderedTrayState,
-  next: RenderedTrayState,
-) =>
-  current.keyboardAware === next.keyboardAware &&
-  current.fullScreen === next.fullScreen &&
-  current.fullScreenBackgroundScale === next.fullScreenBackgroundScale &&
-  current.fullScreenSafeAreaTop === next.fullScreenSafeAreaTop &&
-  current.fullScreenDraggable === next.fullScreenDraggable &&
-  current.containerStyle === next.containerStyle &&
-  current.className === next.className &&
-  current.footerStyle === next.footerStyle &&
-  current.footerClassName === next.footerClassName &&
-  (current.header != null) === (next.header != null) &&
-  (current.content != null) === (next.content != null) &&
-  (current.footer != null) === (next.footer != null);
-
-const areTrayShellStatesEqual = (
-  current: RenderedTrayState,
-  next: RenderedTrayState,
-) =>
-  current.trayId === next.trayId &&
-  current.transitionContract === next.transitionContract &&
-  areTrayShellPresentationStatesEqual(current, next);
-
-// reject transient empty payloads before they erase visible content
-const commitTraySnapshot = (
-  current: InternalRenderedTrayState,
-  next: RenderedTrayState,
-): InternalRenderedTrayState => {
-  const isTransientEmptyPayload =
-    current.trayId !== undefined &&
-    next.trayId !== undefined &&
-    current.trayId === next.trayId &&
-    current.fullScreen === next.fullScreen &&
-    next.header == null &&
-    next.content == null &&
-    (current.header != null || current.content != null);
-
-  if (isTransientEmptyPayload) {
-    log("RENDER SNAPSHOT PUBLISH IGNORED — transient empty payload", {
-      current: describeTrayState(current),
-      next: describeTrayState(next),
-    });
-    return current;
-  }
-
-  if (areTrayStatesEqual(current, next)) {
-    // returning current avoids a render when passive sync repeats the same snapshot
-    return current;
-  }
-
-  return next;
-};
-
-// expose the fields needed to diagnose a rendered shell snapshot
-const describeTrayState = (state: RenderedTrayState) => ({
-  trayId: state.trayId,
-  fullScreen: state.fullScreen ?? false,
-  hasHeader: state.header != null,
-  hasContent: state.content != null,
-  hasFooter: state.footer != null,
-  transitionGeneration: state.transitionContract?.generation,
-  transitionBoundary: state.transitionContract?.boundary,
-  transition: describeTrayTransition(state.transitionContract),
-});
-
-// retain a stable rendered payload while transitions consume new props
+// a stable rendered payload while transitions consume new props
 export const useTrayRenderState = ({
   prepared = false,
   visible = false,
@@ -278,9 +80,7 @@ export const useTrayRenderState = ({
   const transitionContractRef = useRef(transitionContract);
   transitionContractRef.current = transitionContract;
 
-  // A prepared host already owns the controller/native shell. On its first
-  // presentation, use the incoming payload during this render instead of
-  // waiting for the visibility effect to publish a second snapshot.
+  // a prepared host uses the incoming payload on its first presentation instead of waiting for a second snapshot
   const wasPreparedRef = useRef(prepared);
   const preparedActivation =
     visible && wasPreparedRef.current && prepared !== true;
@@ -312,10 +112,7 @@ export const useTrayRenderState = ({
     useState<InternalRenderedTrayState>(initialSnapshot);
   const lastRequestedSnapshotRef = useRef<RenderedTrayState | null>(null);
 
-  // Keep the content-free visual tree mounted while a host is prepared. The
-  // assignment reset clears its snapshot store, but clearing the rendered
-  // tray id here would unmount the native shell and make activation mount it
-  // again on the opening path.
+  // a prepared host keeps its content-free visual tree mounted so activation never remounts the native shell
   const renderedTrayForRender =
     (prepared && !visible) || preparedActivation
       ? initialSnapshot
@@ -323,10 +120,7 @@ export const useTrayRenderState = ({
 
   renderedTrayRef.current = renderedTrayForRender;
 
-  // Record the snapshot only after React has committed the rendered payload.
-  // The previous marker lived in a passive prop-sync effect, so it described
-  // the request for a state update and could precede the rendered-commit mark,
-  // producing impossible negative boundary durations.
+  // mark the snapshot after React commits the rendered payload, a passive effect would precede the rendered-commit mark
   useProfiledTrayLayoutEffect("useTrayRenderState.markCommittedSnapshot", () => {
     if (!visible || renderedTrayForRender.trayId === undefined) {
       return;
@@ -372,13 +166,7 @@ export const useTrayRenderState = ({
       renderedTrayRef.current = committed;
       snapshotStore.publish(committed);
 
-      // Same-mode step changes replace the arbitrary React payload and the
-      // transition descriptor, but not the shell presentation contract. Keep
-      // the committed snapshot out of the controller state update in this
-      // case; Tray still receives the new transition descriptor directly,
-      // while the snapshot store updates only the payload regions. Boundary
-      // changes retain the state update because geometry and animation policy
-      // must change together.
+      // same-mode step changes keep the snapshot out of controller state and update the payload regions, boundary changes update both because geometry and animation policy change together
       const isSameModeStepCommit =
         current.trayId !== undefined &&
         committed.trayId !== undefined &&
@@ -428,13 +216,12 @@ export const useTrayRenderState = ({
         activeTrayId,
         current: describeTrayState(current),
       });
-      // same host node sync must not steal a transition owned by another tray id
+      // same-host node sync never steals a transition owned by another tray id
       return;
     }
 
     const next = {
-      // preserve committed regions across native prop gaps; real step changes
-      // publish a new snapshot
+      // committed regions survive native prop gaps, real step changes publish a new snapshot
       content:
         contentRef.current ??
         (fullScreenRef.current === current.fullScreen

@@ -54,7 +54,7 @@ export const useTrayGeometryOwnership = ({
   const preparedSheetFrameRef = useRef<TraySheetFrame | undefined>(
     undefined,
   );
-  // keeps the completed target authoritative while queued native onlayout events from the transition drain
+  // the completed target stays authoritative while queued native onLayout events from the transition drain
   const committedSheetFrameRef = useRef<TraySheetFrame | undefined>(
     undefined,
   );

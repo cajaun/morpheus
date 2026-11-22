@@ -25,11 +25,7 @@ type TrayNavigationSnapshot = {
   pageControls: TrayPagesRegistration | null;
 };
 
-// A navigation consumer needs one coherent view of the runtime state. Keep
-// that view referentially stable when an unrelated runtime write changes the
-// store object but not the fields navigation actually renders. This prevents
-// one footer from maintaining several subscriptions and scheduling several
-// selector calculations for the same step transition.
+// one stable navigation view per consumer so unrelated runtime writes skip extra subscriptions and selector runs
 const areTrayNavigationSnapshotsEquivalent = (
   previous: TrayNavigationSnapshot,
   next: TrayNavigationSnapshot,
@@ -68,10 +64,7 @@ const createTrayNavigationSelector = (trayId: string) => {
   };
 };
 
-// Resolve command state imperatively for action-only consumers. These
-// consumers intentionally do not subscribe to the store; commands read the
-// current snapshot at press time so a stable callback never captures stale
-// step state.
+// action-only consumers read state at press time so a stable callback never captures stale step state
 const resolveTrayNavigationSnapshot = (
   state: TrayHostStateValue,
   trayId: string,
@@ -146,7 +139,7 @@ const toTrayNavigationState = (
     isActive,
     index,
     total,
-    // page controls take priority so page navigation keeps the shell step stable
+    // page controls win so page navigation keeps the shell step stable
     canGoNext: pageControls ? pageControls.canGoNext : index < total - 1,
     canGoBack: pageControls ? pageControls.canGoBack : index > 0,
     pageIndex: pageControls?.pageIndex,
@@ -167,14 +160,7 @@ const areTrayNavigationStatesEqual = (
 
 const selectWholeNavigationState = (state: TrayNavigationState) => state;
 
-// Subscribe to navigation state for components that render it (step counters,
-// pagers, footers that hide on the last step). Pass a selector to re-render
-// only when that slice changes:
-//
-//   const index = useTrayNavigationState((state) => state.index);
-//
-// Components that only trigger navigation should use useTrayNavigation(),
-// which subscribes to nothing.
+// subscribe to navigation state with an optional selector, components that only navigate use useTrayNavigation()
 export function useTrayNavigationState(): TrayNavigationState;
 export function useTrayNavigationState<T>(
   selector: (state: TrayNavigationState) => T,
@@ -190,8 +176,7 @@ export function useTrayNavigationState<T>(
     throw new Error("Must be used within Tray.Root scope");
   }
 
-  // Keep the latest selector without changing the store selector identity, so
-  // an inline selector does not reset the cached result on every render.
+  // keep the latest selector without changing the store selector identity
   const selectorRef = useRef(selector);
   const isEqualRef = useRef(isEqual);
   selectorRef.current = selector;
@@ -239,11 +224,7 @@ export function useTrayNavigationState<T>(
   return useTrayHostSelector(storeSelector) as T | TrayNavigationState;
 }
 
-// Navigation commands for the nearest tray. This hook subscribes to no
-// navigation state, so pressing next/back never re-renders the step that is
-// being left. Commands read the current runtime snapshot at press time, so
-// their identities stay stable and never capture stale step state. Read state
-// with useTrayNavigationState(selector) when a component renders it.
+// navigation commands for the nearest tray, they subscribe to nothing and read the runtime snapshot at press time
 export const useTrayNavigation = () => {
   const trayId = useTrayScope();
   const store = useTrayRuntimeStore();
@@ -360,5 +341,5 @@ export const useTrayNavigation = () => {
   );
 };
 
-// @deprecated since 3.0.0 — useTrayNavigation is now actions-only; use it directly.
+// @deprecated since 3.0.0, useTrayNavigation is actions-only and replaces this hook
 export const useTrayNavigationActions = useTrayNavigation;

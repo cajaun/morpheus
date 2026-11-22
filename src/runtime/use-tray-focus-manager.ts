@@ -1,7 +1,6 @@
 import { useCallback, useRef } from "react";
 
-// focus management is tray scoped so one close action only affects its own inputs
-// track focusable inputs so tray dismissal can clear the active field
+// track focusable inputs per tray so dismissal clears the active field of that tray
 export const useTrayFocusManager = (
   dismissKeyboard: () => void | Promise<void>,
 ) => {
@@ -38,7 +37,7 @@ export const useTrayFocusManager = (
       if (trayId) {
         const refs = focusableRegistryRef.current[trayId];
 
-        // blur first because some platforms ignore dismiss when focus remains active
+        // blur first because some platforms ignore dismiss while focus stays
         refs?.forEach((ref) => {
           const node = ref.current;
 

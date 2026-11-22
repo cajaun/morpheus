@@ -5,7 +5,7 @@ import {
   SCREEN_WIDTH as RUNTIME_SCREEN_WIDTH,
 } from "../../runtime/viewport";
 
-// snapshot viewport dimensions used by tray geometry worklets
+// viewport dimensions snapshotted for tray geometry worklets
 export const SCREEN_HEIGHT = Dimensions.get("window").height;
 export const SCREEN_WIDTH = RUNTIME_SCREEN_WIDTH;
 export const FULL_SCREEN_BACKGROUND_SCALE_WIDTH_OFFSET =
@@ -13,8 +13,7 @@ export const FULL_SCREEN_BACKGROUND_SCALE_WIDTH_OFFSET =
 export const DEFAULT_FULL_SCREEN_BACKGROUND_SCALE =
   RUNTIME_DEFAULT_FULL_SCREEN_BACKGROUND_SCALE;
 
-// A plain absolute-fill style. StyleSheet.absoluteFillObject was removed from
-// React Native's types; this object works on every supported version.
+// plain absolute fill, StyleSheet.absoluteFillObject left React Native's types
 export const ABSOLUTE_FILL = {
   position: "absolute",
   left: 0,

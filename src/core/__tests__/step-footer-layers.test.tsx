@@ -1,11 +1,10 @@
-// Where a step's footer is drawn: pinned to the sheet's bottom, or inside an
-// entering step's content until that step change completes.
+// a step's footer draws pinned to the sheet bottom or inside an entering step's content until the step change completes
 import { describe, expect, it, jest } from "@jest/globals";
 import React from "react";
 import { Text } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
-// motion is covered on device; here only placement and metrics matter
+// motion is covered on device, these tests check placement and metrics
 jest.mock("../../tray-step-content", () => ({
   TrayRevealedStepContent: ({ children }: { children: React.ReactNode }) =>
     children,
@@ -61,7 +60,7 @@ describe("step footer placement", () => {
       generation: 4,
     });
 
-    // a stale completion does not pin it
+    // a stale completion leaves it entering
     store.settle(3);
     expect(store.getSnapshot().placement).toBe("content");
 
@@ -123,7 +122,7 @@ describe("step footer rendering", () => {
       renderer = TestRenderer.create(tree(store, metrics));
     });
 
-    // no footer: the reserve is released
+    // a step without a footer releases the reserve
     expect(renderer.root.findAllByType(Text)).toHaveLength(0);
     expect(metrics.heightRef.current).toBe(0);
 

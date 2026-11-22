@@ -30,10 +30,7 @@ export const useTrayPagesRegistration = ({
   totalPages,
   trayId,
 }: Params) => {
-  // Keep the registration alive while its owner and step stay the same.
-  // Page index/progress changes update the payload below; they are not an
-  // unmount, so clearing the store in their cleanup only creates an extra
-  // global store notification before the replacement payload is published.
+  // the registration lives as long as its owner and step, page changes update the payload without an unmount and an extra store notification
   useEffect(() => {
     if (!trayId || !activeStepKey) {
       return;
