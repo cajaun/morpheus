@@ -11,6 +11,13 @@ import { TrayContentCommitContext } from "../tray-content-commit";
 import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import { TrayStepContent } from "../../tray-step-content";
 import {
+  createStepFooterStore,
+  TrayContentFooterSlot,
+  TrayStepFooterLayers,
+  TrayStepFooterRegionContext,
+  TrayStepFooterStoreContext,
+} from "../step-footer";
+import {
   TrayPreloadingContent,
   TrayPreloadingHeader,
 } from "./preloading-content";
@@ -37,7 +44,7 @@ import type { PresentedPreloadedStep } from "../../runtime/presenter/types";
 
 const NO_PRELOADED_STEPS: readonly PresentedPreloadedStep[] = [];
 
-type PresentedTrayRegionName = "header" | "content" | "footer";
+type PresentedTrayRegionName = "header" | "content" | "footer" | "stepFooter";
 
 type PresentedTrayPayloadStore = {
   getSnapshot: () => PresentedTrayProps["payload"];
@@ -53,6 +60,10 @@ type PresentedTrayRegionPayload = Pick<
   | "header"
   | "content"
   | "footer"
+  | "stepFooter"
+  | "stepFooterKey"
+  | "footerStyle"
+  | "footerClassName"
   | "fullScreen"
   | "fullScreenBoundaryExit"
   | "isFirstRender"
@@ -121,6 +132,18 @@ const arePresentedTrayRegionPayloadsEquivalent = (
     return false;
   }
 
+  if (region === "stepFooter") {
+    return (
+      previous.stepFooter === next.stepFooter &&
+      previous.stepFooterKey === next.stepFooterKey &&
+      previous.footerStyle === next.footerStyle &&
+      previous.footerClassName === next.footerClassName &&
+      previous.fullScreen === next.fullScreen &&
+      previous.fullScreenBoundaryExit === next.fullScreenBoundaryExit &&
+      previous.isFirstRender === next.isFirstRender
+    );
+  }
+
   if (region === "footer") {
     // The footer node is shared across steps in the common onboarding shape.
     // Its navigation hook observes the runtime store directly, so a new
@@ -159,13 +182,23 @@ const createPresentedTrayRegionSelector = (
       header: region === "header" ? payload.header : null,
       content: region === "content" ? payload.content : null,
       footer: region === "footer" ? payload.footer : null,
+      stepFooter: region === "stepFooter" ? payload.stepFooter ?? null : null,
+      stepFooterKey:
+        region === "stepFooter" ? payload.stepFooterKey ?? null : null,
+      footerStyle: region === "stepFooter" ? payload.footerStyle : undefined,
+      footerClassName:
+        region === "stepFooter" ? payload.footerClassName : undefined,
       fullScreen: payload.fullScreen,
       fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
       isFirstRender: payload.isFirstRender,
       preloadCapable:
-        region === "footer" ? undefined : payload.preloadCapable,
+        region === "footer" || region === "stepFooter"
+          ? undefined
+          : payload.preloadCapable,
       preloadedSteps:
-        region === "footer" ? undefined : payload.preloadedSteps,
+        region === "footer" || region === "stepFooter"
+          ? undefined
+          : payload.preloadedSteps,
     };
 
     if (
@@ -306,6 +339,7 @@ const PresentedTrayRegion = ({
             skipEntering={payload.isFirstRender}
           >
             {payload.content}
+            <TrayContentFooterSlot trayId={payload.trayId} />
           </TrayStepContent>
         </TrayStepOptionsProvider>
       </TrayScopeProvider>
@@ -317,6 +351,19 @@ const PresentedTrayRegion = ({
       <TrayScopeProvider value={payload.rootTrayId}>
         <TrayStepOptionsProvider value={payload.stepOptions}>
           {payload.footer}
+        </TrayStepOptionsProvider>
+      </TrayScopeProvider>
+    );
+  }
+
+  if (region === "stepFooter") {
+    regionNode = (
+      <TrayScopeProvider value={payload.rootTrayId}>
+        <TrayStepOptionsProvider value={payload.stepOptions}>
+          <TrayStepFooterLayers
+            skipEntering={payload.isFirstRender}
+            fullScreenBoundaryExit={payload.fullScreenBoundaryExit}
+          />
         </TrayStepOptionsProvider>
       </TrayScopeProvider>
     );
@@ -369,6 +416,19 @@ const PresentedTray = ({
   }
 
   const payloadStore = payloadStoreRef.current.store;
+  const stepFooterStoreRef = useRef<{
+    store: ReturnType<typeof createStepFooterStore>;
+    payloadStore: PresentedTrayPayloadStore;
+  } | null>(null);
+
+  if (stepFooterStoreRef.current?.payloadStore !== payloadStore) {
+    stepFooterStoreRef.current = {
+      store: createStepFooterStore(),
+      payloadStore,
+    };
+  }
+
+  const stepFooterStore = stepFooterStoreRef.current.store;
 
   // Publish after the host commit. Regions therefore never observe a payload
   // that the animated shell has not committed, which preserves close and
@@ -377,13 +437,21 @@ const PresentedTray = ({
   // and clears it when the native close lifecycle completes.
   useProfiledTrayLayoutEffect("PresentedTray.publishPayload", () => {
     if (payload.visible) {
+      // place the step's footer first so its new place renders in the same
+      // commit as the step's regions
+      if (payload.stepFooterKey !== undefined) {
+        stepFooterStore.commit(payload);
+      }
+
       payloadStore.publish(payload);
     }
-  }, [payload, payloadStore]);
+  }, [payload, payloadStore, stepFooterStore]);
 
   const hasHeader = Boolean(payload.header);
   const hasContent = payload.content != null;
   const hasFooter = Boolean(payload.footer);
+  // fixed per registration: the tray authors footers per step
+  const hasStepFooterLayer = payload.stepFooterKey !== undefined;
 
   const handleProfileRender = useCallback<React.ProfilerOnRenderCallback>(
     (
@@ -480,6 +548,17 @@ const PresentedTray = ({
       ) : null,
     [assignmentId, hasFooter, payloadStore],
   );
+  const stepFooter = useMemo(
+    () =>
+      hasStepFooterLayer ? (
+        <PresentedTrayRegion
+          store={payloadStore}
+          region="stepFooter"
+          assignmentId={assignmentId}
+        />
+      ) : null,
+    [assignmentId, hasStepFooterLayer, payloadStore],
+  );
   const handleDismissKeyboard = useCallback(
     () => dismissKeyboardForTray(payload.rootTrayId),
     [dismissKeyboardForTray, payload.rootTrayId],
@@ -521,8 +600,18 @@ const PresentedTray = ({
     />
   );
 
+  const presentedTray = stepFooter ? (
+    <TrayStepFooterStoreContext.Provider value={stepFooterStore}>
+      <TrayStepFooterRegionContext.Provider value={stepFooter}>
+        {tray}
+      </TrayStepFooterRegionContext.Provider>
+    </TrayStepFooterStoreContext.Provider>
+  ) : (
+    tray
+  );
+
   if (!isTrayInstrumentationEnabled()) {
-    return tray;
+    return presentedTray;
   }
 
   return (
@@ -530,7 +619,7 @@ const PresentedTray = ({
       id={`tray-${assignmentId}`}
       onRender={handleProfileRender}
     >
-      {tray}
+      {presentedTray}
     </React.Profiler>
   );
 };

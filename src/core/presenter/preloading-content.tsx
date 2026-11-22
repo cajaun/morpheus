@@ -18,6 +18,7 @@ import {
 } from "../../runtime/tray-context";
 import type { ResolvedTrayStepOptions } from "../../runtime/types";
 import { TrayRevealedStepContent } from "../../tray-step-content";
+import { TrayContentFooterSlot } from "../step-footer";
 import {
   TrayHeaderTransitionProvider,
   type TrayHeaderTransitionValue,
@@ -177,6 +178,10 @@ const renderLayer = (
         </TrayStepOptionsProvider>
       </TrayStepLayerProvider>
     </Activity>
+    {/* an entering footer is drawn with its step's content (step-footer.tsx) */}
+    <TrayStepOptionsProvider value={stepOptions}>
+      <TrayContentFooterSlot trayId={trayId} />
+    </TrayStepOptionsProvider>
   </TrayRevealedStepContent>
 );
 

@@ -5,6 +5,7 @@ import type {
   TrayStepProps,
 } from "./types";
 import { TrayStep } from "./tray-step";
+import { TrayFooter, type TrayFooterProps } from "../primitives/footer";
 
 type AuthoredElement = React.ReactElement<{
   children?: React.ReactNode;
@@ -36,21 +37,37 @@ const isTrayStepElement = (
 ): child is React.ReactElement<TrayStepProps> =>
   React.isValidElement(child) && child.type === TrayStep;
 
+const isTrayFooterElement = (
+  child: React.ReactNode,
+): child is React.ReactElement<TrayFooterProps> =>
+  React.isValidElement(child) && child.type === TrayFooter;
+
 // turn one declarative step into the definition consumed by the existing runtime
 const compileStep = (
   step: React.ReactElement<TrayStepProps>,
   index: number,
   stepOptions?: TrayStepOptions,
 ): TrayStepDefinition => {
-  const authoredChildren = flattenChildren(step.props.children).filter(
-    (child) => child != null,
+  const allChildren = flattenChildren(step.props.children).filter(
+    (child) => child != null && typeof child !== "boolean",
   );
+  // a Tray.Footer anywhere in the step is the step's own footer
+  const footers = allChildren.filter(isTrayFooterElement);
+  const authoredChildren = allChildren.filter(
+    (child) => !isTrayFooterElement(child),
+  );
+
+  if (footers.length > 1) {
+    throw new Error("Tray.Step accepts at most one Tray.Footer");
+  }
 
   if (authoredChildren.length < 1 || authoredChildren.length > 2) {
     throw new Error(
-      "Tray.Step accepts an optional header followed by exactly one content root",
+      "Tray.Step accepts an optional header followed by exactly one content root, plus an optional Tray.Footer",
     );
   }
+
+  const footer = footers[0];
 
   const options =
     stepOptions || step.props.options
@@ -63,6 +80,12 @@ const compileStep = (
     key,
     header: authoredChildren.length === 2 ? authoredChildren[0] : undefined,
     content: authoredChildren[authoredChildren.length - 1] as React.ReactNode,
+    ...(footer
+      ? {
+          footer,
+          footerId: footer.props.id,
+        }
+      : null),
     options,
   };
 };

@@ -9,6 +9,10 @@ import type { UsageVariant } from "./component-presentation/types";
 import CreatingWalletsInfoTray from "./creating-wallets-info";
 import ColorIndexTray from "./color-index";
 import DynamicHeightsTray from "./dynamic-heights";
+import EqualHeightsTray from "./equal-heights";
+import FooterStepsTray from "./step-footers/four-steps";
+import FooterEqualHeightsTray from "./step-footers/equal-heights";
+import FooterFullScreenTray from "./step-footers/fullscreen";
 import ExpandFromTriggerDemo from "./expand-from-trigger";
 import HelpSupportTray from "./help-support";
 import IdentityRateBoostTray from "./identity-rate-boost";
@@ -116,6 +120,42 @@ export const TRAY_EXAMPLE_VARIANTS: UsageVariant[] = [
     content: (
       <TrayExampleFrame>
         <DynamicHeightsTray />
+      </TrayExampleFrame>
+    ),
+  },
+  {
+    value: "equal-heights",
+    label: "Equal Heights",
+    content: (
+      <TrayExampleFrame>
+        <EqualHeightsTray />
+      </TrayExampleFrame>
+    ),
+  },
+  {
+    value: "footer-steps",
+    label: "Footer Steps",
+    content: (
+      <TrayExampleFrame>
+        <FooterStepsTray />
+      </TrayExampleFrame>
+    ),
+  },
+  {
+    value: "footer-equal-heights",
+    label: "Footer Equal Heights",
+    content: (
+      <TrayExampleFrame>
+        <FooterEqualHeightsTray />
+      </TrayExampleFrame>
+    ),
+  },
+  {
+    value: "footer-fullscreen",
+    label: "Footer Fullscreen",
+    content: (
+      <TrayExampleFrame>
+        <FooterFullScreenTray />
       </TrayExampleFrame>
     ),
   },

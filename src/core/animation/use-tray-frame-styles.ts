@@ -687,6 +687,63 @@ export const useTrayFrameStyles = ({
     transitionCompletedGeneration,
   ]);
 
+  // The per-step footer layer's frame: the sheet's horizontal inset and
+  // bottom edge, following the shell across a fullscreen boundary exactly
+  // like the fixed footer below. Its visibility is the surface's own.
+  const stepFooterContainerStyle = useAnimatedStyle(() => {
+    const targetLeft = fullScreen ? 0 : HORIZONTAL_MARGIN;
+    const footerBottom = HORIZONTAL_MARGIN + targetBottomInset;
+
+    if (fullScreenBoundaryTransition) {
+      const sourceFullScreen =
+        fullScreenBoundarySourceFullScreen ?? !fullScreen;
+      const targetFullScreen =
+        fullScreenBoundaryTargetFullScreen ?? fullScreen;
+      const sourceLeft = sourceFullScreen ? 0 : HORIZONTAL_MARGIN;
+      const targetBoundaryLeft = targetFullScreen ? 0 : HORIZONTAL_MARGIN;
+      const progress = resolveBoundaryProgress(
+        morphProgress.value,
+        transitionGeneration,
+        transitionStartedGeneration?.value,
+        transitionLayoutStartedGeneration?.value,
+        transitionCompletedGeneration?.value,
+        fullScreenBoundaryTransition,
+      );
+      const left = interpolate(
+        progress,
+        [0, 1],
+        [sourceLeft, targetBoundaryLeft],
+      );
+
+      return {
+        left,
+        right: left,
+        bottom: footerBottom,
+        borderBottomLeftRadius: BORDER_RADIUS,
+        borderBottomRightRadius: BORDER_RADIUS,
+      };
+    }
+
+    return {
+      left: targetLeft,
+      right: targetLeft,
+      bottom: footerBottom,
+      borderBottomLeftRadius: BORDER_RADIUS,
+      borderBottomRightRadius: BORDER_RADIUS,
+    };
+  }, [
+    fullScreen,
+    fullScreenBoundaryTransition,
+    fullScreenBoundarySourceFullScreen,
+    fullScreenBoundaryTargetFullScreen,
+    morphProgress,
+    targetBottomInset,
+    transitionGeneration,
+    transitionStartedGeneration,
+    transitionLayoutStartedGeneration,
+    transitionCompletedGeneration,
+  ]);
+
   const footerContainerStyle = useAnimatedStyle(() => {
     const targetLeft = fullScreen ? 0 : HORIZONTAL_MARGIN;
     const targetRight = fullScreen ? 0 : HORIZONTAL_MARGIN;
@@ -848,5 +905,6 @@ export const useTrayFrameStyles = ({
     footerSpacerStyle,
     trayLayoutStyle,
     footerContainerStyle,
+    stepFooterContainerStyle,
   };
 };

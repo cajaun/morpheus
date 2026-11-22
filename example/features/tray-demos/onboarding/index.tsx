@@ -12,6 +12,7 @@ import {
 import { BUTTON_HEIGHT } from "@/features/tray-demos/presets/animated-flow-button";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
+import { NextButton } from "../step-footers/fullscreen";
 import { OnboardingPageHeader as SharedOnboardingPageHeader } from "../shared/onboarding-page-header";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { SymbolView } from "expo-symbols";
@@ -380,7 +381,7 @@ const EXPAND_FROM_TRIGGER_TRANSITION = {
 
 const sharedStepOptions = {
   className: "bg-white",
-  footerStyle: ONBOARDING_FOOTER_STYLE,
+  // footerStyle: ONBOARDING_FOOTER_STYLE,
 } as const;
 
 export const OnboardingPageHeader = () => {
@@ -710,6 +711,13 @@ const BackgroundScalePreview = () => (
   </View>
 );
 
+// The Footer Fullscreen demo's Continue footer, shared by every step.
+const ONBOARDING_ROOT_FOOTER = (
+  <Tray.Footer>
+    <NextButton label="Continue" />
+  </Tray.Footer>
+);
+
 const OnboardingExample = () => {
   return (
     <View
@@ -722,7 +730,10 @@ const OnboardingExample = () => {
     >
       <BackgroundScalePreview />
 
-      <Tray.Root stepOptions={sharedStepOptions} footer={<OnboardingFooter />}>
+      <Tray.Root
+        stepOptions={sharedStepOptions}
+        footer={ONBOARDING_ROOT_FOOTER}
+      >
         <Tray.Trigger haptics="feedback">
           <ExampleTrigger label="Onboarding" />
         </Tray.Trigger>

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   DEFAULT_TRAY_STEP_OPTIONS,
   resolveTrayStepOptions,
@@ -124,6 +125,62 @@ const getTrayMotionCapabilities = (
 
 const NO_PRELOADED_STEPS: readonly PresentedPreloadedStep[] = [];
 
+// A tray that opens from its trigger morphs the trigger into its footer; that
+// footer stays on the fixed footer layer, which owns the morph.
+const usesOriginFooterTransition = (registration: TrayRegistration) =>
+  registration.transition?.open === "expandFromTrigger" ||
+  registration.transition?.close === "collapseToTrigger" ||
+  registration.transition?.origin === "fullScreenFooter";
+
+// Fixed per registration: every footer renders through the per-step footer
+// layers (a root footer is the default for steps without their own), except
+// a root-only footer of a tray that morphs from its trigger.
+export const usesStepFooters = (registration: TrayRegistration) => {
+  const stepsDefineFooters = registration.steps.some(
+    (step) => step.footer != null,
+  );
+
+  if (stepsDefineFooters) {
+    return true;
+  }
+
+  if (registration.footer == null || usesOriginFooterTransition(registration)) {
+    return false;
+  }
+
+  return true;
+};
+
+const ROOT_STEP_FOOTER_KEY = "root";
+
+export const resolveStepFooter = (
+  registration: TrayRegistration,
+  step: TrayRegistration["steps"][number],
+): { node: ReactNode; key: string } | null => {
+  if (!usesStepFooters(registration)) {
+    return null;
+  }
+
+  if (step.footer != null) {
+    return {
+      node: step.footer,
+      key:
+        step.footerId != null ? `id:${step.footerId}` : `step:${step.key}`,
+    };
+  }
+
+  if (registration.footer != null) {
+    return { node: registration.footer, key: ROOT_STEP_FOOTER_KEY };
+  }
+
+  return null;
+};
+
+const stepHasFooter = (
+  registration: TrayRegistration,
+  step: TrayRegistration["steps"][number],
+) => step.footer != null || registration.footer != null;
+
 const preloadCapableBySteps = new WeakMap<TrayRegistration["steps"], boolean>();
 
 type TrayStepDescriptor = TrayRegistration["steps"][number];
@@ -175,7 +232,7 @@ const resolvePreloadedSteps = (
     content: step.content,
     stepOptions: resolveContextualStepOptions(
       step,
-      registration.footer != null,
+      stepHasFooter(registration, step),
     ),
   }));
 };
@@ -279,6 +336,8 @@ export const arePresentedTraysEquivalent = (
     left.header === right.header &&
     left.content === right.content &&
     left.footer === right.footer &&
+    (left.stepFooter ?? null) === (right.stepFooter ?? null) &&
+    left.stepFooterKey === right.stepFooterKey &&
     left.fullScreenBoundaryExit === right.fullScreenBoundaryExit &&
     left.isFirstRender === right.isFirstRender &&
     left.fullScreen === right.fullScreen &&
@@ -456,8 +515,9 @@ export const createPresentedTray = ({
 
   const stepOptions = resolveContextualStepOptions(
     step,
-    registration.footer != null,
+    stepHasFooter(registration, step),
   );
+  const stepFooter = resolveStepFooter(registration, step);
   const endpoint = resolveTrayPresentationEndpoint({
     entry,
     registration,
@@ -496,7 +556,12 @@ export const createPresentedTray = ({
     stepOptions,
     header: step.header ?? null,
     content: step.content,
-    footer: registration.footer ?? null,
+    footer: usesStepFooters(registration) ? null : registration.footer ?? null,
+    stepFooter: stepFooter?.node ?? null,
+    // undefined marks a tray without per-step footers (no footer layer)
+    stepFooterKey: usesStepFooters(registration)
+      ? stepFooter?.key ?? null
+      : undefined,
     fullScreenBoundaryExit: animationContract.fullScreenBoundaryExit,
     isFirstRender: animationContract.isFirstRender,
     fullScreen: stepOptions.fullScreen,
@@ -533,7 +598,10 @@ export const createPreparedNestedTray = (
 ): PresentedTray => {
   const firstStep = registration.steps[0];
   const stepOptions = firstStep
-    ? resolveContextualStepOptions(firstStep, registration.footer != null)
+    ? resolveContextualStepOptions(
+        firstStep,
+        stepHasFooter(registration, firstStep),
+      )
     : resolveTrayStepOptions(undefined);
   const ownCapabilities = getTrayMotionCapabilities(registration);
 

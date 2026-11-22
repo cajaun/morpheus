@@ -40,6 +40,14 @@ const SHEET_FOOTER_CONTENT_FRAME_STYLE = {
     TRAY_SHEET_BODY_HORIZONTAL_PADDING * 2,
 };
 
+const SHEET_STEP_FOOTER_CONTAINER_STYLE = {
+  left: HORIZONTAL_MARGIN,
+  right: HORIZONTAL_MARGIN,
+  bottom: HORIZONTAL_MARGIN,
+  borderBottomLeftRadius: BORDER_RADIUS,
+  borderBottomRightRadius: BORDER_RADIUS,
+};
+
 const SHEET_FOOTER_CONTAINER_STYLE = {
   left: HORIZONTAL_MARGIN,
   right: HORIZONTAL_MARGIN,
@@ -169,6 +177,7 @@ export const useTraySheetAnimatedStyles = ({
       transition?.origin === "fullScreenFooter"
         ? FULL_SCREEN_FOOTER_ORIGIN_CONTAINER_STYLE
         : SHEET_FOOTER_CONTAINER_STYLE,
+    stepFooterContainerStyle: SHEET_STEP_FOOTER_CONTAINER_STYLE,
     contentPaddingStyle: ZERO_CONTENT_PADDING_STYLE,
     dragStyle,
     surfaceVisibilityStyle,

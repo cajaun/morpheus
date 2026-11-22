@@ -27,6 +27,12 @@ export type PresentedTray = {
   header: ReactNode;
   content: ReactNode;
   footer: ReactNode;
+  // The footer of the current step when the tray authors footers per step
+  // (any Tray.Footer inside a Tray.Step). It renders in keyed layers: a new
+  // key enters and the old one leaves with the step's content; the same key
+  // stays on screen. `footer` above is then null.
+  stepFooter?: ReactNode;
+  stepFooterKey?: string | null;
   fullScreenBoundaryExit: boolean;
   isFirstRender: boolean;
   fullScreen: boolean;

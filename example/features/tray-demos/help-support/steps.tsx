@@ -38,18 +38,35 @@ export const SupportChooserStep = ({
   );
 };
 
-export const ChooseAreasStep = () => {
-  const { next } = useTrayNavigation();
-  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+// The flow's Continue button is one footer shared by every step after the
+// chooser (see index.tsx), so each step's own state lives in the tray.
+export const SupportFooterButton = ({
+  label,
+  disabled = false,
+  action = "next",
+}: {
+  label: string;
+  disabled?: boolean;
+  action?: "next" | "close";
+}) => {
+  const { next, close } = useTrayNavigation();
 
-  const toggleArea = (areaKey: string) => {
-    setSelectedAreas((current) =>
-      current.includes(areaKey)
-        ? current.filter((item) => item !== areaKey)
-        : [...current, areaKey],
-    );
-  };
+  return (
+    <PrimaryButton
+      label={label}
+      onPress={action === "close" ? close : next}
+      disabled={disabled}
+    />
+  );
+};
 
+export const ChooseAreasStep = ({
+  selectedAreas,
+  onToggleArea,
+}: {
+  selectedAreas: string[];
+  onToggleArea: (areaKey: string) => void;
+}) => {
   return (
     <Tray.Body>
       <Tray.Section style={{ gap: 16 }}>
@@ -60,28 +77,28 @@ export const ChooseAreasStep = () => {
               label={area.label}
               icon={area.icon}
               selected={selectedAreas.includes(area.key)}
-              onPress={() => toggleArea(area.key)}
+              onPress={() => onToggleArea(area.key)}
             />
           ))}
-        </View>
-
-        <View>
-          <PrimaryButton
-            label="Continue"
-            onPress={next}
-            disabled={selectedAreas.length === 0}
-          />
         </View>
       </Tray.Section>
     </Tray.Body>
   );
 };
 
-export const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
-  const { next } = useTrayNavigation();
-  const [subject, setSubject] = useState("");
-  const [details, setDetails] = useState("");
-
+export const ComposeSupportStep = ({
+  flow,
+  subject,
+  details,
+  onChangeSubject,
+  onChangeDetails,
+}: {
+  flow: HelpKind;
+  subject: string;
+  details: string;
+  onChangeSubject: (value: string) => void;
+  onChangeDetails: (value: string) => void;
+}) => {
   const flowCopy = useMemo(() => {
     switch (flow) {
       case "feedback":
@@ -106,15 +123,13 @@ export const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
     }
   }, [flow]);
 
-  const canContinue = subject.trim().length > 0 && details.trim().length > 0;
-
   return (
     <Tray.Body>
       <Tray.Section style={{ gap: 16 }}>
         <FieldShell>
           <Tray.TextInput
             value={subject}
-            onChangeText={setSubject}
+            onChangeText={onChangeSubject}
             autoCapitalize="sentences"
             autoCorrect={false}
             autoFocus
@@ -133,7 +148,7 @@ export const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
         <FieldShell style={{ minHeight: 170 }}>
           <Tray.TextInput
             value={details}
-            onChangeText={setDetails}
+            onChangeText={onChangeDetails}
             autoCapitalize="sentences"
             autoCorrect={false}
             autoComplete="off"
@@ -147,21 +162,12 @@ export const ComposeSupportStep = ({ flow }: { flow: HelpKind }) => {
             style={{ ...trayTextInputStyle, minHeight: 142 }}
           />
         </FieldShell>
-
-        <View style={{ paddingTop: 4 }}>
-          <PrimaryButton
-            label="Continue"
-            onPress={next}
-            disabled={!canContinue}
-          />
-        </View>
       </Tray.Section>
     </Tray.Body>
   );
 };
 
 export const AttachMediaStep = ({ flow }: { flow: HelpKind }) => {
-  const { next } = useTrayNavigation();
   const helperCopy = flowAttachmentCopy[flow];
 
   return (
@@ -210,17 +216,12 @@ export const AttachMediaStep = ({ flow }: { flow: HelpKind }) => {
             {helperCopy}
           </Text>
         </View>
-
-        <View>
-          <PrimaryButton label="Continue" onPress={next} />
-        </View>
       </Tray.Section>
     </Tray.Body>
   );
 };
 
 export const YourDetailsStep = () => {
-  const { close } = useTrayNavigation();
   const [name, setName] = useState("Test");
   const [email, setEmail] = useState("valmiera.com");
 
@@ -303,10 +304,6 @@ export const YourDetailsStep = () => {
             </Text>
           </View>
         </FieldShell>
-
-        <View style={{ paddingTop: 4 }}>
-          <PrimaryButton label="Continue to Submit" onPress={close} />
-        </View>
       </Tray.Section>
     </Tray.Body>
   );

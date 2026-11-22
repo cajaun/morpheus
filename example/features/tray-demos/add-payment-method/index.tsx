@@ -28,7 +28,7 @@ const PaymentFieldShell = ({
   className: string;
 }) => <View className={className}>{children}</View>;
 
-const PaymentButton = ({
+export const PaymentButton = ({
   label,
   onPress,
   disabled = false,
@@ -573,20 +573,24 @@ const AddressField = ({
   </PaymentFieldShell>
 );
 
+// `showAction={false}` leaves the button out, for a tray that puts it in a
+// footer shared with the next step (Add Payment Method Keyboard).
 export const AddWalletAddressStep = ({
   address,
   onChangeAddress,
+  showAction = true,
 }: {
   address: string;
   onChangeAddress: (value: string) => void;
+  showAction?: boolean;
 }) => {
   const { next } = useTrayNavigation();
 
   return (
     <Tray.Body>
       <Tray.Section
-        className="gap-4 pt-6 pb-7"
-        withAction
+        className={showAction ? "gap-4 pt-6 pb-7" : "gap-4 pt-6"}
+        withAction={showAction}
       >
         <AddressField
           value={address}
@@ -607,11 +611,13 @@ export const AddWalletAddressStep = ({
           </Text>
         </View>
 
-        <PaymentButton
-          label="Next"
-          onPress={next}
-          disabled={address.trim().length === 0}
-        />
+        {showAction ? (
+          <PaymentButton
+            label="Next"
+            onPress={next}
+            disabled={address.trim().length === 0}
+          />
+        ) : null}
       </Tray.Section>
     </Tray.Body>
   );
@@ -620,17 +626,19 @@ export const AddWalletAddressStep = ({
 export const AddressDetailsStep = ({
   address,
   onChangeAddress,
+  showAction = true,
 }: {
   address: string;
   onChangeAddress: (value: string) => void;
+  showAction?: boolean;
 }) => {
   const { close } = useTrayNavigation();
 
   return (
     <Tray.Body>
       <Tray.Section
-        className="gap-4 pt-6 pb-7"
-        withAction
+        className={showAction ? "gap-4 pt-6 pb-7" : "gap-4 pt-6"}
+        withAction={showAction}
       >
         <View className="relative h-27 w-27 self-center items-center justify-center mb-4 rounded-full bg-[#EBEAEA]">
           <SymbolView
@@ -678,10 +686,12 @@ export const AddressDetailsStep = ({
           />
         </PaymentFieldShell>
 
-        <PaymentButton
-          label="Add Wallet"
-          onPress={close}
-        />
+        {showAction ? (
+          <PaymentButton
+            label="Add Wallet"
+            onPress={close}
+          />
+        ) : null}
       </Tray.Section>
     </Tray.Body>
   );

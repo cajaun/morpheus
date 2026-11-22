@@ -19,6 +19,7 @@ import {
 } from "./tray-content-commit";
 import Animated, {
   useAnimatedReaction,
+  useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
 } from "react-native-reanimated";
@@ -33,7 +34,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Backdrop } from "../primitives/backdrop";
 import { useTrayBackgroundScale } from "../runtime/tray-background-scale";
-import { createTrayLayoutTransition } from "./animation/tray-layout";
+import {
+  createTrayLayoutTransition,
+  startTrayLayoutWithoutResize,
+} from "./animation/tray-layout";
 import {
   TrayParentTransitionProvider,
   type TrayParentTransition,
@@ -52,6 +56,12 @@ import {
   markTrayStepRenderedCommit,
 } from "../telemetry/tray-step-timing";
 import { TrayMorphProgressProvider } from "./tray-morph-progress";
+import {
+  TrayStepFooterFrameStyleContext,
+  TrayStepFooterMetricsContext,
+  TrayStepFooterRegionContext,
+  type TrayStepFooterMetrics,
+} from "./step-footer";
 import {
   openTrayKeyboardGate,
   TrayTransitionStartProvider,
@@ -534,6 +544,7 @@ type TraySurfaceProps = Pick<
   | "contentViewportStyle"
   | "dragStyle"
   | "footerContainerStyle"
+  | "stepFooterContainerStyle"
   | "footerContentFrameStyle"
   | "footerSpacerStyle"
   | "footerVisibilityStyle"
@@ -738,6 +749,7 @@ const areTraySurfacePropsEqual = (
     previous.headerFrameStyle === next.headerFrameStyle &&
     previous.trayLayoutStyle === next.trayLayoutStyle &&
     previous.footerContainerStyle === next.footerContainerStyle &&
+    previous.stepFooterContainerStyle === next.stepFooterContainerStyle &&
     previous.dragStyle === next.dragStyle &&
     previous.surfaceVisibilityStyle === next.surfaceVisibilityStyle &&
     previous.originSurfaceVisibilityStyle ===
@@ -1005,17 +1017,52 @@ const TraySheetSurface = React.memo(
     );
     const contentMeasureRef = useRef<React.ComponentRef<typeof View>>(null);
     const contentOriginRef = useRef({ x: 0, y: 0 });
+    // last height native layout reported for the content; a new step that
+    // commits at this height produces no onLayout and no layout transition
+    const laidOutContentHeightRef = useRef<number | null>(null);
     const handleContentLayoutRef = useRef(handleContentLayout);
     handleContentLayoutRef.current = handleContentLayout;
+    // Per-step footers render on their own layer outside this sheet; the
+    // sheet reserves their height by reporting it with the content height,
+    // so every consumer of the content height (sheet size, close travel,
+    // the equal-height path) sees the step's full height. Fullscreen steps
+    // reserve it with a spacer instead (the screen sets their height).
+    const stepFooterMetrics = React.useContext(TrayStepFooterMetricsContext);
+    const stepFooterMetricsRef = useRef(stepFooterMetrics);
+    stepFooterMetricsRef.current = stepFooterMetrics;
+    const renderedFullScreenRef = useRef(renderedFullScreen);
+    renderedFullScreenRef.current = renderedFullScreen;
+    // the footer reserve included in the last reported content height
+    const laidOutFooterReserveRef = useRef(0);
+    const resolveStepFooterReserve = useCallback(
+      () =>
+        stepFooterMetricsRef.current && !renderedFullScreenRef.current
+          ? stepFooterMetricsRef.current.heightRef.current
+          : 0,
+      [],
+    );
+    const reportContentHeight = useCallback(
+      (x: number, y: number, width: number, nativeHeight: number) => {
+        const reserve = resolveStepFooterReserve();
+
+        laidOutFooterReserveRef.current = reserve;
+        handleContentLayoutRef.current({
+          nativeEvent: {
+            layout: { x, y, width, height: nativeHeight + reserve },
+          },
+        } as LayoutChangeEvent);
+      },
+      [resolveStepFooterReserve],
+    );
     const handleMeasuredContentLayout = useCallback(
       (event: LayoutChangeEvent) => {
-        contentOriginRef.current = {
-          x: event.nativeEvent.layout.x,
-          y: event.nativeEvent.layout.y,
-        };
-        handleContentLayoutRef.current(event);
+        const { x, y, width, height } = event.nativeEvent.layout;
+
+        contentOriginRef.current = { x, y };
+        laidOutContentHeightRef.current = height;
+        reportContentHeight(x, y, width, height);
       },
-      [],
+      [reportContentHeight],
     );
     // Measure committed step content synchronously and feed it through the
     // same guarded path as onLayout. On Fabric, measure() inside a layout
@@ -1026,50 +1073,136 @@ const TraySheetSurface = React.memo(
     const commitTarget = React.useContext(TrayContentCommitTargetContext);
     const commitTargetRef = useRef(commitTarget);
     commitTargetRef.current = commitTarget;
-    const measureCommittedContent = useCallback((generation?: number) => {
-      const target = commitTargetRef.current;
+    const measureCommittedContent = useCallback(
+      (generation?: number) => {
+        const target = commitTargetRef.current;
+        const committedGeneration =
+          generation ?? target?.shellGenerationRef.current ?? 0;
 
-      if (target) {
-        // record which transition's content is now mounted; a region that
-        // cannot name its generation (raw node content) uses the shell's
-        target.committedGeneration.value =
-          generation ?? target.shellGenerationRef.current;
-      }
+        if (target) {
+          // record which transition's content is now mounted; a region that
+          // cannot name its generation (raw node content) uses the shell's
+          target.committedGeneration.value = committedGeneration;
+        }
 
-      const node = contentMeasureRef.current as unknown as {
-        measure?: (
-          callback: (
-            x: number,
-            y: number,
-            width: number,
-            height: number,
-          ) => void,
-        ) => void;
-      } | null;
+        const node = contentMeasureRef.current as unknown as {
+          measure?: (
+            callback: (
+              x: number,
+              y: number,
+              width: number,
+              height: number,
+            ) => void,
+          ) => void;
+        } | null;
 
-      if (
-        !TRAY_SYNC_CONTENT_MEASUREMENT_ENABLED ||
-        typeof node?.measure !== "function"
-      ) {
-        return;
-      }
+        // On Fabric, measure() in a layout effect reports the layout this commit
+        // produced. The same height as the last laid-out content means native
+        // layout will not change: no onLayout reaches the measurement path and no
+        // layout transition runs.
+        const commitWithoutResize = target?.commitWithoutResizeRef?.current;
+        const previousHeight = laidOutContentHeightRef.current;
 
-      node.measure((_x, _y, width, height) => {
         if (
-          !Number.isFinite(width) ||
-          !Number.isFinite(height) ||
-          height <= 1
+          commitWithoutResize &&
+          committedGeneration > 0 &&
+          previousHeight !== null &&
+          typeof node?.measure === "function"
+        ) {
+          node.measure((_x, _y, width, height) => {
+            if (
+              !Number.isFinite(height) ||
+              Math.abs(height - previousHeight) >= 0.5
+            ) {
+              return;
+            }
+
+            // A step change clears the sheet's content height until the new
+            // step reports its own. Report it here, exactly as the missing
+            // onLayout would have, so the step's height is known (the close
+            // travel and the height cache depend on it).
+            const { x, y } = contentOriginRef.current;
+            // same content height but a different footer: the sheet still
+            // resizes, so the ordinary layout transition runs
+            const footerChanged =
+              Math.abs(
+                resolveStepFooterReserve() - laidOutFooterReserveRef.current,
+              ) >= 0.5;
+
+            reportContentHeight(x, y, width, height);
+
+            if (!footerChanged) {
+              commitWithoutResize(committedGeneration);
+            }
+          });
+        }
+
+        if (
+          !TRAY_SYNC_CONTENT_MEASUREMENT_ENABLED ||
+          typeof node?.measure !== "function"
         ) {
           return;
         }
 
-        const { x, y } = contentOriginRef.current;
+        node.measure((_x, _y, width, height) => {
+          if (
+            !Number.isFinite(width) ||
+            !Number.isFinite(height) ||
+            height <= 1
+          ) {
+            return;
+          }
 
-        handleContentLayoutRef.current({
-          nativeEvent: { layout: { x, y, width, height } },
-        } as LayoutChangeEvent);
-      });
-    }, []);
+          const { x, y } = contentOriginRef.current;
+
+          reportContentHeight(x, y, width, height);
+        });
+      },
+      [reportContentHeight, resolveStepFooterReserve],
+    );
+
+    // The step footer resized without a step change: re-report the content
+    // height (with the new reserve) so the sheet follows.
+    useLayoutEffect(() => {
+      if (!stepFooterMetrics) {
+        return;
+      }
+
+      stepFooterMetrics.remeasureContentRef.current = () => {
+        const node = contentMeasureRef.current as unknown as {
+          measure?: (
+            callback: (
+              x: number,
+              y: number,
+              width: number,
+              height: number,
+            ) => void,
+          ) => void;
+        } | null;
+
+        node?.measure?.((_x, _y, width, height) => {
+          if (Number.isFinite(height) && height > 1) {
+            const { x, y } = contentOriginRef.current;
+
+            reportContentHeight(x, y, width, height);
+          }
+        });
+      };
+
+      return () => {
+        stepFooterMetrics.remeasureContentRef.current = null;
+      };
+    }, [reportContentHeight, stepFooterMetrics]);
+
+    const fallbackStepFooterHeight = useSharedValue(0);
+    const stepFooterHeight =
+      stepFooterMetrics?.height ?? fallbackStepFooterHeight;
+    const stepFooterSpacerStyle = useAnimatedStyle(
+      () => ({
+        height: renderedFullScreen ? stepFooterHeight.value : 0,
+      }),
+      [renderedFullScreen, stepFooterHeight],
+    );
 
     // Raw-node mode swaps content through this component's props.
     useLayoutEffect(() => {
@@ -1125,9 +1258,14 @@ const TraySheetSurface = React.memo(
           </Animated.View>
           {/* reserve footer space the footer itself is absolute and does not participate in content measurement */}
           <Animated.View style={footerSpacerStyle} />
+          {stepFooterMetrics ? (
+            <Animated.View style={stepFooterSpacerStyle} />
+          ) : null}
         </Animated.View>
       ),
       [
+        stepFooterMetrics,
+        stepFooterSpacerStyle,
         contentStyle,
         contentViewportStyle,
         footerSpacerStyle,
@@ -1202,6 +1340,7 @@ const TraySurface = React.memo(
     headerFrameStyle,
     trayLayoutStyle,
     footerContainerStyle,
+    stepFooterContainerStyle,
     dragStyle,
     surfaceVisibilityStyle,
     originSurfaceVisibilityStyle,
@@ -1218,6 +1357,58 @@ const TraySurface = React.memo(
     const surfaceHeader = renderedHeader;
     const surfaceContent = renderedContent;
     const surfaceFooter = renderedFooter;
+    // Per-step footer layers (trays that author Tray.Footer inside steps).
+    const stepFooterRegion = React.useContext(TrayStepFooterRegionContext);
+    const footerInteraction = React.useContext(TrayFooterInteractionContext);
+    const stepFooterHeight = useSharedValue(0);
+    const stepFooterHeightRef = useRef(0);
+    const remeasureContentRef = useRef<(() => void) | null>(null);
+    const stepFooterMetrics = useMemo<TrayStepFooterMetrics | null>(
+      () =>
+        stepFooterRegion
+          ? {
+              heightRef: stepFooterHeightRef,
+              height: stepFooterHeight,
+              remeasureContentRef,
+            }
+          : null,
+      [stepFooterHeight, stepFooterRegion],
+    );
+    const stepFooterInteractive =
+      footerInteraction?.interactive === true &&
+      footerInteraction.isSurfaceReady;
+    // Rendered before the sheet (and raised above it) so that in a step
+    // change commit the new footer is measured before the sheet measures
+    // the new content. The layer spans the sheet's whole region with a fixed
+    // frame, so a leaving footer stays where it was while it fades.
+    const stepFooterLayer = useMemo(
+      () =>
+        stepFooterRegion ? (
+          <Animated.View
+            style={[
+              localStyles.stepFooterLayer,
+              stepFooterContainerStyle,
+              dragStyle,
+              surfaceVisibilityStyle,
+            ]}
+            pointerEvents={stepFooterInteractive ? "box-none" : "none"}
+          >
+            <TrayOriginProgressProvider value={originProgress}>
+              <TrayStepTransitionProviders>
+                {stepFooterRegion}
+              </TrayStepTransitionProviders>
+            </TrayOriginProgressProvider>
+          </Animated.View>
+        ) : null,
+      [
+        dragStyle,
+        originProgress,
+        stepFooterContainerStyle,
+        stepFooterInteractive,
+        stepFooterRegion,
+        surfaceVisibilityStyle,
+      ],
+    );
 
     useProfiledTrayLayoutEffect("TraySurface.syncFooterFlag", () => {
       hasFooter.value = surfaceFooter != null;
@@ -1271,38 +1462,45 @@ const TraySurface = React.memo(
     );
 
     return (
-      <>
-        <TraySheetSurface
-          style={style}
-          renderedContainerStyle={surfaceContainerStyle}
-          renderedHeader={renderSnapshotStore ? null : surfaceHeader}
-          renderedContent={renderSnapshotStore ? null : surfaceContent}
-          renderSnapshotStore={renderSnapshotStore}
-          renderedFullScreen={renderedFullScreen}
-          instrumentationEnabled={instrumentationEnabled}
-          shouldUseLayoutAnimation={shouldUseLayoutAnimation}
-          isFullScreenBoundaryTransition={isFullScreenBoundaryTransition}
-          handleContentLayout={handleContentLayout}
-          handleShellLayout={handleShellLayout}
-          footerSpacerStyle={footerSpacerStyle}
-          contentBoundarySourceStyle={contentBoundarySourceStyle}
-          contentBoundarySourceViewportStyle={
-            contentBoundarySourceViewportStyle
-          }
-          contentFrameStyle={contentFrameStyle}
-          contentPaddingStyle={contentPaddingStyle}
-          contentRevealStyle={contentRevealStyle}
-          contentViewportStyle={contentViewportStyle}
-          headerFrameStyle={headerFrameStyle}
-          trayLayoutStyle={trayLayoutStyle}
-          dragStyle={dragStyle}
-          surfaceVisibilityStyle={surfaceVisibilityStyle}
-          originSurfaceVisibilityStyle={originSurfaceVisibilityStyle}
-          fullScreenSafeAreaContentStyle={fullScreenSafeAreaContentStyle}
-          hasHeader={surfaceHeader != null}
-        />
-        {footerLayer}
-      </>
+      <TrayStepFooterMetricsContext.Provider value={stepFooterMetrics}>
+        {/* both places a step footer is drawn (pinned, and in an entering
+            step's content inside the sheet) use the sheet's footer grid */}
+        <TrayStepFooterFrameStyleContext.Provider
+          value={footerContentFrameStyle}
+        >
+          {stepFooterLayer}
+          <TraySheetSurface
+            style={style}
+            renderedContainerStyle={surfaceContainerStyle}
+            renderedHeader={renderSnapshotStore ? null : surfaceHeader}
+            renderedContent={renderSnapshotStore ? null : surfaceContent}
+            renderSnapshotStore={renderSnapshotStore}
+            renderedFullScreen={renderedFullScreen}
+            instrumentationEnabled={instrumentationEnabled}
+            shouldUseLayoutAnimation={shouldUseLayoutAnimation}
+            isFullScreenBoundaryTransition={isFullScreenBoundaryTransition}
+            handleContentLayout={handleContentLayout}
+            handleShellLayout={handleShellLayout}
+            footerSpacerStyle={footerSpacerStyle}
+            contentBoundarySourceStyle={contentBoundarySourceStyle}
+            contentBoundarySourceViewportStyle={
+              contentBoundarySourceViewportStyle
+            }
+            contentFrameStyle={contentFrameStyle}
+            contentPaddingStyle={contentPaddingStyle}
+            contentRevealStyle={contentRevealStyle}
+            contentViewportStyle={contentViewportStyle}
+            headerFrameStyle={headerFrameStyle}
+            trayLayoutStyle={trayLayoutStyle}
+            dragStyle={dragStyle}
+            surfaceVisibilityStyle={surfaceVisibilityStyle}
+            originSurfaceVisibilityStyle={originSurfaceVisibilityStyle}
+            fullScreenSafeAreaContentStyle={fullScreenSafeAreaContentStyle}
+            hasHeader={surfaceHeader != null}
+          />
+          {footerLayer}
+        </TrayStepFooterFrameStyleContext.Provider>
+      </TrayStepFooterMetricsContext.Provider>
     );
   },
   areTraySurfacePropsEqual,
@@ -1614,10 +1812,14 @@ const TrayVisualShell = React.memo(
     const contentCommittedGeneration = useSharedValue(0);
     const shellGenerationRef = useRef(0);
     shellGenerationRef.current = transitionContract?.generation ?? 0;
+    const commitWithoutResizeRef = useRef<
+      ((generation: number) => void) | null
+    >(null);
     const contentCommitTarget = useMemo<TrayContentCommitTarget>(
       () => ({
         committedGeneration: contentCommittedGeneration,
         shellGenerationRef,
+        commitWithoutResizeRef,
       }),
       [contentCommittedGeneration],
     );
@@ -1651,6 +1853,36 @@ const TrayVisualShell = React.memo(
     const layoutStartRequired =
       isFullScreenBoundaryTransition ||
       (hasStepContentTransition && shouldUseLayoutAnimation);
+
+    // A sheet step change normally opens its clock through the native layout
+    // transition. When the new step commits at the same height, there is no
+    // layout change and so no transition: run a stand-in participant instead
+    // so the step change still starts, synchronises and completes.
+    commitWithoutResizeRef.current =
+      hasStepContentTransition &&
+      shouldUseLayoutAnimation &&
+      !isFullScreenBoundaryTransition
+        ? (generation: number) => {
+            if (generation !== (transitionContract?.generation ?? 0)) {
+              return;
+            }
+
+            const started = startTrayLayoutWithoutResize({
+              transitionGeneration: generation,
+              transitionStartedAt,
+              transitionStartedGeneration,
+              transitionLayoutStartedGeneration,
+              transitionCompletedGeneration,
+              morphProgress,
+              keyboardGate: keyboardGate ?? undefined,
+              onComplete: handleLayoutTransitionComplete,
+            });
+
+            if (started && isTrayDebugLoggingEnabled()) {
+              log("LAYOUT WITHOUT RESIZE", { trayId, generation });
+            }
+          }
+        : null;
 
     useEffect(() => {
       if (!isTrayDebugLoggingEnabled()) {
@@ -2178,6 +2410,17 @@ TrayVisualView.displayName = "TrayVisualView";
 const localStyles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: TRAY_HEADER_HORIZONTAL_PADDING,
+  },
+  stepFooterLayer: {
+    position: "absolute",
+    top: 0,
+    // left, right, bottom and the bottom corners follow the sheet
+    // (stepFooterContainerStyle)
+    borderCurve: "continuous",
+    justifyContent: "flex-end",
+    // clip at the sheet's bottom edge and corners
+    overflow: "hidden",
+    zIndex: 1,
   },
 });
 

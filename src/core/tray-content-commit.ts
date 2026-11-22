@@ -17,6 +17,10 @@ export type TrayContentCommitTarget = {
   committedGeneration: SharedValue<number>;
   // used when a commit cannot name its own generation (raw node content)
   shellGenerationRef: { current: number };
+  // Called when a step's content commits at the same height as the content it
+  // replaces, so no layout transition will run for that generation. The shell
+  // decides whether this transition needs a stand-in layout participant.
+  commitWithoutResizeRef?: { current: ((generation: number) => void) | null };
 };
 
 export const TrayContentCommitTargetContext =

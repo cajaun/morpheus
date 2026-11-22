@@ -10,6 +10,7 @@ import {
   ChooseAreasStep,
   ComposeSupportStep,
   SupportChooserStep,
+  SupportFooterButton,
   YourDetailsStep,
 } from "./steps";
 import type { HelpKind } from "./types";
@@ -65,8 +66,27 @@ const SupportFlowHeader = ({
   );
 };
 
+// The steps after the chooser share one footer (same id): the Continue
+// button stays on screen while those steps change, and only its label and
+// enabled state follow the step. The chooser has no footer, so the button
+// comes in with Choose Areas and leaves when going back to the chooser.
+const HELP_FOOTER_ID = "help-continue";
+
 const HelpSupportTray = () => {
   const [selectedFlow, setSelectedFlow] = useState<HelpKind>("bug");
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [subject, setSubject] = useState("");
+  const [details, setDetails] = useState("");
+  const toggleArea = (areaKey: string) => {
+    setSelectedAreas((current) =>
+      current.includes(areaKey)
+        ? current.filter((item) => item !== areaKey)
+        : [...current, areaKey],
+    );
+  };
+  const canSubmitMessage =
+    subject.trim().length > 0 && details.trim().length > 0;
+
   return (
     <Tray.Root stepOptions={{ className: "bg-white" }}>
       <Tray.Trigger haptics="feedback">
@@ -78,11 +98,17 @@ const HelpSupportTray = () => {
       </Tray.Step>
 
       <Tray.Step key="help-areas">
-        <SupportFlowHeader
-          title="Choose Areas"
-  
+        <SupportFlowHeader title="Choose Areas" />
+        <ChooseAreasStep
+          selectedAreas={selectedAreas}
+          onToggleArea={toggleArea}
         />
-        <ChooseAreasStep />
+        <Tray.Footer id={HELP_FOOTER_ID}>
+          <SupportFooterButton
+            label="Continue"
+            disabled={selectedAreas.length === 0}
+          />
+        </Tray.Footer>
       </Tray.Step>
       <Tray.Step key={`help-compose-${selectedFlow}`} options={{ keyboardAware: true }}>
         <SupportFlowHeader
@@ -94,21 +120,30 @@ const HelpSupportTray = () => {
                 : "Report a Bug"
           }
         />
-        <ComposeSupportStep flow={selectedFlow} />
+        <ComposeSupportStep
+          flow={selectedFlow}
+          subject={subject}
+          details={details}
+          onChangeSubject={setSubject}
+          onChangeDetails={setDetails}
+        />
+        <Tray.Footer id={HELP_FOOTER_ID}>
+          <SupportFooterButton label="Continue" disabled={!canSubmitMessage} />
+        </Tray.Footer>
       </Tray.Step>
       <Tray.Step key={`help-attach-${selectedFlow}`}>
-        <SupportFlowHeader
-          title="Attach Media"
-          
-        />
+        <SupportFlowHeader title="Attach Media" />
         <AttachMediaStep flow={selectedFlow} />
+        <Tray.Footer id={HELP_FOOTER_ID}>
+          <SupportFooterButton label="Continue" />
+        </Tray.Footer>
       </Tray.Step>
       <Tray.Step key={`help-details-${selectedFlow}`} options={{ keyboardAware: true }}>
-        <SupportFlowHeader
-          title="Your Details"
-         
-        />
+        <SupportFlowHeader title="Your Details" />
         <YourDetailsStep />
+        <Tray.Footer id={HELP_FOOTER_ID}>
+          <SupportFooterButton label="Continue to Submit" action="close" />
+        </Tray.Footer>
       </Tray.Step>
     </Tray.Root>
   );

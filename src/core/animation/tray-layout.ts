@@ -1,6 +1,7 @@
 import {
   Easing,
   LinearTransition,
+  withTiming,
   type AnimationObject,
   type LayoutAnimationFunction,
   type SharedValue,
@@ -158,4 +159,78 @@ export const createTrayLayoutTransition = ({
   };
 
   return synchronizedTransition;
+};
+
+type TrayLayoutWithoutResizeParams = {
+  transitionGeneration: number;
+  transitionStartedAt: SharedValue<number>;
+  transitionStartedGeneration: SharedValue<number>;
+  transitionLayoutStartedGeneration: SharedValue<number>;
+  transitionCompletedGeneration: SharedValue<number>;
+  morphProgress: SharedValue<number>;
+  keyboardGate?: TrayKeyboardGate;
+  onComplete?: (finishedAt: number, transitionGeneration: number) => void;
+};
+
+// A sheet step change whose new step measures to the same height changes no
+// native layout, so the layout transition above never runs. It is the
+// participant that opens the content barrier, starts the shared clock and
+// completes the generation, so without it the step change never finishes:
+// the incoming content waits forever and the next navigation is blocked.
+// Run the same participant on morphProgress instead, with the sheet's own
+// duration and curve, so everything that follows the clock behaves exactly
+// as it would after a resize.
+export const startTrayLayoutWithoutResize = ({
+  transitionGeneration,
+  transitionStartedAt,
+  transitionStartedGeneration,
+  transitionLayoutStartedGeneration,
+  transitionCompletedGeneration,
+  morphProgress,
+  keyboardGate,
+  onComplete,
+}: TrayLayoutWithoutResizeParams) => {
+  if (
+    transitionGeneration <= 0 ||
+    transitionLayoutStartedGeneration.value >= transitionGeneration ||
+    transitionCompletedGeneration.value >= transitionGeneration
+  ) {
+    return false;
+  }
+
+  if (
+    keyboardGate?.onLayoutReady &&
+    keyboardGate.armedGeneration.value === transitionGeneration
+  ) {
+    keyboardGate.onLayoutReady(transitionGeneration);
+  }
+
+  morphProgress.value = withTrayTransitionStart(
+    withTiming(
+      1,
+      {
+        duration: MORPH_LAYOUT_DURATION,
+        easing: Easing.bezier(...SHEET_EASING_POINTS),
+      },
+      (finished) => {
+        "worklet";
+
+        if (finished && onComplete) {
+          scheduleOnRN(onComplete, performance.now(), transitionGeneration);
+        }
+      },
+    ),
+    transitionStartedGeneration,
+    transitionStartedAt,
+    transitionLayoutStartedGeneration,
+    transitionCompletedGeneration,
+    transitionGeneration,
+    "layout",
+    undefined,
+    false,
+    false,
+    keyboardGate,
+  );
+
+  return true;
 };

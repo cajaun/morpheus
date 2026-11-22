@@ -5,6 +5,12 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "react-native-morpheus": [
+        "../src/index.ts"
+      ],
+      "react-native-morpheus/constants": [
+        "../src/constants.ts"
       ]
     }
   },
