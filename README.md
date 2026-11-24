@@ -209,6 +209,49 @@ export function ProfileTray() {
 }
 ```
 
+## Step footers
+
+Each step can declare its own footer by placing a `Tray.Footer` directly inside
+`Tray.Step`, after the step's content. The footer stays pinned to the bottom of
+the sheet, and the sheet reserves room for it.
+
+```tsx
+<Tray.Root>
+  <Tray.Step>
+    <StepHeader title="Details" />
+    <DetailsBody />
+    <Tray.Footer>
+      <ContinueButton label="Continue" />
+    </Tray.Footer>
+  </Tray.Step>
+
+  <Tray.Step>
+    <StepHeader title="Review" canGoBack />
+    <ReviewBody />
+    <Tray.Footer exit="withContent">
+      <ContinueButton label="Done" />
+    </Tray.Footer>
+  </Tray.Step>
+
+  <Tray.Step>
+    <StepHeader title="All set" canGoBack />
+    <DoneBody />
+  </Tray.Step>
+</Tray.Root>
+```
+
+- **Consecutive footers stay on screen.** When two neighbouring steps both have a
+  footer, one footer stays in place and only its contents update.
+- **`id` marks a different footer.** Give a footer an `id` when it should be
+  treated as a new footer: it enters with its step's content and the previous
+  one leaves.
+- **Entering and leaving.** A footer that arrives with a step comes in with that
+  step's content. When the next step has another footer or none, the leaving
+  footer fades in place by default, or leaves with its step's content when it
+  has `exit="withContent"`.
+- **Root footer.** A `footer` on `Tray.Root` is the default for every step that
+  doesn't declare its own.
+
 ## Public API
 
 The `Tray` namespace exposes the authoring primitives:
@@ -218,7 +261,8 @@ The `Tray` namespace exposes the authoring primitives:
 - `Tray.Pages`, `Tray.Page`, and `Tray.Pages.Header`
 - `Tray.TextInput`
 
-Each `Tray.Step` contains one content root and may place one header before it.
+Each `Tray.Step` contains one content root, may place one header before it, and
+may declare one `Tray.Footer` (see Step footers).
 Root `stepOptions` are inherited by every step and can be overridden by
 that step's `options` prop. `Tray.Root` and `Tray.Nested` no longer accept a
 `steps` prop.
