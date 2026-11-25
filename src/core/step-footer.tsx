@@ -4,12 +4,14 @@ import {
   useContext,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
 } from "react";
 import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import Animated, { useAnimatedReaction } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { measureTrayNode } from "./measure-node";
+import { splitFooterBackdrop, TrayFooterBackdrop } from "./footer-backdrop";
 import { TrayRevealedStepContent } from "../tray-step-content";
 import { createMorphExiting } from "../step-content/morph-animations";
 import { useTrayContentMotionDirection } from "./transition-motion-direction";
@@ -122,6 +124,11 @@ const TrayStepFooterBody = ({
     [key, metrics, report, reports],
   );
 
+  const { backdropColor, style: bodyStyle } = useMemo(
+    () => splitFooterBackdrop(state.style),
+    [state.style],
+  );
+
   return (
     <View
       ref={nodeRef}
@@ -131,11 +138,14 @@ const TrayStepFooterBody = ({
       style={[
         styles.body,
         inContent ? styles.bodyInContent : styles.bodyPinned,
-        state.style,
+        bodyStyle,
       ]}
       pointerEvents="box-none"
     >
-      <Animated.View style={frameStyle}>{state.node}</Animated.View>
+      <Animated.View style={frameStyle}>
+        <TrayFooterBackdrop color={backdropColor} />
+        {state.node}
+      </Animated.View>
     </View>
   );
 };
@@ -293,6 +303,8 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: BORDER_RADIUS,
     borderBottomRightRadius: BORDER_RADIUS,
     borderCurve: "continuous",
+    // the backdrop stops at the body's rounded frame
+    overflow: "hidden",
     paddingTop: TRAY_FOOTER_PADDING_TOP,
     paddingBottom: TRAY_FOOTER_PADDING_BOTTOM,
   },

@@ -6,6 +6,7 @@ import {
 } from "react";
 import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import {
+  Easing,
   runOnUI,
   withSpring,
   withTiming,
@@ -13,6 +14,7 @@ import {
 import { scheduleOnRN } from "react-native-worklets";
 import {
   EXPAND_FROM_TRIGGER_CLOSE_DURATION,
+  EXPAND_FROM_TRIGGER_EASING_POINTS,
   EXPAND_FROM_TRIGGER_OPEN_DURATION,
   SCREEN_HEIGHT,
   TRAY_SPRING_CONFIG,
@@ -163,7 +165,10 @@ export const useTrayOpenCloseLifecycle = ({
           // a trigger-origin open keeps explicit geometry until a later sheet change takes layout ownership
           shared.originProgress.value = withTiming(
             1,
-            { duration: EXPAND_FROM_TRIGGER_OPEN_DURATION },
+            {
+              duration: EXPAND_FROM_TRIGGER_OPEN_DURATION,
+              easing: Easing.bezier(...EXPAND_FROM_TRIGGER_EASING_POINTS),
+            },
             (finished) => {
               if (finished) {
                 scheduleOnRN(releaseOriginGeometryLease);
@@ -286,7 +291,10 @@ export const useTrayOpenCloseLifecycle = ({
         shared.translateY.value = 0;
         shared.originProgress.value = withTiming(
           0,
-          { duration: EXPAND_FROM_TRIGGER_CLOSE_DURATION },
+          {
+            duration: EXPAND_FROM_TRIGGER_CLOSE_DURATION,
+            easing: Easing.bezier(...EXPAND_FROM_TRIGGER_EASING_POINTS),
+          },
           (finished) => {
             if (!finished) {
               return;

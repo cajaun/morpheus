@@ -5,14 +5,23 @@ import type { SharedValue } from "react-native-reanimated";
 import { useTrayOpenCloseLifecycle } from "../use-tray-open-close-lifecycle";
 
 // worklets run at once so lifecycle ownership is inspectable without native timing
+// timing configs are recorded so the trigger morph curve is observable
+const mockTimingConfigs: { target: number; config: any }[] = [];
+
 jest.mock("react-native-reanimated", () => ({
+  Easing: {
+    bezier: (x1: number, y1: number, x2: number, y2: number) => ({
+      bezier: [x1, y1, x2, y2],
+    }),
+  },
   runOnUI: (worklet: (...args: any[]) => void) =>
     (...args: any[]) => worklet(...args),
   withSpring: (target: number, _config: object, callback?: (finished: boolean) => void) => {
     callback?.(true);
     return target;
   },
-  withTiming: (target: number, _config: object, callback?: (finished: boolean) => void) => {
+  withTiming: (target: number, config: object, callback?: (finished: boolean) => void) => {
+    mockTimingConfigs.push({ target, config });
     callback?.(true);
     return target;
   },
@@ -178,6 +187,18 @@ describe("useTrayOpenCloseLifecycle", () => {
     expect(lifecycle.originGeometryLeaseRef.current).toBe(false);
     expect(lifecycle.onTransitionCompleted).toHaveBeenCalledWith({
       owner: "tray-open",
+    });
+  });
+
+  it("opens from the trigger on the fitted reference curve", () => {
+    mockTimingConfigs.length = 0;
+    renderOpeningLifecycle("expandFromTrigger");
+
+    const open = mockTimingConfigs.find((entry) => entry.target === 1);
+
+    expect(open?.config).toEqual({
+      duration: 220,
+      easing: { bezier: [0.4, 0, 0.2, 1] },
     });
   });
 

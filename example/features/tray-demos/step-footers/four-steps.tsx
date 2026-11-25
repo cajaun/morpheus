@@ -42,7 +42,7 @@ const LastStep = () => {
 };
 
 const FooterStepsTray = () => (
-  <Tray.Root stepOptions={{ className: "bg-white" }}>
+  <Tray.Root stepOptions={{ className: "bg-white",    footerStyle: { backgroundColor: "#FFFFFF" }, }}>
     <Tray.Trigger haptics="feedback">
       <ExampleTrigger label="Footer Steps" />
     </Tray.Trigger>

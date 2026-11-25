@@ -1,4 +1,8 @@
 import React, { useMemo, useRef } from "react";
+import {
+  splitFooterBackdrop,
+  TrayFooterBackdrop,
+} from "../footer-backdrop";
 import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import Animated, { useSharedValue } from "react-native-reanimated";
 import { styles as trayStyles } from "../animation/tray-styles";
@@ -90,7 +94,11 @@ export const TraySurface = React.memo(
     // region elements are stable slots whose own subscriptions update step payloads
     const surfaceContainerStyle = renderedContainerStyle;
     const surfaceFooterClassName = renderedFooterClassName;
-    const surfaceFooterStyle = renderedFooterStyle;
+    const { backdropColor: footerBackdropColor, style: surfaceFooterStyle } =
+      useMemo(
+        () => splitFooterBackdrop(renderedFooterStyle),
+        [renderedFooterStyle],
+      );
     const surfaceHeader = renderedHeader;
     const surfaceContent = renderedContent;
     const surfaceFooter = renderedFooter;
@@ -168,6 +176,7 @@ export const TraySurface = React.memo(
           ]}
         >
           <Animated.View style={footerContentFrameStyle}>
+            <TrayFooterBackdrop color={footerBackdropColor} />
             <TrayOriginProgressProvider value={originProgress}>
               {renderSnapshotStore ? (
                 <TraySnapshotRegion
@@ -184,6 +193,7 @@ export const TraySurface = React.memo(
       [
         dragStyle,
         footerContainerStyle,
+        footerBackdropColor,
         footerContentFrameStyle,
         footerVisibilityStyle,
         handleVisibleFooterLayout,

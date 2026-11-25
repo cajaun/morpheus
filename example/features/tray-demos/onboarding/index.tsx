@@ -9,7 +9,7 @@ import {
   TRAY_HEADER_CLOSE_BUTTON_SIZE,
   TRAY_HEADER_CLOSE_ICON_SIZE,
 } from "react-native-morpheus/constants";
-import { BUTTON_HEIGHT } from "@/features/tray-demos/presets/animated-flow-button";
+import { BUTTON_HEIGHT } from "@/features/tray-demos/presets/cleave-button";
 import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
 import { NextButton } from "../step-footers/fullscreen";

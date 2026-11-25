@@ -7,7 +7,7 @@ import {
   useTrayNavigationState,
 } from "react-native-morpheus";
 import { TRAY_HEADER_CLOSE_ICON_SIZE } from "react-native-morpheus/constants";
-import { AnimatedOnboardingButton } from "@/features/tray-demos/presets/content/button";
+import { CleaveButton } from "@/features/tray-demos/presets/cleave-button";
 import { trayDemoText } from "@/shared/theme/tokens";
 import { ExampleTrigger } from "../shared/example-trigger";
 
@@ -17,13 +17,12 @@ const AaveFooter = () => {
 
   return (
     <Tray.Footer style={{ width: "100%", alignItems: "center" }}>
-      <AnimatedOnboardingButton
+      <CleaveButton
         step={index}
         totalSteps={total}
-        onNext={next}
         onFinish={close}
-        onSecondaryPress={back}
-        primaryColor="#9896FF"
+        primaryAction={{ backgroundColor: "#9896FF", onPress: next }}
+        secondaryAction={{ onPress: back }}
       />
     </Tray.Footer>
   );

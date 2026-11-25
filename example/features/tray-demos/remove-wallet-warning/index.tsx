@@ -1,13 +1,17 @@
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
+import { interpolate, useDerivedValue } from "react-native-reanimated";
 import { Tray, useTrayOriginProgress, useTrayNavigation } from "react-native-morpheus";
 import {
   EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
   EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
+  HORIZONTAL_MARGIN,
   SCREEN_WIDTH,
+  TRAY_PRIMARY_BUTTON_HEIGHT,
+  TRAY_SHEET_BODY_HORIZONTAL_PADDING,
 } from "react-native-morpheus/constants";
-import { AnimatedFlowButton } from "@/features/tray-demos/presets/animated-flow-button";
-import { trayDemoColors, trayDemoText } from "@/shared/theme/tokens";
+import { CleaveButton } from "@/features/tray-demos/presets/cleave-button";
+import { trayDemoColors } from "@/shared/theme/tokens";
 import { PressableScale } from "@/shared/ui/pressable-scale";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -16,20 +20,34 @@ const MUTED_TEXT = "#9FA1A8";
 const DARK_TEXT = "#25272D";
 const CARD_ADDRESS = "0xc608:···e9cb";
 const SECONDARY_ACTION = "#F3F4F6";
-const WARNING_BUTTON_WIDTH =
-  SCREEN_WIDTH - EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN * 2 - 32;
+// the trigger fills the collapsed origin frame exactly, so the shell starts on the button's own edges
+const TRIGGER_WIDTH =
+  SCREEN_WIDTH - EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN * 2;
+// the footer row at rest spans the sheet's content grid
+const FOOTER_ROW_WIDTH =
+  SCREEN_WIDTH - HORIZONTAL_MARGIN * 2 - TRAY_SHEET_BODY_HORIZONTAL_PADDING * 2;
+const BACKUP_WARNING_GAP = 20;
 
 const WarningFooter = () => {
   const { close } = useTrayNavigation();
   const originProgress = useTrayOriginProgress();
+  // the row follows the footer frame from the trigger's width to the sheet grid on the origin clock, so the handoff has no jump
+  const rowWidth = useDerivedValue(() =>
+    interpolate(
+      originProgress?.value ?? 1,
+      [0, 1],
+      [TRIGGER_WIDTH, FOOTER_ROW_WIDTH],
+    ),
+  );
 
   return (
     <Tray.Footer style={{ width: "100%" }}>
-      <AnimatedFlowButton
-        step={1}
-        totalSteps={3}
-        layout={{ width: WARNING_BUTTON_WIDTH }}
-        animation={{ splitProgress: originProgress }}
+      <CleaveButton
+        split
+        // the footer splits as the tray opens out of its trigger
+        splitProgress={originProgress ?? 1}
+        width={FOOTER_ROW_WIDTH}
+        widthValue={rowWidth}
         primaryAction={{
           backgroundColor: WARNING_RED,
           onPress: close,
@@ -37,7 +55,6 @@ const WarningFooter = () => {
         secondaryAction={{
           backgroundColor: SECONDARY_ACTION,
           onPress: close,
-          visible: true,
         }}
       />
     </Tray.Footer>
@@ -46,10 +63,12 @@ const WarningFooter = () => {
 
 const WarningTrigger = () => (
   <Tray.Trigger haptics="feedback">
-    <AnimatedFlowButton
-      step={0}
-      totalSteps={2}
-      layout={{ width: WARNING_BUTTON_WIDTH }}
+    {/* the trigger is the same button whole, the trigger owns the haptics */}
+    <CleaveButton
+      split={false}
+      splitProgress={0}
+      width={TRIGGER_WIDTH}
+      haptics={false}
       primaryAction={{
         backgroundColor: WARNING_RED,
       }}
@@ -221,9 +240,8 @@ const BackupWarning = () => {
         borderStyle: "dashed",
         borderWidth: 2,
         justifyContent: "center",
-        minHeight: 132,
         paddingHorizontal: 20,
-        paddingVertical: 20,
+        paddingVertical: 16,
       }}
     >
       <View
@@ -408,14 +426,6 @@ const RemoveWalletPage = ({
           <WalletCard />
         </View>
 
-        <View
-          style={{
-            marginHorizontal: -30,
-            marginTop: 158,
-          }}
-        >
-          <BackupWarning />
-        </View>
       </View>
     </View>
   );
@@ -427,6 +437,22 @@ const RemoveWalletWarningTray = () => {
   return (
     <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
       <RemoveWalletPage topInset={top} />
+
+      {/* the warning sits on the page directly above the trigger, the opening tray covers both */}
+      <View
+        style={{
+          bottom:
+            bottom +
+            EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET +
+            TRAY_PRIMARY_BUTTON_HEIGHT +
+            BACKUP_WARNING_GAP,
+          left: 26,
+          position: "absolute",
+          right: 26,
+        }}
+      >
+        <BackupWarning />
+      </View>
 
       <Tray.Root
         stepOptions={{
@@ -447,9 +473,9 @@ const RemoveWalletWarningTray = () => {
           style={{
             bottom: bottom + EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
             alignItems: "center",
-            left: EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN + 16,
+            left: EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
             position: "absolute",
-            right: EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN + 16,
+            right: EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
           }}
         >
           <WarningTrigger />

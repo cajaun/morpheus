@@ -1,7 +1,8 @@
 // a step's footer draws pinned to the sheet bottom or inside an entering step's content until the step change completes
 import { describe, expect, it, jest } from "@jest/globals";
 import React from "react";
-import { Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
+import { TRAY_FOOTER_PADDING_TOP } from "../constants";
 import TestRenderer, { act } from "react-test-renderer";
 
 // motion is covered on device, these tests check placement and metrics
@@ -137,5 +138,49 @@ describe("step footer rendering", () => {
     });
     expect(renderer.root.findAllByType(Text)).toHaveLength(1);
     expect(store.getSnapshot().placement).toBe("pinned");
+  });
+});
+
+describe("step footer backdrop", () => {
+  it("paints the footer color from the footer's own top edge, not across its top padding", () => {
+    const store = createStepFooterStore();
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    store.commit(
+      payload("one", "id:go", {
+        isFirstRender: true,
+        footerStyle: { backgroundColor: "#FFFFFF", opacity: 0.9 },
+      }),
+    );
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <TrayStepFooterStoreContext.Provider value={store}>
+          <TrayStepFooterLayers skipEntering={false} fullScreenBoundaryExit={false} />
+        </TrayStepFooterStoreContext.Provider>,
+      );
+    });
+
+    const flat = (style: unknown) => StyleSheet.flatten(style as any) ?? {};
+    const views = renderer.root.findAll(
+      (node) => typeof node.type !== "string" && node.props.style !== undefined,
+    );
+    const body = views.find(
+      (node) => flat(node.props.style).paddingTop === TRAY_FOOTER_PADDING_TOP,
+    );
+    const backdrop = views.find(
+      (node) => flat(node.props.style).backgroundColor === "#FFFFFF",
+    );
+
+    // the padded frame keeps every other style but no fill, so content passing behind shows above the footer
+    expect(body).toBeDefined();
+    expect(flat(body!.props.style).backgroundColor).toBeUndefined();
+    expect(flat(body!.props.style).opacity).toBe(0.9);
+    expect(flat(body!.props.style).overflow).toBe("hidden");
+    expect(backdrop).toBeDefined();
+    expect(flat(backdrop!.props.style)).toMatchObject({
+      position: "absolute",
+      top: 0,
+    });
   });
 });

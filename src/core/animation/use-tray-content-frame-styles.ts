@@ -2,7 +2,9 @@ import { useAnimatedStyle } from "react-native-reanimated";
 import {
   EXPAND_FROM_TRIGGER_CONTENT_REVEAL_PROGRESS,
   FULL_SCREEN_HEADER_BOTTOM_GAP,
+  HORIZONTAL_MARGIN,
   SCREEN_HEIGHT,
+  SCREEN_WIDTH,
 } from "../constants";
 import {
   isBoundaryClockStarted,
@@ -16,6 +18,9 @@ import {
   EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT,
   type TrayFrameStyleParams,
 } from "./frame-style-params";
+
+// a trigger-origin sheet lays its content out once at the sheet width, the morphing shell is a centered window over it
+const ORIGIN_CONTENT_WIDTH = SCREEN_WIDTH - HORIZONTAL_MARGIN * 2;
 
 // content, viewport and header frames across sheet steps and fullscreen boundaries
 export const useTrayContentFrameStyles = (
@@ -58,6 +63,9 @@ export const useTrayContentFrameStyles = (
         : surfaceOpacity.value;
 
     if (!fullScreenBoundaryTransition) {
+      // text never rewraps while the shell narrows or widens, so the measured height holds at every frame of the morph
+      const pinsOriginWidth = shouldUseOriginTransition && !fullScreen;
+
       // a complete neutral sheet frame makes recycled native views release boundary position and width
       return {
         position: "relative",
@@ -65,9 +73,9 @@ export const useTrayContentFrameStyles = (
         bottom: 0,
         left: 0,
         right: 0,
-        width: "auto",
+        width: pinsOriginWidth ? ORIGIN_CONTENT_WIDTH : "auto",
         height: undefined,
-        alignSelf: "stretch",
+        alignSelf: pinsOriginWidth ? "center" : "stretch",
         flex: fullScreen ? 1 : 0,
         opacity: contentRevealOpacity,
       };

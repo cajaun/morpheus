@@ -3,6 +3,8 @@ import { describe, expect, it } from "@jest/globals";
 import TestRenderer, { act } from "react-test-renderer";
 import {
   BORDER_RADIUS,
+  EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT,
+  EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
   HORIZONTAL_MARGIN,
   SCREEN_HEIGHT,
   SCREEN_WIDTH,
@@ -658,6 +660,51 @@ describe("useTrayFrameStyles", () => {
 
     expect(styles.trayLayoutStyle.height).toBe(491);
     expect(styles.contentViewportStyle).toEqual({});
+  });
+
+  it("lays trigger-origin content out at the sheet width at every origin progress", () => {
+    const sheetWidth = SCREEN_WIDTH - HORIZONTAL_MARGIN * 2;
+
+    for (const originProgress of [0, 0.5, 1]) {
+      const styles = renderFrameStyles({
+        shouldUseOriginTransition: true,
+        originProgress,
+      });
+
+      // a fixed centered width means text never rewraps as the shell narrows, so the measured height cannot drift
+      expect(styles.contentFrameStyle.width).toBe(sheetWidth);
+      expect(styles.contentFrameStyle.alignSelf).toBe("center");
+    }
+  });
+
+  it("keeps ordinary and fullscreen content stretched to the shell", () => {
+    const sheet = renderFrameStyles({});
+    const fullScreen = renderFrameStyles({
+      shouldUseOriginTransition: true,
+      fullScreen: true,
+    });
+
+    expect(sheet.contentFrameStyle.width).toBe("auto");
+    expect(sheet.contentFrameStyle.alignSelf).toBe("stretch");
+    expect(fullScreen.contentFrameStyle.width).toBe("auto");
+    expect(fullScreen.contentFrameStyle.alignSelf).toBe("stretch");
+  });
+
+  it("starts the trigger-origin shell on the collapsed trigger frame", () => {
+    const styles = renderFrameStyles({
+      shouldUseOriginTransition: true,
+      originProgress: 0,
+    });
+
+    expect(styles.trayLayoutStyle.left).toBe(
+      EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN,
+    );
+    expect(styles.trayLayoutStyle.width).toBe(
+      SCREEN_WIDTH - EXPAND_FROM_TRIGGER_COLLAPSED_HORIZONTAL_MARGIN * 2,
+    );
+    expect(styles.trayLayoutStyle.height).toBe(
+      EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT,
+    );
   });
 
   it("keeps an explicit interpolated height during origin expansion", () => {
