@@ -106,6 +106,9 @@ const resolveContractParticipants = (
 export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
   const records = new Map<number, TrayTransitionLifecycleRecord>();
   let activeGeneration: number | null = null;
+  const settledListeners = new Set<
+    (generation: number, phase: TrayTransitionPhase) => void
+  >();
 
   const append = (
     record: TrayTransitionLifecycleRecord,
@@ -126,6 +129,12 @@ export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
 
     if (terminalPhases.has(event.phase) && activeGeneration === record.contract.generation) {
       activeGeneration = null;
+    }
+
+    if (terminalPhases.has(event.phase)) {
+      settledListeners.forEach((listener) =>
+        listener(record.contract.generation, event.phase),
+      );
     }
 
     return next;
@@ -304,5 +313,11 @@ export const createTrayTransitionLifecycle = (): TrayTransitionLifecycle => {
     getActive: () =>
       activeGeneration === null ? null : records.get(activeGeneration) ?? null,
     getHistory: () => [...records.values()],
+    subscribeSettled: (listener) => {
+      settledListeners.add(listener);
+      return () => {
+        settledListeners.delete(listener);
+      };
+    },
   };
 };

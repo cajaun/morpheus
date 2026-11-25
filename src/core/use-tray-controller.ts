@@ -152,7 +152,8 @@ export const useTrayController = ({
   const {
     handleGeometryMeasured,
     handleSheetFramePrepared,
-    clearPreparedSheetFrame,
+    releaseSheetFrameLease,
+    resetGeometry,
   } = geometry.handlers;
   const resolveRenderedContentHeight =
     presentation.helpers.resolveRenderedContentHeight;
@@ -260,7 +261,7 @@ export const useTrayController = ({
     measuredFooterHeightRef,
     footerHeight: presentation.shared.footerHeight,
     commitStableContentHeight,
-    clearPreparedSheetFrame,
+    releaseSheetFrameLease,
   });
 
   useContentHeightRefresh({
@@ -278,15 +279,10 @@ export const useTrayController = ({
 
   useTrayAssignmentReset({
     assignmentId,
-    clearPreparedSheetFrame,
+    resetGeometry,
     clearRenderState,
-    contentMeasurementLeaseRef,
-    originGeometryLeaseRef,
     morphProgress,
-    preparedSheetFrameRef,
-    committedSheetFrameRef,
     resetMeasurements,
-    returningToSheetRef,
     shared: {
       active: presentation.shared.active,
       animationTravel: presentation.shared.animationTravel,
@@ -315,6 +311,7 @@ export const useTrayController = ({
     renderState,
     measurements,
     originGeometryLeaseRef,
+    resetGeometry,
     shared: {
       translateY: presentation.shared.translateY,
       contentHeight: presentation.shared.contentHeight,

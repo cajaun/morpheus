@@ -125,4 +125,8 @@ export type TrayTransitionLifecycle = {
   get: (generation: number) => TrayTransitionLifecycleRecord | null;
   getActive: () => TrayTransitionLifecycleRecord | null;
   getHistory: () => readonly TrayTransitionLifecycleRecord[];
+  // called once a transition reaches completed, interrupted or cancelled
+  subscribeSettled?: (
+    listener: (generation: number, phase: TrayTransitionPhase) => void,
+  ) => () => void;
 };

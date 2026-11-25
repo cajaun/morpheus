@@ -65,7 +65,11 @@ const renderCallbacks = (transition: TrayTransitionContract) => {
   const commitStableContentHeight = jest.fn(
     (_height: number, _trayId?: string, _mode?: string) => true,
   );
-  const clearPreparedSheetFrame = jest.fn();
+  // the real release clears the ref and the lease together
+  const releaseSheetFrameLease = jest.fn(() => {
+    contentMeasurementLeaseRef.current = false;
+    preparedSheetFrameRef.current = undefined;
+  });
   let callbacks: ReturnType<typeof useTrayTransitionCallbacks> | null =
     null;
 
@@ -87,7 +91,7 @@ const renderCallbacks = (transition: TrayTransitionContract) => {
       measuredFooterHeightRef,
       footerHeight,
       commitStableContentHeight,
-      clearPreparedSheetFrame,
+      releaseSheetFrameLease,
     });
 
     return null;
@@ -99,7 +103,7 @@ const renderCallbacks = (transition: TrayTransitionContract) => {
 
   return {
     callbacks: callbacks!,
-    clearPreparedSheetFrame,
+    releaseSheetFrameLease,
     commitStableContentHeight,
     contentMeasurementLeaseRef,
     latestLayoutFrameRef,
@@ -129,7 +133,7 @@ describe("useTrayTransitionCallbacks", () => {
       totalHeight: 345,
       contentHeight: 255,
     });
-    expect(harness.clearPreparedSheetFrame).toHaveBeenCalledTimes(1);
+    expect(harness.releaseSheetFrameLease).toHaveBeenCalledTimes(1);
   });
 
   it("does not promote a prepared source frame when the target is fullscreen", () => {

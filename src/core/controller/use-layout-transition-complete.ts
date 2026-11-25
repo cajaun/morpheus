@@ -33,7 +33,7 @@ export const useLayoutTransitionComplete = (
     measuredFooterHeightRef,
     footerHeight,
     commitStableContentHeight,
-    clearPreparedSheetFrame,
+    releaseSheetFrameLease,
   } = params;
 
   const handleLayoutTransitionComplete = useCallback(
@@ -181,9 +181,7 @@ export const useLayoutTransitionComplete = (
           committedSheetFrameRef.current = undefined;
         }
 
-        contentMeasurementLeaseRef.current = false;
-        preparedSheetFrameRef.current = undefined;
-        clearPreparedSheetFrame();
+        releaseSheetFrameLease();
         log("SHEET FRAME RELEASED", {
           completedGeneration,
           trayId: activeTrayIdRef.current,
@@ -202,7 +200,7 @@ export const useLayoutTransitionComplete = (
       activeTrayIdRef,
       activeTransitionGenerationRef,
       activeTransitionRef,
-      clearPreparedSheetFrame,
+      releaseSheetFrameLease,
       commitStableContentHeight,
       contentMeasurementLeaseRef,
       footerHeight,

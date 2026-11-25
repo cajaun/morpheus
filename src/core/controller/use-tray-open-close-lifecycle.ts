@@ -52,6 +52,7 @@ export const useTrayOpenCloseLifecycle = ({
   onTransitionStarted,
   onTransitionCompleted,
   originGeometryLeaseRef,
+  resetGeometry,
 }: Params) => {
   const justOpenedRef = useRef(false);
   const [isSurfaceReady, setIsSurfaceReady] = useState(true);
@@ -79,18 +80,19 @@ export const useTrayOpenCloseLifecycle = ({
     shared.surfaceOpacity.value = 1;
     shared.originProgress.value = 1;
     shared.originTargetContentHeight.value = 0;
-    originGeometryLeaseRef.current = false;
     setIsSurfaceReady(true);
     clear();
     reset();
+    // the same geometry reset a reassigned slot runs, so a lease from an unfinished step change cannot outlive the close
+    resetGeometry?.();
     onTransitionCompleted?.({ owner: "tray-close" });
     onCloseComplete?.();
   }, [
     clear,
     onCloseComplete,
     onTransitionCompleted,
-    originGeometryLeaseRef,
     reset,
+    resetGeometry,
     shared,
   ]);
 

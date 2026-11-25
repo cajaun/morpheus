@@ -364,6 +364,35 @@ export const useTrayGeometryOwnership = ({
     setPreparedSheetFrame(undefined);
   }, []);
 
+  // ref, state and lease flag leave together, a lease without its frame or a frame without its lease is no state the measurements expect
+  const releaseSheetFrameLease = useCallback(() => {
+    contentMeasurementLeaseRef.current = false;
+    preparedSheetFrameRef.current = undefined;
+    setPreparedSheetFrame(undefined);
+  }, []);
+
+  // the one reset for geometry ownership, a finished close and a reassigned slot leave the same state
+  const resetGeometry = useCallback(() => {
+    releaseSheetFrameLease();
+    committedSheetFrameRef.current = undefined;
+    originGeometryLeaseRef.current = false;
+    returningToSheetRef.current = false;
+  }, [releaseSheetFrameLease]);
+
+  // a lease is released by its own transition's layout completion, a newer transition supersedes that completion, so it releases the lease itself
+  useProfiledTrayLayoutEffect("useTrayGeometryOwnership.releaseSupersededLease", () => {
+    const frame = preparedSheetFrameRef.current;
+    const generation = transitionContract?.generation ?? 0;
+
+    if (frame !== undefined && frame.generation < generation) {
+      log("SHEET FRAME RELEASED — superseded", {
+        frameGeneration: frame.generation,
+        generation,
+      });
+      releaseSheetFrameLease();
+    }
+  }, [releaseSheetFrameLease, transitionContract?.generation]);
+
   return {
     state: {
       preparedSheetFrame,
@@ -394,6 +423,8 @@ export const useTrayGeometryOwnership = ({
       handleGeometryMeasured,
       handleSheetFramePrepared,
       clearPreparedSheetFrame,
+      releaseSheetFrameLease,
+      resetGeometry,
     },
   };
 };

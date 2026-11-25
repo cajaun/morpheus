@@ -74,17 +74,71 @@ const shouldAnticipateKeyboard = (
   );
 };
 
+// the in-flight fullscreen boundary a step change to targetIndex would cut off, a step that changes mode again reverses the boundary from its live frame instead
+const resolveBlockingBoundary = (
+  transitions: TrayRuntimeActionContext["transitions"],
+  state: TrayHostStateValue,
+  targetIndex: number,
+) => {
+  const contract = transitions.getActive()?.contract;
+  const activeEntry = state.stack[state.stack.length - 1];
+
+  if (
+    !contract ||
+    contract.fullScreenChanged !== true ||
+    !activeEntry ||
+    contract.to?.trayId !== activeEntry.trayId ||
+    targetIndex === activeEntry.index
+  ) {
+    return null;
+  }
+
+  const target = state.registry[activeEntry.trayId]?.steps[targetIndex];
+
+  if (!target) {
+    return null;
+  }
+
+  const targetFullScreen = resolveTrayStepOptions(target.options).fullScreen;
+
+  return targetFullScreen === (contract.to?.mode === "fullScreen")
+    ? contract.generation
+    : null;
+};
+
 // navigation commands own stack changes and transition contracts
-export const createTrayRuntimeNavigationActions = ({
-  getState,
-  setState,
-  getDependencies,
-  allocateTransitionGeneration,
-  transitions,
-  setPendingPageTransition,
-  justOpenedRef,
-}: TrayRuntimeActionContext): NavigationActions => ({
+export const createTrayRuntimeNavigationActions = (
+  context: TrayRuntimeActionContext,
+): NavigationActions => {
+  const {
+    getState,
+    setState,
+    getDependencies,
+    allocateTransitionGeneration,
+    transitions,
+    setPendingPageTransition,
+    justOpenedRef,
+    holdNavigation,
+    dropHeldNavigation,
+  } = context;
+
+  // one shell clock drives a boundary, so a same-mode step change waits for it rather than snapping it to its end
+  const holdForBoundary = (targetIndex: number, run: () => void) => {
+    const state = getState();
+    const generation = resolveBlockingBoundary(transitions, state, targetIndex);
+    const trayId = state.stack[state.stack.length - 1]?.trayId;
+
+    if (generation === null || trayId === undefined) {
+      return false;
+    }
+
+    holdNavigation({ generation, trayId, run });
+    return true;
+  };
+
+  const actions: NavigationActions = {
   openTray: (id: string) => {
+    dropHeldNavigation();
     const state = getState();
     justOpenedRef.current = true;
     markTrayOpenRequested(id);
@@ -103,6 +157,7 @@ export const createTrayRuntimeNavigationActions = ({
     );
   },
   openNestedTray: (id: string, parentTrayId?: string | null) => {
+    dropHeldNavigation();
     const state = getState();
     justOpenedRef.current = true;
     markTrayOpenRequested(id);
@@ -128,7 +183,9 @@ export const createTrayRuntimeNavigationActions = ({
     );
   },
   closeActiveTray: () => {
+    dropHeldNavigation();
     const state = getState();
+    dropHeldNavigation();
     void getDependencies().dismissFocusedInputs(state.activeTrayId);
 
     setState((current) => {
@@ -166,6 +223,11 @@ export const createTrayRuntimeNavigationActions = ({
       activeStepOptions.fullScreenCloseBehavior === "returnToShell" &&
       safeIndex > 0
     ) {
+      if (holdForBoundary(safeIndex - 1, () => actions.requestCloseActiveTray())) {
+        return;
+      }
+
+      dropHeldNavigation();
       setState((current) => {
         const nextStack = current.stack.map((entry, index) =>
           index === current.stack.length - 1
@@ -218,6 +280,12 @@ export const createTrayRuntimeNavigationActions = ({
       total,
     );
 
+    if (holdForBoundary(nextIndex, () => actions.nextStep())) {
+      return;
+    }
+
+    dropHeldNavigation();
+
     if (shouldPrepareKeyboardHandoff(state, nextIndex)) {
       getDependencies().prepareKeyboardHandoff();
     }
@@ -253,6 +321,12 @@ export const createTrayRuntimeNavigationActions = ({
     const state = getState();
     const activeEntry = state.stack[state.stack.length - 1];
     const nextIndex = Math.max((activeEntry?.index ?? 0) - 1, 0);
+
+    if (holdForBoundary(nextIndex, () => actions.previousStep())) {
+      return;
+    }
+
+    dropHeldNavigation();
 
     if (shouldPrepareKeyboardHandoff(state, nextIndex)) {
       getDependencies().prepareKeyboardHandoff();
@@ -291,6 +365,7 @@ export const createTrayRuntimeNavigationActions = ({
     fromPageIndex,
     toPageIndex,
   ) => {
+    dropHeldNavigation();
     const state = getState();
     const from = resolveActiveTrayEndpoint(state);
 
@@ -327,4 +402,7 @@ export const createTrayRuntimeNavigationActions = ({
     transitions.begin(contract);
     return generation;
   },
-});
+};
+
+  return actions;
+};

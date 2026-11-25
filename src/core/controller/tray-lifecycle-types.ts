@@ -41,6 +41,8 @@ export type TrayLifecycleParams = {
     };
   };
   originGeometryLeaseRef: RefObject<boolean>;
+  // geometry ownership's one reset, run once a close finishes
+  resetGeometry?: () => void;
   shared: {
     translateY: SharedValue<number>;
     contentHeight: SharedValue<number>;

@@ -28,4 +28,14 @@ export type TrayRuntimeActionContext = {
     transition: TrayTransitionContract | null,
   ) => void;
   justOpenedRef: { current: boolean };
+  // a step change that would cut off an in-flight fullscreen boundary waits for it, the latest one wins
+  holdNavigation: (held: HeldNavigation) => void;
+  dropHeldNavigation: () => void;
+};
+
+export type HeldNavigation = {
+  // the boundary transition the step change waits for
+  generation: number;
+  trayId: string;
+  run: () => void;
 };

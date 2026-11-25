@@ -33,5 +33,6 @@ export type TransitionCallbackParams = {
     trayId?: string,
     mode?: TrayPresentationMode,
   ) => boolean;
-  clearPreparedSheetFrame: () => void;
+  // clears the prepared frame, its ref and the lease flag together
+  releaseSheetFrameLease: () => void;
 };

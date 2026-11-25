@@ -3,19 +3,14 @@ import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-
 import type { SharedValue } from "react-native-reanimated";
 import { SCREEN_HEIGHT } from "../constants";
 import { log } from "../logger";
-import type { TraySheetFrame } from "../types/tray";
 
 type Params = {
   assignmentId: number;
-  clearPreparedSheetFrame: () => void;
+  // geometry ownership's one reset, shared with a finished close
+  resetGeometry: () => void;
   clearRenderState: () => void;
-  contentMeasurementLeaseRef: RefObject<boolean>;
-  originGeometryLeaseRef: RefObject<boolean>;
   morphProgress: SharedValue<number>;
-  preparedSheetFrameRef: RefObject<TraySheetFrame | undefined>;
-  committedSheetFrameRef: RefObject<TraySheetFrame | undefined>;
   resetMeasurements: () => void;
-  returningToSheetRef: RefObject<boolean>;
   shared: {
     active: SharedValue<boolean>;
     animationTravel: SharedValue<number>;
@@ -37,15 +32,10 @@ type Params = {
 // assignment reset fences recycled native hosts from earlier transition callbacks
 export const useTrayAssignmentReset = ({
   assignmentId,
-  clearPreparedSheetFrame,
+  resetGeometry,
   clearRenderState,
-  contentMeasurementLeaseRef,
-  originGeometryLeaseRef,
   morphProgress,
-  preparedSheetFrameRef,
-  committedSheetFrameRef,
   resetMeasurements,
-  returningToSheetRef,
   shared,
   transition,
 }: Params) => {
@@ -93,23 +83,13 @@ export const useTrayAssignmentReset = ({
     active.value = false;
     clearRenderState();
     resetMeasurements();
-    preparedSheetFrameRef.current = undefined;
-    committedSheetFrameRef.current = undefined;
-    contentMeasurementLeaseRef.current = false;
-    originGeometryLeaseRef.current = false;
-    clearPreparedSheetFrame();
-    returningToSheetRef.current = false;
+    resetGeometry();
   }, [
     assignmentId,
-    clearPreparedSheetFrame,
+    resetGeometry,
     clearRenderState,
-    contentMeasurementLeaseRef,
-    originGeometryLeaseRef,
     morphProgress,
-    preparedSheetFrameRef,
-    committedSheetFrameRef,
     resetMeasurements,
-    returningToSheetRef,
     active,
     animationTravel,
     closeGeneration,

@@ -19,7 +19,10 @@ import {
   type TrayKeyboardGate,
 } from "../transition-start";
 import { useSheetTrayKeyboard } from "../input/use-tray-keyboard";
-import { resolveKeyboardSheetTransitionIntent } from "../input/keyboard-transition";
+import {
+  resolveKeyboardDismissTiming,
+  resolveKeyboardSheetTransitionIntent,
+} from "../input/keyboard-transition";
 import { isTrayDebugLoggingEnabled, log } from "../logger";
 import { TrayKeyboardGateContext } from "./contexts";
 import { type TrayVisualViewProps } from "./props";
@@ -89,8 +92,18 @@ export const TrayKeyboardCapableVisualView = React.memo(
         return;
       }
 
-      if (keyboardGateTarget === 0) {
-        pendingKeyboardDismissRef.current = keyboardGateGeneration;
+      // the shell's layout participant exists exactly when sheet layout animation is on, see shell.tsx
+      const dismissTiming = resolveKeyboardDismissTiming({
+        leavesKeyboard: keyboardGateTarget === 0,
+        layoutParticipant: props.state.layoutEnabled,
+      });
+
+      // a step that keeps or brings the keyboard drops an older pending dismissal
+      pendingKeyboardDismissRef.current =
+        dismissTiming === "withLayout" ? keyboardGateGeneration : 0;
+
+      if (dismissTiming === "now") {
+        void KeyboardController.dismiss({ keepFocus: false, animated: true });
       }
 
       keyboardGateWaitStartedAt.value = 0;
@@ -106,6 +119,7 @@ export const TrayKeyboardCapableVisualView = React.memo(
       keyboardArmedTarget,
       keyboardGateGeneration,
       keyboardGateTarget,
+      props.state.layoutEnabled,
     ]);
 
     // report how and when the gate opened to the step trace

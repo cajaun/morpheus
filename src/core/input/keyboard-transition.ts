@@ -43,3 +43,15 @@ export const isKeyboardAwareSheetStepTransition = (
     (intent.sourceOwnsKeyboard || intent.targetOwnsKeyboard)
   );
 };
+
+export type KeyboardDismissTiming = "none" | "withLayout" | "now";
+
+// a step that puts the keyboard away dismisses it when its layout participant starts, a step without one dismisses at commit so the duty never goes unowned
+export const resolveKeyboardDismissTiming = ({
+  leavesKeyboard,
+  layoutParticipant,
+}: {
+  leavesKeyboard: boolean;
+  layoutParticipant: boolean;
+}): KeyboardDismissTiming =>
+  !leavesKeyboard ? "none" : layoutParticipant ? "withLayout" : "now";

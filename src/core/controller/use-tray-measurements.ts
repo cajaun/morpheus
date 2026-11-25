@@ -86,7 +86,13 @@ export const useTrayMeasurements = ({
     latestMeasuredFooterFullScreenRef.current = false;
     measuredFooterHeight.value = 0;
     footerHeight.value = 0;
-  }, [footerHeight, measuredFooterHeight, renderedFooter]);
+
+    // an open waiting on this footer has nothing left to wait for, readiness is no footer or a measured one
+    if (!footerMeasuredRef.current) {
+      footerMeasuredRef.current = true;
+      syncOpenReadiness();
+    }
+  }, [footerHeight, measuredFooterHeight, renderedFooter, syncOpenReadiness]);
 
   useEffect(() => {
     // the payload reads shared values on the UI thread, so build it when the log is written

@@ -8,6 +8,7 @@ import { createTrayTransitionLifecycle } from "../transition-lifecycle";
 import { createTrayRuntimeNavigationActions } from "./tray-runtime-navigation-actions";
 import { createTrayRuntimeRegistrationActions } from "./tray-runtime-registration-actions";
 import type {
+  HeldNavigation,
   TrayRuntimeActionContext,
   TrayRuntimeDependencies,
 } from "./tray-runtime-action-context";
@@ -25,6 +26,7 @@ export const createTrayRuntimeStore = (
   const transitions = createTrayTransitionLifecycle();
   let latestTransitionGeneration = 0;
   let pendingPageTransition: TrayTransitionContract | null = null;
+  let heldNavigation: HeldNavigation | null = null;
 
   const allocateTransitionGeneration = () => {
     latestTransitionGeneration += 1;
@@ -99,6 +101,24 @@ export const createTrayRuntimeStore = (
     emitChange();
   };
 
+  // a held step change runs once its boundary completes, a boundary cut short by anything else drops it
+  transitions.subscribeSettled?.((generation, phase) => {
+    const held = heldNavigation;
+
+    if (held === null || held.generation !== generation) {
+      return;
+    }
+
+    heldNavigation = null;
+
+    if (
+      phase === "completed" &&
+      state.stack[state.stack.length - 1]?.trayId === held.trayId
+    ) {
+      held.run();
+    }
+  });
+
   const actionContext: TrayRuntimeActionContext = {
     getState: () => state,
     setState,
@@ -110,6 +130,12 @@ export const createTrayRuntimeStore = (
       pendingPageTransition = transition;
     },
     justOpenedRef,
+    holdNavigation: (held) => {
+      heldNavigation = held;
+    },
+    dropHeldNavigation: () => {
+      heldNavigation = null;
+    },
   };
 
   const actions: TrayHostActionsValue = {
