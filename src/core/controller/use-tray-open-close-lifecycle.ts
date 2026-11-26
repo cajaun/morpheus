@@ -1,6 +1,5 @@
 import {
   useCallback,
-  useEffect,
   useRef,
   useState,
 } from "react";
@@ -246,7 +245,8 @@ export const useTrayOpenCloseLifecycle = ({
       markTrayOpenStarted(rootTrayId ?? trayId ?? "unknown", trayId);
       showLatestSnapshot();
       // measurement restarts after snapshot publication because content identity may change
-      beginOpenMeasurement(!!footer);
+      // a tray growing out of its trigger opens on fixed footer geometry, the measured footer is never part of its open
+      beginOpenMeasurement(!!footer, transition?.open === "expandFromTrigger");
       if (isTrayDebugLoggingEnabled()) {
         log("OPEN — waiting for measurement");
       }
@@ -342,7 +342,8 @@ export const useTrayOpenCloseLifecycle = ({
     // visibility bounds open and close work
   }, [visible]);
 
-  useEffect(() => {
+  // starts in the commit that makes the open ready, before that frame paints, instead of a frame later after paint
+  useProfiledTrayLayoutEffect("useTrayOpenCloseLifecycle.openWhenReady", () => {
     if (!measurements.state.isReadyToOpen) {
       return;
     }

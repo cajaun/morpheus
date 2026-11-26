@@ -35,7 +35,6 @@ export const useTrayRenderState = ({
   containerStyle,
   className,
   footerStyle,
-  footerClassName,
   transitionContract,
 }: TraySnapshot) => {
   const headerRef = useRef(header);
@@ -74,9 +73,6 @@ export const useTrayRenderState = ({
   const footerStyleRef = useRef(footerStyle);
   footerStyleRef.current = footerStyle;
 
-  const footerClassNameRef = useRef(footerClassName);
-  footerClassNameRef.current = footerClassName;
-
   const transitionContractRef = useRef(transitionContract);
   transitionContractRef.current = transitionContract;
 
@@ -99,7 +95,6 @@ export const useTrayRenderState = ({
     containerStyle,
     className,
     footerStyle,
-    footerClassName,
     transitionContract,
   });
   const snapshotStoreRef = useRef<TrayRenderSnapshotStore | null>(null);
@@ -198,7 +193,6 @@ export const useTrayRenderState = ({
       containerStyle: containerStyleRef.current,
       className: classNameRef.current,
       footerStyle: footerStyleRef.current,
-      footerClassName: footerClassNameRef.current,
       transitionContract: transitionContractRef.current,
     });
 
@@ -242,7 +236,6 @@ export const useTrayRenderState = ({
       containerStyle: containerStyleRef.current,
       className: classNameRef.current,
       footerStyle: footerStyleRef.current,
-      footerClassName: footerClassNameRef.current,
       transitionContract: transitionContractRef.current,
     };
 
@@ -289,7 +282,6 @@ export const useTrayRenderState = ({
       containerStyle: undefined,
       className: undefined,
       footerStyle: undefined,
-      footerClassName: undefined,
       transitionContract: null,
     };
     log("RENDER SNAPSHOT CLEAR", {
@@ -317,7 +309,6 @@ export const useTrayRenderState = ({
       renderedContainerStyle: renderedTrayForRender.containerStyle,
       renderedClassName: renderedTrayForRender.className,
       renderedFooterStyle: renderedTrayForRender.footerStyle,
-      renderedFooterClassName: renderedTrayForRender.footerClassName,
       renderedTransitionContract:
         renderedTrayForRender.transitionContract ?? null,
     },

@@ -22,3 +22,15 @@ export const TrayStepFooterFrameStyleContext =
 // the pinned footer layer element for trays that render footers per step
 export const TrayStepFooterRegionContext =
   React.createContext<React.ReactNode>(null);
+
+// how the step's footer animates, read by its backing inside the sheet so the two fade as one
+export type TrayStepFooterMotionFlags = {
+  skipEntering: boolean;
+  fullScreenBoundaryExit: boolean;
+};
+
+export const TrayStepFooterMotionFlagsContext =
+  React.createContext<TrayStepFooterMotionFlags>({
+    skipEntering: false,
+    fullScreenBoundaryExit: false,
+  });

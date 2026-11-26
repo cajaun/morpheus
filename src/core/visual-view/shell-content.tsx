@@ -8,7 +8,6 @@ import {
   type TrayVisualShellContentProps,
 } from "./props";
 import {
-  TrayInteractionBackdrop,
   TrayOriginTransitionBackdrop,
 } from "./backdrops";
 import { TrayKeyboardStickyRegion } from "./keyboard-sticky-region";
@@ -76,18 +75,12 @@ export const TrayVisualShellContent = React.memo(
             visible={visible}
           />
         ) : null}
-        {shouldUseOriginTransition ? (
-          <TrayOriginTransitionBackdrop
-            isRendered={renderedTrayId !== undefined}
-            originProgress={surfaceProps.originProgress}
-            progress={progress}
-          />
-        ) : (
-          <TrayInteractionBackdrop
-            isRendered={renderedTrayId !== undefined}
-            progress={progress}
-          />
-        )}
+        {/* one backdrop for every tray, origin progress rests at 1 outside a trigger expansion, so swapping backdrops never remounts one from a stale open position */}
+        <TrayOriginTransitionBackdrop
+          isRendered={renderedTrayId !== undefined}
+          originProgress={surfaceProps.originProgress}
+          progress={progress}
+        />
         {requiresFullScreenMotion && renderedTrayId !== undefined && (
           <Animated.View
             className={presentationFullScreen ? renderedClassName : undefined}

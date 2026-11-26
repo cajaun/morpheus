@@ -8,10 +8,19 @@ import {
   useRef,
 } from "react";
 import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
-import Animated, { useAnimatedReaction } from "react-native-reanimated";
+import Animated, {
+  useAnimatedReaction,
+  useAnimatedStyle,
+} from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { measureTrayNode } from "./measure-node";
-import { splitFooterBackdrop, TrayFooterBackdrop } from "./footer-backdrop";
+import {
+  resolveFooterBackingHeight,
+  splitFooterBackdrop,
+  TrayFooterBackdrop,
+  TrayFooterFade,
+} from "./footer-backdrop";
+import { TraySheetBottomAnchor } from "./footer-backing";
 import { TrayRevealedStepContent } from "../tray-step-content";
 import { createMorphExiting } from "../step-content/morph-animations";
 import { useTrayContentMotionDirection } from "./transition-motion-direction";
@@ -25,6 +34,7 @@ import {
 import {
   TrayStepFooterMetricsContext,
   TrayStepFooterFrameStyleContext,
+  TrayStepFooterMotionFlagsContext,
 } from "./step-footer/contexts";
 import {
   useStepFooterState,
@@ -48,9 +58,13 @@ export type {
 export {
   TrayStepFooterMetricsContext,
   TrayStepFooterFrameStyleContext,
+  TrayStepFooterMotionFlagsContext,
   TrayStepFooterRegionContext,
 } from "./step-footer/contexts";
-export type { TrayStepFooterMetrics } from "./step-footer/contexts";
+export type {
+  TrayStepFooterMetrics,
+  TrayStepFooterMotionFlags,
+} from "./step-footer/contexts";
 
 const useFooterReport = () => {
   const metrics = useContext(TrayStepFooterMetricsContext);
@@ -78,7 +92,7 @@ const useFooterReport = () => {
 // the footer body, the same in both places, reports its height in the commit that shows it and on later resizes
 type TrayStepFooterBodyFooter = Pick<
   TrayStepFooterExiting,
-  "node" | "style" | "className"
+  "node" | "style"
 > & { key: string | null };
 
 const TrayStepFooterBody = ({
@@ -134,7 +148,6 @@ const TrayStepFooterBody = ({
       ref={nodeRef}
       collapsable={false}
       onLayout={handleLayout}
-      className={state.className}
       style={[
         styles.body,
         inContent ? styles.bodyInContent : styles.bodyPinned,
@@ -143,7 +156,8 @@ const TrayStepFooterBody = ({
       pointerEvents="box-none"
     >
       <Animated.View style={frameStyle}>
-        <TrayFooterBackdrop color={backdropColor} />
+        {/* inside the sheet's content a footer covers what passes behind it, a pinned footer's backing is drawn inside the sheet by TrayStepFooterBacking */}
+        {inContent ? <TrayFooterBackdrop color={backdropColor} /> : null}
         {state.node}
       </Animated.View>
     </View>
@@ -297,14 +311,67 @@ export const TrayStepFooterLayers = ({
   );
 };
 
+// a pinned footer's backing drawn inside the sheet, solid from its controls' top edge down with a fade above, so the sheet's one rounded edge draws the corner, it enters and leaves on the footer's own reveal so the two fade as one
+export const TrayStepFooterBacking = ({
+  frameStyle,
+}: {
+  frameStyle: React.ComponentProps<typeof Animated.View>["style"];
+}) => {
+  const metrics = useContext(TrayStepFooterMetricsContext);
+  const flags = useContext(TrayStepFooterMotionFlagsContext);
+  const { state } = useStepFooterState();
+  const { backdropColor } = useMemo(
+    () => splitFooterBackdrop(state.style),
+    [state.style],
+  );
+  const metricsHeight = metrics?.height;
+  const heightStyle = useAnimatedStyle(
+    () => ({
+      height: resolveFooterBackingHeight(
+        metricsHeight?.value ?? 0,
+        TRAY_FOOTER_PADDING_TOP,
+      ),
+    }),
+    [metricsHeight],
+  );
+  const shown =
+    state.placement === "pinned" && state.key != null && backdropColor != null;
+
+  // the anchor stays mounted so a leaving backing can run its exit
+  return (
+    <TraySheetBottomAnchor style={frameStyle}>
+      {shown ? (
+        <TrayRevealedStepContent
+          key={state.key}
+          stepKey={`footer-backing:${state.key}`}
+          scale={false}
+          skipEntering={flags.skipEntering || state.settled}
+          skipExiting={state.exit === "withContent"}
+          fullScreenBoundaryExit={flags.fullScreenBoundaryExit}
+          pointerEvents="none"
+          style={styles.backing}
+        >
+          <Animated.View
+            style={[
+              styles.backingFill,
+              { backgroundColor: backdropColor },
+              heightStyle,
+            ]}
+          >
+            <TrayFooterFade color={backdropColor} />
+          </Animated.View>
+        </TrayRevealedStepContent>
+      ) : null}
+    </TraySheetBottomAnchor>
+  );
+};
+
 const styles = StyleSheet.create({
   body: {
     // a footer background follows the sheet's bottom corners
     borderBottomLeftRadius: BORDER_RADIUS,
     borderBottomRightRadius: BORDER_RADIUS,
     borderCurve: "continuous",
-    // the backdrop stops at the body's rounded frame
-    overflow: "hidden",
     paddingTop: TRAY_FOOTER_PADDING_TOP,
     paddingBottom: TRAY_FOOTER_PADDING_BOTTOM,
   },
@@ -325,5 +392,20 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
+  },
+  // zero height on the anchor, the fill hangs up from the sheet's bottom edge
+  backing: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 0,
+    overflow: "visible",
+  },
+  backingFill: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
 });

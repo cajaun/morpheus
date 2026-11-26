@@ -335,8 +335,13 @@ export const useTrayFrameStyles = (params: Params) => {
       preparedSheetHeight,
     });
 
-  const { stepFooterContainerStyle, footerContainerStyle } =
-    useTrayFooterFrameStyles(params, {
+  const {
+    stepFooterContainerStyle,
+    footerContainerStyle,
+    footerBackingFrameStyle,
+    footerBackingFadeStyle,
+    stepFooterBackingFrameStyle,
+  } = useTrayFooterFrameStyles(params, {
       collapsedBottomInset,
       targetBottomInset,
       originBottomAnchor,
@@ -353,5 +358,8 @@ export const useTrayFrameStyles = (params: Params) => {
     trayLayoutStyle,
     footerContainerStyle,
     stepFooterContainerStyle,
+    footerBackingFrameStyle,
+    footerBackingFadeStyle,
+    stepFooterBackingFrameStyle,
   };
 };

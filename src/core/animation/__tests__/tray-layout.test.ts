@@ -8,7 +8,10 @@ import type {
 import * as Reanimated from "react-native-reanimated";
 import * as TransitionStart from "../../transition-start";
 import * as LayoutProgress from "../with-tray-layout-progress";
-import { createTrayLayoutTransition } from "../tray-layout";
+import {
+  createTrayLayoutFollowerTransition,
+  createTrayLayoutTransition,
+} from "../tray-layout";
 
 jest.mock("react-native-reanimated", () => {
   const mockBuildTransition = jest.fn(() => () => ({
@@ -157,5 +160,58 @@ describe("createTrayLayoutTransition", () => {
       animation: expect.anything(),
     });
     expect(animation.animations.width).toEqual({});
+  });
+});
+
+describe("createTrayLayoutFollowerTransition", () => {
+  const followerParams = (transitionGeneration: number) => ({
+    transitionGeneration,
+    transitionStartedAt: shared(0),
+    transitionStartedGeneration: shared(0),
+    transitionLayoutStartedGeneration: shared(0),
+    transitionCompletedGeneration: shared(0),
+  });
+
+  it("joins the sheet's layout clock for each changing edge without owning the transition", () => {
+    transitionStartTestState.mockWithTrayTransitionStart.mockClear();
+    layoutProgressTestState.mockWithTrayLayoutProgress.mockClear();
+
+    const animation = createTrayLayoutFollowerTransition(followerParams(7))(
+      layoutValues,
+    );
+    const calls = transitionStartTestState.mockWithTrayTransitionStart.mock.calls;
+
+    // originY and height change, width does not
+    expect(calls).toHaveLength(2);
+
+    for (const call of calls) {
+      expect(call[5]).toBe(7);
+      // never a layout participant, so it never publishes the layout start or completes the transition
+      expect(call[6]).toBe("outgoing");
+      expect(call[7]).toBeUndefined();
+      // waits for the sheet's layout to start, then runs from the shared clock start
+      expect(call[8]).toBe(false);
+      expect(call[9]).toBe(true);
+    }
+
+    // the sheet alone drives the morph progress
+    expect(
+      layoutProgressTestState.mockWithTrayLayoutProgress,
+    ).not.toHaveBeenCalled();
+    expect(animation.animations.originY).toEqual({
+      kind: "transition",
+      animation: expect.anything(),
+    });
+    expect(animation.animations.width).toEqual({});
+  });
+
+  it("moves on its own curve when no transition owns the layout", () => {
+    transitionStartTestState.mockWithTrayTransitionStart.mockClear();
+
+    createTrayLayoutFollowerTransition(followerParams(0))(layoutValues);
+
+    expect(
+      transitionStartTestState.mockWithTrayTransitionStart,
+    ).not.toHaveBeenCalled();
   });
 });

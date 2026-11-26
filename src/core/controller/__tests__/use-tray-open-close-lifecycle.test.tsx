@@ -45,6 +45,7 @@ const shared = <T,>(value: T) => ({ value }) as SharedValue<T>;
 // one opening mode with controlled lifecycle callbacks
 const renderOpeningLifecycle = (open?: "slide" | "expandFromTrigger") => {
   const enableLayout = jest.fn();
+  const beginOpenMeasurement = jest.fn();
   const onTransitionCompleted = jest.fn();
   const originGeometryLeaseRef = { current: false };
   const originTargetContentHeight = shared(0);
@@ -74,7 +75,7 @@ const renderOpeningLifecycle = (open?: "slide" | "expandFromTrigger") => {
       },
       state: { isReadyToOpen: true },
       actions: {
-        beginOpenMeasurement: jest.fn(),
+        beginOpenMeasurement,
         enableLayout,
         completePendingOpen: jest.fn(),
         prepareForClose: jest.fn(),
@@ -108,6 +109,7 @@ const renderOpeningLifecycle = (open?: "slide" | "expandFromTrigger") => {
   });
 
   return {
+    beginOpenMeasurement,
     enableLayout,
     onTransitionCompleted,
     originGeometryLeaseRef,
@@ -200,6 +202,15 @@ describe("useTrayOpenCloseLifecycle", () => {
       duration: 220,
       easing: { bezier: [0.4, 0, 0.2, 1] },
     });
+  });
+
+  it("never waits for the footer of a tray growing out of its trigger", () => {
+    expect(
+      renderOpeningLifecycle("expandFromTrigger").beginOpenMeasurement,
+    ).toHaveBeenCalledWith(true, true);
+    expect(
+      renderOpeningLifecycle("slide").beginOpenMeasurement,
+    ).toHaveBeenCalledWith(true, false);
   });
 
   it("enables layout after a regular sheet opening", () => {

@@ -136,7 +136,8 @@ export const useTrayMeasurements = ({
   ]);
 
   const beginOpenMeasurement = useCallback(
-    (hasFooter: boolean) => {
+    // a footer whose open geometry is fixed, like a tray growing out of its trigger, is never waited for, its later layout still updates the measured height
+    (hasFooter: boolean, footerGeometryFixed = false) => {
       // zeroed measurements keep the open from animating from a previous step's geometry
       latestMeasuredContentHeightRef.current = 0;
       latestResolvedContentHeightRef.current = 0;
@@ -158,7 +159,7 @@ export const useTrayMeasurements = ({
       setLayoutEnabled(false);
       contentMeasuredRef.current = false;
       footerMeasuredRef.current =
-        !hasFooter || canReuseVisibleFooterMeasurement;
+        !hasFooter || footerGeometryFixed || canReuseVisibleFooterMeasurement;
       pendingOpenRef.current = true;
       syncOpenReadiness();
     },

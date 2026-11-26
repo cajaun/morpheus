@@ -3,6 +3,7 @@ import React, { useCallback, useMemo, useRef } from "react";
 import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import {
   createStepFooterStore,
+  TrayStepFooterMotionFlagsContext,
   TrayStepFooterRegionContext,
   TrayStepFooterStoreContext,
 } from "../step-footer";
@@ -193,6 +194,14 @@ const PresentedTray = ({
       ) : null,
     [assignmentId, hasStepFooterLayer, payloadStore],
   );
+  // the footer's backing inside the sheet animates like the pinned footer
+  const stepFooterMotionFlags = useMemo(
+    () => ({
+      skipEntering: payload.isFirstRender,
+      fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
+    }),
+    [payload.fullScreenBoundaryExit, payload.isFirstRender],
+  );
   const handleDismissKeyboard = useCallback(
     () => dismissKeyboardForTray(payload.rootTrayId),
     [dismissKeyboardForTray, payload.rootTrayId],
@@ -229,7 +238,6 @@ const PresentedTray = ({
       containerStyle={payload.containerStyle}
       className={payload.className}
       footerStyle={payload.footerStyle}
-      footerClassName={payload.footerClassName}
       dismissKeyboard={handleDismissKeyboard}
     />
   );
@@ -237,7 +245,9 @@ const PresentedTray = ({
   const presentedTray = stepFooter ? (
     <TrayStepFooterStoreContext.Provider value={stepFooterStore}>
       <TrayStepFooterRegionContext.Provider value={stepFooter}>
-        {tray}
+        <TrayStepFooterMotionFlagsContext.Provider value={stepFooterMotionFlags}>
+          {tray}
+        </TrayStepFooterMotionFlagsContext.Provider>
       </TrayStepFooterRegionContext.Provider>
     </TrayStepFooterStoreContext.Provider>
   ) : (

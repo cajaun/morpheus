@@ -40,7 +40,6 @@ export type PresentedTray = {
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
-  footerClassName?: string;
   stackIndex: number;
   visible: boolean;
   interactive: boolean;

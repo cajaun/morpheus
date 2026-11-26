@@ -1,6 +1,9 @@
 import React, { useMemo } from "react";
 import Animated from "react-native-reanimated";
-import { createTrayLayoutTransition } from "../animation/tray-layout";
+import {
+  createTrayLayoutFollowerTransition,
+  createTrayLayoutTransition,
+} from "../animation/tray-layout";
 import {
   type TrayKeyboardGate,
   type TrayTransitionStart,
@@ -41,6 +44,10 @@ export type TrayShellTransitionValue = {
   contentMotionDirection: ReturnType<typeof resolveTrayContentMotionDirection>;
   trayTransitionStart: TrayTransitionStart;
   layoutAnimationConfig: ReturnType<typeof createTrayLayoutTransition>;
+  // for views inside the sheet that hold its bottom edge while the sheet's own layout animates
+  followerLayoutAnimationConfig: ReturnType<
+    typeof createTrayLayoutFollowerTransition
+  >;
 };
 
 export const TrayShellTransitionContext =

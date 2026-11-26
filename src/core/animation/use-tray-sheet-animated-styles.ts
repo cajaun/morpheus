@@ -5,9 +5,11 @@ import {
   HORIZONTAL_MARGIN,
   SCREEN_WIDTH,
   TRAY_FOOTER_PADDING_BOTTOM,
+  TRAY_FOOTER_PADDING_TOP,
   TRAY_SHEET_BODY_HORIZONTAL_PADDING,
 } from "../constants";
 import { isSheetFrameForTransition } from "../controller/tray-sheet-frame";
+import { resolveFooterBackingHeight } from "../footer-backdrop";
 import type { TrayAnimatedStyleParams } from "./tray-animated-style-types";
 import type { TrayAnimatedStyles } from "./use-tray-animated-styles";
 
@@ -47,6 +49,9 @@ const SHEET_STEP_FOOTER_CONTAINER_STYLE = {
   borderBottomLeftRadius: BORDER_RADIUS,
   borderBottomRightRadius: BORDER_RADIUS,
 };
+
+const SHEET_STEP_FOOTER_BACKING_FRAME_STYLE = { bottom: 0 };
+const SHEET_FOOTER_BACKING_FADE_STYLE = { height: TRAY_FOOTER_PADDING_TOP + 1 };
 
 const SHEET_FOOTER_CONTAINER_STYLE = {
   left: HORIZONTAL_MARGIN,
@@ -104,6 +109,18 @@ export const useTraySheetAnimatedStyles = ({
   const footerSpacerStyle = useAnimatedStyle(
     () => ({
       height: hasFooter.value ? footerHeight.value : 0,
+    }),
+    [footerHeight, hasFooter],
+  );
+  // a sheet never goes fullscreen here, so the footer's bottom is the sheet's own
+  const footerBackingFrameStyle = useAnimatedStyle(
+    () => ({
+      bottom: 0,
+      height: resolveFooterBackingHeight(
+        footerHeight.value,
+        TRAY_FOOTER_PADDING_TOP,
+      ),
+      opacity: hasFooter.value ? 1 : 0,
     }),
     [footerHeight, hasFooter],
   );
@@ -176,6 +193,9 @@ export const useTraySheetAnimatedStyles = ({
         ? FULL_SCREEN_FOOTER_ORIGIN_CONTAINER_STYLE
         : SHEET_FOOTER_CONTAINER_STYLE,
     stepFooterContainerStyle: SHEET_STEP_FOOTER_CONTAINER_STYLE,
+    footerBackingFrameStyle,
+    footerBackingFadeStyle: SHEET_FOOTER_BACKING_FADE_STYLE,
+    stepFooterBackingFrameStyle: SHEET_STEP_FOOTER_BACKING_FRAME_STYLE,
     contentPaddingStyle: ZERO_CONTENT_PADDING_STYLE,
     dragStyle,
     surfaceVisibilityStyle,

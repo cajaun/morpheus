@@ -16,7 +16,6 @@ export const useContentSyncDebugLog = ({
   containerStyle,
   footerStyle,
   className,
-  footerClassName,
   interactive,
   renderedTrayId,
   renderedContent,
@@ -34,7 +33,6 @@ export const useContentSyncDebugLog = ({
   containerStyle: StyleProp<ViewStyle>;
   footerStyle: StyleProp<ViewStyle>;
   className: string | undefined;
-  footerClassName: string | undefined;
   interactive: boolean | undefined;
   renderedTrayId: string | undefined;
   renderedContent: React.ReactNode;
@@ -57,7 +55,6 @@ export const useContentSyncDebugLog = ({
       hasContainerStyle: containerStyle != null,
       hasFooterStyle: footerStyle != null,
       className,
-      footerClassName,
       interactive,
     });
   }, [
@@ -66,7 +63,6 @@ export const useContentSyncDebugLog = ({
     content,
     header,
     footer,
-    footerClassName,
     footerStyle,
     fullScreen,
     fullScreenBackgroundScale,

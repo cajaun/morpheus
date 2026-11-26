@@ -22,7 +22,6 @@ export type TraySnapshot = {
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
-  footerClassName?: string;
   transitionContract?: TrayTransitionContract | null;
 };
 
@@ -92,7 +91,6 @@ export const toRenderedTrayState = ({
   containerStyle,
   className,
   footerStyle,
-  footerClassName,
   transitionContract,
 }: TraySnapshot): RenderedTrayState => ({
   header: header ?? null,
@@ -107,7 +105,6 @@ export const toRenderedTrayState = ({
   containerStyle,
   className,
   footerStyle,
-  footerClassName,
   transitionContract,
 });
 
@@ -128,7 +125,6 @@ export const areTrayStatesEqual = (
   current.containerStyle === next.containerStyle &&
   current.className === next.className &&
   current.footerStyle === next.footerStyle &&
-  current.footerClassName === next.footerClassName &&
   current.transitionContract === next.transitionContract;
 
 // the controller host needs a React commit for topology or configuration changes, region nodes arrive through the snapshot store
@@ -144,7 +140,6 @@ export const areTrayShellPresentationStatesEqual = (
   current.containerStyle === next.containerStyle &&
   current.className === next.className &&
   current.footerStyle === next.footerStyle &&
-  current.footerClassName === next.footerClassName &&
   (current.header != null) === (next.header != null) &&
   (current.content != null) === (next.content != null) &&
   (current.footer != null) === (next.footer != null);

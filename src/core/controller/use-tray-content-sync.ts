@@ -24,7 +24,6 @@ type Params = {
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
-  footerClassName?: string;
   justOpenedRef: RefObject<boolean>;
   measurements: {
     state: {
@@ -92,7 +91,6 @@ export const useTrayContentSync = ({
   containerStyle,
   className,
   footerStyle,
-  footerClassName,
   justOpenedRef,
   measurements,
   renderState,
@@ -346,7 +344,6 @@ export const useTrayContentSync = ({
     content,
     header,
     footer,
-    footerClassName,
     footerStyle,
     fullScreen,
     fullScreenBackgroundScale,
@@ -372,7 +369,6 @@ export const useTrayContentSync = ({
     containerStyle,
     footerStyle,
     className,
-    footerClassName,
     interactive,
     renderedTrayId,
     renderedContent,

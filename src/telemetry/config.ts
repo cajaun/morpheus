@@ -1,5 +1,5 @@
 // diagnostics stay opt-in, true for a profiling run
-export const TRAY_INSTRUMENTATION_ENABLED = false;
+export const TRAY_INSTRUMENTATION_ENABLED = true;
 
 // diagnostics run in development with the flag on
 export const isTrayInstrumentationEnabled = () =>

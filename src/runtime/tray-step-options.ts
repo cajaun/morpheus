@@ -19,7 +19,6 @@ export const DEFAULT_TRAY_STEP_OPTIONS: ResolvedTrayStepOptions = {
   style: undefined,
   className: undefined,
   footerStyle: undefined,
-  footerClassName: undefined,
   preload: true,
 };
 

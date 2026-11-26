@@ -24,7 +24,5 @@ export const styles = StyleSheet.create({
     paddingTop: TRAY_FOOTER_PADDING_TOP,
     paddingBottom: TRAY_FOOTER_PADDING_BOTTOM,
     borderCurve: "continuous",
-    // the backdrop stops at the footer's rounded frame
-    overflow: "hidden",
   },
 });

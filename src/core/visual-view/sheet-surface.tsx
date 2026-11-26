@@ -138,6 +138,7 @@ export const TraySheetSurface = React.memo(
     originSurfaceVisibilityStyle,
     fullScreenSafeAreaContentStyle,
     hasHeader,
+    footerBacking,
   }: TraySheetSurfaceProps) => {
     // presentationFrameStyle and the sheet class come from context between these two halves
     const sheetLeadingStyle = useMemo(
@@ -284,10 +285,15 @@ export const TraySheetSurface = React.memo(
             onLayout={instrumentationEnabled ? handleShellLayout : undefined}
           >
             {sheetBody}
+            {/* footer backings sit above the content and under the footer layers, clipped by the sheet's own edge */}
+            {footerBacking ? (
+              <TrayStepTransitionProviders>{footerBacking}</TrayStepTransitionProviders>
+            ) : null}
           </TraySheetLayoutView>
         </TrayGestureRegion>
       ),
       [
+        footerBacking,
         handleShellLayout,
         instrumentationEnabled,
         sheetBody,

@@ -1,7 +1,10 @@
 import React, { useCallback, useMemo, useRef } from "react";
 import { StyleSheet } from "react-native";
 import { TrayContentCommitTargetContext } from "../tray-content-commit";
-import { createTrayLayoutTransition } from "../animation/tray-layout";
+import {
+  createTrayLayoutFollowerTransition,
+  createTrayLayoutTransition,
+} from "../animation/tray-layout";
 import { isTrayInstrumentationEnabled } from "../../telemetry/config";
 import { resolveTrayContentMotionDirection } from "../transition-motion-direction";
 import { resolveKeyboardSheetTransitionIntent } from "../input/keyboard-transition";
@@ -90,7 +93,6 @@ export const TrayVisualShell = React.memo(
       renderedContainerStyle: fallbackContainerStyle,
       renderedClassName: fallbackClassName,
       renderedFooterStyle: fallbackFooterStyle,
-      renderedFooterClassName: fallbackFooterClassName,
     } = state;
     // committed shell values, TraySurface reads step payloads from the snapshot store
     const renderedHeader = fallbackHeader;
@@ -104,7 +106,6 @@ export const TrayVisualShell = React.memo(
     const renderedContainerStyle = fallbackContainerStyle;
     const renderedClassName = fallbackClassName;
     const renderedFooterStyle = fallbackFooterStyle;
-    const renderedFooterClassName = fallbackFooterClassName;
     const {
       handleContentLayout: latestHandleContentLayout,
       handleVisibleFooterLayout: latestHandleVisibleFooterLayout,
@@ -284,6 +285,23 @@ export const TrayVisualShell = React.memo(
         instrumentationEnabled,
       ],
     );
+    const followerLayoutAnimationConfig = useMemo(
+      () =>
+        createTrayLayoutFollowerTransition({
+          transitionGeneration: transitionContract?.generation ?? 0,
+          transitionStartedAt,
+          transitionStartedGeneration,
+          transitionLayoutStartedGeneration,
+          transitionCompletedGeneration,
+        }),
+      [
+        transitionContract?.generation,
+        transitionStartedAt,
+        transitionStartedGeneration,
+        transitionLayoutStartedGeneration,
+        transitionCompletedGeneration,
+      ],
+    );
     const trayTransitionStart = useMemo(
       () => ({
         generation: transitionContract?.generation ?? 0,
@@ -327,8 +345,14 @@ export const TrayVisualShell = React.memo(
         contentMotionDirection,
         trayTransitionStart,
         layoutAnimationConfig,
+        followerLayoutAnimationConfig,
       }),
-      [contentMotionDirection, layoutAnimationConfig, trayTransitionStart],
+      [
+        contentMotionDirection,
+        followerLayoutAnimationConfig,
+        layoutAnimationConfig,
+        trayTransitionStart,
+      ],
     );
 
     return (
@@ -350,7 +374,6 @@ export const TrayVisualShell = React.memo(
                 renderedHeader,
                 renderedContent,
                 renderedFooter,
-                renderedFooterClassName,
                 renderedFooterStyle,
                 hasFooter,
                 renderSnapshotStore,

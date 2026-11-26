@@ -3,7 +3,17 @@ import { describe, expect, it, jest } from "@jest/globals";
 import React from "react";
 import { StyleSheet, Text } from "react-native";
 import { TRAY_FOOTER_PADDING_TOP } from "../constants";
+import {
+  resolveFooterBackingHeight,
+  resolveFooterFadeImage,
+} from "../footer-backdrop";
 import TestRenderer, { act } from "react-test-renderer";
+
+// animated styles resolve to plain objects so geometry is readable
+jest.mock("react-native-reanimated", () => ({
+  ...jest.requireActual<object>("react-native-reanimated/mock"),
+  useAnimatedStyle: (updater: () => object) => updater(),
+}));
 
 // motion is covered on device, these tests check placement and metrics
 jest.mock("../../tray-step-content", () => ({
@@ -15,6 +25,7 @@ jest.mock("../../tray-step-content", () => ({
 import {
   createStepFooterStore,
   TrayContentFooterSlot,
+  TrayStepFooterBacking,
   TrayStepFooterLayers,
   TrayStepFooterMetricsContext,
   TrayStepFooterStoreContext,
@@ -141,10 +152,14 @@ describe("step footer rendering", () => {
   });
 });
 
-describe("step footer backdrop", () => {
-  it("paints the footer color from the footer's own top edge, not across its top padding", () => {
+describe("step footer backing", () => {
+  const flat = (style: unknown) => StyleSheet.flatten(style as any) ?? {};
+  const styledViews = (renderer: TestRenderer.ReactTestRenderer) =>
+    renderer.root.findAll(
+      (node) => typeof node.type !== "string" && node.props.style !== undefined,
+    );
+  const pinnedStore = () => {
     const store = createStepFooterStore();
-    let renderer!: TestRenderer.ReactTestRenderer;
 
     store.commit(
       payload("one", "id:go", {
@@ -153,34 +168,141 @@ describe("step footer backdrop", () => {
       }),
     );
 
+    return store;
+  };
+
+  it("draws no fill on the pinned footer, which sits outside the sheet", () => {
+    let renderer!: TestRenderer.ReactTestRenderer;
+
     act(() => {
       renderer = TestRenderer.create(
-        <TrayStepFooterStoreContext.Provider value={store}>
+        <TrayStepFooterStoreContext.Provider value={pinnedStore()}>
           <TrayStepFooterLayers skipEntering={false} fullScreenBoundaryExit={false} />
         </TrayStepFooterStoreContext.Provider>,
       );
     });
 
-    const flat = (style: unknown) => StyleSheet.flatten(style as any) ?? {};
-    const views = renderer.root.findAll(
-      (node) => typeof node.type !== "string" && node.props.style !== undefined,
-    );
+    const views = styledViews(renderer);
     const body = views.find(
       (node) => flat(node.props.style).paddingTop === TRAY_FOOTER_PADDING_TOP,
     );
-    const backdrop = views.find(
-      (node) => flat(node.props.style).backgroundColor === "#FFFFFF",
-    );
 
-    // the padded frame keeps every other style but no fill, so content passing behind shows above the footer
+    // a second rounded fill over the sheet's edge would draw its corners twice
     expect(body).toBeDefined();
     expect(flat(body!.props.style).backgroundColor).toBeUndefined();
     expect(flat(body!.props.style).opacity).toBe(0.9);
-    expect(flat(body!.props.style).overflow).toBe("hidden");
+    expect(
+      views.some((node) => flat(node.props.style).backgroundColor === "#FFFFFF"),
+    ).toBe(false);
+  });
+
+  it("backs the pinned footer from inside the sheet, solid from its controls' top edge with a fade above", () => {
+    const metrics: TrayStepFooterMetrics = {
+      heightRef: { current: 120 },
+      height: { value: 120 } as TrayStepFooterMetrics["height"],
+      remeasureContentRef: { current: null },
+    };
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <TrayStepFooterStoreContext.Provider value={pinnedStore()}>
+          <TrayStepFooterMetricsContext.Provider value={metrics}>
+            <TrayStepFooterBacking frameStyle={{ bottom: 0 }} />
+          </TrayStepFooterMetricsContext.Provider>
+        </TrayStepFooterStoreContext.Provider>,
+      );
+    });
+
+    const views = styledViews(renderer);
+    const fill = views.find(
+      (node) => flat(node.props.style).backgroundColor === "#FFFFFF",
+    );
+    const anchor = views.find(
+      (node) =>
+        flat(node.props.style).position === "absolute" &&
+        flat(node.props.style).height === 0 &&
+        flat(node.props.style).bottom === 0,
+    );
+
+    expect(anchor).toBeDefined();
+    expect(fill).toBeDefined();
+    expect(flat(fill!.props.style)).toMatchObject({
+      position: "absolute",
+      bottom: 0,
+      // solid from the controls' top edge, the top padding above holds the fade
+      height: 120 - TRAY_FOOTER_PADDING_TOP,
+    });
+
+    const fade = views.find(
+      (node) => flat(node.props.style).experimental_backgroundImage !== undefined,
+    );
+
+    expect(fade).toBeDefined();
+    expect(flat(fade!.props.style)).toMatchObject({
+      position: "absolute",
+      // directly above the solid backing, filling the top padding
+      bottom: "100%",
+      experimental_backgroundImage: resolveFooterFadeImage("#FFFFFF"),
+    });
+  });
+
+  it("keeps a footer drawn in its step's content covering what passes behind it", () => {
+    const store = createStepFooterStore();
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    store.commit(payload("three", "id:go", { isFirstRender: true }));
+    store.commit(payload("four", null, { transitionContract: { generation: 3 } }));
+    store.commit(
+      payload("three", "id:go", {
+        transitionContract: { generation: 4 },
+        footerStyle: { backgroundColor: "#FFFFFF" },
+      }),
+    );
+
+    act(() => {
+      renderer = TestRenderer.create(
+        <TrayStepFooterStoreContext.Provider value={store}>
+          <TrayContentFooterSlot trayId="three" />
+        </TrayStepFooterStoreContext.Provider>,
+      );
+    });
+
+    const backdrop = styledViews(renderer).find(
+      (node) => flat(node.props.style).backgroundColor === "#FFFFFF",
+    );
+
     expect(backdrop).toBeDefined();
     expect(flat(backdrop!.props.style)).toMatchObject({
       position: "absolute",
       top: 0,
     });
+    expect(
+      styledViews(renderer).some(
+        (node) =>
+          flat(node.props.style).experimental_backgroundImage !== undefined,
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("footer backing height", () => {
+  it("is solid from the controls' top edge to the footer's bottom", () => {
+    // a 50pt button between 28pt paddings is backed from its top edge down
+    expect(resolveFooterBackingHeight(106, 28)).toBe(78);
+    // a footer still collapsing into its trigger has no top padding yet
+    expect(resolveFooterBackingHeight(50, 0)).toBe(50);
+    expect(resolveFooterBackingHeight(0, 28)).toBe(0);
+  });
+
+  it("fades from the backing color at no opacity to the backing color", () => {
+    // never through another color, so the fade cannot darken mid-way
+    expect(resolveFooterFadeImage("#FFFFFF")).toBe(
+      "linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1))",
+    );
+    expect(resolveFooterFadeImage("rgba(18, 52, 86, 0.5)")).toBe(
+      "linear-gradient(to bottom, rgba(18, 52, 86, 0), rgba(18, 52, 86, 0.5019607843137255))",
+    );
+    expect(resolveFooterFadeImage(undefined)).toBeUndefined();
   });
 });

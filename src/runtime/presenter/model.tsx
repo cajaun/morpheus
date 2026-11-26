@@ -178,7 +178,6 @@ export const createPresentedTray = ({
     className: stepOptions.className,
     // the tray surface owns the shell background, footer styling is opt-in so the footer layer never forms a second surface
     footerStyle: stepOptions.footerStyle,
-    footerClassName: stepOptions.footerClassName,
     stackIndex,
     visible: true,
     interactive: stackIndex === stackLength - 1,

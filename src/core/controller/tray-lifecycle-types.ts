@@ -33,7 +33,10 @@ export type TrayLifecycleParams = {
       isReadyToOpen: boolean;
     };
     actions: {
-      beginOpenMeasurement: (hasFooter: boolean) => void;
+      beginOpenMeasurement: (
+        hasFooter: boolean,
+        footerGeometryFixed?: boolean,
+      ) => void;
       enableLayout: () => void;
       completePendingOpen: () => void;
       prepareForClose: () => void;

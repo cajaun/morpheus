@@ -160,6 +160,75 @@ export const createTrayLayoutTransition = ({
   return synchronizedTransition;
 };
 
+type TrayLayoutFollowerParams = Pick<
+  TrayLayoutTransitionParams,
+  | "transitionGeneration"
+  | "transitionStartedAt"
+  | "transitionStartedGeneration"
+  | "transitionLayoutStartedGeneration"
+  | "transitionCompletedGeneration"
+>;
+
+// a view inside the sheet that holds the sheet's bottom edge, its frame moves on the sheet's curve from the moment the sheet's layout starts, joined to the same clock start, and it never publishes or completes the transition
+export const createTrayLayoutFollowerTransition = ({
+  transitionGeneration,
+  transitionStartedAt,
+  transitionStartedGeneration,
+  transitionLayoutStartedGeneration,
+  transitionCompletedGeneration,
+}: TrayLayoutFollowerParams) => {
+  const buildTransition = LinearTransition.duration(MORPH_LAYOUT_DURATION)
+    .easing(Easing.bezier(...SHEET_EASING_POINTS).factory())
+    .build();
+
+  const followerTransition: LayoutAnimationFunction = (values) => {
+    "worklet";
+
+    const animation = buildTransition(values);
+
+    if (transitionGeneration <= 0) {
+      return animation;
+    }
+
+    const geometryAnimations = animation.animations as unknown as Partial<
+      Record<string, AnimationObject>
+    >;
+    const geometry = [
+      { key: "originY", source: values.currentOriginY, target: values.targetOriginY },
+      { key: "height", source: values.currentHeight, target: values.targetHeight },
+      { key: "originX", source: values.currentOriginX, target: values.targetOriginX },
+      { key: "width", source: values.currentWidth, target: values.targetWidth },
+    ];
+
+    for (const { key, source, target } of geometry) {
+      const keyAnimation = geometryAnimations[key];
+
+      if (keyAnimation === undefined || Math.abs(target - source) < 0.001) {
+        continue;
+      }
+
+      // waits for the sheet's layout to start, then runs from the shared clock start so a late first frame still lands on the sheet's curve
+      geometryAnimations[key] =
+        withTrayTransitionStart(
+          keyAnimation,
+          transitionStartedGeneration,
+          transitionStartedAt,
+          transitionLayoutStartedGeneration,
+          transitionCompletedGeneration,
+          transitionGeneration,
+          "outgoing",
+          undefined,
+          false,
+          true,
+        ) as unknown as AnimationObject;
+    }
+
+    return animation;
+  };
+
+  return followerTransition;
+};
+
 type TrayLayoutWithoutResizeParams = {
   transitionGeneration: number;
   transitionStartedAt: SharedValue<number>;

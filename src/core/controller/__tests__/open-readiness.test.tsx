@@ -71,4 +71,37 @@ describe("open readiness", () => {
 
     expect(measurements.state.isReadyToOpen).toBe(false);
   });
+
+  it("opens a tray growing out of its trigger as soon as its content is measured", () => {
+    const contentHeight = shared(0);
+    const footerHeight = shared(0);
+    let measurements = {} as ReturnType<typeof useTrayMeasurements>;
+
+    const Probe = () => {
+      measurements = useTrayMeasurements({
+        contentHeight,
+        footerHeight,
+        renderedTrayId: "root-one",
+        renderedFooter: "footer",
+      });
+
+      return null;
+    };
+
+    act(() => {
+      TestRenderer.create(<Probe />);
+    });
+    act(() => {
+      // the footer's open geometry is fixed, so its layout is never waited for
+      measurements.actions.beginOpenMeasurement(true, true);
+    });
+
+    expect(measurements.state.isReadyToOpen).toBe(false);
+
+    act(() => {
+      measurements.actions.commitContentHeight(320, "root-one");
+    });
+
+    expect(measurements.state.isReadyToOpen).toBe(true);
+  });
 });

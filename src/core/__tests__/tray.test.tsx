@@ -54,6 +54,7 @@ jest.mock("react-native-safe-area-context", () => ({
 
 jest.mock("../animation/tray-layout", () => ({
   createTrayLayoutTransition: () => undefined,
+  createTrayLayoutFollowerTransition: () => undefined,
 }));
 
 jest.mock("../animation/use-tray-animated-styles", () => ({
@@ -112,7 +113,6 @@ jest.mock("../use-tray-controller", () => ({
         renderedContainerStyle: undefined,
         renderedClassName: undefined,
         renderedFooterStyle: undefined,
-        renderedFooterClassName: undefined,
       },
       handlers: {
         handleContentLayout: mockContentLayoutHandler,

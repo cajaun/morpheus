@@ -33,7 +33,6 @@ export type TrayStepOptions = {
   style?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
-  footerClassName?: string;
   /** keep this step rendered hidden while it neighbours the current step so moving to it reuses it, on by default, false mounts it on the tap */
   preload?: boolean;
 };
@@ -98,7 +97,6 @@ export type ResolvedTrayStepOptions = {
   style?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
-  footerClassName?: string;
   preload: boolean;
 };
 

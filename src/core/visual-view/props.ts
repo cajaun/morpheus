@@ -62,7 +62,6 @@ export type TrayVisualViewProps = Pick<
     | "renderedContainerStyle"
     | "renderedClassName"
     | "renderedFooterStyle"
-    | "renderedFooterClassName"
   >;
   renderSnapshotStore?: TrayRenderSnapshotStore;
   renderSnapshotOverride?: RenderedTrayState;
@@ -110,8 +109,7 @@ export const areTrayVisualShellStatesEqual = (
     next.renderedFullScreenSafeAreaTop &&
   previous.renderedContainerStyle === next.renderedContainerStyle &&
   previous.renderedClassName === next.renderedClassName &&
-  previous.renderedFooterStyle === next.renderedFooterStyle &&
-  previous.renderedFooterClassName === next.renderedFooterClassName;
+  previous.renderedFooterStyle === next.renderedFooterStyle;
 
 export const areTrayVisualShellPropsEqual = (
   previous: TrayVisualShellProps,
@@ -159,6 +157,9 @@ export type TraySurfaceProps = Pick<
   | "dragStyle"
   | "footerContainerStyle"
   | "stepFooterContainerStyle"
+  | "footerBackingFrameStyle"
+  | "footerBackingFadeStyle"
+  | "stepFooterBackingFrameStyle"
   | "footerContentFrameStyle"
   | "footerSpacerStyle"
   | "footerVisibilityStyle"
@@ -178,7 +179,6 @@ export type TraySurfaceProps = Pick<
     renderedHeader: React.ReactNode;
     renderedContent: React.ReactNode;
     renderedFooter: React.ReactNode;
-    renderedFooterClassName?: string;
     renderedFooterStyle?: TrayProps["footerStyle"];
     renderSnapshotStore?: TrayRenderSnapshotStore;
     renderedFullScreen: boolean;
@@ -239,7 +239,6 @@ export const areTraySurfacePropsEqual = (
     previous.hasFooter === next.hasFooter &&
     previous.style === next.style &&
     previous.renderedContainerStyle === next.renderedContainerStyle &&
-    previous.renderedFooterClassName === next.renderedFooterClassName &&
     previous.renderedFooterStyle === next.renderedFooterStyle &&
     previous.renderedFullScreen === next.renderedFullScreen &&
     previous.instrumentationEnabled === next.instrumentationEnabled &&
@@ -261,6 +260,10 @@ export const areTraySurfacePropsEqual = (
     previous.trayLayoutStyle === next.trayLayoutStyle &&
     previous.footerContainerStyle === next.footerContainerStyle &&
     previous.stepFooterContainerStyle === next.stepFooterContainerStyle &&
+    previous.footerBackingFrameStyle === next.footerBackingFrameStyle &&
+    previous.footerBackingFadeStyle === next.footerBackingFadeStyle &&
+    previous.stepFooterBackingFrameStyle ===
+      next.stepFooterBackingFrameStyle &&
     previous.dragStyle === next.dragStyle &&
     previous.surfaceVisibilityStyle === next.surfaceVisibilityStyle &&
     previous.originSurfaceVisibilityStyle ===
@@ -301,6 +304,8 @@ export type TraySheetSurfaceProps = Pick<
   | "fullScreenSafeAreaContentStyle"
 > & {
   hasHeader: boolean;
+  // drawn inside the sheet, above its content
+  footerBacking?: React.ReactNode;
 };
 
 export type TrayVisualShellContentProps = {

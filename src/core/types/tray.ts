@@ -37,7 +37,6 @@ export type TrayProps = {
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
-  footerClassName?: string;
   dismissKeyboard: () => void;
 };
 
@@ -69,7 +68,6 @@ export type RenderedTrayState = {
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
-  footerClassName?: string;
   transitionContract?: TrayTransitionContract | null;
 };
 

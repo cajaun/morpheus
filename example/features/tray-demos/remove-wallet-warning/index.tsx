@@ -1,6 +1,10 @@
 import { Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { interpolate, useDerivedValue } from "react-native-reanimated";
+import {
+  Extrapolation,
+  interpolate,
+  useDerivedValue,
+} from "react-native-reanimated";
 import { Tray, useTrayOriginProgress, useTrayNavigation } from "react-native-morpheus";
 import {
   EXPAND_FROM_TRIGGER_COLLAPSED_BOTTOM_INSET,
@@ -27,6 +31,8 @@ const TRIGGER_WIDTH =
 const FOOTER_ROW_WIDTH =
   SCREEN_WIDTH - HORIZONTAL_MARGIN * 2 - TRAY_SHEET_BODY_HORIZONTAL_PADDING * 2;
 const BACKUP_WARNING_GAP = 20;
+// the split finishes inside the first part of the collapse, so Cancel is fully covered before the tray reaches the trigger
+const FOOTER_SPLIT_START = 0.3;
 
 const WarningFooter = () => {
   const { close } = useTrayNavigation();
@@ -40,12 +46,21 @@ const WarningFooter = () => {
     ),
   );
 
+  const splitProgress = useDerivedValue(() =>
+    interpolate(
+      originProgress?.value ?? 1,
+      [FOOTER_SPLIT_START, 1],
+      [0, 1],
+      Extrapolation.CLAMP,
+    ),
+  );
+
   return (
     <Tray.Footer style={{ width: "100%" }}>
       <CleaveButton
         split
         // the footer splits as the tray opens out of its trigger
-        splitProgress={originProgress ?? 1}
+        splitProgress={splitProgress}
         width={FOOTER_ROW_WIDTH}
         widthValue={rowWidth}
         primaryAction={{

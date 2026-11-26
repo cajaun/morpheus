@@ -129,7 +129,6 @@ const transition = (
     });
 
     expect(tray?.footerStyle).toBeUndefined();
-    expect(tray?.footerClassName).toBeUndefined();
   });
 
   it("keeps explicit footer styling when a step provides it", () => {
@@ -141,7 +140,6 @@ const transition = (
           style: surfaceStyle,
           className: "sheet",
           footerStyle,
-          footerClassName: "footer",
         }),
       ],
       footer: <Text>continue</Text>,
@@ -155,7 +153,6 @@ const transition = (
     });
 
     expect(tray?.footerStyle).toBe(footerStyle);
-    expect(tray?.footerClassName).toBe("footer");
   });
 
   it("reuses contextual step options for repeated presenter derivation", () => {

@@ -15,7 +15,6 @@ export type TrayStepFooterExiting = {
   key: string;
   node: React.ReactNode;
   style?: StyleProp<ViewStyle>;
-  className?: string;
   hostTrayId: string;
   generation: number;
 };
@@ -24,7 +23,6 @@ export type TrayStepFooterState = {
   key: string | null;
   node: React.ReactNode;
   style?: StyleProp<ViewStyle>;
-  className?: string;
   placement: TrayStepFooterPlacement;
   // the step whose content layer draws an entering footer
   hostTrayId: string | null;
@@ -61,7 +59,6 @@ export type TrayStepFooterPayload = {
   stepFooter?: React.ReactNode;
   stepFooterKey?: string | null;
   footerStyle?: StyleProp<ViewStyle>;
-  footerClassName?: string;
   isFirstRender: boolean;
   fullScreen: boolean;
   transitionContract: {
@@ -81,7 +78,6 @@ export const resolveStepFooterState = (
     key,
     node: key != null ? (payload.stepFooter ?? null) : null,
     style: payload.footerStyle,
-    className: payload.footerClassName,
     hostTrayId: payload.trayId,
     exit: resolveStepFooterExit(payload.stepFooter),
   };
@@ -109,7 +105,6 @@ export const resolveStepFooterState = (
           key: previous.key,
           node: previous.node,
           style: previous.style,
-          className: previous.className,
           hostTrayId: previous.hostTrayId,
           generation,
         }
@@ -139,7 +134,6 @@ export const areStepFooterStatesEqual = (
   left.key === right.key &&
   left.node === right.node &&
   left.style === right.style &&
-  left.className === right.className &&
   left.placement === right.placement &&
   left.hostTrayId === right.hostTrayId &&
   left.generation === right.generation &&

@@ -1,5 +1,7 @@
 import React, { useCallback, useMemo } from "react";
 import { StyleProp, ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { resolveOriginClosedTranslateY } from "./controller/tray-lifecycle-motion";
 import { log } from "./logger";
 import type {
   TrayTransitionContract,
@@ -47,7 +49,6 @@ type Params = {
   containerStyle?: StyleProp<ViewStyle>;
   className?: string;
   footerStyle?: StyleProp<ViewStyle>;
-  footerClassName?: string;
   onClose: () => void;
 };
 
@@ -74,7 +75,6 @@ export const useTrayController = ({
   containerStyle,
   className,
   footerStyle,
-  footerClassName,
   onClose,
 }: Params) => {
   // snapshot rendered content so prop streams cannot interrupt a morph
@@ -94,7 +94,6 @@ export const useTrayController = ({
     containerStyle,
     className,
     footerStyle,
-    footerClassName,
     transitionContract,
   });
   const transitionClock = useTransitionClockValues(transitionContract);
@@ -301,6 +300,41 @@ export const useTrayController = ({
     },
   });
 
+  // a tray on trigger geometry is anchored and sized differently from a sheet, so it closes along its own travel
+  const { bottom: safeAreaBottom } = useSafeAreaInsets();
+  const usesOriginGeometry =
+    transition?.open === "expandFromTrigger" &&
+    !frameFullScreen &&
+    !measurements.state.layoutEnabled;
+  const sheetResolveClosedTranslateY =
+    presentation.helpers.resolveClosedTranslateY;
+  const {
+    contentHeight: sharedContentHeight,
+    originTargetContentHeight: sharedOriginTargetContentHeight,
+    hasFooter: sharedHasFooter,
+  } = presentation.shared;
+  const resolveClosedTranslateY = useCallback(
+    (nextFooterHeight?: number, nextContentHeight?: number) =>
+      usesOriginGeometry
+        ? resolveOriginClosedTranslateY({
+            contentHeight: nextContentHeight ?? sharedContentHeight.value,
+            originTargetContentHeight: sharedOriginTargetContentHeight.value,
+            hasFooter: sharedHasFooter.value,
+            safeAreaBottom,
+            fullScreenFooterOrigin: transition?.origin === "fullScreenFooter",
+          })
+        : sheetResolveClosedTranslateY(nextFooterHeight, nextContentHeight),
+    [
+      safeAreaBottom,
+      sharedContentHeight,
+      sharedHasFooter,
+      sharedOriginTargetContentHeight,
+      sheetResolveClosedTranslateY,
+      transition?.origin,
+      usesOriginGeometry,
+    ],
+  );
+
   // the open and close state machine around measured geometry
   const openCloseLifecycle = useTrayOpenCloseLifecycle({
     visible,
@@ -323,7 +357,7 @@ export const useTrayController = ({
       originProgress: presentation.shared.originProgress,
       originTargetContentHeight: presentation.shared.originTargetContentHeight,
     },
-    resolveClosedTranslateY: presentation.helpers.resolveClosedTranslateY,
+    resolveClosedTranslateY,
     transition,
     onTransitionPrepared: markPreparedTransition,
     onTransitionCommitted: markCommittedTransition,
@@ -349,7 +383,6 @@ export const useTrayController = ({
     containerStyle,
     className,
     footerStyle,
-    footerClassName,
     justOpenedRef: openCloseLifecycle.refs.justOpenedRef,
     measurements,
     renderState,

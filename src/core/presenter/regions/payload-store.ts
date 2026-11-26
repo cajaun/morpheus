@@ -27,7 +27,6 @@ export type PresentedTrayRegionPayload = Pick<
   | "stepFooter"
   | "stepFooterKey"
   | "footerStyle"
-  | "footerClassName"
   | "fullScreen"
   | "fullScreenBoundaryExit"
   | "isFirstRender"
@@ -77,7 +76,6 @@ export const arePresentedTrayRegionPayloadsEquivalent = (
       previous.stepFooter === next.stepFooter &&
       previous.stepFooterKey === next.stepFooterKey &&
       previous.footerStyle === next.footerStyle &&
-      previous.footerClassName === next.footerClassName &&
       previous.fullScreen === next.fullScreen &&
       previous.fullScreenBoundaryExit === next.fullScreenBoundaryExit &&
       previous.isFirstRender === next.isFirstRender
@@ -121,8 +119,6 @@ export const createPresentedTrayRegionSelector = (
       stepFooterKey:
         region === "stepFooter" ? (payload.stepFooterKey ?? null) : null,
       footerStyle: region === "stepFooter" ? payload.footerStyle : undefined,
-      footerClassName:
-        region === "stepFooter" ? payload.footerClassName : undefined,
       fullScreen: payload.fullScreen,
       fullScreenBoundaryExit: payload.fullScreenBoundaryExit,
       isFirstRender: payload.isFirstRender,

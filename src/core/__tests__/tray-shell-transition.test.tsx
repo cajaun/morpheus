@@ -70,6 +70,7 @@ jest.mock("react-native-safe-area-context", () => ({
 
 jest.mock("../animation/tray-layout", () => ({
   createTrayLayoutTransition: () => undefined,
+  createTrayLayoutFollowerTransition: () => undefined,
 }));
 
 // real animated styles are stable useAnimatedStyle handles, the mock mirrors that

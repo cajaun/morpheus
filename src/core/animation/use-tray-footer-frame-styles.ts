@@ -8,8 +8,10 @@ import {
   SCREEN_HEIGHT,
   SCREEN_WIDTH,
   TRAY_FOOTER_PADDING_BOTTOM,
+  TRAY_FOOTER_PADDING_TOP,
   TRAY_VERTICAL_PADDING,
 } from "../constants";
+import { resolveFooterBackingHeight } from "../footer-backdrop";
 import { resolveBoundaryProgress } from "./frame-style-math";
 import {
   EXPAND_FROM_TRIGGER_COLLAPSED_RADIUS,
@@ -115,7 +117,8 @@ export const useTrayFooterFrameStyles = (
     if (shouldUseOriginTransition) {
       // origin expansion is the footer's own presentation transition, step changes never reach this branch
       const progress = originProgress.value;
-      const revealProgress = progress * progress;
+      // the paddings open on the same clock as the frame, so the ring around the controls stays even, a slower top padding left the frame's growth piled up below them
+      const revealProgress = progress;
       const currentHorizontalInset = interpolate(
         revealProgress,
         [0, 1],
@@ -258,5 +261,124 @@ export const useTrayFooterFrameStyles = (
     transitionCompletedGeneration,
   ]);
 
-  return { stepFooterContainerStyle, footerContainerStyle };
+  // a footer's backing lives inside the sheet so the sheet's one rounded edge draws the corner, it is solid from the controls' top edge with a fade in the top padding above, and ends at the footer's bottom, which sits above the sheet's bottom only in fullscreen
+  const footerBackingGap = () => {
+    "worklet";
+
+    const footerBottom = HORIZONTAL_MARGIN + targetBottomInset;
+    const gapFor = (isFullScreen: boolean) =>
+      isFullScreen ? footerBottom : 0;
+
+    if (!fullScreenBoundaryTransition) {
+      return gapFor(fullScreen);
+    }
+
+    const progress = resolveBoundaryProgress(
+      morphProgress.value,
+      transitionGeneration,
+      transitionStartedGeneration?.value,
+      transitionLayoutStartedGeneration?.value,
+      transitionCompletedGeneration?.value,
+      fullScreenBoundaryTransition,
+    );
+
+    return interpolate(
+      progress,
+      [0, 1],
+      [
+        gapFor(fullScreenBoundarySourceFullScreen ?? !fullScreen),
+        gapFor(fullScreenBoundaryTargetFullScreen ?? fullScreen),
+      ],
+    );
+  };
+
+  const footerBackingFrameStyle = useAnimatedStyle(() => {
+    // the sheet already carries the surface opacity
+    const opacity = hasFooter.value ? 1 : 0;
+
+    if (shouldUseOriginTransition) {
+      const progress = originProgress.value;
+      // the paddings open on the same clock as the frame, so the ring around the controls stays even, a slower top padding left the frame's growth piled up below them
+      const revealProgress = progress;
+      // the footer frame grows out of the trigger and opens its top padding, the backing starts at the controls' top edge
+      const height = resolveFooterBackingHeight(
+        interpolate(
+          progress,
+          [0, 1],
+          [
+            EXPAND_FROM_TRIGGER_COLLAPSED_HEIGHT,
+            EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_HEIGHT,
+          ],
+        ),
+        interpolate(
+          revealProgress,
+          [0, 1],
+          [0, EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_TOP_PADDING],
+        ),
+      );
+
+      return { bottom: 0, height, opacity };
+    }
+
+    return {
+      bottom: footerBackingGap(),
+      height: resolveFooterBackingHeight(
+        footerHeight.value,
+        TRAY_FOOTER_PADDING_TOP,
+      ),
+      opacity,
+    };
+  }, [
+    footerHeight,
+    fullScreen,
+    fullScreenBoundaryTransition,
+    fullScreenBoundarySourceFullScreen,
+    fullScreenBoundaryTargetFullScreen,
+    hasFooter,
+    morphProgress,
+    originProgress,
+    shouldUseOriginTransition,
+    targetBottomInset,
+    transitionGeneration,
+    transitionStartedGeneration,
+    transitionLayoutStartedGeneration,
+    transitionCompletedGeneration,
+  ]);
+
+  // the fade fills the footer's top padding, which opens with the footer as it grows out of its trigger
+  const footerBackingFadeStyle = useAnimatedStyle(() => {
+    const paddingTop = shouldUseOriginTransition
+      ? interpolate(
+          originProgress.value,
+          [0, 1],
+          [0, EXPAND_FROM_TRIGGER_EXPANDED_FOOTER_TOP_PADDING],
+        )
+      : TRAY_FOOTER_PADDING_TOP;
+
+    return { height: paddingTop + 1 };
+  }, [originProgress, shouldUseOriginTransition]);
+
+  const stepFooterBackingFrameStyle = useAnimatedStyle(
+    () => ({ bottom: footerBackingGap() }),
+    [
+      fullScreen,
+      fullScreenBoundaryTransition,
+      fullScreenBoundarySourceFullScreen,
+      fullScreenBoundaryTargetFullScreen,
+      morphProgress,
+      targetBottomInset,
+      transitionGeneration,
+      transitionStartedGeneration,
+      transitionLayoutStartedGeneration,
+      transitionCompletedGeneration,
+    ],
+  );
+
+  return {
+    stepFooterContainerStyle,
+    footerContainerStyle,
+    footerBackingFrameStyle,
+    footerBackingFadeStyle,
+    stepFooterBackingFrameStyle,
+  };
 };

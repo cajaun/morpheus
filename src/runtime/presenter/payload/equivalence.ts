@@ -25,7 +25,6 @@ export const areStepOptionsEquivalent = (
     left.style === right.style &&
     left.className === right.className &&
     left.footerStyle === right.footerStyle &&
-    left.footerClassName === right.footerClassName &&
     left.preload === right.preload);
 
 // preloaded steps compare by the identity of what they render
@@ -84,7 +83,6 @@ export const arePresentedTraysEquivalent = (
     left.containerStyle === right.containerStyle &&
     left.className === right.className &&
     left.footerStyle === right.footerStyle &&
-    left.footerClassName === right.footerClassName &&
     left.stackIndex === right.stackIndex &&
     left.visible === right.visible &&
     left.interactive === right.interactive &&

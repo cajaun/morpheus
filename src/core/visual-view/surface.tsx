@@ -1,8 +1,7 @@
 import React, { useMemo, useRef } from "react";
-import {
-  splitFooterBackdrop,
-  TrayFooterBackdrop,
-} from "../footer-backdrop";
+import { splitFooterBackdrop } from "../footer-backdrop";
+import { TrayFixedFooterBacking } from "../footer-backing";
+import { TrayStepFooterBacking } from "../step-footer";
 import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import Animated, { useSharedValue } from "react-native-reanimated";
 import { styles as trayStyles } from "../animation/tray-styles";
@@ -21,13 +20,11 @@ import { TrayStepTransitionProviders, TraySheetSurface } from "./sheet-surface";
 
 export const TrayFooterSurface = React.memo(
   ({
-    className,
     hasFooter,
     onLayout,
     style,
     children,
   }: {
-    className?: string;
     hasFooter: boolean;
     onLayout: TraySurfaceProps["handleVisibleFooterLayout"];
     style: React.ComponentProps<typeof Animated.View>["style"];
@@ -37,7 +34,6 @@ export const TrayFooterSurface = React.memo(
 
     return (
       <Animated.View
-        className={className}
         onLayout={onLayout}
         style={style}
         pointerEvents={
@@ -62,7 +58,6 @@ export const TraySurface = React.memo(
     renderedHeader,
     renderedContent,
     renderedFooter,
-    renderedFooterClassName,
     renderedFooterStyle,
     renderSnapshotStore,
     renderedFullScreen,
@@ -83,6 +78,9 @@ export const TraySurface = React.memo(
     trayLayoutStyle,
     footerContainerStyle,
     stepFooterContainerStyle,
+    footerBackingFrameStyle,
+    footerBackingFadeStyle,
+    stepFooterBackingFrameStyle,
     dragStyle,
     surfaceVisibilityStyle,
     originSurfaceVisibilityStyle,
@@ -93,7 +91,6 @@ export const TraySurface = React.memo(
   }: TraySurfaceProps) => {
     // region elements are stable slots whose own subscriptions update step payloads
     const surfaceContainerStyle = renderedContainerStyle;
-    const surfaceFooterClassName = renderedFooterClassName;
     const { backdropColor: footerBackdropColor, style: surfaceFooterStyle } =
       useMemo(
         () => splitFooterBackdrop(renderedFooterStyle),
@@ -164,7 +161,6 @@ export const TraySurface = React.memo(
     const footerLayer = useMemo(
       () => (
         <TrayFooterSurface
-          className={surfaceFooterClassName}
           hasFooter={Boolean(surfaceFooter)}
           onLayout={handleVisibleFooterLayout}
           style={[
@@ -176,7 +172,6 @@ export const TraySurface = React.memo(
           ]}
         >
           <Animated.View style={footerContentFrameStyle}>
-            <TrayFooterBackdrop color={footerBackdropColor} />
             <TrayOriginProgressProvider value={originProgress}>
               {renderSnapshotStore ? (
                 <TraySnapshotRegion
@@ -193,15 +188,40 @@ export const TraySurface = React.memo(
       [
         dragStyle,
         footerContainerStyle,
-        footerBackdropColor,
         footerContentFrameStyle,
         footerVisibilityStyle,
         handleVisibleFooterLayout,
         originProgress,
         renderSnapshotStore,
         surfaceFooter,
-        surfaceFooterClassName,
         surfaceFooterStyle,
+      ],
+    );
+
+    // the footers' backings, drawn inside the sheet so its one rounded edge draws the corners
+    const footerBacking = useMemo(
+      () =>
+        stepFooterRegion || (surfaceFooter && footerBackdropColor != null) ? (
+          <>
+            {stepFooterRegion ? (
+              <TrayStepFooterBacking frameStyle={stepFooterBackingFrameStyle} />
+            ) : null}
+            {surfaceFooter ? (
+              <TrayFixedFooterBacking
+                color={footerBackdropColor}
+                frameStyle={footerBackingFrameStyle}
+                fadeStyle={footerBackingFadeStyle}
+              />
+            ) : null}
+          </>
+        ) : null,
+      [
+        footerBackdropColor,
+        footerBackingFadeStyle,
+        footerBackingFrameStyle,
+        stepFooterBackingFrameStyle,
+        stepFooterRegion,
+        surfaceFooter,
       ],
     );
 
@@ -240,6 +260,7 @@ export const TraySurface = React.memo(
             originSurfaceVisibilityStyle={originSurfaceVisibilityStyle}
             fullScreenSafeAreaContentStyle={fullScreenSafeAreaContentStyle}
             hasHeader={surfaceHeader != null}
+            footerBacking={footerBacking}
           />
           {footerLayer}
         </TrayStepFooterFrameStyleContext.Provider>

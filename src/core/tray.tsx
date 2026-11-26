@@ -32,7 +32,6 @@ const TrayImplementation = forwardRef<TrayRef, TrayProps>(
       keyboardAware,
       containerStyle,
       className,
-      footerClassName,
       footerStyle,
     },
     ref,
@@ -59,7 +58,6 @@ const TrayImplementation = forwardRef<TrayRef, TrayProps>(
       containerStyle,
       className,
       footerStyle,
-      footerClassName,
       onClose,
     });
 
@@ -129,7 +127,6 @@ const TrayImplementation = forwardRef<TrayRef, TrayProps>(
         renderedContainerStyle: controller.state.renderedContainerStyle,
         renderedClassName: controller.state.renderedClassName,
         renderedFooterStyle: controller.state.renderedFooterStyle,
-        renderedFooterClassName: controller.state.renderedFooterClassName,
       }),
       [
         controller.state.contentHeightSnapshot,
@@ -140,7 +137,6 @@ const TrayImplementation = forwardRef<TrayRef, TrayProps>(
         controller.state.renderedContainerStyle,
         controller.state.renderedContent,
         controller.state.renderedFooter,
-        controller.state.renderedFooterClassName,
         controller.state.renderedFooterStyle,
         controller.state.renderedFullScreen,
         controller.state.renderedFullScreenBackgroundScale,

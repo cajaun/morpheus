@@ -97,7 +97,6 @@ export const useControllerVisualState = ({
       renderedContainerStyle: renderedState.renderedContainerStyle,
       renderedClassName: renderedState.renderedClassName,
       renderedFooterStyle: renderedState.renderedFooterStyle,
-      renderedFooterClassName: renderedState.renderedFooterClassName,
     }),
     [
       contentHeightSnapshot,
@@ -109,7 +108,6 @@ export const useControllerVisualState = ({
       renderedState.renderedContainerStyle,
       renderedState.renderedContent,
       renderedState.renderedFooter,
-      renderedState.renderedFooterClassName,
       renderedState.renderedFooterStyle,
       renderedState.renderedFullScreen,
       renderedState.renderedFullScreenBackgroundScale,
