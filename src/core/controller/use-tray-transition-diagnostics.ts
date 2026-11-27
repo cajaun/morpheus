@@ -1,5 +1,5 @@
-import { useCallback, useEffect } from "react";
-import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
+import { useCallback } from "react";
+import { useProfiledTrayEffect, useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import type {
   SharedValue,
 } from "react-native-reanimated";
@@ -100,7 +100,7 @@ export const useTrayTransitionDiagnostics = ({
     [markLiveTransitionPhase],
   );
 
-  useEffect(() => {
+  useProfiledTrayEffect("core/controller/use-tray-transition-diagnostics#1", () => {
     // the payload reads shared values on the UI thread, so build it when the log is written
     if (!visible || !isTrayDebugLoggingEnabled()) {
       return;

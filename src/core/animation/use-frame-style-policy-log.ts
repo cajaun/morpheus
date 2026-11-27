@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+
 import { useAnimatedReaction } from "react-native-reanimated";
 import { isTrayDebugLoggingEnabled, log, logWorklet } from "../logger";
 import { isTargetSheetMeasurementPending } from "./frame-style-math";
 import { type TrayFrameStyleParams } from "./frame-style-params";
+import { useProfiledTrayEffect } from "../../telemetry/tray-layout-effect-profiler";
 
 // debug logs of the frame style policy on the JS and UI threads
 export const useFrameStylePolicyLog = (
@@ -34,7 +35,7 @@ export const useFrameStylePolicyLog = (
     fullScreenBoundaryTargetFullScreen === false &&
     !hasPreparedSheetFrame;
 
-  useEffect(() => {
+  useProfiledTrayEffect("core/animation/use-frame-style-policy-log#1", () => {
     if (!isTrayDebugLoggingEnabled()) {
       return;
     }

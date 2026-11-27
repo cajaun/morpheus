@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import type { TrayHostActionsValue, TrayRuntimeStore } from "./types";
 import { createTrayRuntimeStore } from "./store/create-tray-runtime-store";
+import { useProfiledTrayEffect } from "../telemetry/tray-layout-effect-profiler";
 
 // the store instance outlives provider renders so subscriptions hold
 type Params = {
@@ -29,7 +30,7 @@ export const useTrayRuntime = ({
     });
   }
 
-  useEffect(() => {
+  useProfiledTrayEffect("runtime/use-tray-runtime#1", () => {
     // swap dependencies in place so the store keeps its identity
     runtimeRef.current?.setDependencies({
       anticipateKeyboard,

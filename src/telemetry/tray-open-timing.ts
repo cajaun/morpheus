@@ -1,4 +1,5 @@
 import { isTrayInstrumentationEnabled } from "./config";
+import { logTrayEffectsBetween } from "./tray-layout-effect-profiler";
 
 type TrayOpenTrace = {
   attemptId: number;
@@ -192,5 +193,11 @@ export const markTrayOpenFinished = (
   // the finished stage computes the full span breakdown
   writeSummary(summary);
   logSummary(summary);
+  // the effects between the press and the open becoming ready are the wait before any motion
+  logTrayEffectsBetween(
+    `open "${trace.rootTrayId}" attempt=${trace.attemptId} press->ready`,
+    trace.triggerPressedAt ?? trace.openRequestedAt ?? finishedAt,
+    trace.readyToOpenAt ?? finishedAt,
+  );
   tracesByTrayId.delete(rootTrayId);
 };

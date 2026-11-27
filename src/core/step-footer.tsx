@@ -1,13 +1,11 @@
 // per-step footers live pinned to the sheet's bottom edge, an entering footer renders inside its step's content until the step change completes and then moves to the pinned layer in one commit
+import { useCallback, useContext, useMemo, useRef } from "react";
 import {
-  useCallback,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-} from "react";
-import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
+  StyleSheet,
+  View,
+  type GestureResponderEvent,
+  type LayoutChangeEvent,
+} from "react-native";
 import Animated, {
   useAnimatedReaction,
   useAnimatedStyle,
@@ -37,9 +35,11 @@ import {
   TrayStepFooterMotionFlagsContext,
 } from "./step-footer/contexts";
 import {
+  TrayStepFooterStoreContext,
   useStepFooterState,
   type TrayStepFooterExiting,
 } from "./step-footer/placement-store";
+import { useProfiledTrayEffect, useProfiledTrayLayoutEffect } from "../telemetry/tray-layout-effect-profiler";
 export {
   EMPTY_STEP_FOOTER_STATE,
   resolveStepFooterState,
@@ -112,7 +112,7 @@ const TrayStepFooterBody = ({
   const keyRef = useRef(state.key);
   keyRef.current = state.key;
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("core/step-footer#2", () => {
     if (!reports) {
       return;
     }
@@ -123,6 +123,40 @@ const TrayStepFooterBody = ({
       }
     });
   }, [report, reports, state.key, state.node]);
+
+  // an entering footer holds its pin while touched, so the tap ends on the button it began on
+  const store = useContext(TrayStepFooterStoreContext);
+  const holdsPin = inContent && reports && store != null;
+  const releasePinRef = useRef<(() => void) | null>(null);
+  const releasePin = useCallback(() => {
+    releasePinRef.current?.();
+    releasePinRef.current = null;
+  }, []);
+
+  useProfiledTrayEffect("core/step-footer.releasePin", () => releasePin, [
+    releasePin,
+  ]);
+
+  const touchHandlers = useMemo(() => {
+    if (!holdsPin) {
+      return null;
+    }
+
+    return {
+      onTouchStart: () => {
+        // take the new hold before dropping an old one so the footer never pins under a finger
+        const previous = releasePinRef.current;
+        releasePinRef.current = store!.holdPin();
+        previous?.();
+      },
+      onTouchEnd: (event: GestureResponderEvent) => {
+        if (event.nativeEvent.touches.length === 0) {
+          releasePin();
+        }
+      },
+      // a cancel is not a lifted finger, a gesture handler that activates on touch down (RectButton, Gesture.Native, a pan) cancels React Native's touches while its own gesture runs on, so the hold stays until the next touch on this footer ends, the step changes or the footer unmounts
+    };
+  }, [holdsPin, releasePin, store]);
 
   const key = state.key;
   const handleLayout = useCallback(
@@ -148,6 +182,7 @@ const TrayStepFooterBody = ({
       ref={nodeRef}
       collapsable={false}
       onLayout={handleLayout}
+      {...touchHandlers}
       style={[
         styles.body,
         inContent ? styles.bodyInContent : styles.bodyPinned,
@@ -253,14 +288,13 @@ export const TrayStepFooterLayers = ({
   );
 
   // a step without a footer releases the reserve before the sheet measures the new content
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("core/step-footer#3", () => {
     if (state.key == null) {
       report(0);
     }
   }, [report, state.key]);
 
-  useEffect(
-    () => () => {
+  useProfiledTrayEffect("core/step-footer#1", () => () => {
       // release the reserve when the host is reused for another tray
       if (metrics) {
         metrics.heightRef.current = 0;

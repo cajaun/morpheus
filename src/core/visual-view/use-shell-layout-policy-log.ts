@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+
 import { describeTrayTransition } from "../diagnostics/tray-transition-diagnostics";
 import { isTrayDebugLoggingEnabled, log } from "../logger";
 import { type TrayVisualShellProps } from "./props";
+import { useProfiledTrayEffect } from "../../telemetry/tray-layout-effect-profiler";
 
 type ShellState = TrayVisualShellProps["state"];
 
@@ -31,7 +32,7 @@ export const useShellLayoutPolicyLog = ({
   preparedSheetFrame: ShellState["preparedSheetFrame"];
   transitionContract: TrayVisualShellProps["transitionContract"];
 }) => {
-  useEffect(() => {
+  useProfiledTrayEffect("core/visual-view/use-shell-layout-policy-log#1", () => {
     if (!isTrayDebugLoggingEnabled()) {
       return;
     }

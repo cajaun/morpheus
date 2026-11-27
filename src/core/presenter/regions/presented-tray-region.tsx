@@ -1,11 +1,4 @@
-import React, {
-  useCallback,
-  useContext,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useSyncExternalStore,
-} from "react";
+import React, { useCallback, useContext, useMemo, useRef, useSyncExternalStore } from "react";
 import { TrayContentCommitContext } from "../../tray-content-commit";
 import { TrayStepContent } from "../../../tray-step-content";
 import {
@@ -30,6 +23,7 @@ import {
   type PresentedTrayRegionName,
   type PresentedTrayPayloadStore,
 } from "./payload-store";
+import { useProfiledTrayLayoutEffect } from "../../../telemetry/tray-layout-effect-profiler";
 
 // region elements stay stable while the committed payload flows through a small external store
 export const PresentedTrayRegion = ({
@@ -60,7 +54,7 @@ export const PresentedTrayRegion = ({
   notifyRef.current = notifyContentCommitted;
 
   // new step content mounts in this commit, so the sheet measures it before the frame
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("core/presenter/regions/presented-tray-region#1", () => {
     if (region === "content" && payload.content != null) {
       // report the generation of the payload this region rendered
       notifyRef.current?.(store.getSnapshot().transitionContract?.generation);

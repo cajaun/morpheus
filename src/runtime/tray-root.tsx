@@ -1,5 +1,5 @@
-import React, { useEffect, useId, useMemo } from "react";
-import { useProfiledTrayLayoutEffect } from "../telemetry/tray-layout-effect-profiler";
+import React, { useId, useMemo } from "react";
+import { useProfiledTrayEffect, useProfiledTrayLayoutEffect } from "../telemetry/tray-layout-effect-profiler";
 import {
   TrayScopeProvider,
   useTrayHostActions,
@@ -52,8 +52,7 @@ export const TrayRoot: React.FC<TrayRootProps> = ({
     registerTray(trayId, registration);
   }, [registration, registerTray, trayId]);
 
-  useEffect(
-    () => () => {
+  useProfiledTrayEffect("runtime/tray-root#1", () => () => {
       // unmount clears the registry entry even for an active tray
       unregisterTray(trayId);
     },

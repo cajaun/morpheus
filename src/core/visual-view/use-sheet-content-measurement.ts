@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useRef } from "react";
+import React, { useCallback, useRef } from "react";
 import { View, type LayoutChangeEvent } from "react-native";
 import { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { TRAY_SYNC_CONTENT_MEASUREMENT_ENABLED } from "../../telemetry/config";
@@ -6,6 +6,7 @@ import { measureTrayNode } from "../measure-node";
 import { TrayStepFooterMetricsContext } from "../step-footer";
 import { TrayContentCommitTargetContext } from "../tray-content-commit";
 import { type TraySheetSurfaceProps } from "./props";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 
 // content height reports of the sheet, including the step footer reserve and the unchanged-height path
 export const useSheetContentMeasurement = ({
@@ -136,7 +137,7 @@ export const useSheetContentMeasurement = ({
   );
 
   // re-report the content height when the step footer resizes without a step change
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("core/visual-view/use-sheet-content-measurement#1", () => {
     if (!stepFooterMetrics) {
       return;
     }
@@ -167,7 +168,7 @@ export const useSheetContentMeasurement = ({
   );
 
   // raw-node mode swaps content through props
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("core/visual-view/use-sheet-content-measurement#2", () => {
     if (!renderSnapshotStore && renderedContent != null) {
       measureCommittedContent();
     }

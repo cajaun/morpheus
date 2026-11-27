@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import {
   useTrayHostActions,
   useTrayHostSelector,
@@ -18,6 +18,7 @@ import {
   type PresentedTray,
   type PresentedTrayRenderer,
 } from "./presenter";
+import { useProfiledTrayEffect } from "../telemetry/tray-layout-effect-profiler";
 
 // runtime stack entries resolved into root and nested host presentations
 export const TrayPresenter: React.FC<{
@@ -192,7 +193,7 @@ export const TrayPresenter: React.FC<{
     transitionScope.nested,
   ]);
 
-  useEffect(() => {
+  useProfiledTrayEffect("runtime/tray-presenter#1", () => {
     const nextIndexes: Record<string, number> = {};
 
     stack.forEach((entry) => {

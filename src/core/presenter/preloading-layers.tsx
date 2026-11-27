@@ -1,8 +1,9 @@
-import React, { useContext, useLayoutEffect, useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   TrayParentTransitionContext,
   useParentCompletedGeneration,
 } from "../../runtime/tray-parent-transition";
+import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 
 export type LeftStep = {
   trayId: string;
@@ -75,7 +76,7 @@ export const TrayHiddenLayerContent = ({
 
   const revealing = !hidden && held.hidden;
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("core/presenter/preloading-layers#1", () => {
     if (revealing) {
       setHeld({ hidden: false, children });
     }

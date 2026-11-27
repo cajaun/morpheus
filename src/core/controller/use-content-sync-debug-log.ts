@@ -1,7 +1,8 @@
 import type React from "react";
-import { useEffect } from "react";
+
 import type { StyleProp, ViewStyle } from "react-native";
 import { isTrayDebugLoggingEnabled, log } from "../logger";
+import { useProfiledTrayEffect } from "../../telemetry/tray-layout-effect-profiler";
 
 // debug logs of the live step props and of the rendered snapshot
 export const useContentSyncDebugLog = ({
@@ -39,7 +40,7 @@ export const useContentSyncDebugLog = ({
   renderedFooter: React.ReactNode;
   renderedHeader: React.ReactNode;
 }) => {
-  useEffect(() => {
+  useProfiledTrayEffect("core/controller/use-content-sync-debug-log#1", () => {
     if (!visible || !isTrayDebugLoggingEnabled()) {
       return;
     }
@@ -72,7 +73,7 @@ export const useContentSyncDebugLog = ({
     visible,
   ]);
 
-  useEffect(() => {
+  useProfiledTrayEffect("core/controller/use-content-sync-debug-log#2", () => {
     if (!isTrayDebugLoggingEnabled()) {
       return;
     }

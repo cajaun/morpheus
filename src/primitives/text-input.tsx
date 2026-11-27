@@ -1,11 +1,5 @@
-import React, {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-} from "react";
-import { useProfiledTrayLayoutEffect } from "../telemetry/tray-layout-effect-profiler";
+import React, { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
+import { useProfiledTrayEffect, useProfiledTrayLayoutEffect } from "../telemetry/tray-layout-effect-profiler";
 import { TextInput, TextInputProps } from "react-native";
 import {
   useTrayHostActions,
@@ -37,7 +31,7 @@ export const TrayTextInput: TrayTextInputComponent = forwardRef<
     // forward the native input ref and keep tray focus registration local
     useImperativeHandle(forwardedRef, () => ref.current as TrayTextInputRef);
 
-    useEffect(() => {
+    useProfiledTrayEffect("primitives/text-input#1", () => {
       if (!trayId) {
         return;
       }

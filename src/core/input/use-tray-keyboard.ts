@@ -1,9 +1,5 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-} from "react";
-import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
+import { useCallback, useRef } from "react";
+import { useProfiledTrayEffect, useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import { Platform } from "react-native";
 import {
   KeyboardController,
@@ -29,7 +25,7 @@ export const useTrayKeyboard = () => {
   }, []);
 
   // pay the native keyboard startup cost while the provider mounts, KeyboardController guards repeat preloads
-  useEffect(() => {
+  useProfiledTrayEffect("core/input/use-tray-keyboard#1", () => {
     preloadKeyboard();
   }, [preloadKeyboard]);
 
@@ -89,7 +85,7 @@ export const useSheetTrayKeyboard = ({
     sheetStepTransition,
   };
 
-  useEffect(() => {
+  useProfiledTrayEffect("core/input/use-tray-keyboard#2", () => {
     if (!isTrayInstrumentationEnabled()) {
       return;
     }
@@ -105,7 +101,7 @@ export const useSheetTrayKeyboard = ({
     return () => subscription.remove();
   }, []);
 
-  useEffect(() => {
+  useProfiledTrayEffect("core/input/use-tray-keyboard#3", () => {
     log("SHEET KEYBOARD STATE", {
       visible,
       keyboardAware,

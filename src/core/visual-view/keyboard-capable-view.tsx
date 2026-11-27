@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-} from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import { useAnimatedReaction, useSharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import {
@@ -27,6 +21,7 @@ import { isTrayDebugLoggingEnabled, log } from "../logger";
 import { TrayKeyboardGateContext } from "./contexts";
 import { type TrayVisualViewProps } from "./props";
 import { TrayVisualViewBody } from "./view-body";
+import { useProfiledTrayEffect, useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 
 export const TrayKeyboardCapableVisualView = React.memo(
   (props: TrayVisualViewProps) => {
@@ -84,7 +79,7 @@ export const TrayKeyboardCapableVisualView = React.memo(
     const keyboardGateTarget = keyboardTransitionIntent.entersKeyboard ? 1 : 0;
 
     // arm on the step commit, the sheet layout starts frames later so the gate is armed before any check
-    useLayoutEffect(() => {
+    useProfiledTrayLayoutEffect("core/visual-view/keyboard-capable-view#2", () => {
       if (
         keyboardGateGeneration <= 0 ||
         keyboardGateGeneration === keyboardArmedGeneration.value
@@ -175,7 +170,7 @@ export const TrayKeyboardCapableVisualView = React.memo(
       (keyboardTransitionIntent.sourceOwnsKeyboard ||
         keyboardTransitionIntent.targetOwnsKeyboard);
 
-    useEffect(() => {
+    useProfiledTrayEffect("core/visual-view/keyboard-capable-view#1", () => {
       if (!isTrayDebugLoggingEnabled()) {
         return;
       }

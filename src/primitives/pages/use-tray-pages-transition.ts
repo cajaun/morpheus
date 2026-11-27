@@ -1,10 +1,5 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
+import { useCallback, useRef, useState } from "react";
+import { useProfiledTrayEffect, useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import { LayoutChangeEvent, PixelRatio } from "react-native";
 import { useSharedValue, withSpring } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
@@ -53,7 +48,7 @@ export const useTrayPagesTransition = ({
   );
   const startedTransitionTargetRef = useRef<number | null>(null);
 
-  useEffect(() => {
+  useProfiledTrayEffect("primitives/pages/use-tray-pages-transition#1", () => {
     const nextIndex = clampPageIndex(pageIndex, totalPages);
 
     if (nextIndex === pageIndex) {
@@ -80,8 +75,7 @@ export const useTrayPagesTransition = ({
     progress.value = nextIndex;
   }, [pageIndex, progress, totalPages, transitions]);
 
-  useEffect(
-    () => () => {
+  useProfiledTrayEffect("primitives/pages/use-tray-pages-transition#2", () => () => {
       const generation = transitionGenerationRef.current;
 
       if (generation !== null) {

@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import { TrayContentCommitContext } from "../tray-content-commit";
 import { markTrayBoundarySnapshotCommitted } from "../../telemetry/tray-boundary-timing";
@@ -34,7 +34,7 @@ export const TraySnapshotRegion = React.memo(
     notifyRef.current = notifyContentCommitted;
 
     // measure a swapped content node in the commit that mounts it
-    useLayoutEffect(() => {
+    useProfiledTrayLayoutEffect("core/visual-view/snapshot-region#1", () => {
       if (region === "content" && node != null) {
         notifyRef.current?.(store.getSnapshot().transitionContract?.generation);
       }

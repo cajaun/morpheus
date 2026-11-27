@@ -1,10 +1,11 @@
-import { useCallback, useEffect, type ReactNode } from "react";
+import { useCallback, type ReactNode } from "react";
 import {
   useAnimatedReaction,
   useDerivedValue,
   useSharedValue,
 } from "react-native-reanimated";
 import { HORIZONTAL_MARGIN, SCREEN_HEIGHT } from "../constants";
+import { useProfiledTrayEffect } from "../../telemetry/tray-layout-effect-profiler";
 
 type Params = {
   visible: boolean;
@@ -33,7 +34,7 @@ export const useTrayPresentationState = ({
   const originProgress = useSharedValue(1);
   const originTargetContentHeight = useSharedValue(0);
 
-  useEffect(() => {
+  useProfiledTrayEffect("core/controller/use-tray-presentation-state#1", () => {
     // worklets read footer presence so the spacer height updates off the JS thread
     hasFooter.value = !!renderedFooter;
   }, [hasFooter, renderedFooter]);

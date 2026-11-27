@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+
 import type { SharedValue } from "react-native-reanimated";
+import { useProfiledTrayEffect } from "../../telemetry/tray-layout-effect-profiler";
 
 // re-resolve the shared content height when presentation policy changes for the measured step
 export const useContentHeightRefresh = ({
@@ -19,7 +20,7 @@ export const useContentHeightRefresh = ({
   contentHeight: SharedValue<number>;
   resolveMeasuredContentHeight: (measuredHeight: number) => number;
 }) => {
-  useEffect(() => {
+  useProfiledTrayEffect("core/controller/use-content-height-refresh#1", () => {
     if (!visible) {
       return;
     }

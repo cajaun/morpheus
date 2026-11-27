@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef } from "react";
+import React, { useRef } from "react";
 import Animated, {
   runOnUI,
   useAnimatedStyle,
@@ -14,6 +14,7 @@ import {
   createMorphEntering,
   createMorphExiting,
 } from "./morph-animations";
+import { useProfiledTrayEffect, useProfiledTrayLayoutEffect } from "../telemetry/tray-layout-effect-profiler";
 
 // wrapper of a preloadable step outside its Activity, mounts like any view, reveals with the entering motion and exits on removal
 export const TrayRevealedStepContent: React.FC<TrayStepContentProps> = ({
@@ -58,7 +59,7 @@ export const TrayRevealedStepContent: React.FC<TrayStepContentProps> = ({
     ],
   }));
 
-  useLayoutEffect(() => {
+  useProfiledTrayLayoutEffect("step-content/step-content#2", () => {
     if (hidden) {
       return;
     }
@@ -152,7 +153,7 @@ export const TrayStepContent: React.FC<TrayStepContentProps> = ({
   const transitionStart = useTrayTransitionStart();
   const motionDirection = useTrayContentMotionDirection();
 
-  useEffect(() => {
+  useProfiledTrayEffect("step-content/step-content#1", () => {
     if (!isTrayDebugLoggingEnabled()) {
       return;
     }

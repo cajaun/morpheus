@@ -150,6 +150,103 @@ describe("step footer rendering", () => {
     expect(renderer.root.findAllByType(Text)).toHaveLength(1);
     expect(store.getSnapshot().placement).toBe("pinned");
   });
+
+  // moving the footer remounts its button, a tap that began on the in-content copy would never end on it
+  it("keeps the returning footer where the finger is until the touch ends", () => {
+    const store = createStepFooterStore();
+    const metrics = createMetrics();
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    store.commit(payload("four", null, { isFirstRender: true }));
+    act(() => {
+      renderer = TestRenderer.create(tree(store, metrics));
+    });
+    act(() => {
+      store.commit(payload("three", "id:go", { transitionContract: { generation: 5 } }));
+    });
+
+    const body = renderer.root.find(
+      (node) => typeof node.props?.onTouchStart === "function" && typeof node.type === "string",
+    );
+    const label = renderer.root.findByType(Text);
+
+    act(() => {
+      body.props.onTouchStart({ nativeEvent: { touches: [{}] } });
+      store.settle(5);
+    });
+    expect(store.getSnapshot().placement).toBe("content");
+    // the same button instance is still mounted
+    expect(renderer.root.findByType(Text)).toBe(label);
+
+    act(() => {
+      body.props.onTouchEnd({ nativeEvent: { touches: [] } });
+    });
+    expect(store.getSnapshot().placement).toBe("pinned");
+    expect(renderer.root.findAllByType(Text)).toHaveLength(1);
+  });
+
+  // Gesture Handler cancels React Native's touches when a gesture activates on touch down, the finger is still on the button
+  it("keeps holding when a gesture handler cancels the touch, until a touch ends", () => {
+    const store = createStepFooterStore();
+    const metrics = createMetrics();
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    store.commit(payload("four", null, { isFirstRender: true }));
+    act(() => {
+      renderer = TestRenderer.create(tree(store, metrics));
+    });
+    act(() => {
+      store.commit(payload("three", "id:go", { transitionContract: { generation: 5 } }));
+    });
+
+    const body = renderer.root.find(
+      (node) => typeof node.props?.onTouchStart === "function" && typeof node.type === "string",
+    );
+
+    expect(body.props.onTouchCancel).toBeUndefined();
+
+    act(() => {
+      body.props.onTouchStart({ nativeEvent: { touches: [{}] } });
+      store.settle(5);
+    });
+    expect(store.getSnapshot().placement).toBe("content");
+
+    // the next tap on the footer starts and ends normally
+    act(() => {
+      body.props.onTouchStart({ nativeEvent: { touches: [{}] } });
+    });
+    expect(store.getSnapshot().placement).toBe("content");
+    act(() => {
+      body.props.onTouchEnd({ nativeEvent: { touches: [] } });
+    });
+    expect(store.getSnapshot().placement).toBe("pinned");
+  });
+
+  it("releases its hold when the footer unmounts mid touch", () => {
+    const store = createStepFooterStore();
+    const metrics = createMetrics();
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    store.commit(payload("four", null, { isFirstRender: true }));
+    act(() => {
+      renderer = TestRenderer.create(tree(store, metrics));
+    });
+    act(() => {
+      store.commit(payload("three", "id:go", { transitionContract: { generation: 5 } }));
+    });
+    const body = renderer.root.find(
+      (node) => typeof node.props?.onTouchStart === "function" && typeof node.type === "string",
+    );
+    act(() => {
+      body.props.onTouchStart({ nativeEvent: { touches: [{}] } });
+    });
+    act(() => {
+      renderer.unmount();
+    });
+
+    store.settle(5);
+    expect(store.getSnapshot().placement).toBe("pinned");
+  });
 });
 
 describe("step footer backing", () => {

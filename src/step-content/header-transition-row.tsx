@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import {
   LayoutChangeEvent,
   StyleProp,
@@ -24,6 +24,7 @@ import {
 } from "../core/constants";
 import { type TrayStepContentProps } from "./types";
 import { TrayStepContent } from "./step-content";
+import { useProfiledTrayEffect } from "../telemetry/tray-layout-effect-profiler";
 
 // the title's slide starts from the width on screen when a transition starts, a restart uses the previous frame's width so the title slides instead of jumping
 export const resolveSettledTitleStartWidth = (
@@ -69,7 +70,7 @@ export const TrayHeaderTransitionRowImpl: React.FC<
   const rightIdentity = resolveHeaderActionIdentity(right);
   const actionTransitionKey = `${left == null ? "none" : (leftIdentity ?? "left")}:${right == null ? "none" : (rightIdentity ?? "right")}`;
 
-  useEffect(() => {
+  useProfiledTrayEffect("step-content/header-transition-row#1", () => {
     previousLeftVisibleRef.current = centered;
   }, [centered]);
 

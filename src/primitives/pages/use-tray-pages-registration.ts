@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+
 import type {
   TrayHostActionsValue,
   TrayPagesRegistration,
 } from "../../runtime/types";
+import { useProfiledTrayEffect } from "../../telemetry/tray-layout-effect-profiler";
 
 type Params = {
   activeStepKey: string | null;
@@ -31,7 +32,7 @@ export const useTrayPagesRegistration = ({
   trayId,
 }: Params) => {
   // the registration lives as long as its owner and step, page changes update the payload without an unmount and an extra store notification
-  useEffect(() => {
+  useProfiledTrayEffect("primitives/pages/use-tray-pages-registration#1", () => {
     if (!trayId || !activeStepKey) {
       return;
     }
@@ -41,7 +42,7 @@ export const useTrayPagesRegistration = ({
     };
   }, [activeStepKey, registerTrayPages, trayId]);
 
-  useEffect(() => {
+  useProfiledTrayEffect("primitives/pages/use-tray-pages-registration#2", () => {
     if (!trayId || !activeStepKey) {
       return;
     }

@@ -148,6 +148,8 @@ export type TrayStepFooterStore = {
   commit: (payload: TrayStepFooterPayload) => void;
   // pin an entering footer and drop an exiting one once their transition completes
   settle: (generation: number) => void;
+  // a finger on the entering footer defers its pin, moving it remounts the button and drops the tap, the returned release pins it if its transition already completed, a step change drops every hold
+  holdPin: () => () => void;
   // each step layer's bottom edge in the content region, where an exiting footer sits
   recordContentHeight: (trayId: string, height: number) => void;
   getContentHeight: (trayId: string) => number | undefined;
@@ -157,6 +159,10 @@ export const createStepFooterStore = (): TrayStepFooterStore => {
   let state = EMPTY_STEP_FOOTER_STATE;
   const contentHeights = new Map<string, number>();
   const listeners = new Set<() => void>();
+  let holds = 0;
+  let pendingPin: number | null = null;
+  // holds belong to one step change, a release from an earlier one does nothing
+  let holdEpoch = 0;
   const set = (next: TrayStepFooterState) => {
     if (areStepFooterStatesEqual(state, next)) {
       return;
@@ -172,12 +178,27 @@ export const createStepFooterStore = (): TrayStepFooterStore => {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    commit: (payload) => set(resolveStepFooterState(state, payload)),
+    commit: (payload) => {
+      const next = resolveStepFooterState(state, payload);
+
+      if (next.generation !== state.generation) {
+        // a held footer whose step changed never pins from that touch, the new transition settles on its own
+        holds = 0;
+        pendingPin = null;
+        holdEpoch += 1;
+      }
+
+      set(next);
+    },
     settle: (generation) => {
       let next = state;
 
       if (next.placement === "content" && next.generation === generation) {
-        next = { ...next, placement: "pinned", settled: true };
+        if (holds > 0) {
+          pendingPin = generation;
+        } else {
+          next = { ...next, placement: "pinned", settled: true };
+        }
       }
 
       if (next.exiting !== null && next.exiting.generation <= generation) {
@@ -185,6 +206,31 @@ export const createStepFooterStore = (): TrayStepFooterStore => {
       }
 
       set(next);
+    },
+    holdPin: () => {
+      const epoch = holdEpoch;
+      let released = false;
+      holds += 1;
+
+      return () => {
+        if (released || epoch !== holdEpoch) {
+          return;
+        }
+
+        released = true;
+        holds -= 1;
+
+        if (holds > 0 || pendingPin === null) {
+          return;
+        }
+
+        const generation = pendingPin;
+        pendingPin = null;
+
+        if (state.placement === "content" && state.generation === generation) {
+          set({ ...state, placement: "pinned", settled: true });
+        }
+      };
     },
     recordContentHeight: (trayId, height) => {
       contentHeights.set(trayId, height);

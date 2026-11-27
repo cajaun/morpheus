@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { useSharedValue } from "react-native-reanimated";
 import { isTrayDebugLoggingEnabled, log } from "../logger";
 import type { TrayPresentationMode } from "../../runtime/types";
@@ -8,6 +8,7 @@ import {
 } from "./measurement-types";
 import { useContentLayoutHandler } from "./use-content-layout-handler";
 import { useVisibleFooterLayoutHandler } from "./use-visible-footer-layout-handler";
+import { useProfiledTrayEffect } from "../../telemetry/tray-layout-effect-profiler";
 
 // body and footer measurements that resolve shell geometry
 export const useTrayMeasurements = ({
@@ -74,7 +75,7 @@ export const useTrayMeasurements = ({
   latestMeasurementOwnerRef.current =
     measurementOwnerRef?.current ?? measurementOwner;
 
-  useEffect(() => {
+  useProfiledTrayEffect("core/controller/use-tray-measurements#1", () => {
     if (renderedFooter) {
       return;
     }
@@ -94,7 +95,7 @@ export const useTrayMeasurements = ({
     }
   }, [footerHeight, measuredFooterHeight, renderedFooter, syncOpenReadiness]);
 
-  useEffect(() => {
+  useProfiledTrayEffect("core/controller/use-tray-measurements#2", () => {
     // the payload reads shared values on the UI thread, so build it when the log is written
     if (!isTrayDebugLoggingEnabled()) {
       return;

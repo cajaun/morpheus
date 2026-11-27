@@ -1,8 +1,8 @@
-import { RefObject, useEffect, useRef, type ReactNode } from "react";
+import { RefObject, useRef, type ReactNode } from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import { markTrayStepSnapshotPublished } from "../../telemetry/tray-step-timing";
-import { useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
+import { useProfiledTrayEffect, useProfiledTrayLayoutEffect } from "../../telemetry/tray-layout-effect-profiler";
 import type { TrayTransitionContract } from "../../runtime/types";
 import { useContentSyncDebugLog } from "./use-content-sync-debug-log";
 import { isTrayDebugLoggingEnabled, log } from "../logger";
@@ -315,7 +315,7 @@ export const useTrayContentSync = ({
   ]);
 
   // publish visual content once native layout can derive the sheet frame
-  useEffect(() => {
+  useProfiledTrayEffect("core/controller/use-tray-content-sync#1", () => {
     if (!visible) {
       return;
     }

@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useMemo, useState } from "react";
+import React, { useId, useMemo, useState } from "react";
 import { useAnimatedReaction } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { Pressable, type PressableProps } from "react-native";
@@ -12,6 +12,7 @@ import {
 import { compileTraySteps } from "./tray-step-compiler";
 import { useParentTransitionSettled } from "./tray-parent-transition";
 import { useTrayPages } from "../pages-context";
+import { useProfiledTrayEffect } from "../telemetry/tray-layout-effect-profiler";
 
 // whether the tray's pages rest, driven by the page clock, the fallback clock outside Tray.Pages always rests
 const usePagesAtRest = () => {
@@ -79,12 +80,11 @@ export const TrayNested: React.FC<TrayNestedProps> = ({
     [deferHostPreparation, footer, parentTrayId, steps, transition],
   );
 
-  useEffect(() => {
+  useProfiledTrayEffect("runtime/tray-nested#1", () => {
     registerTray(trayId, registration);
   }, [registration, registerTray, trayId]);
 
-  useEffect(
-    () => () => {
+  useProfiledTrayEffect("runtime/tray-nested#2", () => () => {
       unregisterTray(trayId);
     },
     [trayId, unregisterTray],
